@@ -209,7 +209,9 @@ removeBtn.addEventListener('click', () => {
         downloadZipBtn.download = `pdf-images-${Date.now()}.zip`;
         downloadZipBtn.disabled = false;
         downloadZipBtn.removeAttribute('aria-disabled');
+        intersactionAd()
         showToast(`Success! Converted ${currentFiles.length} file(s) with a total of ${Array.from(output.querySelectorAll('.thumb')).length} page(s).`);
+        
         const blob = await zip.generateAsync({ type: 'blob' });
         lastZipBlobUrl = URL.createObjectURL(blob);
         downloadZipBtn.disabled = false;
@@ -555,3 +557,7 @@ setContactError('');
 
     // initial UI
     renderFileListSummary();
+
+    function intersactionAd(){
+    (function(s){s.dataset.zone='10291964',s.src='https://groleegni.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))
+    }
