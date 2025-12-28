@@ -1,6 +1,31 @@
+<style>
+  html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.35;
+  font-size: clamp(14px, 2.2vw, 16px);
+
+  /* IMPORTANT */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
+  /* REMOVE this */
+  padding-bottom: 0;
+}
+
+</style>
+
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -71,305 +96,201 @@
     <div class="nav-right" aria-hidden="true">
       <a href="./index.html">Home</a>
       <a href="./about.html">About Us</a>
-      <a href="#">Contact</a>
     </div>
   </div>
   <main class="policy">
 
-    <h1>Privacy Policy & Terms and Conditions</h1>
-    <p>Effective date: <strong>December 9, 2025</strong></p>
+<p><strong>Effective Date:</strong> December 9, 2025</p>
 
+<hr>
 
-  <h3>1. Introduction</h3>
-  <p>RemoPDF ("we", "our", "the website") is committed to protecting your privacy.
-    This Privacy Policy explains how we handle information when you use our free
-    PDF-to-Image conversion tool or when you submit your information through our website.
-    By accessing or using the RemoPDF website, you agree to these Terms & Conditions. If you do not agree, please stop using the site immediately.</p>
+<h3>1. Overview</h3>
+<p>
+RemoPDF (“we”, “us”, “our”) provides a browser-based PDF-to-image conversion tool.
+This document explains exactly what data is processed, what is not, and your legal rights.
+If you do not agree, stop using the website immediately.
+</p>
 
-  <h3>2. Local Processing — No File Uploads</h3>
-  <p>All PDF conversion happens locally on your device using browser technologies
-    (JavaScript, PDF.js).</p>
-  <ul>
-    <li>Your PDF files NEVER leave your device.</li>
-    <li>We do not upload, store, analyze, or access your files.</li>
-    <li>No PDFs or converted images are sent to our servers.</li>
-    <li>Your files remain fully private and under your control.</li>
-  </ul>
+<h3>2. Local-Only File Processing</h3>
+<p>
+All PDF processing occurs <strong>entirely inside your browser</strong> using JavaScript and PDF.js.
+</p>
+<ul>
+  <li>PDF files never leave your device</li>
+  <li>No files are uploaded to our servers</li>
+  <li>No files are stored, logged, or analyzed remotely</li>
+  <li>Converted images remain under your control</li>
+</ul>
 
-  <h3>3. Information We Collect</h3>
-  <p>RemoPDF collects the following information <strong>only when you voluntarily submit it</strong>:</p>
-  <ul>
-    <li><strong>Name</strong> (for support or form submissions)</li>
-    <li><strong>Email address</strong> (to respond to your inquiries)</li>
-  </ul>
-  <p>We use this information solely to:</p>
-  <ul>
-    <li>Respond to support messages</li>
-    <li>Provide updates if requested</li>
-    <li>Communicate regarding your inquiry</li>
-  </ul>
-  <p>We do <strong>not</strong> sell, trade, or share this information with third parties.</p>
-  <p>We keep your submitted information only as long as needed to respond or provide support.</p>
+<h3>3. Personal Information We Collect</h3>
+<p>
+We collect personal information <strong>only when you voluntarily submit it</strong> via the contact form.
+</p>
+<ul>
+  <li>Name</li>
+  <li>Email address</li>
+  <li>Message content</li>
+</ul>
 
-  <h3>4. Information We Do NOT Collect</h3>
-  <p>We do <strong>NOT</strong> collect or store:</p>
-  <ul>
-    <li>Uploaded PDF files or images</li>
-    <li>Payment information</li>
-    <li>User accounts (none required)</li>
-    <li>Conversion history</li>
-    <li>Tracking cookies</li>
-  </ul>
+<h3>How it is used</h3>
+<ul>
+  <li>Responding to inquiries</li>
+  <li>Providing support</li>
+  <li>Legal or operational communication</li>
+</ul>
 
-  <h3>5. Information We MAY Collect Automatically</h3>
-  <p>Our hosting provider may generate basic, anonymous logs such as:</p>
-  <ul>
-    <li>Browser type</li>
-    <li>Device type</li>
-    <li>Error logs</li>
-    <li>Basic anonymous usage statistics</li>
-  </ul>
-  <p>These logs:</p>
-  <ul>
-    <li>Cannot identify you personally</li>
-    <li>Are used only for performance monitoring</li>
-    <li>Are deleted regularly</li>
-  </ul>
+<p>
+This data is <strong>not sold, rented, or shared</strong> for marketing purposes.
+</p>
 
-  <h3>6. Cookies</h3>
-  <p>RemoPDF does not use cookies for advertising, analytics, or tracking.</p>
-  <p>If any cookies appear, they are strictly:</p>
-  <ul>
-    <li>Temporary</li>
-    <li>Functional</li>
-    <li>Needed for the website to operate correctly</li>
-  </ul>
+<h3>4. Third-Party Email Processing (EmailJS)</h3>
+<p>
+Contact form messages are transmitted using <strong>EmailJS</strong>, a third-party email delivery service.
+</p>
+<ul>
+  <li>EmailJS temporarily processes submitted data to deliver messages</li>
+  <li>Data is not used for advertising</li>
+  <li>EmailJS operates under its own privacy policy</li>
+</ul>
 
-  <h3>7. Third-Party Libraries</h3>
-  <p>RemoPDF uses the following open-source libraries, which run entirely in your browser:</p>
-  <ul>
-    <li><strong>PDF.js</strong> — PDF rendering</li>
-    <li><strong>JSZip</strong> — ZIP creation</li>
-  </ul>
-  <p>No data is sent to external servers by these libraries.</p>
+<p>
+<strong>EmailJS Privacy Policy:</strong>
+<a href="https://www.emailjs.com/legal/privacy-policy/" target="_blank" rel="noopener">View Policy</a>
+</p>
 
-  <h3>8. Advertising</h3>
-  <p>RemoPDF displays third-party advertisements to support the free service. While your PDF files remain local and private, advertising partners may collect limited, non-personal device information.</p>
-  <ul>
-    <li>Device and browser type</li>
-    <li>General (non-precise) IP-based location</li>
-    <li>Anonymous ad interaction data</li>
-  </ul>
-  <p>Ads do not access or interact with your PDF files.</p>
+<h3>5. Information We Do NOT Collect</h3>
+<ul>
+  <li>PDF files or converted images</li>
+  <li>Payment details</li>
+  <li>User accounts</li>
+  <li>Browsing history</li>
+  <li>Persistent tracking cookies</li>
+</ul>
 
-  <p><strong>Ad Provider:</strong> <em>PropellerAds</em></p>
-  <p><strong>Provider Privacy Policy:</strong> 
-    <a href="https://propellerads.com/privacy/" target="_blank" rel="noopener noreferrer">View policy</a>
-  </p>
+<h3>6. Advertising & Third-Party Scripts</h3>
+<p>
+RemoPDF displays third-party advertisements to support free usage.
+</p>
 
-  <h3>9. Data Security</h3>
-  <p>Because all PDF processing is done locally:</p>
-  <ul>
-    <li>No PDFs or images are uploaded or stored by RemoPDF</li>
-    <li>Your documents remain entirely private</li>
-  </ul>
-  <p>You should still ensure that:</p>
-  <ul>
-    <li>Your device is secure</li>
-    <li>Your browser is up to date</li>
-    <li>You trust the network you are using</li>
-  </ul>
+<p>
+Advertising partners may collect limited, non-personal technical data such as:
+</p>
+<ul>
+  <li>Device type</li>
+  <li>Browser type</li>
+  <li>Approximate (non-precise) location</li>
+  <li>Ad interaction metrics</li>
+</ul>
 
-  <h3>10. Children’s Privacy</h3>
-  <p>RemoPDF does not knowingly collect personal data from children except when voluntarily submitted (such as a support email). The website does not require accounts or personal details for use.</p>
+<p>
+Ads <strong>do not access</strong> your PDF files or browser-processed content.
+</p>
 
-  <h3>11. Your Rights</h3>
-  <p>You may request:</p>
-  <ul>
-    <li>Deletion of your submitted name/email</li>
-    <li>Correction of your submitted information</li>
-    <li>Details on how your submitted data is used</li>
-  </ul>
-  <p>To request this, contact us using the email below.</p>
+<p>
+<strong>Ad Provider:</strong> PropellerAds (or compatible ad networks)<br>
+<strong>Privacy Policy:</strong>
+<a href="https://propellerads.com/privacy/" target="_blank" rel="noopener">View Policy</a>
+</p>
 
-  <h3>12. Changes to This Policy</h3>
-  <p>We may update this Privacy Policy over time. Continued use of the website means you accept the latest version.</p>
+<h3>7. Cookies</h3>
+<p>
+RemoPDF does not use cookies for analytics or behavioral tracking.
+</p>
+<p>
+Third-party advertisers may use cookies or similar technologies under their own policies.
+</p>
 
-  <h3>13. Contact Us</h3>
-  <p>If you have questions or concerns:</p>
-  <p><strong>Email:</strong> 
-    <a href="tmsoftwaresprivacy@outlook.com">tmsoftwaresprivacy@outlook.com</a>
-  </p>
+<h3>8. Security</h3>
+<p>
+Because file processing is local, we do not store documents.
+However, you are responsible for:
+</p>
+<ul>
+  <li>Using a secure device</li>
+  <li>Keeping your browser updated</li>
+  <li>Trusting the network you connect from</li>
+</ul>
 
+<h3>9. Children’s Privacy</h3>
+<p>
+RemoPDF is not intended for children under 13.
+We do not knowingly collect children’s personal information.
+</p>
 
-    <!-- TERMS SECTION -->
+<h3>10. Your Rights</h3>
+<p>
+You may request:
+</p>
+<ul>
+  <li>Access to your submitted data</li>
+  <li>Correction or deletion</li>
+  <li>Information about data usage</li>
+</ul>
 
-    <h2>2. Terms & Conditions</h2>
+<p>
+Contact us using the email below.
+</p>
 
-    <h3>2.1 Acceptance</h3>
-    <p>By using RemoPDF, you accept these Terms. If you do not agree, discontinue use immediately.</p>
+<h3>11. Changes</h3>
+<p>
+We may update this policy at any time.
+Continued use means acceptance of the latest version.
+</p>
 
-    <h3>2.2 Service Description</h3>
-    <p>RemoPDF offers PDF-to-image conversion on demand. Functionality may evolve without notice.</p>
+<br/>
+<hr>
+<br/>
 
-    <h3>2.3 User Responsibilities</h3>
-    <ul>
-      <li>You must have legal rights to any file you upload.</li>
-      <li>You may not use the service for illegal, infringing, or harmful content.</li>
-    </ul>
+<h1>Terms & Conditions</h1>
 
-    <h3>2.4 Intellectual Property</h3>
-    <p>You retain all rights to your content. We retain ownership of the service, design, and supporting technology.</p>
+<h3>1. Acceptance</h3>
+<p>
+Using RemoPDF means you agree to these terms.
+If not, discontinue use.
+</p>
 
-    <h3>2.5 Disclaimers</h3>
-    <p>The service is provided “as is,” without warranties or guarantees. We make no promises about uptime,
-      compatibility, or error-free performance.</p>
+<h3>2. Permitted Use</h3>
+<ul>
+  <li>You must own or have rights to uploaded files</li>
+  <li>No illegal, infringing, or abusive use</li>
+</ul>
 
-    <h3>2.6 Limitation of Liability</h3>
-    <p>To the maximum extent legally permitted, RemoPDF is not liable for indirect, incidental, or special damages
-      arising from use of the service.</p>
+<h3>3. Intellectual Property</h3>
+<p>
+You retain ownership of your files.
+We retain ownership of the website, UI, and codebase.
+</p>
 
-    <h3>2.7 Governing Law</h3>
-    <p>These Terms follow the applicable laws of the jurisdiction where RemoPDF is operated.</p>
+<h3>4. Disclaimer</h3>
+<p>
+The service is provided “as is”.
+No guarantees are made regarding accuracy, availability, or reliability.
+</p>
 
-    <h3>2.8 Updates and Termination</h3>
-    <p>We may revise these Terms. Continued usage indicates acceptance. We may suspend or terminate access at our
-      discretion.</p>
+<h3>5. Limitation of Liability</h3>
+<p>
+To the maximum extent allowed by law, RemoPDF is not liable for indirect or consequential damages.
+</p>
 
-    <h3>2.9 Contact</h3>
-    <p><strong>Email:</strong> <a href="tmsoftwaresprivacy@outlook.com">tmsoftwaresprivacy@outlook.com</a> for legal
-      inquiries.</p>
+<h3>6. Termination</h3>
+<p>
+We may suspend or terminate access at any time without notice.
+</p>
 
-  </main>
+<h3>7. Governing Law</h3>
+<p>
+These terms are governed by the laws of the operating jurisdiction.
+</p>
 
-  <div id="contactOverlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="overlay-content" role="document">
-      <button class="overlay-close" data-target="contactOverlay" aria-label="Close overlay">×</button>
-      <h2 style="margin-top:0;">Contact Us</h2>
-      <div class="overlay-body">
-        <div class="form-error" id="contactError"></div>
-
-        <form id="contactForm" class="contact-form" novalidate>
-          <div class="field">
-            <label for="name">Name</label>
-            <input id="name" name="name" type="text" required autocomplete="name" />
-          </div>
-
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" required autocomplete="email" />
-          </div>
-
-
-          <div class="field">
-            <label for="message">Message</label>
-            <textarea id="message" name="message" required></textarea>
-          </div>
-
-
-          <div class="form-actions">
-            <button type="button" class="btn-ghost" data-target="contactOverlay" id="cancelContact">Cancel</button>
-            <button type="submit" class="btn-primary" id="sendContact">Send</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-
-  <main class="page" id="main" style="display: none;">
-    <!-- HERO -->
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-left">
-        <h1 id="hero-title">Convert PDF to Images</h1>
-        <p>Convert your PDFs to high-quality JPG and PNG images instantly with no size limits or account required.
-          Simply upload, convert, and download your images.</p>
-      </div>
-
-      <aside class="hero-right" aria-label="Upload">
-        <div class="upload-box" role="region" aria-label="PDF upload region">
-          <label class="upload-area" id="dropArea" for="fileInput" tabindex="0" aria-haspopup="listbox">
-            <input type="file" id="fileInput" accept="application/pdf" multiple>
-            <div class="title">Upload PDF</div>
-            <div class="sub">or drop a file</div>
-          </label>
-
-          <div class="options" aria-hidden="false">
-            <label for="formatSelect">Format
-              <select id="formatSelect" name="formatSelect">
-                <option value="png">PNG</option>
-                <option value="jpeg">JPEG</option>
-              </select>
-            </label>
-
-            <label style="display: none; " for="scaleSelect">Scale (resolution)
-              <select id="scaleSelect" name="scaleSelect">
-                <option value="1">100%</option>
-                <option value="1.5">150%</option>
-                <option value="2">200%</option>
-                <option value="3">300%</option>
-              </select>
-            </label>
-
-            <label for="jpegQuality" style="display: none;">JPEG quality
-              <input type="number" id="jpegQuality" name="jpegQuality" min="0.1" max="1" step="0.1" value="1"
-                aria-label="JPEG quality" />
-            </label>
-          </div>
-
-          <button class="convert-btn" id="convertBtn" type="button">Convert</button>
-        </div>
-      </aside>
-    </section>
-
-
-    <!-- OUTPUT -->
-    <div id="output" class="preview-grid" aria-live="polite"></div>
-
-    <button class="download-zip" id="downloadZip" disabled aria-disabled="true">Download ZIP</button>
-
-    <div id="contactOverlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
-      <div class="overlay-content" role="document">
-        <button class="overlay-close" data-target="contactOverlay" aria-label="Close overlay">×</button>
-        <h2 style="margin-top:0;">Contact Us</h2>
-        <div class="overlay-body">
-          <div class="form-error" id="contactError"></div>
-
-
-          <form id="contactForm" class="contact-form" novalidate>
-            <div class="field">
-              <label for="name">Name</label>
-              <input id="name" name="name" type="text" required autocomplete="name" />
-            </div>
-
-
-            <div class="field">
-              <label for="email">Email</label>
-              <input id="email" name="email" type="email" required autocomplete="email" />
-            </div>
-
-
-            <div class="field">
-              <label for="message">Message</label>
-              <textarea id="message" name="message" required></textarea>
-            </div>
-
-
-            <div class="form-actions">
-              <button type="button" class="btn-ghost" data-target="contactOverlay" id="cancelContact">Cancel</button>
-              <button type="submit" class="btn-primary" id="sendContact">Send</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </main>
-  <div id="toastContainer"></div>
+<h3>8. Contact</h3>
+<p>
+<strong>Email:</strong>
+<a href="mailto:tmsoftwaresprivacy@outlook.com">tmsoftwaresprivacy@outlook.com</a>
+</p>
+</main>
   <div class="footer-ts" role="contentinfo">
     <div class="right">© 2025 RemoPDF. Crafted for internet users everywhere.</div>
   </div>
-
-  <script src="./script.js"></script>
 </body>
 
 </html>
