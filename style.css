@@ -790,6 +790,26 @@
       pointer-events: none;
     }
 
+.footer-ts {
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--gutter);
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    font-size: 14px;
+    color: var(--muted);
+    background-color: rgb(244, 244, 244);
+}
+
+.footer-ts .right
+ {
+    width: 100%;
+    text-align: center;
+    letter-spacing: 1px;
+}
     .toast {
       min-width: 200px;
       max-width: 320px;

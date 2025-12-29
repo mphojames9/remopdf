@@ -4,15 +4,89 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description"
+    content="RemoPDF is a fast, browser-based PDF tool to convert PDFs to images, split pages, merge documents, and preview files securely. No uploads. Local processing. Free online PDF editor.">
+  <meta name="keywords" content="
+pdf converter,
+online pdf converter,
+free pdf converter,
+pdf editor online,
+online pdf editor free,
+browser pdf editor,
+
+pdf to png,
+pdf to jpg,
+pdf to jpeg,
+convert pdf to image,
+convert pdf to images online,
+pdf image converter,
+
+pdf splitter,
+split pdf,
+split pdf online,
+split pdf pages,
+extract pdf pages,
+pdf page extractor,
+separate pdf pages,
+
+pdf merger,
+merge pdf,
+merge pdf online,
+combine pdf files,
+join pdf files,
+
+pdf preview,
+pdf viewer online,
+preview pdf pages,
+zoom pdf pages,
+
+client side pdf,
+browser based pdf tool,
+local pdf processing,
+process pdf in browser,
+pdf without upload,
+no upload pdf tool,
+offline pdf processing,
+privacy focused pdf tool,
+secure pdf editor,
+
+free online pdf tools,
+lightweight pdf tool,
+fast pdf converter,
+instant pdf processing,
+pdf utility online,
+web based pdf software,
+
+pdf tool for chrome,
+pdf tool for android webview,
+pdf tool for mobile browser,
+pdf tool without account,
+no signup pdf tool
+">
   <link rel="icon" href="./images/pdfIcon.jpg" type="image/x-icon" />
   <title>Convert, Split, and Merge</title>
   <link rel="stylesheet" href="./style.css">
-
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "RemoPDF",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Web Browser",
+  "description": "Browser-based PDF converter and editor that allows users to convert, split, merge, and preview PDFs locally without uploading files.",
+  "url": "https://remopdf.onrender.com",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script>
 </head>
 
 <body>
   <!-- NAV -->
-    <div class="nav">
+  <div class="nav">
     <div class="nav-left">
       <img src="./images/pdflogo.png" alt="PDF Icon" class="nav-logo">
     </div>
@@ -37,7 +111,7 @@
     <!-- HERO -->
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-left">
-        <h1 id="hero-title">PDF Conversion, Splitting & Merging</h1><br/>
+        <h1 id="hero-title">PDF Conversion, Splitting & Merging</h1><br />
         <p>
           Convert PDF pages to high-quality JPG or PNG images, split documents into individual pages,
           reorder or remove pages, and merge them into a single PDF, all securely processed locally in your browser.
@@ -83,6 +157,7 @@
             style="margin-top:10px;background:linear-gradient(90deg,#06b6d4,#10b981)">
             Split PDF
           </button>
+
 
           <!-- SPLIT OPTIONS -->
           <div id="splitOptions" style="display:none;margin-top:12px;border-top:1px dashed #e5e7eb;padding-top:12px">
@@ -188,41 +263,42 @@
     </div>
 
     <!-- ===== LIBRARY ERROR OVERLAY ===== -->
-<div id="libErrorOverlay" class="lib-error-overlay" aria-hidden="true">
-  <div class="lib-error-card">
-    <div class="lib-error-icon">🌐</div>
-    <h2>Connection Required</h2>
-    <p>
-      This tool requires an active internet connection to load essential components.
-      Please check your connection and try again.
-    </p>
+    <div id="libErrorOverlay" class="lib-error-overlay" aria-hidden="true">
+      <div class="lib-error-card">
+        <div class="lib-error-icon">🌐</div>
+        <h2>Connection Required</h2>
+        <p>
+          This tool requires an active internet connection to load essential components.
+          Please check your connection and try again.
+        </p>
 
-    <button id="retryLoadBtn" class="lib-retry-btn">
-      Retry
-    </button>
+        <button id="retryLoadBtn" class="lib-retry-btn">
+          Retry
+        </button>
 
-    <small>
-      No files are uploaded. Processing happens locally once loaded.
-    </small>
-  </div>
-</div>
+        <small>
+          No files are uploaded. Processing happens locally once loaded.
+        </small>
+      </div>
+    </div>
 
-<div class="zoom-loader">
-  <div class="zoom-spinner"></div>
-  <div>Loading preview</div>
-  <small>Rendering page…</small>
-</div>
-
-
+    <div class="zoom-loader">
+      <div class="zoom-spinner"></div>
+      <div>Loading preview</div>
+      <small>Rendering page…</small>
+    </div>
 
   </main>
+  <div class="footer-ts" role="contentinfo">
+    <div class="right">© 2025 RemoPDF. Built for privacy.</div>
+  </div>
   <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://unpkg.com/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
   <!-- EmailJS (client-side) -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="./script.min.js"></script>
+  <script src="./script.js"></script>
 </body>
 
 </html>
