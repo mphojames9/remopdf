@@ -1,0 +1,3836 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="../images/tittleIcon.png" type="image/x-icon" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Editor Preview</title>
+
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --line: #e7e9f2;
+      --text: #121525;
+      --muted: #6b7280;
+      --brand: #ff2d2d;
+      --brand2: #ff4a4a;
+      --focus: #2b6cff;
+      --shadow: 0 8px 24px rgba(18, 21, 37, .08);
+      --shadow2: 0 6px 16px rgba(18, 21, 37, .10);
+      --radius: 16px;
+      --radius2: 12px;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: linear-gradient(180deg, #fff 0%, var(--bg) 60%, var(--bg) 100%);
+    }
+
+    /* ===== Top App Bar ===== */
+    .appbar {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .85);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .iconbtn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 2px 10px rgba(18, 21, 37, .05);
+      cursor: pointer;
+      transition: .15s transform, .15s box-shadow;
+      user-select: none;
+    }
+
+    .iconbtn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(18, 21, 37, .10)
+    }
+
+    .iconbtn:active {
+      transform: translateY(0)
+    }
+
+    .appmark {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      flex: 0 0 auto;
+      overflow: hidden;
+    }
+
+    .appmark img {
+      width: 100%;
+      height: 100%;
+    }
+
+    .titlewrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
+
+    .title {
+      font-weight: 700
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    /* ===== Layout ===== */
+    .layout {
+      height: calc(100vh - 60px);
+      display: grid;
+      grid-template-columns: 68px 220px 1fr;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    /* ===== Left tool rail ===== */
+    .rail {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .rail .railbtn {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 45, 45, .18);
+      background: linear-gradient(180deg, #ff3a3a, #ff1f1f);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      box-shadow: 0 12px 22px rgba(255, 45, 45, .22);
+      cursor: pointer;
+      transition: .15s transform, .15s filter;
+    }
+
+    .rail .railbtn:hover {
+      transform: translateY(-1px);
+      filter: saturate(1.1)
+    }
+
+    .rail .railbtn:active {
+      transform: translateY(0)
+    }
+
+    .rail .railbtn.secondary {
+      background: #fff;
+      color: var(--brand);
+      border: 1px solid var(--line);
+      box-shadow: 0 6px 14px rgba(18, 21, 37, .06);
+    }
+
+    .rail .spacer {
+      flex: 1
+    }
+
+    .rail .active {
+      outline: 3px solid rgba(43, 108, 255, .18);
+      border-color: rgba(43, 108, 255, .30);
+    }
+
+    /* ===== Thumbnails ===== */
+    .thumbs {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 10px;
+      overflow: auto;
+    }
+
+    .thumb {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 6px 16px rgba(18, 21, 37, .06);
+      margin-bottom: 12px;
+      padding: 10px 10px 12px;
+      cursor: pointer;
+      position: relative;
+      transition: .15s transform, .15s box-shadow, .15s border-color;
+    }
+
+    .thumb:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(18, 21, 37, .10)
+    }
+
+    .thumb.active {
+      border-color: rgba(43, 108, 255, .55);
+      box-shadow: 0 10px 28px rgba(43, 108, 255, .18);
+    }
+
+    .thumbnum {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 7px;
+      background: #1f2937;
+      color: #fff;
+      font-size: 12px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, .15);
+    }
+
+    .thumbpaper {
+      width: 100%;
+      aspect-ratio: 612 / 792;
+      border-radius: 10px;
+      border: 1px solid #eef0f6;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .thumbpaper .mini-title {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .2px;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .25);
+      padding: 0 8px;
+    }
+
+    .thumbpaper .mini-sub {
+      position: absolute;
+      top: 28px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: rgba(255, 255, 255, .85);
+      font-size: 9px;
+      padding: 0 10px;
+    }
+
+    .thumbpaper .mini-photo {
+      position: absolute;
+      top: 120px;
+      left: 50%;
+      width: 60%;
+      aspect-ratio: 1 / 1;
+      transform: translateX(-50%);
+      border-radius: 12px;
+      border: 3px solid rgba(255, 255, 255, .9);
+      box-shadow: 0 10px 30px rgba(18, 21, 37, .18);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0) 45%),
+        linear-gradient(135deg, #8dd3ff, #0a7ea4 50%, #003d63);
+    }
+
+    .thumbpaper .mini-born {
+      position: absolute;
+      bottom: 34px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 10px;
+      color: #2b6cff;
+      text-decoration: underline;
+    }
+
+    /* ===== Main viewer ===== */
+    .viewer {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* top controls inside viewer */
+    .viewerbar {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: linear-gradient(180deg, #fff, #fbfbfe);
+    }
+
+    .group {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .seg {
+      display: flex;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 6px 14px rgba(18, 21, 37, .05);
+    }
+
+    .seg button {
+      width: 44px;
+      height: 40px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .seg button:hover {
+      background: #f6f7fb
+    }
+
+    .pill {
+      min-width: 90px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 10px;
+      box-shadow: 0 6px 14px rgba(18, 21, 37, .05);
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .zoomwrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .zoomval {
+      width: 80px;
+      text-align: center;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    /* scrollable stage */
+    .stage {
+      flex: 1;
+      background: #f3f5fb;
+      overflow: auto;
+      /* REQUIRED: scrollable */
+      padding: 22px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    /* ===== PDF Canvas (fixed size min/max) ===== */
+    .page {
+      width: 612px;
+      height: 792px;
+      min-width: 612px;
+      max-width: 612px;
+      min-height: 792px;
+      max-height: 792px;
+      background: #fff;
+      border: 2px solid rgba(43, 108, 255, .35);
+      box-shadow: 0 18px 48px rgba(18, 21, 37, .18);
+      overflow: hidden;
+      position: relative;
+      transform-origin: top center;
+      transform-origin: top center;
+
+    }
+
+    /* page content (matches your screenshot style) */
+    .banner {
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 110px;
+      background: linear-gradient(90deg, #0a7ea4 0%, #0aa1a3 55%, #0aa1a3 100%);
+    }
+
+    .wave {
+      position: absolute;
+      right: -90px;
+      top: 26px;
+      width: 360px;
+      height: 120px;
+      opacity: .55;
+      background:
+        radial-gradient(circle at 15% 55%, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 55%),
+        radial-gradient(circle at 45% 40%, rgba(255, 255, 255, .40), rgba(255, 255, 255, 0) 56%),
+        radial-gradient(circle at 70% 60%, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 56%);
+      filter: blur(.2px);
+    }
+
+    .name {
+      position: absolute;
+      top: 30px;
+      right: 56px;
+      color: #fff;
+      font-size: 40px;
+      font-family: Georgia, "Times New Roman", serif;
+      letter-spacing: .3px;
+      text-shadow: 0 3px 14px rgba(0, 0, 0, .25);
+      white-space: nowrap;
+    }
+
+    .role {
+      position: absolute;
+      top: 78px;
+      right: 60px;
+      color: rgba(255, 255, 255, .90);
+      font-size: 13px;
+      font-weight: 600;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .20);
+      white-space: nowrap;
+    }
+
+    .photoFrame {
+      position: absolute;
+      top: 210px;
+      left: 50%;
+      width: 360px;
+      height: 360px;
+      transform: translateX(-50%);
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgba(18, 21, 37, .20);
+      border: 6px solid rgba(255, 255, 255, .95);
+      overflow: hidden;
+      clip-path: polygon(0% 10%, 10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%);
+    }
+
+    .photo {
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 46%),
+        linear-gradient(135deg, #8dd3ff, #0a7ea4 50%, #003d63);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: rgba(255, 255, 255, .8);
+      letter-spacing: 2px;
+    }
+
+    .born {
+      position: absolute;
+      top: 610px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 13px;
+      color: #2b6cff;
+      text-decoration: underline;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    /* small helpers */
+    svg {
+      display: block
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 68px 200px 1fr
+      }
+
+      .name {
+        font-size: 34px
+      }
+    }
+
+    @media (max-width: 820px) {
+      .layout {
+        grid-template-columns: 68px 1fr;
+        grid-template-rows: auto 1fr
+      }
+
+      .thumbs {
+        display: none
+      }
+    }
+
+    /* ===== Upload Button – Special Accent ===== */
+    .upload-btn {
+      background: linear-gradient(135deg, #6a5cff, #4f46e5);
+      border: none;
+      color: #fff;
+      box-shadow: 0 14px 30px rgba(79, 70, 229, .35);
+    }
+
+    .upload-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+    }
+
+    .upload-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 8px 18px rgba(79, 70, 229, .28);
+    }
+
+    .text-box {
+      position: absolute;
+      min-width: 80px;
+      padding: 4px 6px;
+      font-size: 14px;
+      cursor: move;
+      outline: none;
+    }
+
+    .text-box {
+      position: absolute;
+      left: 0;
+      top: 0;
+      min-width: 90px;
+      padding: 4px 6px;
+      outline: none;
+      border: none;
+      background: transparent;
+      cursor: move;
+    }
+
+    /* show border ONLY while editing */
+    .text-box.editing {
+      border: 1px dashed rgba(17, 24, 39, .25);
+      background: rgba(255, 255, 255, .65);
+    }
+
+    .text-box:focus {
+      border-color: rgba(79, 70, 229, .45);
+      box-shadow: 0 10px 22px rgba(79, 70, 229, .14);
+    }
+
+    .text-box.placeholder {
+      color: rgba(17, 24, 39, 0.45);
+      font-style: italic;
+    }
+
+
+    .text-mode #textLayer {
+      cursor: text;
+    }
+
+    /* ===== Floating Text Toolbar (modern) ===== */
+    .text-floatbar {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(16px) scale(.98);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 999;
+      transition: .22s ease;
+    }
+
+    .text-floatbar.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .tf-inner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .86);
+      border: 1px solid rgba(231, 233, 242, .9);
+      box-shadow: 0 18px 60px rgba(18, 21, 37, .22);
+      backdrop-filter: blur(12px);
+    }
+
+    .tf-btn {
+      width: 42px;
+      height: 40px;
+      border-radius: 14px;
+      border: 1px solid rgba(18, 21, 37, .08);
+      background: linear-gradient(180deg, #fff, #f6f7fb);
+      box-shadow: 0 10px 20px rgba(18, 21, 37, .08);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: .15s transform, .15s box-shadow, .15s filter;
+    }
+
+    .tf-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.02);
+    }
+
+    .tf-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 6px 14px rgba(18, 21, 37, .10);
+    }
+
+    .tf-btn.is-on {
+      border-color: rgba(79, 70, 229, .35);
+      box-shadow: 0 14px 26px rgba(79, 70, 229, .18);
+    }
+
+    .tf-sep {
+      width: 1px;
+      height: 26px;
+      background: rgba(18, 21, 37, .10);
+      margin: 0 2px;
+      border-radius: 2px;
+    }
+
+    .tf-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(18, 21, 37, .08);
+      background: linear-gradient(180deg, #fff, #f6f7fb);
+      box-shadow: 0 10px 20px rgba(18, 21, 37, .06);
+    }
+
+    .tf-ico {
+      font-weight: 800;
+      font-size: 12px;
+      color: rgba(17, 24, 39, .75);
+    }
+
+    .tf-field select {
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font-weight: 700;
+      font-size: 13px;
+      color: #111827;
+      cursor: pointer;
+      appearance: none;
+      padding-right: 14px;
+    }
+
+    /* tiny dropdown chevron */
+    .tf-field {
+      position: relative;
+    }
+
+    .tf-field::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid rgba(17, 24, 39, .45);
+      border-bottom: 2px solid rgba(17, 24, 39, .45);
+      transform: rotate(45deg);
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      margin-top: -6px;
+      pointer-events: none;
+    }
+
+    /* make toolbar fit on small phones */
+    @media (max-width: 520px) {
+      .tf-inner {
+        gap: 8px;
+        padding: 10px;
+        border-radius: 16px;
+      }
+
+      .tf-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+      }
+
+      .tf-field {
+        padding: 7px 9px;
+        border-radius: 12px;
+      }
+
+      .tf-field select {
+        font-size: 12px;
+      }
+    }
+
+    .tf-colorbtn {
+      position: relative;
+    }
+
+    .tf-swatch {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16px;
+      height: 4px;
+      border-radius: 999px;
+      background: #111827;
+    }
+
+    .tf-pop {
+      position: relative;
+    }
+
+    .tf-popover {
+      position: absolute;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      padding: 10px;
+      border-radius: 14px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, .2);
+      display: none;
+    }
+
+    .tf-popover.show {
+      display: block;
+    }
+
+    .tf-popgrid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .tf-chip {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+
+    /* Base hamburger */
+    .menu-btn {
+      position: fixed;
+      top: 14px;
+      right: 16px;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: #111;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      border: unset;
+      gap: 6px;
+      padding: 10px;
+      z-index: 1001;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.3s ease;
+    }
+
+    .menu-btn span {
+      height: 2px;
+      width: 100%;
+      background: #fff;
+      border-radius: 2px;
+      transition: transform 0.4s ease, opacity 0.3s ease;
+    }
+
+    /* Hamburger → X animation */
+    .menu-btn.active span:nth-child(1) {
+      transform: translateY(8px) rotate(45deg);
+    }
+
+    .menu-btn.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .menu-btn.active span:nth-child(3) {
+      transform: translateY(-8px) rotate(-45deg);
+    }
+
+    /* Rail mobile behavior */
+    @media (max-width: 720px) {
+      .menu-btn {
+        display: flex;
+      }
+
+      aside.rail {
+        transform: translateX(-120px);
+        transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 100;
+        background-color: transparent;
+      }
+
+      .layout {
+        grid-template-columns: 0px 1fr;
+        grid-template-rows: auto 1fr;
+        padding: 5px 0;
+      }
+
+      aside.rail.open {
+        transform: translateX(20px);
+        padding-left: 10px;
+      }
+    }
+
+    @media (max-width:670px) {
+      .rail .railbtn {
+        width: 39px;
+        height: 39px;
+      }
+
+      .seg button {
+        width: 39px;
+        height: 34px;
+      }
+
+      .seg svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .iconbtn {
+        width: 30px;
+        height: 30px;
+      }
+
+      .pill {
+        min-width: 70px;
+        height: 35px;
+        gap: 5px;
+      }
+
+      .viewerbar {
+        padding: 10px;
+        gap: 5px;
+      }
+
+      .group {
+        gap: 5px;
+      }
+
+      svg {
+        width: 19px;
+        height: 19px;
+      }
+
+
+    }
+
+    /* Optional subtle entrance animation for buttons */
+    aside.rail.open .railbtn {
+      animation: popIn 0.35s ease forwards;
+    }
+
+
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: translateX(10px) scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @media (max-width:580px) {
+      .tf-inner {
+        gap: 5px;
+      }
+
+      .tf-inner .tf-btn {
+        width: 32px;
+        height: 30px;
+        border-radius: 5px;
+      }
+    }
+
+    @media (max-width:620px) {
+      .page {
+        margin-left: 15%;
+      }
+    }
+
+    @media (max-width:560px) {
+      .page {
+        margin-left: 20vh;
+      }
+    }
+
+    @media (max-width:460px) {
+      .page {
+        margin-left: 30vh;
+      }
+    }
+
+    @media (max-width:390px) {
+      .page {
+        margin-left: 35vh;
+      }
+    }
+
+    @media (max-width:335px) {
+      .page {
+        margin-left: 40vh;
+      }
+    }
+
+    #uploadBtn {
+      background: radial-gradient(circle at 30% 30%, #0a7ea4, rgba(255, 255, 255, 0) 45%), linear-gradient(135deg, #8dd3ff, #0a7ea4 50%, #003d63);
+      ;
+    }
+
+    .thumbpaper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #pdfCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    #drawCanvas,
+    #eraseCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: auto;
+    }
+
+    #textLayer {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      /* 🔥 allow drawing */
+    }
+
+    .text-mode #textLayer {
+      pointer-events: auto;
+      /* only text tool can receive clicks */
+    }
+
+
+
+    #page {
+      transform-origin: top left;
+    }
+
+    #drawCanvas,
+    #eraseCanvas {
+      background: transparent;
+      display: block;
+    }
+
+    .ink-size-ui {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .ink-size-ui.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(10px);
+    }
+
+    /* Slider */
+    .ink-size-ui input[type="range"] {
+      width: 160px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+
+    /* Track */
+    .ink-size-ui input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      background: #ffffff55;
+      border-radius: 2px;
+    }
+
+    .ink-size-ui input[type="range"]::-moz-range-track {
+      height: 4px;
+      background: #ffffff55;
+      border-radius: 2px;
+    }
+
+    /* Thumb */
+    .ink-size-ui input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      margin-top: -7px;
+    }
+
+    .ink-size-ui input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+    }
+
+    /* Value label */
+    .ink-size-value {
+      font-size: 12px;
+      color: white;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    .tool-btn {
+      position: relative;
+      border: 2px solid transparent;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .tool-btn.active {
+      border-color: #00e5ff;
+      /* bright cyan */
+      box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.4);
+    }
+
+    .railbtn.active {
+      outline: 4px solid #00e5ff;
+      outline-offset: 2px;
+      box-shadow:
+        0 0 0 6px rgba(0, 229, 255, 0.35),
+        0 10px 30px rgba(0, 229, 255, 0.45);
+    }
+
+    .viewerbar {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* prevent inner groups from shrinking */
+    .viewerbar .group {
+      flex: 0 0 auto;
+    }
+
+    /* optional: hide scrollbar but keep scroll */
+    .viewerbar::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .viewerbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, .2);
+      border-radius: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .viewerbar {
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+
+    /* Modern green Save button */
+    #saveBtn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 6px 16px rgba(34, 197, 94, 0.35);
+      transition: all 0.2s ease;
+    }
+
+    /* icon stroke color */
+    #saveBtn svg path {
+      stroke: white;
+    }
+
+    /* hover */
+    #saveBtn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(34, 197, 94, 0.45);
+    }
+
+    /* active / pressed */
+    #saveBtn:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 10px rgba(34, 197, 94, 0.35);
+    }
+
+    /* keyboard focus */
+    #saveBtn:focus-visible {
+      outline: none;
+      box-shadow:
+        0 0 0 3px rgba(34, 197, 94, 0.35),
+        0 3px 5px rgba(34, 197, 94, 0.45);
+    }
+
+    /* =========================
+   Modern Toast Notification
+   ========================= */
+    /* =========================
+   MODERN RESPONSIVE TOAST
+   ========================= */
+
+    .toast {
+      position: fixed;
+      z-index: 9999;
+
+      /* desktop position */
+      right: 20px;
+      bottom: 20px;
+
+      max-width: 380px;
+      width: calc(100vw - 40px);
+
+      background: #0f172a;
+      color: #fff;
+
+      display: flex;
+      align-items: center;
+      gap: 14px;
+
+      padding: 14px 16px;
+      border-radius: 14px;
+
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, .25),
+        inset 0 0 0 1px rgba(255, 255, 255, .06);
+
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+      transform: translateY(20px) scale(.96);
+      opacity: 0;
+      pointer-events: none;
+
+      transition:
+        transform .35s cubic-bezier(.2, .8, .2, 1),
+        opacity .25s ease;
+    }
+
+    /* visible */
+    .toast.show {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* icon */
+    .toast .icon {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border-radius: 10px;
+
+      display: grid;
+      place-items: center;
+    }
+
+    .toast .icon svg {
+      width: 20px;
+      height: 20px;
+      color: #fff;
+    }
+
+    /* text */
+    .toast .content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .toast .title {
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .toast .desc {
+      font-size: 13px;
+      opacity: .85;
+      line-height: 1.35;
+      word-wrap: break-word;
+    }
+
+    /* =========================
+   MOBILE BEHAVIOUR
+   ========================= */
+    @media (max-width: 640px) {
+      .toast {
+        left: 50%;
+        right: auto;
+        bottom: 16px;
+
+        transform: translate(-50%, 20px) scale(.96);
+        width: calc(100vw - 24px);
+        max-width: 520px;
+        border-radius: 16px;
+      }
+
+      .toast.show {
+        transform: translate(-50%, 0) scale(1);
+      }
+    }
+
+    /* =========================
+   SAFE AREA (iPhone notch)
+   ========================= */
+    @supports (padding: max(0px)) {
+      .toast {
+        bottom: max(20px, env(safe-area-inset-bottom));
+      }
+    }
+
+    #imageLayer {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      /* above PDF, below text */
+      pointer-events: auto;
+    }
+
+    .image-item {
+      position: absolute;
+      cursor: move;
+      user-select: none;
+    }
+
+    .image-item img {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .image-resizer {
+      position: absolute;
+      right: -6px;
+      bottom: -6px;
+      width: 12px;
+      height: 12px;
+      background: #00e5ff;
+      border-radius: 50%;
+      cursor: se-resize;
+    }
+
+    .image-resizer {
+      touch-action: none;
+      /* 🔥 REQUIRED */
+    }
+
+
+    #imageLayer,
+    #textLayer {
+      pointer-events: none;
+    }
+
+    .image-item,
+    .text-box {
+      pointer-events: auto;
+    }
+
+    .image-item.selected {
+      outline: 2px solid #00e5ff;
+      outline-offset: 2px;
+    }
+
+    .image-item {
+      position: absolute;
+    }
+
+    .image-delete-btn {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
+      font-size: 14px;
+      line-height: 1;
+      pointer-events: auto;
+      touch-action: none;
+
+    }
+
+    .image-item.selected .image-delete-btn {
+      display: flex;
+    }
+
+    /* OPTIONAL: if you want NO outline at all when not selected */
+    .image-item:not(.selected) {
+      outline: none;
+    }
+
+    .image-rotate-btn {
+      position: absolute;
+      top: -12px;
+      left: -12px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    /* show rotate button only when image is selected */
+    .image-item.selected .image-rotate-btn {
+      display: flex;
+    }
+
+    .image-rotate-handle {
+      position: absolute;
+      top: -36px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #00e5ff;
+      cursor: grab;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+      display: none;
+      padding: 2px;
+    }
+
+    .image-rotate-handle::after {
+      content: "";
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      width: 2px;
+      height: 16px;
+      background: #00e5ff;
+      transform: translateX(-50%);
+    }
+
+    .image-item.selected .image-rotate-handle {
+      display: block;
+    }
+
+
+    /* show only when selected */
+    .image-item.selected .image-rotate-handle {
+      display: block;
+    }
+
+    .image-rotate-handle {
+      display: none;
+    }
+
+    .image-rotate-handle {
+      touch-action: none;
+      /* 🔥 REQUIRED for touch rotation */
+    }
+
+    .page.rotated #textLayer,
+    .page.rotated #imageLayer,
+    .page.rotated #drawCanvas,
+    .page.rotated #eraseCanvas {
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+
+    /* =========================
+   UPLOAD OVERLAY
+   ========================= */
+
+    .upload-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background:
+        radial-gradient(circle at 30% 20%, rgba(79, 70, 229, .15), transparent 60%),
+        radial-gradient(circle at 70% 80%, rgba(34, 197, 94, .15), transparent 60%),
+        rgba(15, 23, 42, 0.65);
+
+      backdrop-filter: blur(14px);
+      opacity: 1;
+      pointer-events: auto;
+
+      transition: opacity .45s ease, transform .45s ease;
+    }
+
+    .upload-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .upload-card {
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      border-radius: 22px;
+      padding: 36px 34px;
+      text-align: center;
+
+      width: min(92vw, 420px);
+
+      box-shadow:
+        0 40px 90px rgba(0, 0, 0, .35),
+        inset 0 0 0 1px rgba(255, 255, 255, .6);
+
+      animation: floatIn .8s cubic-bezier(.2, .8, .2, 1);
+    }
+
+    @keyframes floatIn {
+      from {
+        transform: translateY(30px) scale(.95);
+        opacity: 0;
+      }
+
+      to {
+        transform: none;
+        opacity: 1;
+      }
+    }
+
+    .upload-icon {
+      width: 84px;
+      height: 84px;
+      margin: 0 auto 18px;
+
+      border-radius: 22px;
+
+      background:
+        linear-gradient(135deg, #6a5cff, #4f46e5);
+
+      display: grid;
+      place-items: center;
+
+      color: white;
+      font-size: 36px;
+      font-weight: 700;
+
+      box-shadow:
+        0 20px 40px rgba(79, 70, 229, .45);
+
+      animation: pulse 2.2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, .45);
+      }
+
+      70% {
+        box-shadow: 0 0 0 18px rgba(79, 70, 229, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+      }
+    }
+
+    .upload-card h2 {
+      margin: 12px 0 6px;
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .upload-card p {
+      margin: 0 0 22px;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .overlay-upload-btn {
+      width: 100%;
+      height: 48px;
+
+      border-radius: 14px;
+      border: none;
+
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+
+      box-shadow: 0 7px 15px rgba(34, 197, 94, .45);
+
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    .overlay-upload-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(34, 197, 94, .55);
+    }
+
+    .overlay-upload-btn:active {
+      transform: translateY(0);
+    }
+
+    .upload-hint {
+      display: block;
+      margin-top: 14px;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* =========================
+   PDF LOADING PROGRESS
+   ========================= */
+
+    .upload-progress {
+      margin-top: 22px;
+    }
+
+    .upload-progress.hidden {
+      display: none;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+
+      background: linear-gradient(90deg,
+          #4f46e5,
+          #22c55e);
+
+      transition: width .25s ease;
+    }
+
+    .progress-text {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #475569;
+      text-align: center;
+    }
+
+    #imageLayer {
+      touch-action: none;
+      /* 🔥 ALLOW TOUCH DRAG */
+    }
+
+    .image-item {
+      touch-action: none;
+      /* 🔥 ALLOW TOUCH DRAG */
+    }
+  </style>
+</head>
+
+<body>
+  <button class="menu-btn" aria-label="Open menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <!-- Ink size controller -->
+  <div id="inkSizeUI" class="ink-size-ui hidden">
+    <input id="inkSizeSlider" type="range" min="2" max="40" step="1" value="8" />
+    <div class="ink-size-value">
+      <span id="inkSizeValue">8</span> px
+    </div>
+  </div>
+
+
+  <!-- Top App Bar -->
+  <header class="appbar">
+    <button class="iconbtn" id="backBtn" title="Back" aria-label="Back">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M15 18l-6-6 6-6" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </button>
+
+    <div class="appmark" aria-hidden="true">
+      <img src="../images/tittleIcon.png" alt="">
+    </div>
+
+    <div class="titlewrap">
+      <div class="title">PDF Editor</div>
+      <div class="subtitle">Preview</div>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- Left tools rail -->
+    <aside class="rail" aria-label="Tools">
+      <button class="railbtn upload-btn" id="uploadBtn" title="Upload PDF" aria-label="Upload PDF">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <path d="M8 8l4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+          <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <input type="file" id="pdfInput" accept="application/pdf" hidden>
+      <input type="file" id="imageInput" accept="image/*" hidden>
+
+
+      <button class="railbtn" id="saveBtn" title="Save" aria-label="Save">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Z" stroke="currentColor"
+            stroke-width="2" stroke-linejoin="round" />
+          <path d="M7 3v6h10V3" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+
+      <button class="railbtn" title="Stamp" aria-label="Stamp">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M8 10V6a4 4 0 1 1 8 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <path d="M6 10h12l-1 6H7l-1-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+          <path d="M6 20h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <button class="railbtn" id="undoBtn" title="Undo" aria-label="Undo">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M7 7V3L1 9l6 6V11h7a5 5 0 1 1 0 10h-2" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      <button class="railbtn" id="redoBtn" title="Redo" aria-label="Redo">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M17 7V3l6 6-6 6V11H10a5 5 0 1 0 0 10h2" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      <button class="railbtn" title="Rotate" aria-label="Rotate">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M21 12a9 9 0 1 1-3-6.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <path d="M21 3v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      <button class="railbtn" id="textTool" title="Text" aria-label="Text">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <path d="M10 6v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <path d="M8 20h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <button class="railbtn" id="imageTool" title="Image" aria-label="Image">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2Z" stroke="currentColor"
+            stroke-width="2" />
+          <path d="m8 13 2.5 3 3.5-4.5L18 18H6l2-5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+          <path d="M8.5 8.5h.01" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <button class="railbtn" title="Eraser" id="rotateBtn" aria-label="Eraser">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M16 3l5 5-9.5 9.5a2 2 0 0 1-1.4.6H7l-4-4 9.5-9.5a2 2 0 0 1 1.4-.6H16z" stroke="currentColor"
+            stroke-width="2" stroke-linejoin="round" />
+          <path d="M7 17l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <div class="spacer"></div>
+
+      <button class="railbtn active" title="Sign" aria-label="Sign">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M14 7 7 14l-1 4 4-1 7-7-3-3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+          <path d="M13 8l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+    </aside>
+
+    <!-- Thumbnails -->
+    <aside class="thumbs" aria-label="Pages" id="thumbs"></aside>
+
+
+    <!-- Main Viewer -->
+    <section class="viewer" aria-label="Preview">
+      <div class="viewerbar">
+        <div class="group">
+          <div class="seg" aria-label="Pan / Move">
+            <button id="moveBtn" title="Move tool" aria-label="Move tool">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2v20M2 12h20" stroke="#111827" stroke-width="2" stroke-linecap="round" />
+                <path d="M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3"
+                  stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="seg" aria-label="Prev / Next">
+            <button id="prevBtn" title="Previous" aria-label="Previous">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="#111827" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </button>
+            <button id="nextBtn" title="Next" aria-label="Next">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M9 6l6 6-6 6" stroke="#111827" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="pill" aria-label="Page indicator">
+            <span id="pageNow">1</span>
+            <span class="muted">/</span>
+            <span id="pageTotal">2</span>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="seg" aria-label="Zoom">
+            <button id="zoomOut" title="Zoom out" aria-label="Zoom out">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h14" stroke="#111827" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+            <button title="Search" aria-label="Search">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M21 21l-4.3-4.3" stroke="#111827" stroke-width="2" stroke-linecap="round" />
+                <path d="M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z" stroke="#111827" stroke-width="2" />
+              </svg>
+            </button>
+            <button id="zoomIn" title="Zoom in" aria-label="Zoom in">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5v14M5 12h14" stroke="#111827" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="pill" style="min-width:92px">
+            <span class="zoomval" id="zoomLabel">100%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage" id="stage">
+        <!-- FIXED canvas size (612x792) with scrollable stage -->
+        <div class="page" id="page">
+          <canvas id="pdfCanvas"></canvas> <!-- PDF render ONLY -->
+          <canvas id="drawCanvas"></canvas> <!-- Pen -->
+          <canvas id="eraseCanvas"></canvas> <!-- Eraser -->
+          <div id="imageLayer"></div>
+          <div id="textLayer"></div>
+        </div>
+
+
+      </div>
+    </section>
+
+    <!-- Text Toolbar (bottom-center) -->
+    <div class="text-floatbar" id="textBar" aria-hidden="true">
+      <div class="tf-inner">
+        <button class="tf-btn" type="button" data-cmd="bold" title="Bold" aria-label="Bold"><b>B</b></button>
+        <button class="tf-btn" type="button" data-cmd="italic" title="Italic" aria-label="Italic"><i>I</i></button>
+        <div class="tf-sep"></div>
+
+        <!-- FONT COLOR -->
+        <div class="tf-pop">
+          <button class="tf-btn tf-colorbtn" id="fontColorBtn" type="button" title="Font color">
+            <span class="tf-a">A</span>
+            <span class="tf-swatch" id="fontColorSwatch"></span>
+          </button>
+
+          <div class="tf-popover" id="fontColorPop">
+            <div class="tf-popgrid">
+              <button style="background-color:#111827;" class="tf-chip" data-color="#111827"></button>
+              <button style="background-color:#ef4444;" class="tf-chip" data-color="#ef4444"></button>
+              <button style="background-color:#22c55e;" class="tf-chip" data-color="#22c55e"></button>
+              <button style="background-color:#3b82f6;" class="tf-chip" data-color="#3b82f6"></button>
+              <button style="background-color:#a855f7;" class="tf-chip" data-color="#a855f7"></button>
+              <button style="background-color:#f59e0b;" class="tf-chip" data-color="#f59e0b"></button>
+            </div>
+            <input type="color" id="fontColorInput" value="#111827">
+          </div>
+        </div>
+
+        <!-- BACKGROUND COLOR -->
+        <div class="tf-pop">
+          <button class="tf-btn tf-colorbtn" id="bgColorBtn" type="button" title="Background color">
+            🖍
+            <span class="tf-swatch" id="bgColorSwatch"></span>
+          </button>
+
+          <div class="tf-popover" id="bgColorPop">
+            <div class="tf-popgrid">
+              <button style="background-color:transparent;" class="tf-chip" data-color="transparent"></button>
+              <button style="background-color:#fef3c7;" class="tf-chip" data-color="#fef3c7"></button>
+              <button style="background-color:#dcfce7;" class="tf-chip" data-color="#dcfce7"></button>
+              <button style="background-color:#dbeafe;" class="tf-chip" data-color="#dbeafe"></button>
+              <button style="background-color:#ede9fe;" class="tf-chip" data-color="#ede9fe"></button>
+            </div>
+            <input type="color" id="bgColorInput" value="#fef3c7">
+          </div>
+        </div>
+
+
+        <div class="tf-sep"></div>
+
+        <label class="tf-field" title="Font">
+          <span class="tf-ico">Aa</span>
+          <select id="fontFamilySelect">
+            <option style="font-family:Arial, Helvetica, sans-serif ;" value="Arial"></option>
+            <option style="font-family:Inter, ui-sans-serif, system-ui ;" value="Inter, ui-sans-serif, system-ui">Inter
+            </option>
+            <option style="font-family: Georgia, 'Times New Roman', serif;" value="Georgia, 'Times New Roman', serif">
+              Georgia</option>
+            <option style="font-family:Times New Roman, Times, serif ;" value="'Times New Roman', Times, serif">Times
+            </option>
+            <option style="font-family: Courier New, Courier, monospace;" value="'Courier New', Courier, monospace">
+              Courier</option>
+            <option style="font-family: Verdana, Geneva, sans-serif ;" value="Verdana, Geneva, sans-serif">Verdana
+            </option>
+          </select>
+        </label>
+
+        <label class="tf-field" title="Size">
+          <span class="tf-ico"></span>
+          <select id="fontSizeSelect">
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="14" selected>14</option>
+            <option value="16">16</option>
+            <option value="18">18</option>
+            <option value="24">24</option>
+            <option value="32">32</option>
+          </select>
+        </label>
+
+        <label class="tf-field" title="Underline">
+          <span class="tf-ico">U</span>
+          <select id="underlineSelect">
+            <option value="none" selected>None</option>
+            <option value="single">Underline</option>
+            <option value="double">Double</option>
+            <option value="dotted">Dotted</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+  </main>
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <!-- Upload Overlay -->
+  <div id="uploadOverlay" class="upload-overlay">
+    <div class="upload-card">
+      <div class="upload-icon">
+        ⬆
+      </div>
+
+      <h2>Upload your PDF</h2>
+      <p>Drag & drop your file here<br>or click below to browse</p>
+
+      <button id="overlayUploadBtn" class="overlay-upload-btn">
+        Choose PDF
+      </button>
+
+      <div id="uploadProgress" class="upload-progress hidden">
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+        <div class="progress-text">Loading PDF…</div>
+      </div>
+
+      <span class="upload-hint">PDF files only • Max quality preserved</span>
+
+    </div>
+  </div>
+
+
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+
+
+  <script>
+    /* ======================================
+
+    /* ---------- PDF.JS WORKER ---------- */
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    /* ---------- STATE ---------- */
+    const state = {
+      pdf: null,
+      page: 1,
+      total: 0,
+      zoom: 1,
+      minZoom: 0.5,
+      maxZoom: 2,
+      textMode: false
+    };
+    // ✅ per-page rotation (degrees)
+    const pageRotation = {};
+
+
+    /* ---------- ELEMENTS ---------- */
+    const canvas = document.getElementById("pdfCanvas");
+    const ctx = canvas.getContext("2d");
+    const drawCanvas = document.getElementById("drawCanvas");
+    const eraseCanvas = document.getElementById("eraseCanvas");
+
+    const drawCtx = drawCanvas.getContext("2d");
+    const eraseCtx = eraseCanvas.getContext("2d");
+
+    drawCtx.lineCap = eraseCtx.lineCap = "round";
+    drawCtx.lineJoin = eraseCtx.lineJoin = "round";
+
+    // 🔥 eraser mode
+    eraseCtx.globalCompositeOperation = "source-over";
+
+    const textLayer = document.getElementById("textLayer");
+
+    const uploadBtn = document.getElementById("uploadBtn");
+    const pdfInput = document.getElementById("pdfInput");
+    const textTool = document.getElementById("textTool");
+
+    const zoomInBtn = document.getElementById("zoomIn");
+    const zoomOutBtn = document.getElementById("zoomOut");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    const pageNowEl = document.getElementById("pageNow");
+    const pageTotalEl = document.getElementById("pageTotal");
+    const zoomLabel = document.getElementById("zoomLabel");
+    const rotateBtn = document.getElementById("rotateBtn");
+    const el = document.createElement("div");
+
+    const stage = document.getElementById("stage");
+    const page = document.getElementById("page");
+
+    const penState = {
+      tool: "pen", // "pen" | "eraser"
+      size: 8
+    };
+    const toolPen = document.querySelector('[title="Sign"]');
+    const toolEraser = document.querySelector('[title="Signature"]');
+    const toolText = document.getElementById("textTool");
+    const toolMove = document.getElementById("moveBtn");
+
+    const sizeSliderWrap = document.getElementById("inkSizeWrap");
+    let selectedImage = null;
+
+
+    const eraserBtn = document.querySelector('[title="Signature"]');
+    const penBtn = document.querySelector('[title="Sign"]');
+    const rotateHandle = document.createElement("div");
+    const handle = document.createElement("div");
+    const imageBtn = document.getElementById('imageTool');
+    const imageInput = document.getElementById('imageInput');
+    const imageLayer = document.getElementById('imageLayer');
+    let points = [];
+
+    const undoStack = [];
+    const redoStack = [];
+
+    const uploadOverlay = document.getElementById("uploadOverlay");
+    const overlayUploadBtn = document.getElementById("overlayUploadBtn");
+
+    const uploadProgress = document.getElementById("uploadProgress");
+    const progressFill = uploadProgress.querySelector(".progress-fill");
+    let isDraggingImage = false;
+    let startX = 0;
+    let startY = 0;
+    let imgStartLeft = 0;
+    let imgStartTop = 0;
+
+
+    function startLoadingProgress() {
+      overlayUploadBtn.style.display = "none";
+      uploadProgress.classList.remove("hidden");
+
+      setProgress(5);
+    }
+
+    function setProgress(value) {
+      progressFill.style.width = `${value}%`;
+    }
+
+    function finishLoadingProgress() {
+      setProgress(100);
+      setTimeout(() => {
+        uploadOverlay.classList.add("hidden");
+      }, 300);
+    }
+
+
+    // open file picker
+    overlayUploadBtn.onclick = () => pdfInput.click();
+
+    // show overlay when no PDF
+    function showUploadOverlay() {
+      uploadOverlay.classList.remove("hidden");
+    }
+
+    function hideUploadOverlay() {
+      uploadOverlay.classList.add("hidden");
+    }
+
+
+    /* ===============================
+       JS-CREATED UPLOAD OVERLAY
+       =============================== */
+
+    const uploadUI = (() => {
+      const overlay = document.createElement("div");
+      overlay.id = "jsUploadOverlay";
+
+      overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(79,70,229,.18), transparent 60%),
+      radial-gradient(circle at 70% 80%, rgba(34,197,94,.18), transparent 60%),
+      rgba(15,23,42,.7);
+    backdrop-filter: blur(16px);
+    transition: opacity .35s ease;
+  `;
+
+      overlay.innerHTML = `
+    <div style="
+      width: min(90vw, 420px);
+      background: linear-gradient(180deg,#fff,#f8fafc);
+      border-radius: 22px;
+      padding: 34px 30px;
+      text-align: center;
+      box-shadow: 0 40px 90px rgba(0,0,0,.35);
+      animation: uploadPop .6s cubic-bezier(.2,.8,.2,1);
+    ">
+      <div style="
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 16px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg,#4f46e5,#6366f1);
+        color: white;
+        font-size: 28px;
+        font-weight: 700;
+        box-shadow: 0 18px 36px rgba(79,70,229,.5);
+      ">⬆</div>
+
+      <div id="uploadStatusText" style="
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 18px;
+      ">Preparing upload…</div>
+
+      <div style="
+        width: 100%;
+        height: 8px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        overflow: hidden;
+      ">
+        <div id="uploadProgressFill" style="
+          height: 100%;
+          width: 0%;
+          background: linear-gradient(90deg,#4f46e5,#22c55e);
+          transition: width .25s ease;
+        "></div>
+      </div>
+    </div>
+  `;
+
+      const style = document.createElement("style");
+      style.textContent = `
+    @keyframes uploadPop {
+      from { transform: translateY(24px) scale(.96); opacity: 0; }
+      to { transform: none; opacity: 1; }
+    }
+  `;
+
+      document.head.appendChild(style);
+      document.body.appendChild(overlay);
+
+      const fill = overlay.querySelector("#uploadProgressFill");
+      const text = overlay.querySelector("#uploadStatusText");
+
+      return {
+        show(msg = "Loading PDF…") {
+          text.textContent = msg;
+          fill.style.width = "0%";
+          overlay.style.display = "flex";
+          overlay.style.opacity = "1";
+        },
+        setProgress(v, msg) {
+          fill.style.width = `${v}%`;
+          if (msg) text.textContent = msg;
+        },
+        hide() {
+          overlay.style.opacity = "0";
+          setTimeout(() => overlay.style.display = "none", 300);
+        }
+      };
+    })();
+
+
+    /* ======================================
+       LOAD PDF
+       ====================================== */
+    let originalPdfBytes = null;
+
+
+    async function loadPDF(file) {
+      uploadUI.setProgress(10, "Reading file…");
+
+      const buffer = await file.arrayBuffer();
+      uploadUI.setProgress(30, "Parsing PDF…");
+
+      originalPdfBytes = buffer.slice(0);
+      const pdfJsBytes = buffer.slice(0);
+
+      state.pdf = await pdfjsLib.getDocument({ data: pdfJsBytes }).promise;
+      uploadUI.setProgress(55, "Preparing pages…");
+
+      state.total = state.pdf.numPages;
+      state.page = 1;
+      pageTotalEl.textContent = state.total;
+
+      await render();
+      uploadUI.setProgress(75, "Rendering thumbnails…");
+
+      await renderThumbnails();
+      uploadUI.setProgress(95, "Finalizing…");
+
+      snapshot();
+
+      uploadUI.setProgress(100, "Ready");
+
+      setTimeout(() => {
+        uploadUI.hide();          // JS overlay
+        hideUploadOverlay();      // ✅ HTML overlay
+
+        uploadBtn.classList.remove("active");
+        uploadBtn.style.pointerEvents = "";
+      }, 350);
+
+    }
+
+
+    function bindImageSelection(el) {
+      el.addEventListener("mousedown", e => {
+        e.stopPropagation();
+        selectImage(el);
+      });
+    }
+
+    function selectImage(el) {
+      clearImageSelection();
+      selectedImage = el;
+      el.classList.add("selected");
+    }
+
+    function clearImageSelection() {
+      imageLayer.querySelectorAll(".image-item.selected")
+        .forEach(el => el.classList.remove("selected"));
+      selectedImage = null;
+    }
+
+    function getAngle(cx, cy, x, y) {
+      return Math.atan2(y - cy, x - cx) * (180 / Math.PI);
+    }
+
+    function makeRotatable(el, handle) {
+      let startAngle = 0;
+      let startRotation = 0;
+      let activePointerId = null;
+
+      handle.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        activePointerId = e.pointerId;
+        handle.setPointerCapture(activePointerId);
+
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+
+        startAngle = getAngle(cx, cy, e.clientX, e.clientY);
+        startRotation = parseFloat(el.dataset.rotate || "0");
+
+        handle.addEventListener("pointermove", onMove);
+        handle.addEventListener("pointerup", onUp);
+        handle.addEventListener("pointercancel", onUp);
+      });
+
+      function onMove(e) {
+        if (e.pointerId !== activePointerId) return;
+
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+
+        const currentAngle = getAngle(cx, cy, e.clientX, e.clientY);
+        const delta = currentAngle - startAngle;
+        const rotation = startRotation + delta;
+
+        el.dataset.rotate = rotation;
+        el.style.transform = `rotate(${rotation}deg)`;
+      }
+
+      function onUp(e) {
+        if (e.pointerId !== activePointerId) return;
+
+        handle.releasePointerCapture(activePointerId);
+        activePointerId = null;
+
+        handle.removeEventListener("pointermove", onMove);
+        handle.removeEventListener("pointerup", onUp);
+        handle.removeEventListener("pointercancel", onUp);
+
+        snapshot(); // ✅ ONE undo entry
+      }
+    }
+    /* ======================================
+       RESIZE INK CANVASES (ONCE PER SIZE)
+       ====================================== */
+
+    let _inkCanvasW = 0;
+    let _inkCanvasH = 0;
+
+    function resizeInkCanvasesOnce(width, height) {
+      if (_inkCanvasW === width && _inkCanvasH === height) return;
+
+      _inkCanvasW = width;
+      _inkCanvasH = height;
+
+      drawCanvas.width = width;
+      drawCanvas.height = height;
+
+      eraseCanvas.width = width;
+      eraseCanvas.height = height;
+
+      // preserve drawing quality
+      drawCtx.lineCap = eraseCtx.lineCap = "round";
+      drawCtx.lineJoin = eraseCtx.lineJoin = "round";
+    }
+
+
+    /* ======================================
+       RENDER PAGE
+       ====================================== */
+    async function render() {
+      const pdfPage = await state.pdf.getPage(state.page);
+
+      // --- 1. get real PDF size ---
+      const rawViewport = pdfPage.getViewport({ scale: 1 });
+      let pdfRotation = 0;
+
+      // if landscape → rotate PDF internally
+      if (rawViewport.width > rawViewport.height) {
+        pdfRotation = 90;
+      }
+
+      // store rotation for saving / thumbnails
+      pageRotation[state.page] = pdfRotation;
+
+      // --- 2. create viewport with internal rotation ---
+      const viewport = pdfPage.getViewport({
+        scale: 1,
+        rotation: pdfRotation
+      });
+
+      // --- 3. FORCE editor page to your template size ---
+      normalizePageContainer();
+
+      // --- 4. resize canvases to match your template ---
+      const W = 611;
+      const H = 791;
+
+      pdfCanvas.width = W;
+      pdfCanvas.height = H;
+      drawCanvas.width = W;
+      drawCanvas.height = H;
+      eraseCanvas.width = W;
+      eraseCanvas.height = H;
+
+      textLayer.style.width = W + "px";
+      textLayer.style.height = H + "px";
+      imageLayer.style.width = W + "px";
+      imageLayer.style.height = H + "px";
+
+      // --- 5. render PDF scaled INTO that box ---
+      const scaleX = W / viewport.width;
+      const scaleY = H / viewport.height;
+      const baseFitScale = Math.min(scaleX, scaleY);
+
+      // 🔥 APPLY ZOOM HERE — SAFE
+      const fitScale = baseFitScale * state.zoom;
+
+      const fitViewport = pdfPage.getViewport({
+        scale: fitScale,
+        rotation: pdfRotation
+      });
+
+
+      const ctx = pdfCanvas.getContext("2d");
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+
+      // 🔥 CENTER DRAW
+      const offsetX = (W - fitViewport.width) / 2;
+      const offsetY = (H - fitViewport.height) / 2;
+
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+
+      await pdfPage.render({
+        canvasContext: ctx,
+        viewport: fitViewport
+      }).promise;
+
+      ctx.restore();
+
+
+      // --- 6. ALWAYS keep container clean ---
+      normalizePageContainer();
+    }
+
+    function applyZoom() {
+      page.style.transform =
+        `scale(${state.zoom}) rotate(${pageRotation[state.page] || 0}deg)`;
+
+      zoomLabel.textContent = Math.round(state.zoom * 100) + "%";
+    }
+
+
+
+    function applyPageRotation() {
+      const pageEl = document.getElementById("page");
+      const rot = pageRotation[state.page] || 0;
+
+      pageEl.style.transformOrigin = "center center";
+      pageEl.style.transform =
+        `scale(${state.zoom}) rotate(${rot}deg)`;
+
+      pageEl.classList.toggle("rotated", rot !== 0);
+    }
+
+
+    function isPageRotated() {
+      return (pageRotation[state.page] || 0) !== 0;
+    }
+
+    function showEditBlockedToast() {
+      const toast = document.getElementById("toast");
+
+      toast.innerHTML = `
+    <div class="icon">⚠</div>
+    <div class="content">
+      <div class="title">Editing disabled</div>
+      <div class="desc">
+        Editing is not allowed when the page is rotated.
+      </div>
+    </div>
+  `;
+
+      toast.classList.add("show");
+
+      clearTimeout(toast._hideTimer);
+      toast._hideTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
+
+    /* ======================================
+       TEXT TOOL
+       ====================================== */
+    function addText(x, y) {
+      const el = document.createElement("div");
+      el.className = "text-box editing placeholder";
+      el.contentEditable = true;
+      el.dataset.placeholder = "Type here";
+      el.textContent = el.dataset.placeholder;
+
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      el.style.color = "rgba(17,24,39,.45)";
+
+      makeDraggable(el);
+      textLayer.appendChild(el);
+      el.focus();
+      bindTextHistory(el);
+
+      let committed = false; // 🔒 only becomes true after typing
+
+      // ✅ first actual input commits the text box
+      el.addEventListener("beforeinput", (e) => {
+        if (!committed && e.inputType.startsWith("insert")) {
+          committed = true;
+          el.classList.remove("placeholder");
+          el.textContent = "";
+          el.style.color = fontColorInput.value;
+          snapshot();
+
+        }
+      });
+
+      // ❌ if user never typed, delete it
+      el.addEventListener("blur", () => {
+        el.classList.remove("editing");
+        if (!committed || !el.textContent.trim()) {
+          el.remove();
+        }
+      });
+
+      el.addEventListener("focus", () => {
+        el.classList.add("editing");
+      });
+    }
+
+    function makeDraggable(el) {
+      let startX, startY, origX, origY;
+      let moved = false;
+
+      const moveHandler = (e) => {
+        e.preventDefault();
+        const dx = (e.touches ? e.touches[0].clientX : e.clientX) - startX;
+        const dy = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+
+        if (dx !== 0 || dy !== 0) moved = true;
+
+        el.style.left = origX + dx + "px";
+        el.style.top = origY + dy + "px";
+      };
+
+      const upHandler = (e) => {
+        document.removeEventListener("mousemove", moveHandler);
+        document.removeEventListener("mouseup", upHandler);
+        document.removeEventListener("touchmove", moveHandler);
+        document.removeEventListener("touchend", upHandler);
+
+        if (moved) snapshot();
+      };
+
+      el.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        startX = e.clientX;
+        startY = e.clientY;
+        origX = el.offsetLeft;
+        origY = el.offsetTop;
+        moved = false;
+        document.addEventListener("mousemove", moveHandler);
+        document.addEventListener("mouseup", upHandler);
+      });
+
+      el.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        origX = el.offsetLeft;
+        origY = el.offsetTop;
+        moved = false;
+        document.addEventListener("touchmove", moveHandler);
+        document.addEventListener("touchend", upHandler);
+      });
+    }
+
+
+    uploadBtn.onclick = () => {
+      uploadBtn.classList.add("active");
+      uploadBtn.style.pointerEvents = "none";
+
+      uploadUI.show("Waiting for file…");
+      pdfInput.click();
+    };
+
+
+    pdfInput.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) {
+        uploadBtn.classList.remove("active");
+        uploadBtn.style.pointerEvents = "";
+        uploadUI.hide();
+        return;
+      }
+
+      uploadUI.show("Reading file…");
+      loadPDF(file);
+    };
+
+
+
+    textTool.onclick = () => {
+      state.textMode = !state.textMode;
+      textTool.classList.toggle("active", state.textMode);
+      document.body.classList.toggle("text-mode", state.textMode);
+    };
+
+    textLayer.addEventListener("mousedown", e => {
+      if (!state.textMode) return;
+
+      if (isPageRotated()) {
+        e.preventDefault();
+        showEditBlockedToast();
+        return;
+      }
+
+      if (!state.textMode) return;
+      if (e.target !== textLayer) return;
+
+      e.preventDefault();
+
+      const rect = textLayer.getBoundingClientRect();
+
+      const x = (e.clientX - rect.left) / state.zoom;
+      const y = (e.clientY - rect.top) / state.zoom;
+
+      addText(x, y);
+    });
+
+    const rotatePageBtn = document.querySelector(
+      '.railbtn[title="Rotate"]'
+    );
+    rotatePageBtn.onclick = () => {
+      const p = state.page;
+
+      pageRotation[p] = ((pageRotation[p] || 0) + 90) % 360;
+
+      applyPageRotation();
+      snapshot(); // ✅ undo support
+    };
+
+    function getPagePoint(e) {
+      const rect = page.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) / state.zoom,
+        y: (e.clientY - rect.top) / state.zoom
+      };
+    }
+
+
+    zoomInBtn.onclick = () => {
+      if (state.zoom >= state.maxZoom) return;
+      state.zoom += 0.1;
+      applyZoom();
+    };
+
+    zoomOutBtn.onclick = () => {
+      if (state.zoom <= state.minZoom) return;
+      state.zoom -= 0.1;
+      applyZoom();
+    };
+
+    prevBtn.onclick = () => {
+      if (state.page > 1) {
+        state.page--;
+        render();
+      }
+    };
+
+    nextBtn.onclick = () => {
+      if (state.page < state.total) {
+        state.page++;
+        render();
+      }
+    };
+
+    function makeResizable(el, handle) {
+      let startX, startY, startW, startH;
+      let activePointerId = null;
+
+      handle.style.touchAction = "none"; // 🔥 REQUIRED
+
+      handle.addEventListener("pointerdown", e => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        activePointerId = e.pointerId;
+        handle.setPointerCapture(activePointerId);
+
+        startX = e.clientX;
+        startY = e.clientY;
+        startW = el.offsetWidth;
+        startH = el.offsetHeight;
+
+        handle.addEventListener("pointermove", onMove);
+        handle.addEventListener("pointerup", onUp);
+        handle.addEventListener("pointercancel", onUp);
+      });
+
+      function onMove(e) {
+        if (e.pointerId !== activePointerId) return;
+
+        el.style.width = startW + (e.clientX - startX) + "px";
+        el.style.height = startH + (e.clientY - startY) + "px";
+      }
+
+      function onUp(e) {
+        if (e.pointerId !== activePointerId) return;
+
+        handle.releasePointerCapture(activePointerId);
+        activePointerId = null;
+
+        handle.removeEventListener("pointermove", onMove);
+        handle.removeEventListener("pointerup", onUp);
+        handle.removeEventListener("pointercancel", onUp);
+
+        snapshot(); // ✅ undo entry
+      }
+    }
+
+    const pageEl = document.getElementById("page");
+
+    pageEl.addEventListener("mousedown", (e) => {
+      if (isPageRotated()) {
+        e.preventDefault();
+        e.stopPropagation();
+        showEditBlockedToast();
+        return false;
+      }
+    }, true);
+
+
+
+    /* ======================================
+       OPTIONAL: CTRL + WHEEL ZOOM
+       ====================================== */
+    canvas.addEventListener("wheel", (e) => {
+      if (!e.ctrlKey) return; // Only zoom with Ctrl + Wheel
+      e.preventDefault();
+
+      const delta = Math.sign(e.deltaY);
+      state.zoom += delta > 0 ? -0.05 : 0.05;
+      state.zoom = Math.min(state.maxZoom, Math.max(state.minZoom, state.zoom));
+      render();
+    }, { passive: false });
+
+    // Implement pinch-to-zoom for touch
+    let touchStartDistance = 0;
+    canvas.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 2) {
+        touchStartDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    });
+
+    stage.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 2) {
+        touchStartDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    });
+
+    stage.addEventListener("touchmove", (e) => {
+      if (e.touches.length !== 2) return;
+
+      e.preventDefault();
+
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+
+      const delta = dist - touchStartDistance;
+
+      state.zoom += delta / 300;
+      state.zoom = Math.min(state.maxZoom, Math.max(state.minZoom, state.zoom));
+
+      touchStartDistance = dist;
+
+      applyZoom();
+    }, { passive: false });
+
+    function normalizePageContainer() {
+      const pageEl = document.getElementById("page");
+
+      // 🔒 lock the editor container to ONE state
+      pageEl.style.width = "611px";
+      pageEl.style.height = "791px";
+      pageEl.style.transformOrigin = "center center";
+      pageEl.style.transform = "scale(0.9) rotate(0deg)";
+    }
+
+
+    canvas.addEventListener("touchmove", (e) => {
+      if (e.touches.length === 2) {
+        const touchMoveDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const zoomChange = touchMoveDistance - touchStartDistance;
+        state.zoom += zoomChange / 500; // Adjust the zoom sensitivity
+        state.zoom = Math.min(state.maxZoom, Math.max(state.minZoom, state.zoom));
+        touchStartDistance = touchMoveDistance; // Update the distance for next move
+        render();
+      }
+    });
+    /* ======================================
+   TEXT TOOLBAR (Bottom Center)
+   ====================================== */
+    const textBar = document.getElementById("textBar");
+    const boldBtn = document.querySelector('[data-cmd="bold"]');
+    const italicBtn = document.querySelector('[data-cmd="italic"]');
+    const fontFamilySelect = document.getElementById("fontFamilySelect");
+    const fontSizeSelect = document.getElementById("fontSizeSelect");
+    const underlineSelect = document.getElementById("underlineSelect");
+
+    let activeTextBox = null;
+
+    function showTextBar(show) {
+      textBar.classList.toggle("show", !!show);
+      textBar.setAttribute("aria-hidden", show ? "false" : "true");
+    }
+
+    function setUnderlineStyle(el, mode) {
+      if (!el) return;
+
+      if (mode === "none") {
+        el.style.textDecorationLine = "none";
+        el.style.textDecorationStyle = "solid";
+        el.style.textDecorationThickness = "auto";
+        return;
+      }
+
+      el.style.textDecorationLine = "underline";
+      if (mode === "single") {
+        el.style.textDecorationStyle = "solid";
+        el.style.textDecorationThickness = "auto";
+      } else if (mode === "double") {
+        // double underline
+        el.style.textDecorationStyle = "double";
+        el.style.textDecorationThickness = "auto";
+      } else if (mode === "dotted") {
+        el.style.textDecorationStyle = "dotted";
+        el.style.textDecorationThickness = "2px";
+      }
+    }
+
+    function syncToolbarUI() {
+      const el = activeTextBox;
+      if (!el) {
+        boldBtn.classList.remove("is-on");
+        italicBtn.classList.remove("is-on");
+        return;
+      }
+
+      const isBold = (el.style.fontWeight === "700" || el.style.fontWeight === "bold");
+      const isItalic = (el.style.fontStyle === "italic");
+
+      boldBtn.classList.toggle("is-on", isBold);
+      italicBtn.classList.toggle("is-on", isItalic);
+
+      // keep dropdowns in sync (best effort)
+      if (el.style.fontFamily) fontFamilySelect.value = el.style.fontFamily;
+      if (el.style.fontSize) fontSizeSelect.value = parseInt(el.style.fontSize, 10) || fontSizeSelect.value;
+
+      // underline sync (best effort)
+      const line = (el.style.textDecorationLine || "");
+      const style = (el.style.textDecorationStyle || "");
+      if (!line || line === "none") underlineSelect.value = "none";
+      else if (style === "double") underlineSelect.value = "double";
+      else if (style === "dotted") underlineSelect.value = "dotted";
+      else underlineSelect.value = "single";
+    }
+
+    /* Show toolbar only when Text tool is active */
+    const _oldTextToolClick = textTool.onclick;
+    textTool.onclick = () => {
+      _oldTextToolClick(); // keeps your existing toggle logic
+      showTextBar(state.textMode);
+      if (!state.textMode) activeTextBox = null;
+      syncToolbarUI();
+    };
+
+    /* When user clicks a text box, set it active */
+    textLayer.addEventListener("mousedown", (e) => {
+      const box = e.target.closest(".text-box");
+      if (box) {
+        activeTextBox = box;
+        syncToolbarUI();
+      }
+    }, true);
+
+    /* When you create a new box, make it active and apply current toolbar settings */
+    const _oldAddText = addText;
+    addText = function (x, y) {
+      _oldAddText(x, y);
+      const boxes = textLayer.querySelectorAll(".text-box");
+      const el = boxes[boxes.length - 1];
+      activeTextBox = el;
+
+      // apply current toolbar dropdown values
+      el.style.fontFamily = fontFamilySelect.value;
+      el.style.fontSize = fontSizeSelect.value + "px";
+      setUnderlineStyle(el, underlineSelect.value);
+
+      syncToolbarUI();
+    };
+
+    /* Buttons */
+    boldBtn.addEventListener("click", () => {
+      if (!activeTextBox) return;
+      const nowBold = !(activeTextBox.style.fontWeight === "700" || activeTextBox.style.fontWeight === "bold");
+      activeTextBox.style.fontWeight = nowBold ? "700" : "400";
+      syncToolbarUI();
+      snapshot();
+    });
+
+    italicBtn.addEventListener("click", () => {
+      if (!activeTextBox) return;
+      const nowItalic = activeTextBox.style.fontStyle !== "italic";
+      activeTextBox.style.fontStyle = nowItalic ? "italic" : "normal";
+      syncToolbarUI();
+      snapshot();
+    });
+
+    fontFamilySelect.addEventListener("change", () => {
+      if (!activeTextBox) return;
+      activeTextBox.style.fontFamily = fontFamilySelect.value;
+      snapshot();
+    });
+
+    fontSizeSelect.addEventListener("change", () => {
+      if (!activeTextBox) return;
+      activeTextBox.style.fontSize = fontSizeSelect.value + "px";
+      snapshot();
+    });
+
+    underlineSelect.addEventListener("change", () => {
+      if (!activeTextBox) return;
+      setUnderlineStyle(activeTextBox, underlineSelect.value);
+      snapshot();
+    });
+
+    const fontColorBtn = document.getElementById("fontColorBtn");
+    const bgColorBtn = document.getElementById("bgColorBtn");
+
+    const fontColorPop = document.getElementById("fontColorPop");
+    const bgColorPop = document.getElementById("bgColorPop");
+
+    const fontColorInput = document.getElementById("fontColorInput");
+    const bgColorInput = document.getElementById("bgColorInput");
+
+    const fontColorSwatch = document.getElementById("fontColorSwatch");
+    const bgColorSwatch = document.getElementById("bgColorSwatch");
+
+    function closePops() {
+      fontColorPop.classList.remove("show");
+      bgColorPop.classList.remove("show");
+    }
+
+    fontColorBtn.onclick = e => {
+      e.stopPropagation();
+      closePops();
+      fontColorPop.classList.toggle("show");
+    };
+
+    bgColorBtn.onclick = e => {
+      e.stopPropagation();
+      closePops();
+      bgColorPop.classList.toggle("show");
+    };
+
+    document.addEventListener("click", closePops);
+
+    fontColorPop.onclick = e => {
+      const chip = e.target.closest(".tf-chip");
+      if (!chip || !activeTextBox) return;
+      activeTextBox.style.color = chip.dataset.color;
+      fontColorSwatch.style.background = chip.dataset.color;
+    };
+
+    bgColorPop.onclick = e => {
+      const chip = e.target.closest(".tf-chip");
+      if (!chip || !activeTextBox) return;
+      activeTextBox.style.background = chip.dataset.color;
+      bgColorSwatch.style.background = chip.dataset.color;
+    };
+
+    fontColorInput.oninput = () => {
+      if (!activeTextBox) return;
+      activeTextBox.style.color = fontColorInput.value;
+      fontColorSwatch.style.background = fontColorInput.value;
+    };
+
+    bgColorInput.oninput = () => {
+      if (!activeTextBox) return;
+      activeTextBox.style.background = bgColorInput.value;
+      bgColorSwatch.style.background = bgColorInput.value;
+    };
+
+    const menuBtn = document.querySelector('.menu-btn');
+    const rail = document.querySelector('aside.rail');
+
+    menuBtn.addEventListener('click', () => {
+      menuBtn.classList.toggle('active');
+      rail.classList.toggle('open');
+    });
+
+    document.getElementById("saveBtn").onclick = async () => {
+      if (!originalPdfBytes) return;
+
+      const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
+      const pages = pdfDoc.getPages();
+
+      const page = pages[state.page - 1];
+      const rot = pageRotation[state.page] || 0;
+      page.setRotation(PDFLib.degrees(rot));
+
+      const { width, height } = page.getSize();
+
+      const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+
+      /* ===============================
+         1. SAVE TEXT (unchanged)
+         =============================== */
+      document.querySelectorAll(".text-box").forEach(el => {
+        if (!el.textContent || !el.textContent.trim()) return;
+
+        const x = parseFloat(el.style.left);
+        const y = height - parseFloat(el.style.top) - 14;
+
+        const size = parseInt(el.style.fontSize || "14", 10);
+        const { r, g, b } = cssColorToRgb(el.style.color);
+
+        page.drawText(el.textContent, {
+          x,
+          y,
+          size,
+          font,
+          color: PDFLib.rgb(r, g, b)
+        });
+      });
+      flattenImagesToCanvas();
+      /* ===============================
+         2. SAVE SIGNATURE / INK
+         =============================== */
+      const inkImage = getInkImage();
+
+      if (inkImage) {
+        const pngBytes = await fetch(inkImage).then(r => r.arrayBuffer());
+        const pngEmbed = await pdfDoc.embedPng(pngBytes);
+
+        const pngDims = pngEmbed.scale(1);
+
+        page.drawImage(pngEmbed, {
+          x: 0,
+          y: 0,
+          width: pngDims.width,
+          height: pngDims.height
+        });
+      }
+
+      /* ===============================
+         3. DOWNLOAD
+         =============================== */
+      const pdfBytes = await pdfDoc.save();
+      downloadPDF(pdfBytes, "edited.pdf");
+    };
+
+    function flattenImagesToCanvas() {
+      const ctx = drawCanvas.getContext("2d");
+
+      imageLayer.querySelectorAll(".image-item").forEach(item => {
+        const img = item.querySelector("img");
+
+        // ✅ HARD GUARDS (this fixes your error)
+        if (!img) return;
+        if (!img.complete) return;
+        if (!img.naturalWidth) return;
+
+        const x = item.offsetLeft;
+        const y = item.offsetTop;
+        const w = item.offsetWidth;
+        const h = item.offsetHeight;
+
+        const rotation = parseFloat(item.dataset.rotate || "0") * Math.PI / 180;
+
+        // 🔄 apply rotation correctly
+        ctx.save();
+        ctx.translate(x + w / 2, y + h / 2);
+        ctx.rotate(rotation);
+        ctx.drawImage(img, -w / 2, -h / 2, w, h);
+        ctx.restore();
+      });
+    }
+
+
+    el.className = "image-item";
+    el.dataset.rotate = "0";
+
+    bindImageSelection(el);
+    makeResizable(el, handle);
+    makeRotatable(el, rotateHandle);
+
+    el.className = "image-item";
+
+    /* your <img> appended here */
+    handle.className = "image-resizer";
+    el.appendChild(handle);
+
+    makeResizable(el, handle); // ✅ FIXED
+
+    el.dataset.rotate = "0";
+    rotateHandle.className = "image-rotate-handle";
+    el.appendChild(rotateHandle);
+
+    makeRotatable(el, rotateHandle);
+
+    bindImageSelection(el);
+    imageLayer.appendChild(el);
+    snapshot();
+
+
+    imageLayer.appendChild(el);
+    snapshot();
+
+    rotateHandle.className = "image-rotate-handle";
+    el.appendChild(rotateHandle);
+
+
+    function downloadPDF(bytes, filename) {
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      /* =========================
+         SHOW SUCCESS TOAST
+         ========================= */
+      const pageCount = state.total || 1;
+
+      showToast({
+        title: "Download complete",
+        message: `${pageCount} page${pageCount > 1 ? "s" : ""} saved successfully`
+      });
+    }
+
+
+    function cssColorToRgb(color) {
+      if (!color) return { r: 0, g: 0, b: 0 };
+
+      // HEX format: #rrggbb
+      if (color.startsWith("#")) {
+        return {
+          r: parseInt(color.slice(1, 3), 16) / 255,
+          g: parseInt(color.slice(3, 5), 16) / 255,
+          b: parseInt(color.slice(5, 7), 16) / 255
+        };
+      }
+
+      // RGB / RGBA format
+      const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (match) {
+        return {
+          r: parseInt(match[1], 10) / 255,
+          g: parseInt(match[2], 10) / 255,
+          b: parseInt(match[3], 10) / 255
+        };
+      }
+
+      // fallback
+      return { r: 0, g: 0, b: 0 };
+    }
+
+    function snapshot() {
+      cleanupTextBoxes();
+
+      redoStack.length = 0;
+
+      undoStack.push({
+        text: textLayer.innerHTML,
+        images: imageLayer.innerHTML,
+        draw: drawCanvas.toDataURL(),
+        erase: eraseCanvas.toDataURL(),
+        rotation: JSON.stringify(pageRotation) // ✅ ADD
+      });
+
+
+      if (undoStack.length > 50) undoStack.shift();
+    }
+
+    function restoreState(state) {
+      if (!state) return;
+
+      textLayer.innerHTML = state.text;
+      imageLayer.innerHTML = state.images || ""; // ✅ RESTORE IMAGES
+
+      // re-bind image behaviors
+      imageLayer.querySelectorAll(".image-item").forEach(item => {
+        const resizer = item.querySelector(".image-resizer");
+        const rotateHandle = item.querySelector(".image-rotate-handle");
+
+        makeDraggable(item);
+        makeResizable(item, resizer);
+        if (rotateHandle) makeRotatable(item, rotateHandle);
+        bindImageSelection(item);
+
+        const delBtn = item.querySelector(".image-delete-btn");
+        if (delBtn) {
+          delBtn.onclick = e => {
+            e.stopPropagation();
+            item.remove();
+            selectedImage = null;
+            snapshot();
+          };
+        }
+      });
+
+      restoreCanvas(drawCtx, state.draw);
+      restoreCanvas(eraseCtx, state.erase);
+      if (state.rotation) {
+        Object.keys(pageRotation).forEach(k => delete pageRotation[k]);
+        Object.assign(pageRotation, JSON.parse(state.rotation));
+        applyPageRotation();
+      }
+
+
+      activeTextBox = null;
+      syncToolbarUI();
+      selectedImage = null;   // ✅ HERE
+    }
+
+
+    function restoreCanvas(ctx, src) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = src;
+    }
+
+
+    function restore(html) {
+      textLayer.innerHTML = html;
+
+      document.querySelectorAll('.text-box[data-empty="1"]').forEach(el => {
+        if (el.parentNode) el.remove();
+      });
+
+      cleanupTextBoxes();
+      activeTextBox = null;
+      syncToolbarUI();
+    }
+
+    undoBtn.onclick = () => {
+      if (undoStack.length < 2) return;
+
+      // move current state to redo
+      redoStack.push(undoStack.pop());
+
+      // restore previous state
+      const prev = undoStack[undoStack.length - 1];
+      restoreState(prev);
+    };
+
+    redoBtn.onclick = () => {
+      if (!redoStack.length) return;
+
+      const next = redoStack.pop();
+      undoStack.push(next);
+      restoreState(next);
+    };
+
+    rotateBtn.onclick = () => {
+      /* Activate PEN tool but mark ROTATE as active */
+      activateTool("pen", rotateBtn);
+
+      /* White signature */
+      penState.tool = "pen";
+      penState.color = "#ffffff";
+
+      /* Size = 23px */
+      penState.size = 23;
+      inkSizeSlider.value = 23;
+      inkSizeValue.textContent = "23";
+
+      /* show slider */
+      showInkSizeUI(true);
+    };
+
+    document.addEventListener("keydown", e => {
+
+      // 🗑 DELETE IMAGE
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedImage) {
+        e.preventDefault();
+        selectedImage.remove();
+        selectedImage = null;
+        snapshot(); // ✅ undo support
+        return;
+      }
+
+      if (!e.ctrlKey) return;
+
+      if (e.key === "z") {
+        e.preventDefault();
+        undoBtn.click();
+      }
+
+      if (e.key === "y") {
+        e.preventDefault();
+        redoBtn.click();
+      }
+    });
+
+
+    function bindTextHistory(el) {
+      let before = el.textContent;
+
+      el.addEventListener("focus", () => {
+        before = el.textContent;
+      });
+
+      el.addEventListener("blur", () => {
+        if (el.textContent !== before) {
+          snapshot(); // ✅ real edit
+        }
+      });
+    }
+
+    function cleanupTextBoxes() {
+      document.querySelectorAll(".text-box").forEach(el => {
+        // If empty, just mark — DO NOT remove here
+        if (!el.textContent || !el.textContent.trim()) {
+          el.dataset.empty = "1";
+        } else {
+          delete el.dataset.empty;
+        }
+
+        // strip UI-only state
+        el.classList.remove("editing", "placeholder");
+        el.style.border = "none";
+        el.style.background = "transparent";
+      });
+    }
+
+    const thumbsEl = document.getElementById("thumbs");
+
+    async function renderThumbnails() {
+      thumbsEl.innerHTML = "";
+
+      for (let i = 1; i <= state.total; i++) {
+        const page = await state.pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 0.25 });
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({
+          canvasContext: ctx,
+          viewport
+        }).promise;
+
+        const thumb = document.createElement("div");
+        thumb.className = "thumb" + (i === 1 ? " active" : "");
+        thumb.dataset.page = i;
+
+        thumb.innerHTML = `
+        <div class="thumbnum">${i}</div>
+        <div class="thumbpaper"></div>
+      `;
+
+        thumb.querySelector(".thumbpaper").appendChild(canvas);
+
+        thumb.onclick = () => {
+          document
+            .querySelectorAll(".thumb")
+            .forEach(t => t.classList.remove("active"));
+
+          thumb.classList.add("active");
+          state.page = i;
+          render();
+        };
+
+        thumbsEl.appendChild(thumb);
+      }
+    }
+
+    eraseCanvas.addEventListener("mousedown", inkDown);
+    eraseCanvas.addEventListener("mousemove", inkMove);
+    window.addEventListener("mouseup", inkUp);
+    eraseCanvas.addEventListener("mouseup", inkUp);
+    eraseCanvas.addEventListener("touchstart", inkDown);
+    eraseCanvas.addEventListener("touchmove", inkMove);
+    eraseCanvas.addEventListener("touchend", inkUp);
+
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let hasMoved = false;
+
+    function getInkPos(e) {
+      const r = eraseCanvas.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+      const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+      return { x: x / state.zoom, y: y / state.zoom };
+    }
+
+    // Start drawing or erasing
+    function inkDown(e) {
+      e.preventDefault();
+      if (state.textMode) return;
+
+      drawing = true;
+      hasMoved = false;
+      points = [];
+      const p = getInkPos(e);
+      points.push(p);
+
+      const ctx = penState.tool === "eraser" ? eraseCtx : drawCtx;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+    }
+
+
+    // Draw or erase while moving
+    function inkMove(e) {
+      if (!drawing) return;
+
+      hasMoved = true;
+      const p = getInkPos(e);
+      points.push(p);
+
+      if (points.length < 3) return;
+
+      const isEraser = penState.tool === "eraser";
+      const ctx = isEraser ? eraseCtx : drawCtx;
+
+      ctx.lineWidth = penState.size;
+      ctx.strokeStyle = isEraser
+        ? "#ffffff"
+        : (penState.color || "#000000");
+
+      const p0 = points[points.length - 3];
+      const p1 = points[points.length - 2];
+      const p2 = points[points.length - 1];
+
+      const mid1 = {
+        x: (p0.x + p1.x) / 2,
+        y: (p0.y + p1.y) / 2
+      };
+      const mid2 = {
+        x: (p1.x + p2.x) / 2,
+        y: (p1.y + p2.y) / 2
+      };
+
+      ctx.beginPath();
+      ctx.moveTo(mid1.x, mid1.y);
+      ctx.quadraticCurveTo(p1.x, p1.y, mid2.x, mid2.y);
+      ctx.stroke();
+    }
+
+    // Stop drawing or erasing
+    function inkUp() {
+      if (!drawing) return;
+      drawing = false;
+      points = [];
+
+      if (hasMoved) snapshot();
+      hasMoved = false;
+    }
+
+    const inkSizeUI = document.getElementById("inkSizeUI");
+    const inkSizeSlider = document.getElementById("inkSizeSlider");
+    const inkSizeValue = document.getElementById("inkSizeValue");
+
+    /* sync slider -> pen state */
+    inkSizeSlider.addEventListener("input", () => {
+      const size = Number(inkSizeSlider.value);
+      penState.size = size;
+      inkSizeValue.textContent = size;
+    });
+
+    /* helper */
+    function showInkSizeUI(show) {
+      inkSizeUI.classList.toggle("hidden", !show);
+    }
+
+    penBtn.onclick = () => {
+      activateTool("pen", penBtn);
+
+      // 3. set signature color to BLACK
+      penState.tool = "pen";
+      penState.color = "#000000";
+
+      // 4. set size to 4px
+      penState.size = 2;
+      inkSizeSlider.value = 2;
+      inkSizeValue.textContent = "2";
+    };
+    textTool.onclick = () => {
+      activateTool("text", textTool);
+    };
+    const moveBtn = document.getElementById("moveBtn");
+
+    moveBtn.onclick = () => {
+      activateTool("move", moveBtn);
+    };
+
+    let activeTool = null;
+
+    function activateTool(toolName, btn) {
+      // 1️⃣ clear active state from ALL buttons
+      document.querySelectorAll(".railbtn")
+        .forEach(b => b.classList.remove("active"));
+
+      // 2️⃣ set active border on the button we pass in
+      if (btn) btn.classList.add("active");
+
+      activeTool = toolName;
+
+      // 3️⃣ reset modes
+      state.textMode = false;
+      penState.tool = null;
+
+      // 4️⃣ hide all tool UIs
+      showInkSizeUI(false);
+      showTextToolbar(false);
+      document.body.classList.remove("text-mode");
+
+      // 5️⃣ activate tool logic
+      switch (toolName) {
+        case "pen":
+          penState.tool = "pen";
+          showInkSizeUI(true);
+          break;
+
+        case "eraser":
+          penState.tool = "eraser";
+          showInkSizeUI(true);
+          break;
+
+        case "text":
+          state.textMode = true;
+          document.body.classList.add("text-mode");
+          showTextToolbar(true);
+          break;
+
+        case "move":
+          break;
+
+        case "image":
+          break;
+      }
+    }
+
+    const toolButtons = document.querySelectorAll(".railbtn");
+
+    toolButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        // if clicking the SAME active button → deactivate it
+        if (btn === activeTool) {
+          btn.classList.remove("active");
+          activeTool = null;
+          return;
+        }
+
+        // deactivate all buttons
+        toolButtons.forEach(b => b.classList.remove("active"));
+
+        // activate clicked button
+        btn.classList.add("active");
+        activeTool = btn;
+      });
+    });
+
+
+
+    function showSizeSlider(show) {
+      sizeSliderWrap.style.opacity = show ? "1" : "0";
+      sizeSliderWrap.style.pointerEvents = show ? "auto" : "none";
+    }
+
+    function showTextToolbar(show) {
+      if (!textBar) return; // safety
+      textBar.classList.toggle("show", show);
+      textBar.setAttribute("aria-hidden", show ? "false" : "true");
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const rail = document.querySelector("aside.rail");
+      const menuBtn = document.querySelector(".menu-btn");
+
+      rail.classList.add("open");
+      menuBtn.classList.add("active");
+    });
+
+    function getInkImage() {
+      // merge draw + erase canvases into one image
+      const temp = document.createElement("canvas");
+      temp.width = drawCanvas.width;
+      temp.height = drawCanvas.height;
+
+      const tctx = temp.getContext("2d");
+
+      // draw both layers
+      tctx.drawImage(drawCanvas, 0, 0);
+      tctx.drawImage(eraseCanvas, 0, 0);
+
+      return temp.toDataURL("image/png");
+    }
+
+    function showToast({ title, message }) {
+      const toast = document.getElementById("toast");
+      if (!toast) return;
+
+      toast.innerHTML = `
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M20 6 9 17l-5-5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="content">
+      <div class="title">${title}</div>
+      <div class="desc">${message}</div>
+    </div>
+  `;
+
+      toast.classList.add("show");
+
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 4200);
+    }
+
+
+    imageBtn.addEventListener("click", () => {
+      activateTool("image", imageBtn);
+      imageInput.click();
+    });
+
+
+    imageInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => createImageItem(reader.result);
+      reader.readAsDataURL(file);
+
+      imageInput.value = '';
+    });
+
+    function createImageItem(src) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'image-item';
+      wrapper.dataset.rotate = "0";
+
+      wrapper.style.left = '100px';
+      wrapper.style.top = '100px';
+      wrapper.style.width = '160px';
+      wrapper.style.height = '160px';
+
+      const img = document.createElement('img');
+      img.src = src;
+
+      const resizer = document.createElement('div');
+      resizer.className = 'image-resizer';
+
+      const rotateHandle = document.createElement('div');
+      rotateHandle.className = 'image-rotate-handle';
+
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'image-delete-btn';
+      delBtn.innerHTML = '✕';
+
+      delBtn.addEventListener('mousedown', e => e.stopPropagation());
+      delBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        wrapper.remove();
+        snapshot();
+      });
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(resizer);
+      wrapper.appendChild(rotateHandle);
+      wrapper.appendChild(delBtn);
+      // 🔄 rotate SVG inside handle
+      rotateHandle.innerHTML = `
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+    <path
+      d="M21 12a9 9 0 1 1-3-6.7"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+    <path
+      d="M21 3v6h-6"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+`;
+
+      imageLayer.appendChild(wrapper);
+
+      makeDraggable(wrapper);
+      makeResizable(wrapper, resizer);
+      makeRotatable(wrapper, rotateHandle); // ✅ THIS WAS MISSING
+      bindImageSelection(wrapper);
+
+      snapshot();
+    }
+
+
+    imageLayer.addEventListener("pointerdown", (e) => {
+      if (
+        e.target.closest(".image-resizer") ||
+        e.target.closest(".image-rotate-handle")
+      ) return;
+
+      const img = e.target.closest(".image-item");
+      if (!img) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      // select image
+      document.querySelectorAll(".image-item").forEach(i =>
+        i.classList.remove("selected")
+      );
+      img.classList.add("selected");
+      selectedImage = img;
+
+      // capture pointer
+      img.setPointerCapture(e.pointerId);
+
+      const rect = page.getBoundingClientRect();
+      const imgRect = img.getBoundingClientRect();
+
+      startX = (e.clientX - rect.left) / state.zoom;
+      startY = (e.clientY - rect.top) / state.zoom;
+
+      imgStartLeft = img.offsetLeft;
+      imgStartTop = img.offsetTop;
+
+      isDraggingImage = true;
+    });
+
+
+    imageLayer.addEventListener("pointermove", (e) => {
+      if (!isDraggingImage || !selectedImage) return;
+
+      e.preventDefault();
+
+      const rect = page.getBoundingClientRect();
+
+      const x = (e.clientX - rect.left) / state.zoom;
+      const y = (e.clientY - rect.top) / state.zoom;
+
+      selectedImage.style.left =
+        imgStartLeft + (x - startX) + "px";
+      selectedImage.style.top =
+        imgStartTop + (y - startY) + "px";
+    });
+
+
+    imageLayer.addEventListener("pointerup", endImageDrag);
+    imageLayer.addEventListener("pointercancel", endImageDrag);
+
+    function endImageDrag(e) {
+      if (!selectedImage) return;
+
+      try {
+        selectedImage.releasePointerCapture(e.pointerId);
+      } catch { }
+
+      isDraggingImage = false;
+    }
+
+    document.addEventListener("pointermove", (e) => {
+      if (isDraggingImage) e.preventDefault();
+    }, { passive: false });
+
+
+    function clearImageSelection() {
+      document
+        .querySelectorAll(".image-item.selected")
+        .forEach(img => img.classList.remove("selected"));
+    }
+
+    stage.addEventListener("wheel", (e) => {
+      if (!e.ctrlKey) return;
+
+      e.preventDefault();
+
+      const delta = Math.sign(e.deltaY);
+      state.zoom += delta > 0 ? -0.1 : 0.1;
+      state.zoom = Math.min(state.maxZoom, Math.max(state.minZoom, state.zoom));
+
+      applyZoom();
+    }, { passive: false });
+
+
+    /* click on EMPTY space */
+    stage.addEventListener("mousedown", (e) => {
+      // if clicking on image or its children → ignore
+      if (e.target.closest(".image-item")) return;
+
+      clearImageSelection();
+
+      // OPTIONAL: reset active tool here
+      // setActiveTool("move");  // if you have a tool system
+    });
+
+    /* also clear when clicking directly on page background */
+    page.addEventListener("mousedown", (e) => {
+      if (e.target !== page) return;
+      clearImageSelection();
+    });
+
+    uploadOverlay.addEventListener("dragover", e => {
+      e.preventDefault();
+      uploadOverlay.style.backgroundColor = "rgba(15,23,42,.75)";
+    });
+
+    uploadOverlay.addEventListener("dragleave", () => {
+      uploadOverlay.style.backgroundColor = "";
+    });
+
+    uploadOverlay.addEventListener("drop", e => {
+      e.preventDefault();
+      uploadOverlay.style.backgroundColor = "";
+
+      const file = e.dataTransfer.files[0];
+      if (!file || file.type !== "application/pdf") return;
+
+      startLoadingProgress();      // ✅ START PROGRESS
+      loadPDF(file);
+    });
+
+
+
+    // Show upload overlay on initial load
+    showUploadOverlay();
+
+    setProgress(0);
+    uploadProgress.classList.add("hidden");
+    overlayUploadBtn.style.display = "";
+
+
+
+
+  </script>
+</body>
+
+</html>

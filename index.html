@@ -1,0 +1,3243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description"
+    content="RemoPDF is a fast, browser-based PDF tool to convert PDFs to images, split pages, merge documents, and preview files securely. No uploads. Local processing. Free online PDF editor.">
+  <meta name="keywords" content="
+pdf converter,
+online pdf converter,
+free pdf converter,
+pdf editor online,
+online pdf editor free,
+browser pdf editor,
+
+pdf to png,
+pdf to jpg,
+pdf to jpeg,
+convert pdf to image,
+convert pdf to images online,
+pdf image converter,
+
+pdf splitter,
+split pdf,
+split pdf online,
+split pdf pages,
+extract pdf pages,
+pdf page extractor,
+separate pdf pages,
+
+pdf merger,
+merge pdf,
+merge pdf online,
+combine pdf files,
+join pdf files,
+
+pdf preview,
+pdf viewer online,
+preview pdf pages,
+zoom pdf pages,
+
+client side pdf,
+browser based pdf tool,
+local pdf processing,
+process pdf in browser,
+pdf without upload,
+no upload pdf tool,
+offline pdf processing,
+privacy focused pdf tool,
+secure pdf editor,
+
+free online pdf tools,
+lightweight pdf tool,
+fast pdf converter,
+instant pdf processing,
+pdf utility online,
+web based pdf software,
+
+pdf tool for chrome,
+pdf tool for android webview,
+pdf tool for mobile browser,
+pdf tool without account,
+no signup pdf tool
+">
+  <link rel="icon" href="./images/tittleIcon.png" type="image/x-icon" />
+  <title>Convert, Edit, Split, and Merge</title>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "RemoPDF",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Web Browser",
+  "description": "Browser-based PDF converter and editor that allows users to convert, split, merge, and preview PDFs locally without uploading files.",
+  "url": "https://remopdf.onrender.com",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script>
+</head>
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --radius: 16px;
+    --shadow: 0 15px 40px rgba(0, 0, 0, .06);
+    --transition: 0.35s ease;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  /* Header */
+  .top-bar {
+    padding: 24px 32px;
+  }
+
+  .logo {
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  .logo span {
+    color: #ef4444;
+  }
+
+  /* Layout */
+  .tools-wrapper {
+    padding: 24px;
+    max-width: 1300px;
+    margin: auto;
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 22px;
+  }
+
+  /* Card */
+  .tool-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 26px 22px 28px;
+    box-shadow: var(--shadow);
+    position: relative;
+    cursor: pointer;
+    transition: var(--transition);
+    overflow: hidden;
+  }
+
+  .tool-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(0, 0, 0, .03));
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  .tool-card:hover {
+    transform: translateY(-6px) scale(1.015);
+  }
+
+  .tool-card:hover::after {
+    opacity: 1;
+  }
+
+  .tool-card h3 {
+    margin: 16px 0 6px;
+    font-size: 16px;
+  }
+
+  .tool-card p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* Icon */
+  .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    color: #fff;
+    font-size: 18px;
+    transition: var(--transition);
+  }
+
+  .tool-card:hover .icon {
+    transform: rotate(-6deg) scale(1.08);
+  }
+
+  /* Colors */
+  .merge {
+    background: #fb7185;
+  }
+
+  .split {
+    background: #f97316;
+  }
+
+  .compress {
+    background: #22c55e;
+  }
+
+  .word {
+    background: #3b82f6;
+  }
+
+  .ppt {
+    background: #f97316;
+  }
+
+  .excel {
+    background: #22c55e;
+  }
+
+  .edit {
+    background: #a855f7;
+  }
+
+  .jpg {
+    background: #eab308;
+  }
+
+  .protect {
+    background: #2563eb;
+  }
+
+  /* Badge */
+  .badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-size: 11px;
+    padding: 4px 8px;
+    background: #e0f2fe;
+    color: #0369a1;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  /* Mobile */
+  @media (max-width: 480px) {
+    .top-bar {
+      padding: 16px;
+    }
+
+    .tools-wrapper {
+      padding: 16px;
+    }
+  }
+
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(79, 70, 229, .18), transparent 60%),
+      radial-gradient(circle at 70% 80%, rgba(34, 197, 94, .18), transparent 60%),
+      rgba(15, 23, 42, .7);
+    backdrop-filter: blur(16px);
+    transition: opacity .35s ease;
+
+  }
+
+  .overlay.active {
+    display: flex;
+  }
+
+  .overlay-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    animation: fadeIn .3s ease;
+  }
+
+  .overlay-panel {
+    position: relative;
+    background: #fff;
+    width: min(520px, 92%);
+    margin: 5vh auto;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .25);
+    animation: slideUp .35s ease;
+  }
+
+  /* Header */
+  .overlay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .overlay-header h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .overlay-header button {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  /* Upload */
+  .upload-zone {
+    border-radius: 16px;
+    padding: 26px;
+    margin: 20px 0;
+    text-align: center;
+    cursor: pointer;
+    transition: .3s;
+  }
+
+  .upload-zone:hover {
+    background: #eef2ff;
+  }
+
+  .upload-zone svg {
+    width: 40px;
+    stroke: white;
+    stroke-width: 2;
+    fill: none;
+    margin-bottom: 10px;
+
+    width: 84px;
+    height: 84px;
+    margin: 0 auto 18px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #6a5cff, #4f46e5);
+    display: grid;
+    place-items: center;
+    color: white;
+    font-size: 36px;
+    font-weight: 700;
+    box-shadow: 0 20px 40px rgba(79, 70, 229, .45);
+    animation: pulse 2.2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(79, 70, 229, .45);
+    }
+
+    70% {
+      box-shadow: 0 0 0 18px rgba(79, 70, 229, 0);
+    }
+
+    100% {
+      box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+    }
+  }
+
+  .upload-zone span {
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  /* PDF List */
+  .pdf-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .pdf-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    animation: fadeIn .25s ease;
+  }
+
+  .pdf-item span {
+    font-size: 14px;
+  }
+
+  .pdf-item button {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #ef4444;
+  }
+
+  /* Merge Button */
+  .merge-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    cursor: pointer;
+    transition: .3s;
+  }
+
+  .merge-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
+  .merge-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+  }
+
+  /* Animations */
+  @keyframes slideUp {
+    from {
+      transform: translateY(40px);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f172a;
+    color: #fff;
+    padding: 14px 18px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .35);
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    transition: .35s ease;
+    z-index: 1000;
+  }
+
+  .toast svg {
+    width: 18px;
+    height: 18px;
+    stroke: #22c55e;
+    stroke-width: 3;
+    fill: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Overlay fade-out */
+  .overlay.fade-out .overlay-panel {
+    animation: slideDown .35s ease forwards;
+  }
+
+  .overlay.fade-out .overlay-backdrop {
+    animation: fadeOut .35s ease forwards;
+  }
+
+  @keyframes slideDown {
+    to {
+      transform: translateY(40px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+    }
+  }
+
+  .progress-wrap {
+    margin: 16px 0;
+  }
+
+  .progress-text {
+    font-size: 13px;
+    margin-bottom: 6px;
+    opacity: 0.85;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #6366f1, #4f46e5);
+    transition: width 0.25s ease;
+  }
+
+  .landing-section {
+    max-width: 1200px;
+    margin: 80px auto 0;
+    padding: 0 24px;
+  }
+
+  .section-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+
+  .section-sub {
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: 48px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 26px;
+  }
+
+  .feature-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 26px 22px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+  }
+
+  .feature-card:hover {
+    transform: translateY(-6px);
+  }
+
+  .feature-card h4 {
+    margin: 0 0 8px;
+  }
+
+  .stats {
+    margin: 100px auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 30px;
+    text-align: center;
+  }
+
+  .stat-box {
+    background: linear-gradient(135deg,
+        #22d3ee 0%,
+        #0ea5e9 45%,
+        #2563eb 100%);
+    color: white;
+    padding: 36px 20px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+  }
+
+  .stat-box strong {
+    display: block;
+    font-size: 32px;
+  }
+
+  .cta-wrap {
+    background: linear-gradient(135deg,
+        #0ea5e9 0%,
+        #1d4ed8 50%,
+        #1e3a8a 100%);
+
+    color: #fff;
+    border-radius: 28px;
+    padding: 70px 32px;
+    text-align: center;
+    margin: 120px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-wrap::after {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, .25), transparent 60%);
+  }
+
+  .cta-wrap h2 {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+
+  .cta-wrap p {
+    opacity: .85;
+    margin-bottom: 26px;
+  }
+
+  .cta-btn {
+    background: #fff;
+    color: #0f172a;
+    padding: 14px 26px;
+    border-radius: 999px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-block;
+    transition: .3s;
+  }
+
+  .cta-btn:hover {
+    transform: translateY(-3px) scale(1.03);
+  }
+
+  /* Footer */
+  .footer {
+    background: linear-gradient(135deg,
+        #0ea5e9 0%,
+        #1d4ed8 50%,
+        #0ea5e9 100%);
+
+    color: #cbd5f5;
+    padding: 60px 24px 30px;
+  }
+
+  .footer-grid {
+    max-width: 1200px;
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 40px;
+  }
+
+  .footer h4 {
+    margin-bottom: 12px;
+    color: #fff;
+  }
+
+  .footer a {
+    color: #cbd5f5;
+    text-decoration: none;
+    display: block;
+    margin: 6px 0;
+    font-size: 14px;
+  }
+
+  .footer a:hover {
+    color: #fff;
+  }
+
+  .socials {
+    display: flex;
+    gap: 14px;
+    margin-top: 10px;
+  }
+
+  .socials a {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #1e293b;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    transition: .3s;
+  }
+
+  .socials a:hover {
+    background: #6366f1;
+  }
+
+  .footer-bottom {
+    text-align: center;
+    margin-top: 50px;
+    font-size: 13px;
+    opacity: .6;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: 0.8s ease;
+  }
+
+  .reveal.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Parallax */
+  .parallax {
+    will-change: transform;
+  }
+
+  .footer .socials_icon {
+    font-size: 22px;
+    padding-bottom: 5px;
+  }
+
+  /* Counter */
+  .counter {
+    font-size: 32px;
+    font-weight: 800;
+  }
+
+  /* ================= FAQ ACCORDION ================= */
+  .faq-list {
+    max-width: 800px;
+    margin: auto;
+  }
+
+  .faq-item {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .faq-question {
+    width: 100%;
+    padding: 20px 22px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .faq-icon {
+    font-size: 22px;
+    transition: .3s ease;
+  }
+
+  .faq-item.active .faq-icon {
+    transform: rotate(45deg);
+  }
+
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .4s ease, padding .3s ease;
+    padding: 0 22px;
+  }
+
+  .faq-answer p {
+    margin: 0 0 18px;
+    color: var(--muted);
+  }
+
+  .faq-item.active .faq-answer {
+    max-height: 200px;
+    padding: 0 22px 18px;
+  }
+
+  /* ================= SHOWCASE ================= */
+  .showcase {
+    margin-top: 120px;
+  }
+
+  .showcase-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    margin-bottom: 100px;
+  }
+
+  .showcase-row.reverse {
+    direction: rtl;
+  }
+
+  .showcase-row.reverse>* {
+    direction: ltr;
+  }
+
+  .showcase-image {
+    position: relative;
+  }
+
+  .showcase-image img {
+    width: 100%;
+    border-radius: 24px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .25);
+    transform: scale(.95);
+    transition: .6s ease;
+  }
+
+  .showcase-row.show .showcase-image img {
+    transform: scale(1);
+  }
+
+  .showcase-text h3 {
+    font-size: 26px;
+    margin-bottom: 12px;
+  }
+
+  .showcase-text p {
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 900px) {
+
+    .showcase-row,
+    .showcase-row.reverse {
+      grid-template-columns: 1fr;
+      direction: ltr;
+    }
+
+    .showcase-row {
+      gap: 28px;
+      margin-bottom: 70px;
+    }
+
+    .showcase-text {
+      text-align: center;
+    }
+  }
+
+  /* ================= QUALITY SLIDER ================= */
+
+  .quality-wrap {
+    margin: 18px 0 22px;
+  }
+
+  .quality-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .quality-head strong {
+    color: #4f46e5;
+  }
+
+  .quality-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 6px;
+  }
+
+  #qualitySlider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(90deg,
+        #22c55e 0%,
+        #6366f1 50%,
+        #4f46e5 100%);
+    outline: none;
+  }
+
+  #qualitySlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid #4f46e5;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+    cursor: pointer;
+    transition: .25s;
+  }
+
+  #qualitySlider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+  }
+
+  #qualitySlider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid #4f46e5;
+    cursor: pointer;
+  }
+
+  /* ===== NAVBAR ===== */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.75);
+    border-bottom: 1px solid rgba(0, 0, 0, .06);
+    transition: .3s ease;
+  }
+
+  .nav-container {
+    max-width: 1300px;
+    margin: auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Logo */
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 18px;
+    text-decoration: none;
+    color: #0f172a;
+  }
+
+  .nav-logo img {
+    width: 80px;
+    height: 38px;
+    object-fit: contain;
+  }
+
+  /* Links */
+  .nav-links {
+    display: flex;
+    gap: 26px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    color: #475569;
+    position: relative;
+    transition: .25s ease;
+  }
+
+  .nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -6px;
+    width: 0%;
+    height: 2px;
+    background: linear-gradient(90deg, #4f46e5, #22c55e);
+    transition: .3s ease;
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: #0f172a;
+  }
+
+  .nav-links a:hover::after,
+  .nav-links a.active::after {
+    width: 100%;
+  }
+
+  /* Mobile toggle */
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .nav-toggle span {
+    width: 26px;
+    height: 3px;
+    background: #0f172a;
+    border-radius: 4px;
+    transition: .3s;
+  }
+
+  /* ===== MOBILE ===== */
+  @media (max-width: 768px) {
+    .nav-toggle {
+      display: flex;
+    }
+
+    .nav-links {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      flex-direction: column;
+      gap: 0;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .35s ease;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, .15);
+    }
+
+    .nav-links li {
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .nav-links a {
+      display: block;
+      padding: 18px 24px;
+    }
+
+    .nav-links.open {
+      max-height: 320px;
+    }
+  }
+
+  @media (max-width:440px) {
+    .cta-wrap h2 {
+      font-size: 22px;
+    }
+
+    .cta-wrap a {
+      font-size: 13px;
+    }
+  }
+
+  .h4-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    vertical-align: -3px;
+    stroke: #4f46e5;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .icon svg {
+    width: 22px;
+    height: 22px;
+    stroke: white;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .h4-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    vertical-align: -3px;
+    stroke: #4f46e5;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Bigger step icons (Upload / Choose Tool / Download only) */
+  .feature-grid .h4-icon {
+    width: 24px;
+    /* was 18px */
+    height: 24px;
+    /* was 18px */
+    margin-right: 10px;
+    vertical-align: -4px;
+  }
+
+  /* =========================
+   FOUNDER SECTION – MODERN
+   ========================= */
+
+  .founder-section {
+    position: relative;
+    padding: clamp(4rem, 8vw, 7rem) 1.5rem;
+    background: linear-gradient(135deg,
+        #22d3ee 0%,
+        #0ea5e9 45%,
+        #2563eb 100%);
+
+    overflow: hidden;
+    max-width: 1200px;
+    border-radius: 50px;
+    margin: 5rem auto;
+  }
+
+  .founder-wrap {
+    max-width: 1150px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(260px, 380px) 1fr;
+    gap: clamp(2.5rem, 6vw, 4rem);
+    align-items: center;
+  }
+
+  /* =========================
+   IMAGE SIDE
+   ========================= */
+
+  .founder-image {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 28px;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .founder-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.03);
+    filter: contrast(1.05) saturate(1.05);
+  }
+
+  /* Glow halo */
+  .founder-glow {
+    position: absolute;
+    inset: -35%;
+    background: linear-gradient(135deg,
+        #ef4444 0%,
+        #dc2626 45%,
+        #991b1b 100%);
+    z-index: -1;
+    filter: blur(60px);
+  }
+
+  /* =========================
+   TEXT SIDE
+   ========================= */
+
+  .founder-text {
+    color: #e5e7eb;
+  }
+
+  .founder-badge {
+    display: inline-block;
+    margin-bottom: 1rem;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    border-radius: 999px;
+    color: #ffffff;
+    background: linear-gradient(135deg,
+        #ef4444 0%,
+        #dc2626 45%,
+        #991b1b 100%);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, .35);
+  }
+
+  .founder-text h2 {
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(180deg, #ffffff, #c7d2fe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .founder-quote {
+    font-size: 1.1rem;
+    font-style: italic;
+    padding-left: 1.25rem;
+    margin: 1.2rem 0 1.6rem;
+    color: #d1fae5;
+    border-left: 3px solid #be3131;
+  }
+
+  .founder-text p {
+    color: #cbd5f5;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    max-width: 62ch;
+  }
+
+  .founder-text strong {
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  /* =========================
+   REVEAL ANIMATION (CSS ONLY)
+   ========================= */
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    animation: founderFade .9s ease-out forwards;
+  }
+
+  @keyframes founderFade {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* =========================
+   RESPONSIVE
+   ========================= */
+
+  @media (max-width: 900px) {
+    .founder-wrap {
+      grid-template-columns: 1fr;
+    }
+
+    .founder-image {
+      max-width: 340px;
+      margin: 0 auto;
+    }
+
+    .founder-text {
+      text-align: center;
+    }
+
+    .founder-quote {
+      border-left: none;
+      border-top: 3px solid #dc2626;
+      padding-left: 0;
+      padding-top: 1rem;
+      margin: 0 auto;
+    }
+
+    .founder-text p {
+      margin: 0 auto;
+    }
+  }
+
+  /* Trigger button */
+  .overlay-contact-btn {
+    padding: 12px 22px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Overlay wrapper */
+  .overlay-contact {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+  }
+
+  .overlay-contact.hidden {
+    pointer-events: none;
+  }
+
+  /* Backdrop */
+  .overlay-contact-backdrop {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+
+  
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(79, 70, 229, .18), transparent 60%),
+      radial-gradient(circle at 70% 80%, rgba(34, 197, 94, .18), transparent 60%),
+      rgba(15, 23, 42, .7);
+    backdrop-filter: blur(16px);
+    transition: opacity .35s ease;
+  }
+
+  /* Card */
+  .overlay-contact-card {
+    position: relative;
+    max-width: 420px;
+    width: 90%;
+    margin: auto;
+    margin-top: 10vh;
+    padding: 30px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+    transform: translateY(40px) scale(0.95);
+    opacity: 0;
+    transition: all 0.45s cubic-bezier(.2, .8, .2, 1);
+  }
+
+  /* Active state */
+  .overlay-contact.show .overlay-contact-backdrop {
+    opacity: 1;
+  }
+
+  .overlay-contact.show .overlay-contact-card {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  /* Inputs */
+  .overlay-contact-card input,
+  .overlay-contact-card textarea {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+  }
+
+  .overlay-contact-card textarea {
+    min-height: 120px;
+    resize: none;
+  }
+
+  /* Buttons */
+  .overlay-contact-send {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    background: #4f46e5;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .overlay-contact-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  #overlay-contact-status {
+    margin-top: 12px;
+    font-size: 14px;
+  }
+
+  /* === APPLY PAGE-STYLE LOOK TO OVERLAY === */
+
+/* Gradient background inside overlay */
+.overlay-contact {
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+/* Make card act like .contact-form */
+.overlay-contact-card {
+  max-width: 760px;
+  width: 100%;
+  padding: 60px 40px;
+  color: #fff;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-radius: 0;
+  margin-top: 0;
+}
+
+/* Headline */
+.overlay-contact-card h1 {
+  text-align: center;
+  font-size: 56px;
+  font-weight: 300;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+/* Subtitle */
+.overlay-contact-card p {
+  text-align: center;
+  font-size: 18px;
+  opacity: 0.9;
+  margin-bottom: 50px;
+}
+
+/* Labels */
+.overlay-contact-card label {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 25px;
+  color: #fff;
+}
+
+/* Required star */
+.overlay-contact-card span {
+  color: #ffdddd;
+}
+
+/* Inputs */
+.overlay-contact-card input,
+.overlay-contact-card textarea {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px 12px;
+  border-radius: 2px;
+  border: none;
+  font-size: 16px;
+  outline: none;
+}
+
+/* Send button (override old style) */
+.overlay-contact-send {
+  width: 100%;
+  padding: 16px;
+  font-size: 18px;
+  background: #0b88c8;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  margin-top: 15px;
+  border-radius: 0;
+  transition: background 0.25s ease;
+}
+
+.overlay-contact-send:hover {
+  background: #096fa3;
+}
+
+/* Close button visibility fix */
+.overlay-contact-close {
+  color: #fff;
+}
+
+/* === FORM VALIDATION UI === */
+
+.overlay-contact-card .field-error {
+  color: #ffd2d2;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.overlay-contact-card input.error,
+.overlay-contact-card textarea.error {
+  outline: 2px solid #ff6b6b;
+  background: #fff5f5;
+}
+
+.overlay-contact-send[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* === VERY SMALL / SHORT SCREENS === */
+@media (max-height: 620px) {
+  .overlay-contact-card {
+    padding-top: 28px;
+    padding-bottom: 28px;
+  }
+
+  .overlay-contact-card h1 {
+    font-size: 28px;
+  }
+
+  .overlay-contact-card p {
+    margin-bottom: 20px;
+  }
+}
+  
+</style>
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="./index.html" class="nav-logo">
+      <img src="./images/logo.png" alt="Logo">
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="./about/index.html">About Us</a></li>
+      <li><a href="./privacy/index.html">Privacy T&C</a></li>
+      <button id="overlay-contact-open" class="overlay-contact-btn">
+        Contact Us
+      </button>
+    </ul>
+
+    <button class="nav-toggle" aria-label="Toggle menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+</nav>
+
+<main class="tools-wrapper">
+  <div class="tools-grid">
+
+    <article class="tool-card">
+      <div class="icon merge">
+        <svg viewBox="0 0 24 24">
+          <path d="M7 7h10M7 17h10M10 4l-3 3 3 3M14 20l3-3-3-3" />
+        </svg>
+      </div>
+      <h3>Merge PDF</h3>
+      <p>Combine PDFs in the order you want.</p>
+    </article>
+
+    <article class="tool-card" id="splitBtn">
+      <div class="icon split">
+        <svg viewBox="0 0 24 24">
+          <path d="M14 3l7 7M3 14l7 7M14 10l7-7M3 14h7" />
+        </svg>
+      </div>
+      <h3>Split PDF</h3>
+      <p>Separate pages into individual files.</p>
+    </article>
+
+    <article class="tool-card" id="compressBtn">
+      <div class="icon compress">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3v12M8 11l4 4 4-4M4 21h16" />
+        </svg>
+      </div>
+      <h3>Compress PDF</h3>
+      <p>Reduce file size with quality preserved.</p>
+    </article>
+
+    <article class="tool-card" id="imagesToPdfBtn">
+      <div class="icon word">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M7 8h10M7 12h10M7 16h6" />
+        </svg>
+      </div>
+      <h3>Images to PDF</h3>
+      <p>Convert JPG, PNG images into a PDF.</p>
+    </article>
+
+    <article class="tool-card" id="compressImagesBtn">
+      <div class="icon ppt">
+        <svg viewBox="0 0 24 24">
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <path d="M9 9h6v6H9z" />
+        </svg>
+      </div>
+      <h3>Compress Images</h3>
+      <p>Reduce image size without losing quality.</p>
+    </article>
+
+<article style="display: none;" class="tool-card" id="bgRemoveBtn">
+  <div class="icon excel">
+    <svg viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+      <path d="M8 8l8 8M16 8l-8 8"></path>
+    </svg>
+  </div>
+  <h3>Remove Background</h3>
+  <p>Remove image backgrounds instantly.</p>
+</article>
+
+
+    <article class="tool-card editor">
+      <div class="icon edit">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+        </svg>
+      </div>
+      <h3>Edit PDF</h3>
+      <p>Add text, shapes or images.</p>
+      <span class="badge">NEW</span>
+    </article>
+
+    <article class="tool-card" id="toImages">
+      <div class="icon jpg">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <circle cx="9" cy="10" r="2" />
+          <path d="M21 17l-6-6-5 5-3-3-4 4" />
+        </svg>
+      </div>
+      <h3>PDF to JPG</h3>
+      <p>Convert pages into images.</p>
+    </article>
+
+    <article style="display: none;" class="tool-card">
+      <div class="icon protect">
+        <svg viewBox="0 0 24 24">
+          <rect x="5" y="11" width="14" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+        </svg>
+      </div>
+      <h3>Protect PDF</h3>
+      <p>Encrypt files with passwords.</p>
+    </article>
+
+  </div>
+
+</main>
+
+<!-- Overlay -->
+<div id="pdfOverlay" class="overlay">
+  <div class="overlay-backdrop"></div>
+
+  <div class="overlay-panel">
+    <header class="overlay-header">
+      <h2>Merge PDF</h2>
+      <button id="closeOverlay" aria-label="Close">✕</button>
+    </header>
+
+    <!-- Upload -->
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="pdfInput" accept=".pdf" multiple hidden>
+      <svg viewBox="0 0 24 24">
+        <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />
+      </svg>
+      <p><strong>Drop PDFs here</strong> or click to upload</p>
+      <span>Multiple PDFs allowed</span>
+    </div>
+
+    <!-- Preview -->
+    <ul class="pdf-list" id="pdfList"></ul>
+
+    <!-- Action -->
+    <button class="merge-btn" id="mergeBtn" disabled>
+      Merge & Download
+    </button>
+  </div>
+</div>
+
+
+<section class="landing-section">
+  <h2 class="section-title">What Makes Us Different</h2>
+  <p class="section-sub">Powerful tools. Stunning design. Lightning-fast performance.</p>
+
+  <div class="feature-grid">
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <path d="M13 2L3 14h7l-1 8 10-12h-7z" />
+        </svg>
+        Blazing Fast
+      </h4>
+      <p>All processing happens instantly in your browser, no waiting, no queues.</p>
+    </div>
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <rect x="5" y="11" width="14" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+        </svg>
+        100% Private
+      </h4>
+      <p>Your files never leave your device. Total privacy by design.</p>
+    </div>
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <path d="M12 20l8-4V8l-8-4-8 4v8z" />
+          <path d="M12 12l8-4M12 12l-8-4" />
+        </svg>
+        Beautiful UX
+      </h4>
+      <p>Modern animations, smooth overlays, and delightful interactions.</p>
+    </div>
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <path
+            d="M12 3a6 6 0 0 1 6 6c0 2.5-1.5 4.5-3.5 5.5V17a2.5 2.5 0 1 1-5 0v-2.5C7.5 13.5 6 11.5 6 9a6 6 0 0 1 6-6z" />
+          <path d="M10 21h4" />
+        </svg>
+        Smart Engine
+      </h4>
+      <p>Advanced compression, high-quality conversions, perfect merges.</p>
+    </div>
+
+  </div>
+
+</section>
+
+<!-- ================= SHOWCASE ================= -->
+<section class="landing-section showcase">
+
+  <!-- Block 1 -->
+  <div class="showcase-row reveal">
+    <div class="showcase-image">
+      <img src="./images/speed.png" alt="Fast PDF processing">
+    </div>
+    <div class="showcase-text">
+      <h3>Designed for speed</h3>
+      <p>
+        Everything is built to respond instantly. Files load without waiting,
+        tools activate the moment you click, and exports finish in seconds instead
+        of minutes.
+      </p>
+      <p>
+        There is no unnecessary processing in the background and no heavy steps
+        slowing you down. Whether you are editing one page or handling large files,
+        the experience stays fast, stable, and predictable.
+      </p>
+    </div>
+  </div>
+
+
+  <!-- Block 2 -->
+  <div class="showcase-row reverse reveal show">
+    <div class="showcase-image">
+      <img src="./images/free.png" alt="100% Free PDF Editor">
+    </div>
+    <div class="showcase-text">
+      <h3>100% Free. No Catch.</h3>
+      <p>
+        Every feature is completely free to use. No subscriptions, no paywalls,
+        no watermarks, no limits, and no surprise “upgrade” screens.
+        Edit, split, compress, and manage PDFs as much as you want.
+        If it loads, it works. For free.
+      </p>
+    </div>
+  </div>
+
+
+  <!-- Block 3 -->
+  <div class="showcase-row reveal show">
+    <div class="showcase-image">
+      <img src="./images/people.png" alt="People focused PDF tools">
+    </div>
+    <div class="showcase-text">
+      <h3>Built for real people</h3>
+      <p>
+        This editor is designed around how people actually work, not how software
+        thinks they should. Every tool exists for a clear reason, with simple
+        actions and predictable results.
+      </p>
+      <p>
+        You can jump in without reading guides, finish your task quickly, and move
+        on with your day. No cluttered menus, no confusing workflows, and no time
+        wasted fighting the interface.
+      </p>
+    </div>
+  </div>
+
+
+</section>
+
+<section class="landing-section stats">
+  <div class="stat-box reveal show">
+    <strong>11,000+</strong>
+    PDFs Processed
+  </div>
+
+  <div class="stat-box reveal show">
+    <strong>180+</strong>
+    Countries
+  </div>
+
+  <div class="stat-box reveal show">
+    <strong>100%</strong>
+    Client-Side Processing
+  </div>
+
+  <div class="stat-box reveal show">
+    <strong>0</strong>
+    Files Stored
+  </div>
+</section>
+
+
+<section class="landing-section">
+  <div class="cta-wrap">
+    <h2>Ready to supercharge your PDFs?</h2>
+    <p>Need to sign or fill a PDF? No worries. Get it done in seconds.</p>
+    <a href="./editor/index.html" class="cta-btn">Take Me There</a>
+  </div>
+</section>
+
+<!-- ADD THESE SECTIONS JUST BEFORE </footer> -->
+
+<!-- ================= TRUST SECTION ================= -->
+<section class="landing-section">
+  <h2 class="section-title">Trusted by professionals worldwide</h2>
+  <p class="section-sub">From freelancers to global enterprises, everyone loves how simple we make PDFs.</p>
+
+  <div class="feature-grid">
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <path d="M3 21h18M4 21V7l8-4 8 4v14M9 21v-6h6v6" />
+        </svg>
+        Enterprise Ready
+      </h4>
+      <p>Built to scale with teams, companies, and high-volume workflows.</p>
+    </div>
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <path d="M3 17l6-6 4 4 7-7" />
+          <path d="M14 8h6v6" />
+        </svg>
+        Productivity Boost
+      </h4>
+      <p>Save hours every week with lightning-fast processing and batch tools.</p>
+    </div>
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20" />
+        </svg>
+        Global Reach
+      </h4>
+      <p>Optimized for users in 180+ countries with blazing-fast performance.</p>
+    </div>
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z" />
+          <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z" />
+          <path d="M2 19c0-2.5 4-4 6-4s6 1.5 6 4" />
+          <path d="M10 19c0-2.5 4-4 6-4s6 1.5 6 4" />
+        </svg>
+        Customer First
+      </h4>
+      <p>We design every feature with real user feedback at the core.</p>
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ================= HOW IT WORKS ================= -->
+<section class="landing-section">
+  <h2 class="section-title">How it works</h2>
+  <p class="section-sub">Three simple steps to master your PDFs.</p>
+
+  <div class="feature-grid">
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 8v8M12 8h-1" />
+        </svg>
+        Upload
+      </h4>
+      <p>Select or drag &amp; drop your PDF files.</p>
+    </div>
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M10 9c0-1 1-2 2-2s2 1 2 2c0 2-4 2-4 4h4" />
+        </svg>
+        Choose Tool
+      </h4>
+      <p>Merge, split, compress, convert, pick what you need.</p>
+    </div>
+
+    <div class="feature-card reveal show">
+      <h4>
+        <svg class="h4-icon" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M10 8h4l-2 3c1.5 0 2.5.8 2.5 2S13.5 16 12 16s-2-.5-2.5-1" />
+        </svg>
+        Download
+      </h4>
+      <p>Get your result instantly. No sign-up required.</p>
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ================= TESTIMONIALS ================= -->
+<section class="landing-section">
+  <h2 class="section-title">What early users say</h2>
+  <p class="section-sub">
+    Honest feedback from people trying RemoPDF as it grows.
+  </p>
+
+  <div class="feature-grid">
+    <div class="feature-card reveal show">
+      <p>
+        “I needed to merge and compress PDFs quickly without signing up.
+        RemoPDF did the job with no friction.”
+      </p>
+      <strong>— Thabo M., Johannesburg</strong>
+    </div>
+
+    <div class="feature-card reveal show">
+      <p>
+        “Still early, but it’s already faster than most tools I’ve used.
+        I like that nothing gets uploaded.”
+      </p>
+      <strong>— Aisha K., Nairobi</strong>
+    </div>
+
+    <div class="feature-card reveal show">
+      <p>
+        “Simple interface, no clutter, no pressure to pay.
+        I’ll keep using it as it improves.”
+      </p>
+      <strong>— Sibusiso N., Durban</strong>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ================= FAQ (ACCORDION) ================= -->
+
+
+
+<!-- ================= FINAL CTA ================= -->
+<section class="founder-section">
+  <div class="founder-wrap reveal">
+
+    <div class="founder-image">
+      <div class="founder-glow"></div>
+      <img src="./images/profile.png" alt="Mpho James Matli — Founder of RemoPDF">
+    </div>
+
+    <div class="founder-text">
+      <span class="founder-badge">FOUNDER STORY</span>
+
+      <h2>Built with purpose, named with love</h2>
+
+      <p class="founder-quote">
+        “Build things that last. Build things you’d be proud to pass on.”
+      </p>
+
+      <p>
+        RemoPDF was founded on <strong>9 December 2025</strong> by
+        <strong>Mpho James Matli</strong> in South Africa, after graduating and
+        growing tired of PDF tools designed to limit, charge, and frustrate users.
+      </p>
+
+      <p>
+        The project was named after his daughter,
+        <strong>Remoratile Vanessa</strong>, as a reminder to build with care,
+        honesty, and long-term intention.
+      </p>
+
+      <p>
+        RemoPDF is built to be <strong>fast, local, private, and free.</strong>
+        No uploads. No tracking. No artificial paywalls.
+        Just tools that respect people and their work.
+      </p>
+    </div>
+
+  </div>
+
+</section>
+
+
+<section class="landing-section faq-section">
+  <h2 class="section-title">Frequently asked questions</h2>
+  <p class="section-sub">Clear answers, no fine print.</p>
+
+  <div class="faq-list">
+
+    <div class="faq-item">
+      <button class="faq-question">
+        Is it really free?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">
+        <p>
+          Yes. RemoPDF is free to use for all core features.
+          There are no hidden limits, watermarks, or “trial” tricks.
+          The goal is to make everyday PDF tasks accessible without forcing
+          users into subscriptions for basic functionality.
+        </p>
+        <p>
+          In the future, optional advanced tools may be added,
+          but the core experience will remain free and usable without payment.
+        </p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question">
+        Are my files safe?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">
+        <p>
+          Your files are processed directly in your browser.
+          They are not uploaded to a server, stored in a database,
+          or shared with third parties.
+        </p>
+        <p>
+          Once you close the page or refresh the browser,
+          your files are gone. This approach reduces privacy risks
+          and removes the need to trust external storage.
+        </p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question">
+        Do I need an account?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">
+        <p>
+          No account is required. You don’t need to sign up,
+          verify an email, or provide personal details just to use the tools.
+        </p>
+        <p>
+          The idea is simple: open the site, use the tool,
+          download your file, and move on with your work.
+        </p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question">
+        Can I use it on mobile?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">
+        <p>
+          Yes. RemoPDF works on modern mobile browsers
+          and adapts to smaller screens automatically.
+        </p>
+        <p>
+          That said, complex PDF tasks are still easier on larger screens.
+          For best results, a desktop or tablet is recommended,
+          but mobile support is there when you need it.
+        </p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question">
+        Is RemoPDF finished or still evolving?
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">
+        <p>
+          RemoPDF is still evolving. New features and improvements
+          are being added gradually based on real usage and feedback.
+        </p>
+        <p>
+          The focus is on stability, speed, and privacy first,
+          not shipping half-baked features just to look “bigger” than it is.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <h4>Product</h4>
+      <a href="#">Merge PDF</a>
+      <a href="#">Split PDF</a>
+      <a href="#">Compress PDF</a>
+      <a href="#">Convert PDF</a>
+    </div>
+
+    <div>
+      <h4>Company</h4>
+      <a href="#">About</a>
+      <a href="#">Careers</a>
+      <a href="#">Press</a>
+      <a href="#">Contact</a>
+    </div>
+
+    <div>
+      <h4>Support</h4>
+      <a href="#">Help Center</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
+
+    <div>
+      <h4>Follow Us</h4>
+      <div class="socials">
+        <a class="socials_icon" href="https://twitter.com" target="_blank" aria-label="Twitter">X</a>
+        <a class="socials_icon" href="https://facebook.com" target="_blank" aria-label="Facebook">f</a>
+        <a class="socials_icon" href="https://instagram.com" target="_blank" aria-label="Instagram">◎</a>
+        <a class="socials_icon" href="https://linkedin.com" target="_blank" aria-label="LinkedIn">in</a>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <div class="footer-bottom">
+    © 2026 RemoPDF. Designed for privacy.
+  </div>
+</footer>
+
+<!-- Toast -->
+<div id="toast" class="toast">
+  <svg viewBox="0 0 24 24">
+    <path d="M5 13l4 4L19 7" />
+  </svg>
+  <span id="toastText"></span>
+</div>
+
+<div id="overlay-contact" class="overlay-contact hidden">
+
+  <div class="overlay-contact-backdrop"></div>
+
+  <div class="overlay-contact-card">
+
+    <button
+      class="overlay-contact-close"
+      id="overlay-contact-close"
+      aria-label="Close"
+    >✕</button>
+
+    <h1 style="
+      text-align:center;
+      font-weight:300;
+      font-size:42px;
+      margin-bottom:16px;
+    ">
+      Contact Us
+    </h1>
+
+    <p style="
+      text-align:center;
+      font-size:15px;
+      color:#fffdfd;
+      margin-bottom:28px;
+    ">
+      Got a question? We’d love to hear from you.
+      Send us a message and we’ll respond as soon as possible.
+    </p>
+
+    <form id="overlay-contact-form">
+
+      <label style="font-size:14px;font-weight:600;">
+        Name*
+        <input type="text" name="name" required>
+      </label>
+
+      <label style="font-size:14px;font-weight:600;">
+        Email address*
+        <input type="email" name="email" required>
+      </label>
+
+      <label style="font-size:14px;font-weight:600;">
+        Message
+        <textarea name="message"></textarea>
+      </label>
+
+      <button type="submit" class="overlay-contact-send">
+        Send Message
+      </button>
+
+      <div id="overlay-contact-status"></div>
+
+    </form>
+  </div>
+</div>
+
+
+<!-- PDF-LIB -->
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/pdfjs-dist/build/pdf.min.js"></script>
+<script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+<script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+<script> const overlay = document.getElementById('pdfOverlay');
+  const openBtn = document.querySelector('.tool-card'); // merge card
+  const closeBtn = document.getElementById('closeOverlay');
+
+  const uploadZone = document.getElementById('uploadZone');
+  const pdfInput = document.getElementById('pdfInput');
+  const pdfList = document.getElementById('pdfList');
+  const mergeBtn = document.getElementById('mergeBtn');
+
+  let pdfFiles = [];
+  /* ===========================
+     PDF.JS SETUP (REQUIRED)
+     =========================== */
+
+  /* ===========================
+     PDF.JS SETUP (CORRECT)
+     =========================== */
+
+  const pdfjsLib = window.pdfjsLib;
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+
+
+  /* Open / Close */
+  openBtn.addEventListener('click', () => overlay.classList.add('active'));
+  closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
+
+  /* Upload */
+  uploadZone.addEventListener('click', () => pdfInput.click());
+
+  pdfInput.addEventListener('change', e => {
+    [...e.target.files].forEach(addFile);
+  });
+
+  uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.style.background = '#eef2ff';
+  });
+
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.style.background = '';
+  });
+
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.style.background = '';
+    [...e.dataTransfer.files].forEach(addFile);
+  });
+
+  function addFile(file) {
+    if (file.type !== 'application/pdf') return;
+
+    pdfFiles.push(file);
+    renderList();
+  }
+
+  /* Preview */
+  function renderList() {
+    pdfList.innerHTML = '';
+    pdfFiles.forEach((file, index) => {
+      const li = document.createElement('li');
+      li.className = 'pdf-item';
+      li.innerHTML = `
+      <span>${file.name}</span>
+      <button onclick="removeFile(${index})">✕</button>
+    `;
+      pdfList.appendChild(li);
+    });
+
+    mergeBtn.disabled = pdfFiles.length < 2;
+  }
+
+  window.removeFile = index => {
+    pdfFiles.splice(index, 1);
+    renderList();
+  };
+
+  /* Merge */
+  mergeBtn.addEventListener('click', async () => {
+    mergeBtn.textContent = 'Merging...';
+
+    const mergedPdf = await PDFLib.PDFDocument.create();
+    let totalPages = 0;
+
+    for (const file of pdfFiles) {
+      const bytes = await file.arrayBuffer();
+      const pdf = await PDFLib.PDFDocument.load(bytes);
+      const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      pages.forEach(p => mergedPdf.addPage(p));
+      totalPages += pages.length;
+    }
+
+    const mergedBytes = await mergedPdf.save();
+    download(mergedBytes, 'merged.pdf');
+
+    showToast(`Merged ${pdfFiles.length} PDFs • ${totalPages} pages`);
+
+    // Fade out overlay
+    overlay.classList.add('fade-out');
+
+    setTimeout(() => {
+      overlay.classList.remove('active', 'fade-out');
+      resetOverlay();
+    }, 350);
+
+    mergeBtn.textContent = 'Merge & Download';
+  });
+
+
+  /* Download */
+  function download(bytes, name) {
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = name;
+    link.click();
+  }
+
+  /* ===========================
+     SPLIT PDF OVERLAY (JS ONLY)
+     =========================== */
+
+  const splitBtn = document.getElementById('splitBtn');
+
+  splitBtn.addEventListener('click', openSplitOverlay);
+
+  function openSplitOverlay() {
+    // Prevent duplicates
+    if (document.getElementById('splitOverlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'splitOverlay';
+    overlay.className = 'overlay active';
+
+    overlay.innerHTML = `
+    <div class="overlay-backdrop"></div>
+
+    <div class="overlay-panel">
+      <header class="overlay-header">
+        <h2>Split PDF</h2>
+        <button class="close-split" aria-label="Close">✕</button>
+      </header>
+
+      <div class="upload-zone split-upload">
+        <input type="file" id="splitPdfInput" accept=".pdf" hidden>
+        <svg viewBox="0 0 24 24">
+        <path d="M12 16V4M7 9l5-5 5 5M4 20h16"></path>
+      </svg>
+        <p><strong>Drop a PDF here</strong> or click to upload</p>
+        <span>Pages will be split into separate files</span>
+      </div>
+
+      <button class="merge-btn" id="splitActionBtn" disabled>
+        Split & Download
+      </button>
+    </div>
+  `;
+
+    document.body.appendChild(overlay);
+
+    /* Close logic */
+    overlay.querySelector('.close-split').addEventListener('click', () => closeSplitOverlay(overlay));
+    overlay.querySelector('.overlay-backdrop').addEventListener('click', () => closeSplitOverlay(overlay));
+
+    /* Upload click */
+    const uploadZone = overlay.querySelector('.split-upload');
+    const input = overlay.querySelector('#splitPdfInput');
+    const actionBtn = overlay.querySelector('#splitActionBtn');
+
+    uploadZone.addEventListener('click', () => input.click());
+
+    input.addEventListener('change', () => {
+      if (input.files.length) {
+        actionBtn.disabled = false;
+      }
+    });
+  }
+
+  /* Close with animation */
+  function closeSplitOverlay(overlay) {
+    overlay.classList.add('fade-out');
+
+    setTimeout(() => {
+      overlay.remove();
+    }, 350);
+  }
+
+  /* ===========================
+     SPLIT PDF ACTION
+     =========================== */
+
+  document.addEventListener('click', async (e) => {
+    if (e.target.id !== 'splitActionBtn') return;
+
+    const overlay = document.getElementById('splitOverlay');
+    const input = overlay.querySelector('#splitPdfInput');
+    const btn = e.target;
+
+    if (!input.files.length) return;
+
+    btn.textContent = 'Splitting...';
+    btn.disabled = true;
+
+    const file = input.files[0];
+    const bytes = await file.arrayBuffer();
+    const pdf = await PDFLib.PDFDocument.load(bytes);
+    const totalPages = pdf.getPageCount();
+
+    const zip = new JSZip();
+
+    for (let i = 0; i < totalPages; i++) {
+      const newPdf = await PDFLib.PDFDocument.create();
+      const [page] = await newPdf.copyPages(pdf, [i]);
+      newPdf.addPage(page);
+
+      const pdfBytes = await newPdf.save();
+      zip.file(`page-${i + 1}.pdf`, pdfBytes);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+    download(zipBlob, 'split-pages.zip');
+
+    showToast(`Split successful • ${totalPages} pages`);
+
+    /* Smooth close */
+    overlay.classList.add('fade-out');
+
+    setTimeout(() => {
+      overlay.remove();
+    }, 350);
+  });
+
+
+
+
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    const text = document.getElementById('toastText');
+
+    text.textContent = message;
+    toast.classList.add('show');
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 5000);
+  }
+
+  /* ===========================
+     PDF TO JPG OVERLAY
+     =========================== */
+
+  const toImagesBtn = document.getElementById('toImages');
+
+  toImagesBtn.addEventListener('click', () => {
+    if (document.getElementById('imagesOverlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'imagesOverlay';
+    overlay.className = 'overlay active';
+
+    overlay.innerHTML = `
+    <div class="overlay-backdrop"></div>
+
+    <div class="overlay-panel">
+      <header class="overlay-header">
+        <h2>PDF to JPG</h2>
+        <button class="close-images">✕</button>
+      </header>
+
+      <div class="upload-zone images-upload">
+        <input type="file" id="imagesPdfInput" accept=".pdf" hidden>
+        <svg viewBox="0 0 24 24">
+        <path d="M12 16V4M7 9l5-5 5 5M4 20h16"></path>
+      </svg>
+        <p><strong>Drop PDF here</strong> or click to upload</p>
+        <span>Each page becomes a JPG</span>
+      </div>
+
+      <button class="merge-btn" id="imagesActionBtn" disabled>
+        Convert & Download
+      </button>
+    </div>
+  `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('.close-images')
+      .addEventListener('click', () => closeImagesOverlay());
+
+    overlay.querySelector('.overlay-backdrop')
+      .addEventListener('click', () => closeImagesOverlay());
+
+    const zone = overlay.querySelector('.images-upload');
+    const input = overlay.querySelector('#imagesPdfInput');
+    const btn = overlay.querySelector('#imagesActionBtn');
+
+    zone.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+      if (!input.files.length) return;
+      btn.disabled = false;
+    });
+
+  });
+
+  function closeImagesOverlay() {
+    const overlay = document.getElementById('imagesOverlay');
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 350);
+  }
+
+  /* ===========================
+     PDF → JPG CONVERSION
+     =========================== */
+
+  document.addEventListener('click', async e => {
+    if (e.target.id !== 'imagesActionBtn') return;
+
+    const overlay = document.getElementById('imagesOverlay');
+    const input = overlay.querySelector('#imagesPdfInput');
+    const btn = e.target;
+
+    btn.textContent = 'Converting...';
+    btn.disabled = true;
+
+    const file = input.files[0];
+    const buffer = await file.arrayBuffer();
+
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const totalPages = pdf.numPages;
+
+    const zip = new JSZip();
+
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+
+      const viewport = page.getViewport({ scale: 2 }); // quality
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const blob = await new Promise(res =>
+        canvas.toBlob(res, 'image/jpeg', 0.95)
+      );
+
+      zip.file(`page-${pageNum}.jpg`, blob);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    download(zipBlob, 'pdf-images.zip');
+
+    showToast(`Converted ${totalPages} pages to JPG`);
+
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 350);
+  });
+
+
+  /* ===========================
+     COMPRESS PDF OVERLAY
+     =========================== */
+
+  const compressBtn = document.getElementById('compressBtn');
+
+  compressBtn.addEventListener('click', openCompressOverlay);
+
+  function openCompressOverlay() {
+    if (document.getElementById('compressOverlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'compressOverlay';
+    overlay.className = 'overlay active';
+
+    overlay.innerHTML = `
+  <div class="overlay-backdrop"></div>
+
+  <div class="overlay-panel">
+    <header class="overlay-header">
+      <h2>Compress PDF</h2>
+      <button class="close-compress">✕</button>
+    </header>
+
+    <div class="upload-zone compress-upload">
+      <input type="file" id="compressPdfInput" accept=".pdf" hidden>
+      <svg viewBox="0 0 24 24">
+        <path d="M12 16V4M7 9l5-5 5 5M4 20h16"></path>
+      </svg>
+      <p><strong>Drop PDF here</strong> or click to upload</p>
+      <span>High-quality smart compression</span>
+    </div>
+
+    <!-- ✅ Progress -->
+    <div class="progress-wrap" hidden>
+      <div class="progress-text" id="compressProgressText">Preparing…</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="compressProgressFill"></div>
+      </div>
+    </div>
+
+    <button class="merge-btn" id="compressActionBtn" disabled>
+      Compress & Download
+    </button>
+  </div>
+`;
+
+
+    document.body.appendChild(overlay);
+
+    /* Close */
+    overlay.querySelector('.close-compress')
+      .addEventListener('click', () => closeCompressOverlay());
+
+    overlay.querySelector('.overlay-backdrop')
+      .addEventListener('click', () => closeCompressOverlay());
+
+    /* Upload */
+    const zone = overlay.querySelector('.compress-upload');
+    const input = overlay.querySelector('#compressPdfInput');
+    const btn = overlay.querySelector('#compressActionBtn');
+
+    zone.addEventListener('click', () => input.click());
+
+    input.addEventListener('change', () => {
+      if (input.files.length) btn.disabled = false;
+    });
+  }
+
+  function closeCompressOverlay() {
+    const overlay = document.getElementById('compressOverlay');
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 350);
+  }
+
+
+  document.addEventListener('click', async e => {
+    if (e.target.id !== 'compressActionBtn') return;
+
+    const overlay = document.getElementById('compressOverlay');
+    const input = overlay.querySelector('#compressPdfInput');
+    const btn = e.target;
+
+    const progressWrap = overlay.querySelector('.progress-wrap');
+    const progressFill = overlay.querySelector('#compressProgressFill');
+    const progressText = overlay.querySelector('#compressProgressText');
+
+    if (!input.files.length) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Compressing…';
+    progressWrap.hidden = false;
+
+    const file = input.files[0];
+    const originalBuffer = await file.arrayBuffer();
+
+    const pdf = await pdfjsLib.getDocument({ data: originalBuffer }).promise;
+    const totalPages = pdf.numPages;
+
+    const newPdf = await PDFLib.PDFDocument.create();
+
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      progressText.textContent = `Compressing page ${pageNum} of ${totalPages}`;
+      progressFill.style.width =
+        `${Math.round((pageNum - 1) / totalPages * 100)}%`;
+
+      const page = await pdf.getPage(pageNum);
+
+      const baseViewport = page.getViewport({ scale: 1 });
+      const scale = Math.min(1.6, 1200 / baseViewport.width);
+      const viewport = page.getViewport({ scale });
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d', { alpha: false });
+
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const isTextHeavy =
+        (await page.getTextContent()).items.length > 200;
+
+      const blob = await new Promise(res =>
+        canvas.toBlob(
+          b => res(b),
+          isTextHeavy ? 'image/png' : 'image/jpeg',
+          isTextHeavy ? undefined : 0.82
+        )
+      );
+
+      if (!blob) continue;
+
+      const imageBytes = await blob.arrayBuffer();
+
+      const image = isTextHeavy
+        ? await newPdf.embedPng(imageBytes)
+        : await newPdf.embedJpg(imageBytes);
+
+      const pdfPage = newPdf.addPage([image.width, image.height]);
+      pdfPage.drawImage(image, {
+        x: 0,
+        y: 0,
+        width: image.width,
+        height: image.height
+      });
+    }
+
+    progressFill.style.width = '100%';
+    progressText.textContent = 'Finalizing PDF…';
+
+    const compressedBytes = await newPdf.save();
+
+    const beforeMB = (originalBuffer.byteLength / 1024 / 1024).toFixed(2);
+    const afterMB = (compressedBytes.byteLength / 1024 / 1024).toFixed(2);
+
+    download(compressedBytes, 'compressed.pdf');
+    showToast(`Compressed ${beforeMB} MB → ${afterMB} MB`);
+
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 350);
+  });
+
+  const reveals = document.querySelectorAll(
+    '.feature-card, .stat-box, .cta-wrap, .footer-grid > div, .showcase-row'
+  );
+
+
+  const revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('reveal', 'show');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  reveals.forEach(el => {
+    el.classList.add('reveal');
+    revealObserver.observe(el);
+  });
+
+  /* ================= PARALLAX EFFECT ================= */
+  const parallaxEls = document.querySelectorAll('.cta-wrap');
+
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    parallaxEls.forEach(el => {
+      el.style.transform = `translateY(${y * -0.05}px)`;
+    });
+  });
+
+  /* ================= COUNTER ANIMATION ================= */
+  const counters = document.querySelectorAll('.stat-box strong');
+
+  const counterObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+
+      const el = entry.target;
+      const target = parseInt(el.textContent.replace(/\D/g, ''));
+      const isPercent = el.textContent.includes('%');
+      const isPlus = el.textContent.includes('+');
+
+      const startTime = performance.now();
+      const duration = 1500;
+
+      function animate(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const value = Math.floor(progress * target);
+        el.textContent =
+          value + (isPercent ? '%' : isPlus ? '+' : '');
+
+        if (progress < 1) requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+      counterObserver.unobserve(el);
+    });
+  }, { threshold: 0.6 });
+
+  counters.forEach(c => counterObserver.observe(c));
+
+  /* ================= FAQ ACCORDION ================= */
+  document.querySelectorAll('.faq-question').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.faq-item');
+
+      // close others
+      document.querySelectorAll('.faq-item').forEach(i => {
+        if (i !== item) i.classList.remove('active');
+      });
+
+      item.classList.toggle('active');
+    });
+  });
+
+  /* ===========================
+     IMAGES → PDF OVERLAY
+     =========================== */
+
+  const imagesToPdfBtn = document.getElementById('imagesToPdfBtn');
+
+  imagesToPdfBtn.addEventListener('click', () => {
+    if (document.getElementById('imgPdfOverlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'imgPdfOverlay';
+    overlay.className = 'overlay active';
+
+    overlay.innerHTML = `
+    <div class="overlay-backdrop"></div>
+
+    <div class="overlay-panel">
+      <header class="overlay-header">
+        <h2>Images to PDF</h2>
+        <button class="close-imgpdf">✕</button>
+      </header>
+
+      <div class="upload-zone imgpdf-upload">
+        <input type="file" id="imgPdfInput" accept="image/*" multiple hidden>
+        <svg viewBox="0 0 24 24">
+          <path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>
+        </svg>
+        <p><strong>Drop images here</strong> or click to upload</p>
+        <span>JPG, PNG supported</span>
+      </div>
+
+      <button class="merge-btn" id="imgPdfActionBtn" disabled>
+        Convert & Download
+      </button>
+    </div>
+  `;
+
+    document.body.appendChild(overlay);
+
+    /* Close */
+    overlay.querySelector('.close-imgpdf').onclick = closeImgPdf;
+    overlay.querySelector('.overlay-backdrop').onclick = closeImgPdf;
+
+    const zone = overlay.querySelector('.imgpdf-upload');
+    const input = overlay.querySelector('#imgPdfInput');
+    const btn = overlay.querySelector('#imgPdfActionBtn');
+
+    zone.onclick = () => input.click();
+    input.onchange = () => btn.disabled = !input.files.length;
+
+    async function closeImgPdf() {
+      overlay.classList.add('fade-out');
+      setTimeout(() => overlay.remove(), 350);
+    }
+  });
+
+  document.addEventListener('click', async e => {
+    if (e.target.id !== 'imgPdfActionBtn') return;
+
+    const overlay = document.getElementById('imgPdfOverlay');
+    const input = overlay.querySelector('#imgPdfInput');
+    const btn = e.target;
+
+    btn.textContent = 'Converting…';
+    btn.disabled = true;
+
+    const pdf = await PDFLib.PDFDocument.create();
+
+    for (const file of input.files) {
+      const bytes = await file.arrayBuffer();
+
+      const img = file.type.includes('png')
+        ? await pdf.embedPng(bytes)
+        : await pdf.embedJpg(bytes);
+
+      const page = pdf.addPage([img.width, img.height]);
+      page.drawImage(img, {
+        x: 0,
+        y: 0,
+        width: img.width,
+        height: img.height
+      });
+    }
+
+    const pdfBytes = await pdf.save();
+    download(pdfBytes, 'images.pdf');
+
+    showToast(`Converted ${input.files.length} images to PDF`);
+
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 350);
+  });
+
+  /* ===========================
+     COMPRESS IMAGES OVERLAY
+     =========================== */
+
+  const compressImagesBtn = document.getElementById('compressImagesBtn');
+  let imageQuality = 0.7; // DEFAULT – ACTUALLY COMPRESSES
+
+  compressImagesBtn.addEventListener('click', () => {
+    if (document.getElementById('imgCompressOverlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'imgCompressOverlay';
+    overlay.className = 'overlay active';
+
+    overlay.innerHTML = `
+    <div class="overlay-backdrop"></div>
+
+    <div class="overlay-panel">
+      <header class="overlay-header">
+        <h2>Compress Images</h2>
+        <button class="close-img-compress">✕</button>
+      </header>
+
+      <div class="upload-zone img-compress-upload">
+        <input type="file" id="imgCompressInput" accept="image/*" multiple hidden>
+        <svg viewBox="0 0 24 24">
+          <path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>
+        </svg>
+        <p><strong>Drop images here</strong> or click to upload</p>
+        <span>PNG, JPG, WEBP</span>
+      </div>
+
+      <div class="quality-wrap">
+        <div class="quality-head">
+          <span>Quality</span>
+          <strong id="qualityValue">70%</strong>
+        </div>
+
+        <input
+          type="range"
+          id="qualitySlider"
+          min="20"
+          max="90"
+          value="70"
+        />
+
+        <div class="quality-scale">
+          <span>Smaller</span>
+          <span>Balanced</span>
+          <span>Better</span>
+        </div>
+      </div>
+
+      <button class="merge-btn" id="imgCompressActionBtn" disabled>
+        Compress & Download
+      </button>
+    </div>
+  `;
+
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector('#imgCompressInput');
+    const btn = overlay.querySelector('#imgCompressActionBtn');
+    const slider = overlay.querySelector('#qualitySlider');
+    const qualityLabel = overlay.querySelector('#qualityValue');
+
+    slider.oninput = () => {
+      imageQuality = slider.value / 100;
+      qualityLabel.textContent = `${slider.value}%`;
+    };
+
+    overlay.querySelector('.img-compress-upload').onclick = () => input.click();
+    input.onchange = () => btn.disabled = !input.files.length;
+
+    overlay.querySelector('.close-img-compress').onclick = close;
+    overlay.querySelector('.overlay-backdrop').onclick = close;
+
+    function close() {
+      overlay.classList.add('fade-out');
+      setTimeout(() => overlay.remove(), 350);
+    }
+  });
+
+  /* ===========================
+     IMAGE COMPRESSION LOGIC
+     =========================== */
+
+  document.addEventListener('click', async e => {
+    if (e.target.id !== 'imgCompressActionBtn') return;
+
+    const overlay = document.getElementById('imgCompressOverlay');
+    const input = overlay.querySelector('#imgCompressInput');
+    const btn = e.target;
+
+    btn.textContent = 'Compressing…';
+    btn.disabled = true;
+
+    const zip = new JSZip();
+    let before = 0;
+    let after = 0;
+
+    for (const file of input.files) {
+      before += file.size;
+
+      const img = await loadImage(file);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // ✅ FORCE DOWNSCALE
+      const MAX_WIDTH = 1600;
+      let { width, height } = img;
+
+      if (width > MAX_WIDTH) {
+        height = height * (MAX_WIDTH / width);
+        width = MAX_WIDTH;
+      }
+
+      canvas.width = Math.floor(width);
+      canvas.height = Math.floor(height);
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // ✅ FORCE JPEG + REAL QUALITY DROP
+      const blob = await new Promise(res =>
+        canvas.toBlob(res, 'image/jpeg', imageQuality)
+      );
+
+      after += blob.size;
+      zip.file(file.name.replace(/\.\w+$/, '.jpg'), blob);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    download(zipBlob, 'compressed-images.zip');
+
+    showToast(
+      `Images compressed: ${(before / 1024 / 1024).toFixed(2)} MB → ${(after / 1024 / 1024).toFixed(2)} MB`
+    );
+
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 350);
+  });
+
+  /* ===========================
+     HELPERS
+     =========================== */
+
+  function loadImage(file) {
+    return new Promise(res => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  const toggle = document.querySelector('.nav-toggle');
+  const links = document.querySelector('.nav-links');
+
+  let lastScrollY = window.scrollY;
+
+  // Toggle menu
+  toggle.addEventListener('click', () => {
+    links.classList.toggle('open');
+  });
+
+  // Auto-close menu on scroll
+  window.addEventListener('scroll', () => {
+    const currentScroll = window.scrollY;
+
+    // Close if menu is open and user scrolls
+    if (links.classList.contains('open') && currentScroll !== lastScrollY) {
+      links.classList.remove('open');
+    }
+
+    lastScrollY = currentScroll;
+  }, { passive: true });
+
+  const EMAILJS_SERVICE_ID = 'service_a7c5ag9';
+const EMAILJS_TEMPLATE_ID = 'template_5bc1mt5';
+const EMAILJS_PUBLIC_KEY = 'drD2CBWiRuBzQGBEO';
+
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+const overlayContact = document.getElementById('overlay-contact');
+const openContactBtn = document.getElementById('overlay-contact-open');
+const closeContactBtn = document.getElementById('overlay-contact-close');
+const contactForm = document.getElementById('overlay-contact-form');
+const contactStatus = document.getElementById('overlay-contact-status');
+const contactBackdrop = overlayContact.querySelector('.overlay-contact-backdrop');
+
+openContactBtn.onclick = () => {
+  overlayContact.classList.remove('hidden');
+  requestAnimationFrame(() => overlayContact.classList.add('show'));
+};
+
+function closeOverlayContact() {
+  overlayContact.classList.remove('show');
+  setTimeout(() => overlayContact.classList.add('hidden'), 400);
+}
+
+closeContactBtn.onclick = closeOverlayContact;
+contactBackdrop.onclick = closeOverlayContact;
+
+contactForm.onsubmit = (e) => {
+  e.preventDefault();
+  contactStatus.textContent = 'Sending…';
+
+  emailjs.sendForm(
+    EMAILJS_SERVICE_ID,
+    EMAILJS_TEMPLATE_ID,
+    contactForm
+  ).then(() => {
+    contactStatus.textContent = 'Message sent ✔';
+    contactForm.reset();
+  }).catch(() => {
+    contactStatus.textContent = 'Failed to send ✖';
+  });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  const form = document.getElementById('overlay-contact-form');
+  const status = document.getElementById('overlay-contact-status');
+  const sendBtn = form.querySelector('.overlay-contact-send');
+
+  const emailRegex =
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+
+  function showError(field, message) {
+    field.classList.add('error');
+
+    let err = field.parentElement.querySelector('.field-error');
+    if (!err) {
+      err = document.createElement('div');
+      err.className = 'field-error';
+      field.parentElement.appendChild(err);
+    }
+    err.textContent = message;
+  }
+
+  function clearError(field) {
+    field.classList.remove('error');
+    const err = field.parentElement.querySelector('.field-error');
+    if (err) err.remove();
+  }
+
+  function validate() {
+    let valid = true;
+
+    const name = form.elements['name'];
+    const email = form.elements['email'];
+    const message = form.elements['message'];
+
+    clearError(name);
+    clearError(email);
+    clearError(message);
+
+    if (!name.value.trim()) {
+      showError(name, 'Name is required');
+      valid = false;
+    }
+
+    if (!email.value.trim()) {
+      showError(email, 'Email is required');
+      valid = false;
+    } else if (!emailRegex.test(email.value)) {
+      showError(email, 'Enter a valid email address');
+      valid = false;
+    }
+
+    if (message.value.trim().length < 5) {
+      showError(message, 'Message must be at least 5 characters');
+      valid = false;
+    }
+
+    sendBtn.disabled = !valid;
+    return valid;
+  }
+
+  // Live validation
+  form.addEventListener('input', validate);
+
+  // Submit
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    status.textContent = '';
+
+    if (!validate()) {
+      status.textContent = 'Please fix the errors above.';
+      return;
+    }
+
+    sendBtn.disabled = true;
+    status.textContent = 'Sending…';
+
+    emailjs.sendForm(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      form
+    ).then(() => {
+      status.textContent = 'Message sent successfully ✔';
+      form.reset();
+      sendBtn.disabled = false;
+    }).catch(() => {
+      status.textContent = 'Failed to send. Try again.';
+      sendBtn.disabled = false;
+    });
+  });
+
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  document
+    .querySelector('.editor')
+    .addEventListener('click', () => {
+      window.location.href = './editor/index.html';
+    });
+});
+
+
+ const cards = document.querySelectorAll(".tool-card");
+
+  const observer = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("reveal");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15 }
+  );
+
+  cards.forEach(card => observer.observe(card));
+
+  cards.forEach(card => {
+  card.addEventListener("mousemove", e => {
+    const rect = card.getBoundingClientRect();
+    card.style.setProperty("--x", `${e.clientX - rect.left}px`);
+    card.style.setProperty("--y", `${e.clientY - rect.top}px`);
+  });
+});
+
+</script>
+</body>
+
+</html>
