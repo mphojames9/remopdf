@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="../images/tittleIcon.png" type="image/x-icon" />
+  <title>Privacy, Terms & Conditions</title>
+  <style>
+    :root {
+      --bg: #fbfdff;
+      --card: #fff;
+      --muted: #58606b;
+      --accent: #10b981;
+      --maxw: 1100px;
+      --gutter: clamp(6px, 2vw, 20px);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.35;
+      font-size: clamp(14px, 2.2vw, 16px);
+
+      /* IMPORTANT */
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+
+      /* REMOVE this */
+      padding-bottom: 0;
+    }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      backdrop-filter: blur(14px);
+      background: rgba(255, 255, 255, 0.75);
+      border-bottom: 1px solid rgba(0, 0, 0, .06);
+      transition: .3s ease;
+    }
+
+    .nav-container {
+      max-width: 1300px;
+      margin: auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Logo */
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 18px;
+      text-decoration: none;
+      color: #0f172a;
+    }
+
+    .nav-logo img {
+      width: 80px;
+      height: 38px;
+      object-fit: contain;
+    }
+
+    /* Links */
+    .nav-links {
+      display: flex;
+      gap: 26px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      color: #475569;
+      position: relative;
+      transition: .25s ease;
+    }
+
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -6px;
+      width: 0%;
+      height: 2px;
+      background: linear-gradient(90deg, #4f46e5, #22c55e);
+      transition: .3s ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: #0f172a;
+    }
+
+    .nav-links a:hover::after,
+    .nav-links a.active::after {
+      width: 100%;
+    }
+
+    /* Mobile toggle */
+    .nav-toggle {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .nav-toggle span {
+      width: 26px;
+      height: 3px;
+      background: #0f172a;
+      border-radius: 4px;
+      transition: .3s;
+    }
+
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      .nav-toggle {
+        display: flex;
+      }
+
+      .nav-links {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        flex-direction: column;
+        gap: 0;
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height .35s ease;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, .15);
+      }
+
+      .nav-links li {
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .nav-links a {
+        display: block;
+        padding: 18px 24px;
+      }
+
+      .nav-links.open {
+        max-height: 320px;
+      }
+    }
+
+    :root {
+
+      --text: #111827;
+      --shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    .policy {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 1.2rem;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      box-shadow: var(--shadow);
+      color: var(--text);
+      margin-top: .5rem;
+    }
+
+    h1 {
+      width: 100%;
+      text-align: center;
+    }
+
+    @media (max-width: 370px) {
+      h1 {
+        font-size: 1.2rem;
+      }
+    }
+
+    .footer-ts {
+      width: 100%;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--gutter);
+      box-sizing: border-box;
+      flex-wrap: wrap;
+      font-size: 14px;
+      color: var(--muted);
+      background-color: rgb(244, 244, 244);
+    }
+
+    .footer-ts .right {
+      width: 100%;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="../" class="nav-logo">
+        <img src="../images/logo.png" alt="Logo">
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../about/index.html">About us</a></li>
+      </ul>
+
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+  <main class="policy">
+
+    <p><strong>Effective Date:</strong> December 9, 2025</p>
+
+    <hr>
+
+    <h3>1. Overview</h3>
+    <p>
+      RemoPDF (“we”, “us”, “our”) provides a browser-based PDF-to-image conversion tool.
+      This document explains exactly what data is processed, what is not, and your legal rights.
+      If you do not agree, stop using the website immediately.
+    </p>
+
+    <h3>2. Local-Only File Processing</h3>
+    <p>
+      All PDF processing occurs <strong>entirely inside your browser</strong> using JavaScript and PDF.js.
+    </p>
+    <ul>
+      <li>PDF files never leave your device</li>
+      <li>No files are uploaded to our servers</li>
+      <li>No files are stored, logged, or analyzed remotely</li>
+      <li>Converted images remain under your control</li>
+    </ul>
+
+    <h3>3. Personal Information We Collect</h3>
+    <p>
+      We collect personal information <strong>only when you voluntarily submit it</strong> via the contact form.
+    </p>
+    <ul>
+      <li>Name</li>
+      <li>Email address</li>
+      <li>Message content</li>
+    </ul>
+
+    <h3>How it is used</h3>
+    <ul>
+      <li>Responding to inquiries</li>
+      <li>Providing support</li>
+      <li>Legal or operational communication</li>
+    </ul>
+
+    <p>
+      This data is <strong>not sold, rented, or shared</strong> for marketing purposes.
+    </p>
+
+    <h3>4. Third-Party Email Processing (EmailJS)</h3>
+    <p>
+      Contact form messages are transmitted using <strong>EmailJS</strong>, a third-party email delivery service.
+    </p>
+    <ul>
+      <li>EmailJS temporarily processes submitted data to deliver messages</li>
+      <li>Data is not used for advertising</li>
+      <li>EmailJS operates under its own privacy policy</li>
+    </ul>
+
+    <p>
+      <strong>EmailJS Privacy Policy:</strong>
+      <a href="https://www.emailjs.com/legal/privacy-policy/" target="_blank" rel="noopener">View Policy</a>
+    </p>
+
+    <h3>5. Information We Do NOT Collect</h3>
+    <ul>
+      <li>PDF files or converted images</li>
+      <li>Payment details</li>
+      <li>User accounts</li>
+      <li>Browsing history</li>
+      <li>Persistent tracking cookies</li>
+    </ul>
+
+    <h3>6. Advertising & Third-Party Scripts</h3>
+    <p>
+      RemoPDF displays third-party advertisements to support free usage.
+    </p>
+
+    <p>
+      Advertising partners may collect limited, non-personal technical data such as:
+    </p>
+    <ul>
+      <li>Device type</li>
+      <li>Browser type</li>
+      <li>Approximate (non-precise) location</li>
+      <li>Ad interaction metrics</li>
+    </ul>
+
+    <p>
+      Ads <strong>do not access</strong> your PDF files or browser-processed content.
+    </p>
+
+    <p>
+      <strong>Ad Provider:</strong> PropellerAds (or compatible ad networks)<br>
+      <strong>Privacy Policy:</strong>
+      <a href="https://propellerads.com/privacy/" target="_blank" rel="noopener">View Policy</a>
+    </p>
+
+    <h3>7. Cookies</h3>
+    <p>
+      RemoPDF does not use cookies for analytics or behavioral tracking.
+    </p>
+    <p>
+      Third-party advertisers may use cookies or similar technologies under their own policies.
+    </p>
+
+    <h3>8. Security</h3>
+    <p>
+      Because file processing is local, we do not store documents.
+      However, you are responsible for:
+    </p>
+    <ul>
+      <li>Using a secure device</li>
+      <li>Keeping your browser updated</li>
+      <li>Trusting the network you connect from</li>
+    </ul>
+
+    <h3>9. Children’s Privacy</h3>
+    <p>
+      RemoPDF is not intended for children under 13.
+      We do not knowingly collect children’s personal information.
+    </p>
+
+    <h3>10. Your Rights</h3>
+    <p>
+      You may request:
+    </p>
+    <ul>
+      <li>Access to your submitted data</li>
+      <li>Correction or deletion</li>
+      <li>Information about data usage</li>
+    </ul>
+
+    <p>
+      Contact us using the email below.
+    </p>
+
+    <h3>11. Changes</h3>
+    <p>
+      We may update this policy at any time.
+      Continued use means acceptance of the latest version.
+    </p>
+
+    <br />
+    <hr>
+    <br />
+
+    <h1>Terms & Conditions</h1>
+
+    <h3>1. Acceptance</h3>
+    <p>
+      Using RemoPDF means you agree to these terms.
+      If not, discontinue use.
+    </p>
+
+    <h3>2. Permitted Use</h3>
+    <ul>
+      <li>You must own or have rights to uploaded files</li>
+      <li>No illegal, infringing, or abusive use</li>
+    </ul>
+
+    <h3>3. Intellectual Property</h3>
+    <p>
+      You retain ownership of your files.
+      We retain ownership of the website, UI, and codebase.
+    </p>
+
+    <h3>4. Disclaimer</h3>
+    <p>
+      The service is provided “as is”.
+      No guarantees are made regarding accuracy, availability, or reliability.
+    </p>
+
+    <h3>5. Limitation of Liability</h3>
+    <p>
+      To the maximum extent allowed by law, RemoPDF is not liable for indirect or consequential damages.
+    </p>
+
+    <h3>6. Termination</h3>
+    <p>
+      We may suspend or terminate access at any time without notice.
+    </p>
+
+    <h3>7. Governing Law</h3>
+    <p>
+      These terms are governed by the laws of the operating jurisdiction.
+    </p>
+
+    <h3>8. Contact</h3>
+    <p>
+      <strong>Email:</strong>
+      <a href="mailto:tmsoftwaresprivacy@outlook.com">tmsoftwaresprivacy@outlook.com</a>
+    </p>
+  </main>
+  <div class="footer-ts" role="contentinfo">
+    <div class="right">© 2025 RemoPDF. Built for privacy.</div>
+  </div>
+  <script>
+    const toggle = document.querySelector('.nav-toggle');
+    const links = document.querySelector('.nav-links');
+
+    let lastScrollY = window.scrollY;
+
+    // Toggle menu
+    toggle.addEventListener('click', () => {
+      links.classList.toggle('open');
+    });
+
+    // Auto-close menu on scroll
+    window.addEventListener('scroll', () => {
+      const currentScroll = window.scrollY;
+
+      // Close if menu is open and user scrolls
+      if (links.classList.contains('open') && currentScroll !== lastScrollY) {
+        links.classList.remove('open');
+      }
+
+      lastScrollY = currentScroll;
+    }, { passive: true });
+  </script>
+</body>
+
+</html>
