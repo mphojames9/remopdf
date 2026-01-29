@@ -2199,6 +2199,8 @@ no signup pdf tool
 <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
 <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5DVQSP1FKH"></script>
 
 <script> const overlay = document.getElementById('pdfOverlay');
   const openBtn = document.querySelector('.tool-card'); // merge card
@@ -2210,13 +2212,6 @@ no signup pdf tool
   const mergeBtn = document.getElementById('mergeBtn');
 
   let pdfFiles = [];
-  /* ===========================
-     PDF.JS SETUP (REQUIRED)
-     =========================== */
-
-  /* ===========================
-     PDF.JS SETUP (CORRECT)
-     =========================== */
 
   const pdfjsLib = window.pdfjsLib;
 
@@ -3236,6 +3231,12 @@ document.addEventListener('DOMContentLoaded', () => {
     card.style.setProperty("--y", `${e.clientY - rect.top}px`);
   });
 });
+
+window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-5DVQSP1FKH');
 
 </script>
 </body>
