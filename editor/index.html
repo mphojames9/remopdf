@@ -1741,7 +1741,7 @@
         </svg>
       </button>
 
-      <button class="railbtn active" style="background: red;" data-passive="true" title="Info" aria-label="Info">
+      <button class="railbtn active" id="notool" style="background: red;" data-passive="true" title="Info" aria-label="Info">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
           <path d="M12 10v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1753,13 +1753,13 @@
       <div class="spacer"></div>
 
       <button
-  class="railbtn active"
+  class="railbtn"
   title="Sign"
   aria-label="Sign"
 >
   <i class="fa-solid fa-signature"></i>
 </button>
-s
+
     </aside>
 
     <!-- Thumbnails -->
@@ -2018,6 +2018,7 @@ s
     const zoomLabel = document.getElementById("zoomLabel");
     const rotateBtn = document.getElementById("rotateBtn");
     const el = document.createElement("div");
+    const noTool = document.querySelector('#notool')
 
     const stage = document.getElementById("stage");
     const page = document.getElementById("page");
@@ -3367,13 +3368,33 @@ s
       }
     }
 
+let safetyToolSet = false;
+
+function setInkListeners(enable) {
+
+  if (enable) {
     eraseCanvas.addEventListener("mousedown", inkDown);
     eraseCanvas.addEventListener("mousemove", inkMove);
     window.addEventListener("mouseup", inkUp);
     eraseCanvas.addEventListener("mouseup", inkUp);
+
     eraseCanvas.addEventListener("touchstart", inkDown);
     eraseCanvas.addEventListener("touchmove", inkMove);
     eraseCanvas.addEventListener("touchend", inkUp);
+
+  } else {
+    eraseCanvas.removeEventListener("mousedown", inkDown);
+    eraseCanvas.removeEventListener("mousemove", inkMove);
+    window.removeEventListener("mouseup", inkUp);
+    eraseCanvas.removeEventListener("mouseup", inkUp);
+
+    eraseCanvas.removeEventListener("touchstart", inkDown);
+    eraseCanvas.removeEventListener("touchmove", inkMove);
+    eraseCanvas.removeEventListener("touchend", inkUp);
+  }
+}
+
+
 
     let drawing = false;
     let lastX = 0;
@@ -3467,18 +3488,37 @@ s
       inkSizeUI.classList.toggle("hidden", !show);
     }
 
-    penBtn.onclick = () => {
-      activateTool("pen", penBtn);
+penBtn.onclick = () => {
 
-      // 3. set signature color to BLACK
-      penState.tool = "pen";
-      penState.color = "#000000";
+  safetyToolSet = !safetyToolSet;
 
-      // 4. set size to 4px
-      penState.size = 2;
-      inkSizeSlider.value = 2;
-      inkSizeValue.textContent = "2";
-    };
+  // ✅ Toggle active class
+  if (safetyToolSet === true) {
+    setTimeout(() => {
+      penBtn.classList.add("active");
+       activateTool("pen", penBtn);
+    },100);
+    
+  } else {
+    setTimeout(() => {
+      penBtn.classList.remove("active");
+       activateTool("notool", noTool);
+    }, 1000);
+    
+  }
+
+  setInkListeners(safetyToolSet);
+
+
+  penState.tool = "pen";
+  penState.color = "#000000";
+
+  penState.size = 2;
+  inkSizeSlider.value = 2;
+  inkSizeValue.textContent = "2";
+};
+
+
     textTool.onclick = () => {
       activateTool("text", textTool);
     };
@@ -3545,7 +3585,6 @@ s
         toolButtons.forEach(b => b.classList.remove("active"));
 
         // activate clicked button
-        btn.classList.add("active");
         activeTool = btn;
       });
     });
@@ -3832,15 +3871,10 @@ s
     uploadProgress.classList.add("hidden");
     overlayUploadBtn.style.display = "";
 
-function test(){
-  setTimeout(() => {
-    state.zoom += 0.1;
-      applyZoom();
-  }, 2000);
-  
-}
-test()
-
+    document.addEventListener("DOMContentLoaded", () => {
+  currentTool = null;
+  document.querySelectorAll(".railbtn").forEach(b => b.classList.remove("active"));
+});
 
   </script>
 </body>
