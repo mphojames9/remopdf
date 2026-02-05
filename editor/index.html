@@ -954,14 +954,15 @@
       position: absolute;
       inset: 0;
       z-index: 5;
-      pointer-events: none;
-      /* 🔥 allow drawing */
     }
 
-    .text-mode #textLayer {
-      pointer-events: auto;
-      /* only text tool can receive clicks */
-    }
+  #textLayer {
+  pointer-events: none;
+}
+
+.text-mode #textLayer {
+  pointer-events: auto;
+}
 
 
 
@@ -1290,8 +1291,7 @@
     }
 
 
-    #imageLayer,
-    #textLayer {
+    #imageLayer {
       pointer-events: none;
     }
 
@@ -1741,11 +1741,10 @@
         </svg>
       </button>
 
-      <button class="railbtn active" id="notool" style="background: red;" data-passive="true" title="Info" aria-label="Info">
+      <button class="railbtn active" id="notool" style="background: #111827;" data-passive="true" title="Info" aria-label="Info">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
-          <path d="M12 10v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          <circle cx="12" cy="7" r="1" fill="currentColor" />
+          <path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          <path d="M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
       </button>
 
@@ -1770,16 +1769,6 @@
     <section class="viewer" aria-label="Preview">
       <div class="viewerbar">
         <div class="group">
-          <div class="seg" aria-label="Pan / Move">
-            <button id="moveBtn" title="Move tool" aria-label="Move tool">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2v20M2 12h20" stroke="#111827" stroke-width="2" stroke-linecap="round" />
-                <path d="M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3"
-                  stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </button>
-          </div>
-
           <div class="seg" aria-label="Prev / Next">
             <button id="prevBtn" title="Previous" aria-label="Previous">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -2191,6 +2180,7 @@
         hide() {
           overlay.style.opacity = "0";
           setTimeout(() => overlay.style.display = "none", 300);
+          applyZoom();
         }
       };
     })();
@@ -2562,13 +2552,12 @@
     uploadBtn.onclick = () => {
       uploadBtn.classList.add("active");
       uploadBtn.style.pointerEvents = "none";
-
-      uploadUI.show("Waiting for file…");
       pdfInput.click();
     };
 
 
     pdfInput.onchange = e => {
+      
       const file = e.target.files[0];
       if (!file) {
         uploadBtn.classList.remove("active");
@@ -2945,6 +2934,26 @@
       fontColorPop.classList.remove("show");
       bgColorPop.classList.remove("show");
     }
+
+    document.addEventListener("click", (e) => {
+  const textBox = e.target.closest(".text-box");
+  if (!textBox) return;
+
+  // enable text mode
+  document.body.classList.add("text-mode");
+
+  // allow editing
+  textBox.classList.add("editing");
+  textBox.focus();
+
+  // place caret at end
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(textBox);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+});
 
     fontColorBtn.onclick = e => {
       e.stopPropagation();
@@ -3488,7 +3497,18 @@ function setInkListeners(enable) {
       inkSizeUI.classList.toggle("hidden", !show);
     }
 
+    notool.onclick = () => {
+      textToolCheck = false;
+      safetyToolSet = false;
+      activateTool("notool", noTool);
+       setInkListeners(safetyToolSet);
+       setTimeout(() => {
+        noTool.classList.add('active');
+       }, 100);
+    }
+
 penBtn.onclick = () => {
+  textToolCheck = false;
 
   safetyToolSet = !safetyToolSet;
 
@@ -3518,9 +3538,27 @@ penBtn.onclick = () => {
   inkSizeValue.textContent = "2";
 };
 
+let textToolCheck = false;
 
     textTool.onclick = () => {
-      activateTool("text", textTool);
+      safetyToolSet = false;
+      textToolCheck = !textToolCheck;
+
+  // ✅ Toggle active class
+  if (textToolCheck === true) {
+    setTimeout(() => {
+      penBtn.classList.add("active");
+       activateTool("text", textTool);
+    },100);
+    
+  } else {
+    setTimeout(() => {
+      penBtn.classList.remove("active");
+       activateTool("notool", noTool);
+    }, 1000);
+  }
+  //setInkListeners(safetyToolSet);
+
     };
 
     let activeTool = null;
@@ -3875,6 +3913,8 @@ penBtn.onclick = () => {
   currentTool = null;
   document.querySelectorAll(".railbtn").forEach(b => b.classList.remove("active"));
 });
+
+
 
   </script>
 </body>

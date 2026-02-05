@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Hold Button Test</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 40px;
+  }
+
+  #counter {
+    font-size: 40px;
+    margin-bottom: 20px;
+  }
+
+  #holdBtn {
+    padding: 15px 30px;
+    font-size: 18px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="counter">0</div>
+<button id="holdBtn">Hold Me</button>
+
+<script>
+const btn = document.getElementById("holdBtn");
+const counterDisplay = document.getElementById("counter");
+
+let checkHold = null;
+
+// ---- START HOLD ----
+function startSetCheckHold() {
+
+  if (checkHold === true) return;
+
+  checkHold = true;
+  console.log("checkHold:", checkHold);
+}
+
+// ---- STOP HOLD ----
+function stopSetCheckHold() {
+
+  if (checkHold === null) return;
+
+  checkHold = null;
+  console.log("checkHold:", checkHold);
+}
+
+/*
+Pointer events support:
+Mouse + Touch + Stylus
+*/
+btn.addEventListener("pointerdown", startSetCheckHold);
+btn.addEventListener("pointerup", stopSetCheckHold);
+btn.addEventListener("pointerleave", stopSetCheckHold);
+btn.addEventListener("pointercancel", stopSetCheckHold);
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+✅ FIX #1 (REQUIRED CSS)
+
+Add this exactly:
+
+.image-delete-btn {
+  pointer-events: auto !important;
+}
+
+This alone fixes 80% of the problem.
+
+❌ REASON #2
+Your delete button is hidden unless the image is selected
+
+Your CSS:
+
+.image-item.selected .image-delete-btn {
+  display: flex;
+}
+
+If:
+
+image is not selected
+
+or selection logic breaks
+
+or another handler steals the click
+
+👉 the button either isn’t visible or is visible but dead
+
+Quick test (DO THIS ONCE):
+.image-delete-btn {
+  display: flex !important;
+}
+
+If delete suddenly works → selection logic is the blocker.
+
+❌ REASON #3 (LESS OBVIOUS)
+Drag handlers can steal the pointer event
+
+Your images are draggable.
+If makeDraggable() listens on pointerdown and calls preventDefault(), the click never becomes a click.
+
+Your current delete code:
+
+delBtn.onclick = e => {
+  e.stopPropagation();
+  item.remove();
+  selectedImage = null;
+  snapshot();
+};
+
+❌ onclick fires after pointer events
+❌ If pointerdown is hijacked → click never happens
+
+✅ FIX #2 (USE POINTER EVENTS, NOT CLICK)
+
+Replace your delete handler with this bulletproof version:
+
+delBtn.addEventListener("pointerdown", e => {
+  e.stopPropagation();
+  e.preventDefault();
+
+
+  console.log("DELETE FIRED");
+
+
+  item.remove();
+  selectedImage = null;
+  snapshot();
+});
+
+This guarantees it fires before drag logic.
+
+✅ FINAL CORRECT DELETE SETUP (COPY THIS)
+JS
+if (delBtn) {
+  delBtn.addEventListener("pointerdown", e => {
+    e.stopPropagation();
+    e.preventDefault();
+
+
+    console.log("DELETE FIRED");
+    item.remove();
+    selectedImage = null;
+    snapshot();
+  });
+}
+CSS
+.image-delete-btn {
+  pointer-events: auto !important;
+  z-index: 9999;
+}
+🧠 WHY THIS WORKS
+
+Pointer events bypass drag/click conflicts
+
+Button receives events even outside parent bounds
+
+z-index ensures it’s top-most
+
+preventDefault() stops drag from hijacking
+
+
+
+
+
+
+
+
+
+
+
+
+function restoreState(state) {
+    console.log("RESTORE STATE CALLED", state);
+  if (!state) return;
+
+  textLayer.innerHTML = state.text || "";
+  imageLayer.innerHTML = state.images || "";
+
+  imageLayer.querySelectorAll(".image-item").forEach(item => {
+    const resizer = item.querySelector(".image-resizer");
+    const rotateHandle = item.querySelector(".image-rotate-handle");
+    const delBtn = item.querySelector(".image-delete-btn");
+
+    makeDraggable(item);
+    makeResizable(item, resizer);
+    if (rotateHandle) makeRotatable(item, rotateHandle);
+    bindImageSelection(item);
+
+    if (delBtn) {
+      delBtn.onclick = e => {
+        e.stopPropagation();
+        item.remove();
+        selectedImage = null;
+        snapshot();
+      };
+    }
+
+    // ===============================
+    // ✅ HOLD DETECTION (FIXED)
+    // ===============================
+    if (!rotateHandle) return;
+
+    let checkHold = null; // ✅ MUST exist
+
+    function startSetCheckHold(e) {
+      if (checkHold === true) return;
+
+      checkHold = true;
+      console.log("HOLD START", checkHold);
+
+      rotateHandle.setPointerCapture(e.pointerId);
+    }
+
+    function stopSetCheckHold(e) {
+      if (checkHold !== true) return;
+
+      checkHold = null;
+      console.log("HOLD END", checkHold);
+
+      if (rotateHandle.hasPointerCapture(e.pointerId)) {
+        rotateHandle.releasePointerCapture(e.pointerId);
+      }
+    }
+
+    // ✅ Prevent duplicate listeners
+    rotateHandle.onpointerdown = startSetCheckHold;
+    rotateHandle.onpointerup = stopSetCheckHold;
+    rotateHandle.onpointercancel = stopSetCheckHold;
+    rotateHandle.onpointerleave = stopSetCheckHold;
+  });
+
+  restoreCanvas(drawCtx, state.draw);
+  restoreCanvas(eraseCtx, state.erase);
+
+  if (state.rotation) {
+    Object.keys(pageRotation).forEach(k => delete pageRotation[k]);
+    Object.assign(pageRotation, JSON.parse(state.rotation));
+    applyPageRotation();
+  }
+
+  activeTextBox = null;
+  selectedImage = null;
+  syncToolbarUI();
+}
+
+ADD THIS AT THE VERY TOP 👇
+function restoreState(state) {
+  console.log("RESTORE STATE CALLED", state);
+
+If you don’t see this log:
+
+❌ your function is NEVER EXECUTED
+
+That means:
+
+undo / redo not calling it
+
+snapshot restore broken
+
+wrong state object
+
+✅ BULLETPROOF DEBUG VERSION (USE THIS EXACTLY)
+
+Replace your rotate code with this, no guessing:
+
+if (!rotateHandle) {
+  console.warn("NO ROTATE HANDLE");
+  return;
+}
+
+
+rotateHandle.style.pointerEvents = "auto"; // 🔥 force it
+
+
+let checkHold = false;
+
+
+rotateHandle.addEventListener("pointerdown", e => {
+  console.log("🔥 POINTER DOWN FIRED");
+  checkHold = true;
+});
+
+
+rotateHandle.addEventListener("pointerup", e => {
+  console.log("🔥 POINTER UP FIRED");
+  checkHold = false;
+});
+If THIS doesn’t log:
