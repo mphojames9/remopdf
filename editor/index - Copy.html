@@ -6,7 +6,10 @@
   <link rel="icon" href="../images/tittleIcon.png" type="image/x-icon" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Editor Preview</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
 
   <style>
     :root {
@@ -953,13 +956,13 @@
       z-index: 5;
     }
 
-    #textLayer {
-      pointer-events: none;
-    }
+  #textLayer {
+  pointer-events: none;
+}
 
-    .text-mode #textLayer {
-      pointer-events: auto;
-    }
+.text-mode #textLayer {
+  pointer-events: auto;
+}
 
 
 
@@ -1306,6 +1309,32 @@
       position: absolute;
     }
 
+    .image-delete-btn {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
+      font-size: 14px;
+      line-height: 1;
+      pointer-events: auto;
+      touch-action: none;
+
+    }
+
+    .image-item.selected .image-delete-btn {
+      display: flex;
+    }
+
     /* OPTIONAL: if you want NO outline at all when not selected */
     .image-item:not(.selected) {
       outline: none;
@@ -1336,14 +1365,30 @@
     }
 
     .image-rotate-handle {
+      position: absolute;
+      top: -36px;
+      left: 50%;
+      transform: translateX(-50%);
       width: 18px;
       height: 18px;
       border-radius: 50%;
       background: #00e5ff;
       cursor: grab;
       box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+      display: none;
+      padding: 2px;
     }
 
+    .image-rotate-handle::after {
+      content: "";
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      width: 2px;
+      height: 16px;
+      background: #00e5ff;
+      transform: translateX(-50%);
+    }
 
     .image-item.selected .image-rotate-handle {
       display: block;
@@ -1355,6 +1400,9 @@
       display: block;
     }
 
+    .image-rotate-handle {
+      display: none;
+    }
 
     .image-rotate-handle {
       touch-action: none;
@@ -1378,7 +1426,7 @@
       inset: 0;
       z-index: 9998;
 
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
 
@@ -1578,54 +1626,6 @@
         transform: scale(0.65);
       }
     }
-
-    /* ===== Image Bottom Controls ===== */
-    .image-bottom-bar {
-      position: fixed;
-      left: 50%;
-      bottom: 18px;
-      transform: translateX(-50%) translateY(20px);
-      opacity: 0;
-      pointer-events: none;
-      z-index: 9999;
-      background: rgba(20, 20, 20, 0.85);
-      backdrop-filter: blur(12px);
-      border-radius: 18px;
-      padding: 12px 16px;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-      transition: 0.25s ease;
-      width: 200px;
-      height: 50px;
-    }
-
-    .image-bottom-bar.show {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* delete button */
-    .image-delete-btn {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      border: none;
-      background: linear-gradient(135deg, #ff4a4a, #ff1f1f);
-      color: white;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: 0 8px 22px rgba(255, 0, 0, 0.35);
-      pointer-events: auto;
-      touch-action: none;
-    }
-
-    .image-item .image-delete-btn {
-      display: none;
-    }
-
   </style>
 </head>
 
@@ -1741,21 +1741,23 @@
         </svg>
       </button>
 
-      <button class="railbtn active" id="notool" style="background: #111827;" data-passive="true" title="Info"
-        aria-label="Info">
+      <button class="railbtn active" id="notool" style="background: #111827;" data-passive="true" title="Info" aria-label="Info">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-          <path d="M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
       </button>
 
 
       <div class="spacer"></div>
 
-      <button class="railbtn" title="Sign" aria-label="Sign">
-        <i class="fa-solid fa-signature"></i>
-      </button>
+      <button
+  class="railbtn"
+  title="Sign"
+  aria-label="Sign"
+>
+  <i class="fa-solid fa-signature"></i>
+</button>
 
     </aside>
 
@@ -2032,13 +2034,6 @@
     const imageLayer = document.getElementById('imageLayer');
     let points = [];
 
-    /* ---------- Bottom Image Controls ---------- */
-
-    const imageBottomBar = document.createElement("div");
-    imageBottomBar.className = "image-bottom-bar";
-    document.querySelector('.layout').appendChild(imageBottomBar);
-
-
     const undoStack = [];
     const redoStack = [];
 
@@ -2243,72 +2238,15 @@
 
     function selectImage(el) {
       clearImageSelection();
-
       selectedImage = el;
       el.classList.add("selected");
-
-      showImageControls(el); // 🔥 REQUIRED
-      
     }
-
 
     function clearImageSelection() {
       imageLayer.querySelectorAll(".image-item.selected")
         .forEach(el => el.classList.remove("selected"));
       selectedImage = null;
     }
-
-function showImageControls(selectedImageItem) {
-
-  imageBottomBar.innerHTML = "";
-
-  // ----- CREATE ROTATE HANDLE -----
-  const rotateHandle = document.createElement("div");
-  rotateHandle.className = "image-rotate-handle";
-
-  rotateHandle.innerHTML = `
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
-      <path d="M21 12a9 9 0 1 1-3-6.7"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-      />
-      <path d="M21 3v6h-6"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
-  `;
-
-  imageBottomBar.appendChild(rotateHandle);
-  makeRotatable(selectedImageItem, rotateHandle);
-
-
-  // ----- CREATE DELETE BUTTON -----
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "image-delete-btn";
-  deleteBtn.textContent = "✕";
-
-  deleteBtn.onclick = (e) => {
-    e.stopPropagation();
-    selectedImageItem.remove();
-    hideImageControls();
-    snapshot();
-  };
-
-  imageBottomBar.appendChild(deleteBtn);
-
-  imageBottomBar.classList.add("show");
-}
-
-
-    function hideImageControls() {
-      imageBottomBar.classList.remove("show");
-    }
-
-
 
     function getAngle(cx, cy, x, y) {
       return Math.atan2(y - cy, x - cx) * (180 / Math.PI);
@@ -2319,10 +2257,7 @@ function showImageControls(selectedImageItem) {
       let startRotation = 0;
       let activePointerId = null;
 
-      handle.onpointerdown = null;
-
       handle.addEventListener("pointerdown", (e) => {
-
         e.preventDefault();
         e.stopPropagation();
 
@@ -2622,7 +2557,7 @@ function showImageControls(selectedImageItem) {
 
 
     pdfInput.onchange = e => {
-
+      
       const file = e.target.files[0];
       if (!file) {
         uploadBtn.classList.remove("active");
@@ -3001,24 +2936,24 @@ function showImageControls(selectedImageItem) {
     }
 
     document.addEventListener("click", (e) => {
-      const textBox = e.target.closest(".text-box");
-      if (!textBox) return;
+  const textBox = e.target.closest(".text-box");
+  if (!textBox) return;
 
-      // enable text mode
-      document.body.classList.add("text-mode");
+  // enable text mode
+  document.body.classList.add("text-mode");
 
-      // allow editing
-      textBox.classList.add("editing");
-      textBox.focus();
+  // allow editing
+  textBox.classList.add("editing");
+  textBox.focus();
 
-      // place caret at end
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(textBox);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    });
+  // place caret at end
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(textBox);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+});
 
     fontColorBtn.onclick = e => {
       e.stopPropagation();
@@ -3157,10 +3092,26 @@ function showImageControls(selectedImageItem) {
     }
 
 
+    el.className = "image-item";
+    el.dataset.rotate = "0";
 
-    const bottomBar = document.querySelector('.image-bottom-bar')
-    bottomBar.appendChild(rotateHandle);
+    bindImageSelection(el);
+    makeResizable(el, handle);
+    makeRotatable(el, rotateHandle);
 
+    el.className = "image-item";
+
+    /* your <img> appended here */
+    handle.className = "image-resizer";
+    el.appendChild(handle);
+
+    makeResizable(el, handle); // ✅ FIXED
+
+    el.dataset.rotate = "0";
+    rotateHandle.className = "image-rotate-handle";
+    el.appendChild(rotateHandle);
+
+    makeRotatable(el, rotateHandle);
 
     bindImageSelection(el);
     imageLayer.appendChild(el);
@@ -3171,7 +3122,7 @@ function showImageControls(selectedImageItem) {
     snapshot();
 
     rotateHandle.className = "image-rotate-handle";
-    bottomBar.appendChild(rotateHandle);
+    el.appendChild(rotateHandle);
 
 
     function downloadPDF(bytes, filename) {
@@ -3426,31 +3377,31 @@ function showImageControls(selectedImageItem) {
       }
     }
 
-    let safetyToolSet = false;
+let safetyToolSet = false;
 
-    function setInkListeners(enable) {
+function setInkListeners(enable) {
 
-      if (enable) {
-        eraseCanvas.addEventListener("mousedown", inkDown);
-        eraseCanvas.addEventListener("mousemove", inkMove);
-        window.addEventListener("mouseup", inkUp);
-        eraseCanvas.addEventListener("mouseup", inkUp);
+  if (enable) {
+    eraseCanvas.addEventListener("mousedown", inkDown);
+    eraseCanvas.addEventListener("mousemove", inkMove);
+    window.addEventListener("mouseup", inkUp);
+    eraseCanvas.addEventListener("mouseup", inkUp);
 
-        eraseCanvas.addEventListener("touchstart", inkDown);
-        eraseCanvas.addEventListener("touchmove", inkMove);
-        eraseCanvas.addEventListener("touchend", inkUp);
+    eraseCanvas.addEventListener("touchstart", inkDown);
+    eraseCanvas.addEventListener("touchmove", inkMove);
+    eraseCanvas.addEventListener("touchend", inkUp);
 
-      } else {
-        eraseCanvas.removeEventListener("mousedown", inkDown);
-        eraseCanvas.removeEventListener("mousemove", inkMove);
-        window.removeEventListener("mouseup", inkUp);
-        eraseCanvas.removeEventListener("mouseup", inkUp);
+  } else {
+    eraseCanvas.removeEventListener("mousedown", inkDown);
+    eraseCanvas.removeEventListener("mousemove", inkMove);
+    window.removeEventListener("mouseup", inkUp);
+    eraseCanvas.removeEventListener("mouseup", inkUp);
 
-        eraseCanvas.removeEventListener("touchstart", inkDown);
-        eraseCanvas.removeEventListener("touchmove", inkMove);
-        eraseCanvas.removeEventListener("touchend", inkUp);
-      }
-    }
+    eraseCanvas.removeEventListener("touchstart", inkDown);
+    eraseCanvas.removeEventListener("touchmove", inkMove);
+    eraseCanvas.removeEventListener("touchend", inkUp);
+  }
+}
 
 
 
@@ -3550,63 +3501,63 @@ function showImageControls(selectedImageItem) {
       textToolCheck = false;
       safetyToolSet = false;
       activateTool("notool", noTool);
-      setInkListeners(safetyToolSet);
-      setTimeout(() => {
+       setInkListeners(safetyToolSet);
+       setTimeout(() => {
         noTool.classList.add('active');
-      }, 100);
+       }, 100);
     }
 
-    penBtn.onclick = () => {
-      textToolCheck = false;
+penBtn.onclick = () => {
+  textToolCheck = false;
 
-      safetyToolSet = !safetyToolSet;
+  safetyToolSet = !safetyToolSet;
 
-      // ✅ Toggle active class
-      if (safetyToolSet === true) {
-        setTimeout(() => {
-          penBtn.classList.add("active");
-          activateTool("pen", penBtn);
-        }, 100);
+  // ✅ Toggle active class
+  if (safetyToolSet === true) {
+    setTimeout(() => {
+      penBtn.classList.add("active");
+       activateTool("pen", penBtn);
+    },100);
+    
+  } else {
+    setTimeout(() => {
+      penBtn.classList.remove("active");
+       activateTool("notool", noTool);
+    }, 1000);
+    
+  }
 
-      } else {
-        setTimeout(() => {
-          penBtn.classList.remove("active");
-          activateTool("notool", noTool);
-        }, 1000);
-
-      }
-
-      setInkListeners(safetyToolSet);
+  setInkListeners(safetyToolSet);
 
 
-      penState.tool = "pen";
-      penState.color = "#000000";
+  penState.tool = "pen";
+  penState.color = "#000000";
 
-      penState.size = 2;
-      inkSizeSlider.value = 2;
-      inkSizeValue.textContent = "2";
-    };
+  penState.size = 2;
+  inkSizeSlider.value = 2;
+  inkSizeValue.textContent = "2";
+};
 
-    let textToolCheck = false;
+let textToolCheck = false;
 
     textTool.onclick = () => {
       safetyToolSet = false;
       textToolCheck = !textToolCheck;
 
-      // ✅ Toggle active class
-      if (textToolCheck === true) {
-        setTimeout(() => {
-          penBtn.classList.add("active");
-          activateTool("text", textTool);
-        }, 100);
-
-      } else {
-        setTimeout(() => {
-          penBtn.classList.remove("active");
-          activateTool("notool", noTool);
-        }, 1000);
-      }
-      //setInkListeners(safetyToolSet);
+  // ✅ Toggle active class
+  if (textToolCheck === true) {
+    setTimeout(() => {
+      penBtn.classList.add("active");
+       activateTool("text", textTool);
+    },100);
+    
+  } else {
+    setTimeout(() => {
+      penBtn.classList.remove("active");
+       activateTool("notool", noTool);
+    }, 1000);
+  }
+  //setInkListeners(safetyToolSet);
 
     };
 
@@ -3777,8 +3728,22 @@ function showImageControls(selectedImageItem) {
       const rotateHandle = document.createElement('div');
       rotateHandle.className = 'image-rotate-handle';
 
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'image-delete-btn';
+      delBtn.innerHTML = '✕';
+
+      delBtn.addEventListener('mousedown', e => e.stopPropagation());
+      delBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        wrapper.remove();
+        snapshot();
+      });
+
       wrapper.appendChild(img);
       wrapper.appendChild(resizer);
+      wrapper.appendChild(rotateHandle);
+      wrapper.appendChild(delBtn);
       // 🔄 rotate SVG inside handle
       rotateHandle.innerHTML = `
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
@@ -3802,6 +3767,7 @@ function showImageControls(selectedImageItem) {
 
       makeDraggable(wrapper);
       makeResizable(wrapper, resizer);
+      makeRotatable(wrapper, rotateHandle); // ✅ THIS WAS MISSING
       bindImageSelection(wrapper);
 
       snapshot();
@@ -3826,7 +3792,6 @@ function showImageControls(selectedImageItem) {
       );
       img.classList.add("selected");
       selectedImage = img;
-      showImageControls(img);
 
       // capture pointer
       img.setPointerCapture(e.pointerId);
@@ -3879,6 +3844,12 @@ function showImageControls(selectedImageItem) {
     }, { passive: false });
 
 
+    function clearImageSelection() {
+      document
+        .querySelectorAll(".image-item.selected")
+        .forEach(img => img.classList.remove("selected"));
+    }
+
     stage.addEventListener("wheel", (e) => {
       if (!e.ctrlKey) return;
 
@@ -3898,7 +3869,6 @@ function showImageControls(selectedImageItem) {
       if (e.target.closest(".image-item")) return;
 
       clearImageSelection();
-      hideImageControls();
 
       // OPTIONAL: reset active tool here
       // setActiveTool("move");  // if you have a tool system
@@ -3908,7 +3878,6 @@ function showImageControls(selectedImageItem) {
     page.addEventListener("mousedown", (e) => {
       if (e.target !== page) return;
       clearImageSelection();
-
     });
 
     uploadOverlay.addEventListener("dragover", e => {
@@ -3941,16 +3910,13 @@ function showImageControls(selectedImageItem) {
     overlayUploadBtn.style.display = "";
 
     document.addEventListener("DOMContentLoaded", () => {
-      currentTool = null;
-      document.querySelectorAll(".railbtn").forEach(b => b.classList.remove("active"));
-    });
+  currentTool = null;
+  document.querySelectorAll(".railbtn").forEach(b => b.classList.remove("active"));
+});
 
-
-
-    function hideImageControls() {
-      imageBottomBar.classList.remove("show");
-    }
-
+rotateHandle.addEventListener('click',()=>{
+  console.log('clicked')
+})
 
   </script>
 </body>
