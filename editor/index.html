@@ -1335,187 +1335,192 @@
       display: flex;
     }
 
-/* =========================
+    /* =========================
    ROTATE HANDLE – MODERN UI
    ========================= */
 
-.image-rotate-handle, .image-delete-btn {
+    .image-rotate-handle,
+    .image-delete-btn {
 
-  /* ---- Layout ---- */
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+      /* ---- Layout ---- */
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-  width: 34px;
-  height: 34px;
+      width: 34px;
+      height: 34px;
 
-  cursor: grab;
-  user-select: none;
+      cursor: grab;
+      user-select: none;
 
-  /* ---- Glass Surface ---- */
-  background: linear-gradient(
-    145deg,
-    rgba(255,255,255,0.08),
-    rgba(255,255,255,0.02)
-  );
+      /* ---- Glass Surface ---- */
+      background: linear-gradient(145deg,
+          rgba(255, 255, 255, 0.08),
+          rgba(255, 255, 255, 0.02));
 
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
 
-  border-radius: 12px;
+      border-radius: 12px;
 
-  border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
 
-  /* ---- Depth ---- */
-  box-shadow:
-    0 6px 18px rgba(0,0,0,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.08);
+      /* ---- Depth ---- */
+      box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-  /* ---- Motion ---- */
-  transition:
-    transform 0.22s cubic-bezier(.2,.8,.2,1),
-    box-shadow 0.22s cubic-bezier(.2,.8,.2,1),
-    background 0.22s ease,
-    border-color 0.22s ease;
-}
-
+      /* ---- Motion ---- */
+      transition:
+        transform 0.22s cubic-bezier(.2, .8, .2, 1),
+        box-shadow 0.22s cubic-bezier(.2, .8, .2, 1),
+        background 0.22s ease,
+        border-color 0.22s ease;
+    }
 
 
-/* =========================
+
+    /* =========================
    SVG ICON STYLE
    ========================= */
 
-.image-rotate-handle svg {
+    .image-rotate-handle svg {
 
-  width: 16px;
-  height: 16px;
+      width: 16px;
+      height: 16px;
 
-  color: rgba(255,255,255,0.9);
+      color: rgba(255, 255, 255, 0.9);
 
-  transition:
-    transform 0.35s cubic-bezier(.2,.8,.2,1),
-    color 0.25s ease;
-}
+      transition:
+        transform 0.35s cubic-bezier(.2, .8, .2, 1),
+        color 0.25s ease;
+    }
 
 
 
-/* =========================
+    /* =========================
    HOVER STATE
    ========================= */
 
-.image-rotate-handle:hover {
+    .image-rotate-handle:hover {
 
-  transform: translateY(-2px) scale(1.04);
+      transform: translateY(-2px) scale(1.04);
 
-  background: linear-gradient(
-    145deg,
-    rgba(255,255,255,0.14),
-    rgba(255,255,255,0.04)
-  );
+      background: linear-gradient(145deg,
+          rgba(255, 255, 255, 0.14),
+          rgba(255, 255, 255, 0.04));
 
-  border-color: rgba(255,255,255,0.18);
+      border-color: rgba(255, 255, 255, 0.18);
 
-  box-shadow:
-    0 12px 26px rgba(0,0,0,0.35),
-    inset 0 1px 0 rgba(255,255,255,0.15);
-}
+      box-shadow:
+        0 12px 26px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
 
-.image-rotate-handle:hover svg {
-  transform: rotate(20deg);
-}
+    .image-rotate-handle:hover svg {
+      transform: rotate(20deg);
+    }
 
-.image-rotate-handle::before {
-  content: "";
-  position: absolute;
-  inset: 0;
+    .image-rotate-handle::before {
+      content: "";
+      position: absolute;
+      inset: 0;
 
-  border-radius: inherit;
+      border-radius: inherit;
 
-  background: radial-gradient(
-    circle at 30% 30%,
-    rgba(255,255,255,0.25),
-    transparent 60%
-  );
+      background: radial-gradient(circle at 30% 30%,
+          rgba(255, 255, 255, 0.25),
+          transparent 60%);
 
-  opacity: 0.35;
-  pointer-events: none;
-}
+      opacity: 0.35;
+      pointer-events: none;
+    }
 
-/* =========================
+    /* =========================
    ROTATE SVG BASE
    ========================= */
 
-.image-rotate-handle svg {
-  transform-origin: center;
-  will-change: transform;
-}
+    .image-rotate-handle svg {
+      transform-origin: center;
+      will-change: transform;
+    }
 
 
 
-/* =========================
+    /* =========================
    CLOCKWISE ROTATION
    ========================= */
 
-.image-rotate-handle.rotating-cw svg {
-  animation: rotateCW 1s linear infinite;
-}
+    .image-rotate-handle.rotating-cw svg {
+      animation: rotateCW 1s linear infinite;
+    }
 
-@keyframes rotateCW {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
+    @keyframes rotateCW {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
 
 
-/* =========================
+    /* =========================
    ANTICLOCKWISE ROTATION
    ========================= */
 
-.image-rotate-handle.rotating-ccw svg {
-  animation: rotateCCW 1s linear infinite;
-}
+    .image-rotate-handle.rotating-ccw svg {
+      animation: rotateCCW 1s linear infinite;
+    }
 
-@keyframes rotateCCW {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(-360deg); }
-}
+    @keyframes rotateCCW {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(-360deg);
+      }
+    }
 
 
 
 
-/* =========================
+    /* =========================
    ACTIVE / DRAG STATE
    ========================= */
 
-.image-rotate-handle:active {
+    .image-rotate-handle:active {
 
-  cursor: grabbing;
+      cursor: grabbing;
 
-  transform: scale(0.96);
+      transform: scale(0.96);
 
-  box-shadow:
-    0 4px 10px rgba(0,0,0,0.35) inset;
-}
+      box-shadow:
+        0 4px 10px rgba(0, 0, 0, 0.35) inset;
+    }
 
-.image-rotate-handle:active svg {
-  transform: rotate(120deg) scale(0.95);
-}
+    .image-rotate-handle:active svg {
+      transform: rotate(120deg) scale(0.95);
+    }
 
 
 
-/* =========================
+    /* =========================
    FOCUS ACCESSIBILITY
    ========================= */
 
-.image-rotate-handle:focus-visible {
+    .image-rotate-handle:focus-visible {
 
-  outline: none;
+      outline: none;
 
-  box-shadow:
-    0 0 0 2px rgba(99,102,241,0.6),
-    0 6px 18px rgba(0,0,0,0.25);
-}
+      box-shadow:
+        0 0 0 2px rgba(99, 102, 241, 0.6),
+        0 6px 18px rgba(0, 0, 0, 0.25);
+    }
 
 
 
@@ -1771,7 +1776,7 @@
       align-items: center;
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
       transition: 0.25s ease;
-      width: 200px;
+      width: 100px;
       height: 50px;
     }
 
@@ -1796,6 +1801,38 @@
       display: none;
     }
 
+    .thumb {
+      position: relative;
+    }
+
+    /* DELETE BUTTON */
+    .thumb-delete {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+
+      width: 20px;
+      height: 20px;
+
+      border: none;
+      border-radius: 50%;
+
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      font-size: 12px;
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      opacity: 0;
+      transition: 0.2s;
+    }
+
+    .thumb:hover .thumb-delete {
+      opacity: 1;
+    }
   </style>
 </head>
 
@@ -1818,9 +1855,9 @@
   <!-- Top App Bar -->
   <header class="appbar">
     <button class="iconbtn" id="backBtn" title="Back" aria-label="Back">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M15 18l-6-6 6-6" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
+      <a href="../index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M15 18l-6-6 6-6" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg></a>
     </button>
 
     <div class="appmark" aria-hidden="true">
@@ -2142,6 +2179,8 @@
     };
     // ✅ per-page rotation (degrees)
     const pageRotation = {};
+    const deletedPages = new Set();
+
 
 
     /* ---------- ELEMENTS ---------- */
@@ -2418,7 +2457,7 @@
       el.classList.add("selected");
 
       showImageControls(el); // 🔥 REQUIRED
-      
+
     }
 
 
@@ -2428,15 +2467,15 @@
       selectedImage = null;
     }
 
-function showImageControls(selectedImageItem) {
+    function showImageControls(selectedImageItem) {
 
-  imageBottomBar.innerHTML = "";
+      imageBottomBar.innerHTML = "";
 
-  // ----- CREATE ROTATE HANDLE -----
-  const rotateHandle = document.createElement("div");
-  rotateHandle.className = "image-rotate-handle";
+      // ----- CREATE ROTATE HANDLE -----
+      const rotateHandle = document.createElement("div");
+      rotateHandle.className = "image-rotate-handle";
 
-  rotateHandle.innerHTML = `
+      rotateHandle.innerHTML = `
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
       <path d="M21 12a9 9 0 1 1-3-6.7"
         stroke="currentColor"
@@ -2452,26 +2491,26 @@ function showImageControls(selectedImageItem) {
     </svg>
   `;
 
-  imageBottomBar.appendChild(rotateHandle);
-  makeRotatable(selectedImageItem, rotateHandle);
+      imageBottomBar.appendChild(rotateHandle);
+      makeRotatable(selectedImageItem, rotateHandle);
 
 
-  // ----- CREATE DELETE BUTTON -----
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "image-delete-btn";
-  deleteBtn.textContent = "✕";
+      // ----- CREATE DELETE BUTTON -----
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "image-delete-btn";
+      deleteBtn.textContent = "✕";
 
-  deleteBtn.onclick = (e) => {
-    e.stopPropagation();
-    selectedImageItem.remove();
-    hideImageControls();
-    snapshot();
-  };
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        selectedImageItem.remove();
+        hideImageControls();
+        snapshot();
+      };
 
-  imageBottomBar.appendChild(deleteBtn);
+      imageBottomBar.appendChild(deleteBtn);
 
-  imageBottomBar.classList.add("show");
-}
+      imageBottomBar.classList.add("show");
+    }
 
 
     function hideImageControls() {
@@ -2535,6 +2574,13 @@ function showImageControls(selectedImageItem) {
         handle.removeEventListener("pointermove", onMove);
         handle.removeEventListener("pointerup", onUp);
         handle.removeEventListener("pointercancel", onUp);
+
+        rotateHandle.style.transition = "transform 0.4s ease-out";
+        rotateHandle.style.transform = "rotate(180deg)";
+        setTimeout(() => {
+          rotateHandle.style.transform = "";
+        }, 400);
+
 
         snapshot(); // ✅ ONE undo entry
       }
@@ -3243,6 +3289,15 @@ function showImageControls(selectedImageItem) {
 
       const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
       const pages = pdfDoc.getPages();
+      // ✅ REMOVE DELETED PAGES FROM PDF
+      const sortedDeleted = [...deletedPages].sort((a, b) => b - a);
+
+      sortedDeleted.forEach(index => {
+        if (index >= 0 && index < pdfDoc.getPageCount()) {
+          pdfDoc.removePage(index);
+        }
+      });
+
 
       const page = pages[state.page - 1];
       const rot = pageRotation[state.page] || 0;
@@ -3405,18 +3460,52 @@ function showImageControls(selectedImageItem) {
         images: imageLayer.innerHTML,
         draw: drawCanvas.toDataURL(),
         erase: eraseCanvas.toDataURL(),
-        rotation: JSON.stringify(pageRotation) // ✅ ADD
-      });
+        rotation: JSON.stringify(pageRotation),
 
+        // ✅ NEW — STORE PAGE DELETIONS
+        deletedPages: JSON.stringify([...deletedPages]),
+
+        // ✅ NEW — STORE PAGE COUNT
+        total: state.total,
+      });
 
       if (undoStack.length > 50) undoStack.shift();
     }
+
 
     function restoreState(state) {
       if (!state) return;
 
       textLayer.innerHTML = state.text;
       imageLayer.innerHTML = state.images || ""; // ✅ RESTORE IMAGES
+
+      // ✅ RESTORE deleted pages
+      deletedPages.clear();
+
+      try {
+        if (state.deletedPages) {
+          const arr = JSON.parse(state.deletedPages);
+          if (Array.isArray(arr)) {
+            arr.forEach(p => deletedPages.add(p));
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to restore deletedPages", err);
+      }
+
+
+      if (state.total !== undefined) {
+
+        // ✅ Ensure global state object exists
+        if (!window.state) window.state = {};
+
+        if (Number.isFinite(state.total)) {
+          window.state.total = state.total;
+          pageTotalEl.textContent = state.total;
+        }
+
+      }
+      renderThumbnails();
 
       // re-bind image behaviors
       imageLayer.querySelectorAll(".image-item").forEach(item => {
@@ -3451,6 +3540,8 @@ function showImageControls(selectedImageItem) {
       activeTextBox = null;
       syncToolbarUI();
       selectedImage = null;   // ✅ HERE
+      // 🔥 ALWAYS rebuild thumbnails from real PDF state
+
     }
 
 
@@ -3576,11 +3667,24 @@ function showImageControls(selectedImageItem) {
         thumb.dataset.page = i;
 
         thumb.innerHTML = `
-        <div class="thumbnum">${i}</div>
-        <div class="thumbpaper"></div>
-      `;
+  <div class="thumbnum">${i}</div>
+
+  <button class="thumb-delete" title="Delete page">✕</button>
+
+  <div class="thumbpaper"></div>
+`;
+
 
         thumb.querySelector(".thumbpaper").appendChild(canvas);
+
+        /* ===== DELETE PAGE BUTTON ===== */
+        thumb.querySelector(".thumb-delete").onclick = async (e) => {
+          e.stopPropagation();
+          const pageToDelete = Number(thumb.dataset.page);
+          deletePage(pageToDelete);
+          snapshot();
+        };
+
 
         thumb.onclick = () => {
           document
@@ -3594,7 +3698,82 @@ function showImageControls(selectedImageItem) {
 
         thumbsEl.appendChild(thumb);
       }
+      bindThumbnailEvents();
     }
+
+    function bindThumbnailEvents() {
+
+      document.querySelectorAll(".thumb").forEach(thumb => {
+
+        const delBtn = thumb.querySelector(".thumb-delete");
+
+        if (delBtn) {
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+
+            const pageToDelete = Number(thumb.dataset.page);
+            deletePage(pageToDelete);
+            snapshot(); // ✅ ensure deletion is undoable
+          };
+        }
+
+        thumb.onclick = () => {
+          document.querySelectorAll(".thumb")
+            .forEach(t => t.classList.remove("active"));
+
+          thumb.classList.add("active");
+          state.page = Number(thumb.dataset.page);
+          render();
+        };
+      });
+    }
+
+
+
+    function deletePage(pageNum) {
+
+      // ✅ store deleted page index (PDF uses zero-based)
+      deletedPages.add(pageNum - 1);
+
+      /* 1️⃣ Remove thumbnail element */
+      const thumb = document.querySelector(`.thumb[data-page="${pageNum}"]`);
+      if (thumb) thumb.remove();
+
+      /* 2️⃣ Reduce total */
+      state.total--;
+
+      /* 3️⃣ Re-number remaining thumbnails */
+      const thumbs = document.querySelectorAll(".thumb");
+
+      thumbs.forEach((t, index) => {
+        const newPage = index + 1;
+
+        t.dataset.page = newPage;
+        t.querySelector(".thumbnum").textContent = newPage;
+      });
+
+      /* 4️⃣ Fix current page selection */
+      if (state.page === pageNum) {
+
+        state.page = Math.max(1, pageNum - 1);
+
+        document
+          .querySelectorAll(".thumb")
+          .forEach(t => t.classList.remove("active"));
+
+        const newActive = document.querySelector(`.thumb[data-page="${state.page}"]`);
+        if (newActive) newActive.classList.add("active");
+
+        render();
+      }
+
+      /* 5️⃣ Update page indicator */
+      pageTotalEl.textContent = state.total;
+
+      snapshot();
+    }
+
+
 
     let safetyToolSet = false;
 
@@ -4121,81 +4300,63 @@ function showImageControls(selectedImageItem) {
       imageBottomBar.classList.remove("show");
     }
 
-    rotateHandle.classList.add("rotating-cw");
-rotateHandle.classList.remove("rotating-ccw");
-rotateHandle.classList.add("rotating-ccw");
-rotateHandle.classList.remove("rotating-cw");
-rotateHandle.classList.remove("rotating-cw", "rotating-ccw");
-if (angleDelta > 0) {
-  rotateHandle.classList.add("rotating-cw");
-  rotateHandle.classList.remove("rotating-ccw");
-}
-else if (angleDelta < 0) {
-  rotateHandle.classList.add("rotating-ccw");
-  rotateHandle.classList.remove("rotating-cw");
-}
 
-function makeRotatable(imageItem, rotateHandle) {
+    function makeRotatable(imageItem, rotateHandle) {
 
-  let startAngle = 0;
-  let currentRotation = parseFloat(imageItem.dataset.rotate || 0);
+      let startAngle = 0;
+      let currentRotation = parseFloat(imageItem.dataset.rotate || 0);
 
-  function getAngle(cx, cy, ex, ey) {
-    return Math.atan2(ey - cy, ex - cx) * 180 / Math.PI;
-  }
-
-  rotateHandle.addEventListener("pointerdown", (e) => {
-
-    e.stopPropagation();
-    rotateHandle.setPointerCapture(e.pointerId);
-
-    const rect = imageItem.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    startAngle = getAngle(centerX, centerY, e.clientX, e.clientY);
-
-    function onMove(ev) {
-
-      const newAngle = getAngle(centerX, centerY, ev.clientX, ev.clientY);
-      const delta = newAngle - startAngle;
-
-      /* ---------- APPLY ROTATION ---------- */
-      const finalRotation = currentRotation + delta;
-      imageItem.style.transform = `rotate(${finalRotation}deg)`;
-
-
-      /* ---------- SAVE ROTATION ---------- */
-      imageItem.dataset.rotate = finalRotation;
-
-
-      /* ---------- DIRECTION DETECTION ---------- */
-      if (delta > 0) {
-        rotateHandle.classList.add("rotating-cw");
-        rotateHandle.classList.remove("rotating-ccw");
+      function getAngle(cx, cy, ex, ey) {
+        return Math.atan2(ey - cy, ex - cx) * 180 / Math.PI;
       }
-      else if (delta < 0) {
-        rotateHandle.classList.add("rotating-ccw");
-        rotateHandle.classList.remove("rotating-cw");
-      }
+
+      rotateHandle.addEventListener("pointerdown", (e) => {
+
+        e.stopPropagation();
+        rotateHandle.setPointerCapture(e.pointerId);
+
+        const rect = imageItem.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        startAngle = getAngle(centerX, centerY, e.clientX, e.clientY);
+
+        function onMove(ev) {
+
+          const newAngle = getAngle(centerX, centerY, ev.clientX, ev.clientY);
+          const delta = newAngle - startAngle;
+
+          const finalRotation = currentRotation + delta;
+
+          imageItem.style.transform = `rotate(${finalRotation}deg)`;
+          imageItem.dataset.rotate = finalRotation;
+
+          /* ===== ROTATION ANIMATION ===== */
+          if (delta > 0) {
+            rotateHandle.classList.add("rotating-cw");
+            rotateHandle.classList.remove("rotating-ccw");
+          } else if (delta < 0) {
+            rotateHandle.classList.add("rotating-ccw");
+            rotateHandle.classList.remove("rotating-cw");
+          }
+        }
+
+        function onUp(ev) {
+
+          currentRotation = parseFloat(imageItem.dataset.rotate || 0);
+
+          rotateHandle.classList.remove("rotating-cw", "rotating-ccw");
+
+          rotateHandle.releasePointerCapture(ev.pointerId);
+
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", onUp);
+        }
+
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp);
+      });
     }
-
-    function onUp(ev) {
-
-      currentRotation = parseFloat(imageItem.dataset.rotate || 0);
-
-      rotateHandle.classList.remove("rotating-cw", "rotating-ccw");
-
-      rotateHandle.releasePointerCapture(ev.pointerId);
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    }
-
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-  });
-}
-
 
 
 
