@@ -1984,7 +1984,7 @@ font-size:42px;
 .resume-widget{
 
 position:fixed;
-
+z-index: 100;
 right:20px;
 bottom:30px;
 
@@ -2697,6 +2697,110 @@ flex-wrap:wrap;
 
 }
 
+.navbar{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  z-index:1000;
+  transition:transform .35s ease, opacity .35s ease;
+}
+
+.navbar.hide{
+  transform:translateY(-100%);
+  opacity:0;
+}
+
+.pdf-preview {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #76eea2;
+}
+
+.pdf-preview img{
+  width:200px;
+  height:240px;
+  display:block;
+}
+
+.pdf-preview{
+position:relative;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:20px;
+font-weight:600;
+overflow:hidden;
+}
+
+/* glowing gradient background */
+
+.pdf-preview::before{
+content:"";
+position:absolute;
+width:300px;
+height:300px;
+background:radial-gradient(circle,rgba(0,123,255,.25),transparent);
+filter:blur(60px);
+animation:glowMove 8s infinite linear;
+}
+
+@keyframes glowMove{
+0%{transform:translate(-100px,-40px);}
+50%{transform:translate(100px,40px);}
+100%{transform:translate(-100px,-40px);}
+}
+
+/* slides */
+
+.slide{
+position:absolute;
+display:flex;
+align-items:center;
+gap:14px;
+
+opacity:0;
+transform:translateY(30px) scale(.9);
+
+transition:
+opacity .7s ease,
+transform .7s ease;
+}
+
+.slide.active{
+opacity:1;
+transform:translateY(0) scale(1);
+}
+
+/* floating effect */
+
+.slide.active i{
+animation:floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon{
+0%,100%{transform:translateY(0)}
+50%{transform:translateY(-6px)}
+}
+
+/* icon style */
+
+.slide i{
+font-size:30px;
+}
+
+/* colors */
+
+.red{color:#e63946;}
+.blue{color:#3a86ff;}
+.green{color:#2ecc71;}
+.orange{color:#ff8c42;}
+.purple{color:#9b5de5;}
+.teal{color:#00b4d8;}
+.pink{color:#ff4d6d;}
+.cyan{color:#00c2ff;}
+.gold{color:#f4b400;}
+
   
 </style>
 <nav class="navbar">
@@ -2740,7 +2844,8 @@ Built for Everyone
 </h1>
 
 <p style="line-height:1.6;">
-Merge, split, compress and convert PDFs instantly. RemoPDF runs directly in your browser no uploads,
+Merge, split, compress and convert PDFs instantly. Sign PDF files, add images, rotate pages, fill PDF forms, and compress images online.
+ RemoPDF runs directly in your browser no uploads,
  no tracking, no limits. You can also create a professional CV in minutes with <strong>ResumePro</strong>,
   choose a clean template, fill in your details, and download a ready-to-use resume.
 </p>
@@ -2772,8 +2877,52 @@ Build Resume
 <div class="hero-right">
 
 <div class="pdf-preview">
-<i class="fa-solid fa-file-pdf"></i>
+
+<div class="slide active">
+<i class="fa-solid fa-file-pdf red"></i>
 <span>RemoPDF</span>
+</div>
+
+<div class="slide">
+<i class="fa-solid fa-object-group blue"></i>
+<span>Merge PDF</span>
+</div>
+
+<div class="slide">
+<i class="fa-solid fa-scissors purple"></i>
+<span>Split PDF</span>
+</div>
+
+<div class="slide">
+<i class="fa-solid fa-compress green"></i>
+<span>Compress PDF</span>
+</div>
+
+<div class="slide">
+<i class="fa-solid fa-image orange"></i>
+<span>Images to PDF</span>
+</div>
+
+<div class="slide">
+<i class="fa-solid fa-file-image teal"></i>
+<span>Compress Images</span>
+</div>
+
+<div class="slide">
+<i class="fa-solid fa-pen pink"></i>
+<span>Edit PDF</span>
+</div>
+
+<div class="slide">
+<i class="fa-solid fa-file-export cyan"></i>
+<span>PDF to JPG</span>
+</div>
+
+<div class="slide">
+<i class="fa-solid fa-file-lines gold"></i>
+<span>Build Resume</span>
+</div>
+
 </div>
 
 
@@ -3563,8 +3712,6 @@ View Templates
 </script>
 <script>
 const widget = document.getElementById("resumeWidget");
-
-
 window.addEventListener("scroll", () => {
 if(window.scrollY > 600 && !localStorage.getItem("resumeWidgetClosed") ){
 document.getElementById("resumeWidget").classList.add("show");
@@ -3574,19 +3721,61 @@ const closeWidget = document.getElementById("resumeWidgetClose");
 closeWidget.onclick = () => {
 widget.classList.add("hide");
 };
-
 const resumeBtn = document.getElementById("resumeWidgetBtn");
 
 /* Close button */
 closeWidget.onclick = () => {
   widget.classList.add("hide");
   localStorage.setItem("resumeWidgetClosed","true");
+  hideWidget()
 };
 
 /* ResumePro button */
 resumeBtn.onclick = () => {
   localStorage.setItem("resumeWidgetClosed","true");
+  hideWidget()
 };
+
+let lastScroll = 0;
+const navbar = document.querySelector(".navbar");
+window.addEventListener("scroll", () => {
+  const currentScroll = window.pageYOffset;
+  if(currentScroll > lastScroll && currentScroll > 80){
+    // scrolling down
+    navbar.classList.add("hide");
+  }
+  else{
+    // scrolling up
+    navbar.classList.remove("hide");
+  }
+  lastScroll = currentScroll;
+});
+
+function hideWidget(){
+  setTimeout(() => {
+    if(localStorage.getItem("resumeWidgetClosed")){
+      widget.style.display = "none";
+    }
+  }, 500);
+}
+
+const slides = document.querySelectorAll(".pdf-preview .slide");
+let index = 0;
+
+setInterval(()=>{
+
+slides[index].classList.remove("active");
+
+index++;
+
+if(index >= slides.length){
+index = 0;
+}
+
+slides[index].classList.add("active");
+
+},5000);
+hideWidget()
 </script>
 
 
