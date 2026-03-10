@@ -745,25 +745,6 @@ margin:auto;
     margin: 0 0 8px;
   }
 
-  .stats {
-    margin: 100px auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 30px;
-    text-align: center;
-  }
-
-  .stat-box {
-    background: linear-gradient(135deg,
-        #22d3ee 0%,
-        #0ea5e9 45%,
-        #2563eb 100%);
-    color: white;
-    padding: 36px 20px;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
-  }
-
   .stat-box strong {
     display: block;
     font-size: 32px;
@@ -2420,6 +2401,359 @@ box-shadow:
 0 10px 25px rgba(0,0,0,.12);
 }
 
+@media (max-width: 900px){
+
+.hero-container{
+display:flex;
+flex-direction:column;
+align-items:center;
+text-align:center;
+gap:40px;
+}
+
+.hero-text{
+display:flex;
+flex-direction:column;
+align-items:center;
+text-align:center;
+}
+
+.hero-buttons{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:12px;
+width:100%;
+}
+
+.hero-btn{
+width:100%;
+max-width:280px;
+justify-content:center;
+}
+
+.hero-trust{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:8px;
+}
+
+.hero-preview{
+display:flex;
+justify-content:center;
+align-items:center;
+position:relative;
+}
+
+.resume-preview{
+margin:auto;
+}
+
+.resume-preview.floating{
+display:none; /* optional: cleaner mobile layout */
+}
+
+}
+
+.hero-premium{
+
+position:relative;
+
+padding:140px 20px;
+
+overflow:hidden;
+
+background:
+radial-gradient(circle at 20% 20%,rgba(59,130,246,.15),transparent 40%),
+radial-gradient(circle at 80% 80%,rgba(34,197,94,.15),transparent 40%),
+linear-gradient(180deg,#ffffff,#f8fafc);
+
+}
+
+.hero-bg-glow{
+
+position:absolute;
+
+width:600px;
+height:600px;
+
+background:linear-gradient(
+135deg,
+#3b82f6,
+#22c55e,
+#ef4444
+);
+
+filter:blur(140px);
+
+opacity:.2;
+
+top:-200px;
+right:-200px;
+
+animation:glowMove 12s ease-in-out infinite;
+
+}
+
+@keyframes glowMove{
+
+0%{transform:translateY(0)}
+50%{transform:translateY(60px)}
+100%{transform:translateY(0)}
+
+}
+
+.hero-container{
+
+max-width:1200px;
+
+margin:auto;
+
+display:grid;
+
+grid-template-columns:1fr 1fr;
+
+gap:80px;
+
+align-items:center;
+
+}
+
+.hero-left h1{
+
+font-size:56px;
+
+font-weight:800;
+
+line-height:1.1;
+
+margin-bottom:20px;
+
+}
+
+.gradient-text{
+
+background:linear-gradient(
+90deg,
+#22c55e,
+#3b82f6,
+#ef4444
+);
+
+-webkit-background-clip:text;
+
+color:transparent;
+
+}
+
+.hero-buttons{
+
+display:flex;
+
+gap:14px;
+
+margin:30px 0;
+
+}
+
+.hero-btn{
+
+display:flex;
+
+align-items:center;
+
+gap:8px;
+
+padding:14px 24px;
+
+border-radius:10px;
+
+font-weight:600;
+
+text-decoration:none;
+
+transition:.3s;
+
+}
+
+.hero-btn.primary{
+
+background:#2563eb;
+
+color:white;
+
+}
+
+.hero-btn.primary:hover{
+
+transform:translateY(-4px);
+
+box-shadow:0 20px 40px rgba(37,99,235,.35);
+
+}
+
+.hero-btn.secondary{
+
+background:#f1f5f9;
+
+color:#111;
+
+}
+
+.hero-trust{
+
+display:flex;
+
+gap:20px;
+
+font-size:14px;
+
+color:#555;
+
+}
+
+.hero-trust i{
+
+color:#22c55e;
+
+}
+
+.pdf-preview{
+
+width:200px;
+height:240px;
+
+background:white;
+
+border-radius:16px;
+
+display:flex;
+
+flex-direction:column;
+
+align-items:center;
+
+justify-content:center;
+
+font-size:40px;
+
+box-shadow:0 30px 80px rgba(0,0,0,.15);
+
+margin:auto;
+
+animation:float 6s ease-in-out infinite;
+
+}
+
+.pdf-preview span{
+
+font-size:14px;
+
+margin-top:10px;
+
+color:#555;
+
+}
+
+@keyframes float{
+
+0%{transform:translateY(0)}
+50%{transform:translateY(-15px)}
+100%{transform:translateY(0)}
+
+}
+
+.hero-right{
+position:relative;
+height:320px;
+max-width: 450px;
+display:flex;
+align-items:center;
+justify-content:center;
+margin: 0 auto;
+
+}
+
+.orbit{
+
+position:absolute;
+
+width:55px;
+height:55px;
+
+background:white;
+
+border-radius:50%;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+font-size:18px;
+
+box-shadow:0 15px 35px rgba(0,0,0,.15);
+
+animation:orbitFloat 5s ease-in-out infinite;
+
+}
+
+.orbit1{
+top:0;
+color:#22c55e;
+}
+
+.orbit2{
+right:-30px;
+color:#3b82f6;
+}
+
+.orbit3{
+bottom:0;
+color:#ef4444;
+}
+
+.orbit4{
+left:-30px;
+color:#2563eb;
+}
+
+@keyframes orbitFloat{
+
+0%{transform:translateY(0)}
+50%{transform:translateY(-10px)}
+100%{transform:translateY(0)}
+
+}
+
+@media (max-width:900px){
+
+.hero-container{
+
+grid-template-columns:1fr;
+
+text-align:center;
+
+}
+
+.hero-buttons{
+
+justify-content:center;
+
+}
+
+.hero-trust{
+
+justify-content:center;
+
+flex-wrap:wrap;
+
+}
+
+}
+
   
 </style>
 <nav class="navbar">
@@ -2443,6 +2777,84 @@ box-shadow:
     </button>
   </div>
 </nav>
+
+<section class="hero-premium">
+
+<div class="hero-bg-glow"></div>
+
+<div class="hero-container">
+
+<div class="hero-left">
+
+<span class="hero-badge">
+<i class="fa-solid fa-bolt"></i>
+Fast • Private • Free
+</span>
+
+<h1>
+Powerful <span class="gradient-text">PDF Tools</span><br>
+Built for Everyone
+</h1>
+
+<p>
+Merge, split, compress and convert PDFs instantly.
+RemoPDF runs directly in your browser — no uploads,
+no tracking, no limits.
+</p>
+
+<div class="hero-buttons">
+
+<a href="#tools" class="hero-btn primary">
+<i class="fa-solid fa-rocket"></i>
+Start Using Tools
+</a>
+
+<a href="/resume-builder" class="hero-btn secondary">
+<i class="fa-solid fa-file-lines"></i>
+Build Resume
+</a>
+
+</div>
+
+<div class="hero-trust">
+<span><i class="fa-solid fa-check"></i> No Sign-Up</span>
+<span><i class="fa-solid fa-check"></i> Instant Processing</span>
+<span><i class="fa-solid fa-check"></i> Private Files</span>
+</div>
+
+</div>
+
+
+
+<div class="hero-right">
+
+<div class="pdf-preview">
+<i class="fa-solid fa-file-pdf"></i>
+<span>RemoPDF</span>
+</div>
+
+
+<div class="orbit orbit1">
+<i class="fa-solid fa-compress"></i>
+</div>
+
+<div class="orbit orbit2">
+<i class="fa-solid fa-image"></i>
+</div>
+
+<div class="orbit orbit3">
+<i class="fa-solid fa-file-arrow-down"></i>
+</div>
+
+<div class="orbit orbit4">
+<i class="fa-solid fa-scissors"></i>
+</div>
+
+</div>
+
+</div>
+
+</section>
 
 <div class="resume-widget" id="resumeWidget">
 
@@ -2697,29 +3109,6 @@ box-shadow:
 
 
 </section>
-
-<section class="landing-section stats">
-  <div class="stat-box reveal show">
-    <strong>11,000+</strong>
-    PDFs Processed
-  </div>
-
-  <div class="stat-box reveal show">
-    <strong>180+</strong>
-    Countries
-  </div>
-
-  <div class="stat-box reveal show">
-    <strong>100%</strong>
-    Client-Side Processing
-  </div>
-
-  <div class="stat-box reveal show">
-    <strong>0</strong>
-    Files Stored
-  </div>
-</section>
-
 
 <section class="landing-section">
   <div class="cta-wrap">
