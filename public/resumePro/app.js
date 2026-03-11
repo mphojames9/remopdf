@@ -318,7 +318,13 @@ const TEMPLATE_LIBRARY = [
     id: 'Modernats',
     name: 'Modernats',
     image: '/images/templates/recruiter.png'
-  }
+  },
+
+  {
+  id: 'ModernatsClean',
+  name: 'ModernatsClean',
+  image: '/images/templates/modern-ats-clean.png'
+}
 ];
 const LANGUAGE_LEVELS = [
   { value: 'basic', label: 'Basic' },
@@ -336,6 +342,7 @@ function updatePreviewLive() {
   previewRAF = requestAnimationFrame(() => {
     renderPreview();
     previewRAF = null;
+
   });
 }
 
@@ -1616,6 +1623,7 @@ function renderPreview(highlightKeywords) {
       case 'pinkcorporateII': return renderPinkCorporateII();
       case 'Modernats': return ModernAtsPhoto();
       case 'promidnight': return renderpromidnight();
+      case 'ModernatsClean': return renderModernAtsClean();
       case 'ats': return renderATS();
       default: return rendermidnight();
     }
@@ -3751,7 +3759,7 @@ function renderCreative() {
 }
 
 
-function renderATS() {
+function renderModernAtsClean() {
   const p = photoHtml();
 return `
 
