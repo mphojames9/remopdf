@@ -3760,186 +3760,143 @@ function renderCreative() {
 
 
 function renderModernAtsClean() {
-  const p = photoHtml();
+
+const p = photoHtml();
+
+const personalFields = [
+{ key: "phone", icon: ICONS.phone_w },
+{ key: "email", icon: ICONS.email_w },
+{ key: "location", icon: ICONS.location_w },
+{ key: "website", icon: ICONS.website_w },
+{ key: "linkedin", icon: ICONS.linkedin_w },
+{ key: "dob", icon: ICONS.calendar_w },
+{ key: "gender", icon: ICONS.user_w },
+{ key: "race", icon: ICONS.group_w },
+{ key: "religion", icon: ICONS.faith_w },
+{ key: "maritalStatus", icon: ICONS.heart_w },
+{ key: "driversLicence", icon: ICONS.car_w }
+];
+
 return `
 
 <div class="resume_ats" style="
-  font-family:'Segoe UI', Arial, Helvetica, sans-serif;
-  font-size:14px;
-  line-height:1.65;
-  color:#1f2937;
-  max-width:820px;
-  margin:auto;
-  display:grid;
-  grid-template-columns:260px 1fr;
-  background:#ffffff;
-  border:1px solid #e5e7eb;
-  border-radius:8px;
-  overflow:hidden;
-  box-shadow:0 12px 35px rgba(0,0,0,.08);
+font-family:'Segoe UI', Arial, Helvetica, sans-serif;
+font-size:14px;
+line-height:1.65;
+color:#1f2937;
+max-width:820px;
+margin:auto;
+display:grid;
+grid-template-columns:260px 1fr;
+background:#ffffff;
+border:1px solid #e5e7eb;
+border-radius:8px;
+overflow:hidden;
+box-shadow:0 12px 35px rgba(0,0,0,.08);
 ">
-
 
 <aside style="
-  background:#2563eb;
-  color:#ffffff;
-  padding:32px 24px;
-  display:grid;
-  grid-template-rows:auto 1fr;
-  height:100%;
+background:#2563eb;
+color:#ffffff;
+padding:32px 24px;
+display:grid;
+grid-template-rows:auto 1fr;
+height:100%;
 ">
 
-<!-- TOP NAME -->
+<!-- NAME -->
 <div style="text-align:center;">
-  <h1 style="
-    font-size:24px;
-    font-weight:700;
-    line-height:1.2;
-    margin-bottom:6px;
-  ">
-  ${escapeHtml(data.personal.fullName || '')}
-  </h1>
 
-  <div style="
-    font-size:13px;
-    opacity:.9;
-  ">
-  ${escapeHtml(data.personal.title || '')}
-  </div>
+<h1 style="
+font-size:24px;
+font-weight:700;
+line-height:1.2;
+margin-bottom:6px;
+">
+${escapeHtml(data.personal.fullName || '')}
+</h1>
+
+<div style="
+font-size:13px;
+opacity:.9;
+">
+${escapeHtml(data.personal.title || '')}
+</div>
+
 </div>
 
 
-<!-- BOTTOM AREA -->
+<!-- BOTTOM -->
 <div style="
-  display:grid;
-  grid-template-columns:1fr auto;
-  align-items:end;
-  margin-top:40px;
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+align-items:end;
+margin-top:40px;
 ">
 
-<!-- PERSONAL DETAILS LEFT -->
+<!-- PERSONAL DETAILS -->
 <div style="
-  font-family:'Segoe UI', Arial, sans-serif;
-  font-size:13px;
-  line-height:1.9;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
+font-family:'Segoe UI', Arial, sans-serif;
+font-size:13px;
 ">
 
-${data.personal.phone ? `
-<div style="display:flex; align-items:center; gap:8px;">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-    <path d="M6.6 10.8c1.5 3 3.6 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 
-    1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V21c0 .6-.4 1-1 
-    1C10.3 22 2 13.7 2 3c0-.6.4-1 1-1h3.5c.6 0 
-    1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 
-    1.1l-2.2 2.2z"/>
-  </svg>
-  <span>${escapeHtml(data.personal.phone)}</span>
-</div>` : ''}
+<ul style="
+list-style:none;
+padding:0;
+margin:0;
+display:flex;
+flex-direction:column;
+gap:6px;
+">
 
-${data.personal.email ? `
-<div style="display:flex; align-items:center; gap:8px;">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-    <path d="M20 4H4c-1.1 0-2 .9-2 
-    2v12c0 1.1.9 2 2 2h16c1.1 
-    0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 
-    4-8 5-8-5V6l8 5 8-5v2z"/>
-  </svg>
-  <span>${escapeHtml(data.personal.email)}</span>
-</div>` : ''}
+${personalFields
+.filter(f => data.personal[f.key])
+.map(f => `
+<li style="display:flex;align-items:center;gap:8px;">
+${icon(f.icon)}
+${escapeHtml(data.personal[f.key])}
+</li>
+`).join('')}
 
-${data.personal.location ? `
-<div style="display:flex; align-items:center; gap:8px;">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-    <path d="M12 2C8.1 2 5 5.1 5 
-    9c0 5.3 7 13 7 13s7-7.7 
-    7-13c0-3.9-3.1-7-7-7zm0 
-    9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 
-    6.5 12 6.5s2.5 1.1 2.5 
-    2.5S13.4 11.5 12 11.5z"/>
-  </svg>
-  <span>${escapeHtml(data.personal.location)}</span>
-</div>` : ''}
-
-${data.personal.website ? `
-<div style="display:flex; align-items:center; gap:8px;">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-    <path d="M12 2a10 10 0 100 
-    20 10 10 0 000-20zm7.9 
-    9h-3.4c-.2-2-.8-3.8-1.6-5.1 
-    2.6.9 4.5 3.1 5 5.1zM12 
-    4c.9 1.3 1.6 3.3 1.8 
-    6h-3.6c.2-2.7.9-4.7 
-    1.8-6zM4.1 13h3.4c.2 
-    2 .8 3.8 1.6 5.1-2.6-.9-4.5-3.1-5-5.1zm3.4-2H4.1c.5-2 
-    2.4-4.2 5-5.1-.8 1.3-1.4 
-    3.1-1.6 5.1zM12 
-    20c-.9-1.3-1.6-3.3-1.8-6h3.6c-.2 
-    2.7-.9 4.7-1.8 6zm2.9-1.9c.8-1.3 
-    1.4-3.1 1.6-5.1h3.4c-.5 2-2.4 
-    4.2-5 5.1z"/>
-  </svg>
-  <span>${escapeHtml(data.personal.website)}</span>
-</div>` : ''}
-
-${data.personal.linkedin ? `
-<div style="display:flex; align-items:center; gap:8px;">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-    <path d="M4.98 3.5C4.98 4.88 
-    3.86 6 2.5 6S0 4.88 0 
-    3.5 1.12 1 2.5 1 4.98 
-    2.12 4.98 3.5zM.5 8h4V24h-4V8zm7 
-    0h3.8v2.2h.1c.5-.9 
-    1.8-2.2 3.8-2.2 4 
-    0 4.8 2.6 4.8 
-    6V24h-4v-7.1c0-1.7 
-    0-3.9-2.4-3.9-2.4 
-    0-2.7 1.9-2.7 
-    3.8V24h-4V8z"/>
-  </svg>
-  <span>${escapeHtml(data.personal.linkedin)}</span>
-</div>` : ''}
+</ul>
 
 </div>
 
-  <!-- PHOTO RIGHT -->
+
+<!-- PHOTO -->
 <div style="
-  margin-left:16px;
-  width:100px;
-  height:100px;
-  flex-shrink:0;
-  border-radius:50%;
-  overflow: hidden;
-
-
+margin-left:16px;
+width:100px;
+height:100px;
+flex-shrink:0;
+border-radius:50%;
+overflow:hidden;
 ">
-  ${p}
+${p}
 </div>
-
-
 
 </div>
 
 </aside>
-<!-- MAIN -->
 
+
+<!-- MAIN -->
 <main style="padding:36px 42px">
+
 
 ${data.summary ? `
 
 <section style="margin-bottom:28px">
 
 <h2 style="
-  font-size:14px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.2px;
-  color:#1e3a8a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:6px;
-  margin-bottom:12px;
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:#1e3a8a;
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
 ">
 Professional Summary
 </h2>
@@ -3952,19 +3909,21 @@ ${escapeHtml(data.summary)}
 
 ` : ''}
 
+
+
 ${hasExperience() ? `
 
 <section style="margin-bottom:28px">
 
 <h2 style="
-  font-size:14px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.2px;
-  color:#1e3a8a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:6px;
-  margin-bottom:14px;
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:#1e3a8a;
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
 ">
 Experience
 </h2>
@@ -3974,9 +3933,9 @@ ${data.experience.map(exp => `
 <div style="margin-bottom:20px">
 
 <div style="
-  display:flex;
-  justify-content:space-between;
-  flex-wrap:wrap;
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
 ">
 
 <strong style="font-size:15px;color:#111827">
@@ -3990,10 +3949,10 @@ ${[exp.start, exp.end].filter(Boolean).join(' - ')}
 </div>
 
 <div style="
-  font-size:13px;
-  color:#374151;
-  font-weight:600;
-  margin-top:3px;
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
 ">
 ${escapeHtml(exp.campany)}
 </div>
@@ -4020,19 +3979,21 @@ ${escapeHtml(b)}
 
 ` : ''}
 
+
+
 ${hasEducation() ? `
 
 <section style="margin-bottom:28px">
 
 <h2 style="
-  font-size:14px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.2px;
-  color:#1e3a8a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:6px;
-  margin-bottom:14px;
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:#1e3a8a;
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
 ">
 Education
 </h2>
@@ -4058,20 +4019,21 @@ ${edu.year ? ` • ${escapeHtml(edu.year)}` : ''}
 
 ` : ''}
 
-<!-- SKILLS -->
+
 
 ${hasSkills() ? `
 
 <div style="margin-bottom:26px">
 
 <h2 style="
-font-size:12px;
-text-transform:uppercase;
-letter-spacing:1.4px;
+font-size:14px;
 font-weight:700;
-margin-bottom:12px;
-border-bottom:1px solid rgba(255,255,255,.35);
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:#1e3a8a;
+border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
+margin-bottom:12px;
 ">
 Skills
 </h2>
@@ -4105,14 +4067,14 @@ margin-bottom:4px;
 
 <div style="
 height:5px;
-background:rgba(255,255,255,.3);
+background:#e5e7eb;
 border-radius:4px;
 ">
 
 <div style="
 height:100%;
 width:${level}%;
-background:#ffffff;
+background:#2563eb;
 border-radius:4px;
 "></div>
 
@@ -4127,25 +4089,26 @@ border-radius:4px;
 
 ` : ''}
 
-<!-- LANGUAGES -->
+
 
 ${hasLanguage() ? `
 
-<div>
+<div style="margin-bottom:28px">
 
 <h2 style="
-font-size:12px;
-text-transform:uppercase;
-letter-spacing:1.4px;
+font-size:14px;
 font-weight:700;
-margin-bottom:12px;
-border-bottom:1px solid rgba(255,255,255,.35);
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:#1e3a8a;
+border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
+margin-bottom:12px;
 ">
 Languages
 </h2>
 
-<ul style="padding-left:16px; font-size:13px">
+<ul style="padding-left:16px;font-size:13px">
 
 ${data.languages
 .filter(l => l.name?.trim())
@@ -4162,19 +4125,21 @@ ${l.level ? ` – ${escapeHtml(l.level)}` : ''}
 
 ` : ''}
 
+
+
 ${hasReferences() ? `
 
 <section>
 
 <h2 style="
-  font-size:14px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.2px;
-  color:#1e3a8a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:6px;
-  margin-bottom:12px;
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:#1e3a8a;
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
 ">
 References
 </h2>
@@ -4203,7 +4168,9 @@ ${ref.email ? `<div>${escapeHtml(ref.email)}</div>` : ''}
 </main>
 
 </div>
+
 `;
+
 }
 
 
