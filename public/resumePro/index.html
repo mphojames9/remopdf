@@ -1,0 +1,3091 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Resume Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="./assets/icon.png">
+  <link rel="stylesheet" href="./template1.css">
+  <link rel="stylesheet" href="./slider.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --card: #ffffff;
+      --primary: #1e293b;
+      --accent: #6f93c1;
+      --text: #111827;
+      --muted: #0f172a;
+      --border: 1px solid rgb(235, 227, 238);
+      --border2: 1px solid rgb(225, 216, 228);
+      --radius: 14px;
+      --shadow: 0 4px 20px rgba(0, 0, 0, .05);
+      --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-ring-shadow: 0 0 #0000;
+      --tw-shadow: 0 2px 4px rgba(0, 0, 0, .08): 0 2px 4px rgba(0, 0, 0, .08);
+      --tw-bg-opacity: 1;
+
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+
+    }
+
+    body {
+      margin: 0;
+      background-color: hsl(40 22% 94% / var(--tw-bg-opacity));
+      color: var(--text);
+      position: fixed;
+      font-family: Rubik, Arial, Helvetica, "Noto Sans Devanagari", "Noto Sans CJK SC Thin", "Noto Sans SC", "Noto Sans Hebrew", "Noto Sans Bengali", sans-serif;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: 0;
+      overflow-y: scroll;
+      height: 100vh;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      height: 60px;
+      z-index: 200;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      max-width: 1500px;
+      margin: 0 auto;
+      box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+      ;
+    }
+
+    .topbar strong {
+      font-size: 16px
+    }
+
+    .edu-card:hover {
+      border-color: #22c55e;
+      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.15);
+    }
+
+    .edu-sep {
+      color: #22c55e;
+      margin: 0 6px;
+    }
+
+    .edu-chevron {
+      transition: transform 0.3s ease;
+    }
+
+    .edu-card.active .edu-chevron {
+      transform: rotate(180deg);
+    }
+
+    /* BODY */
+    .edu-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.35s ease;
+      padding: 0 22px;
+    }
+
+    .edu-card.active .edu-body {
+      max-height: 900px;
+      padding: 22px;
+    }
+
+    /* GRID */
+    .edu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    /* FIELD */
+    .field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .field input {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      transition: 0.25s;
+    }
+
+    .field input:focus {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+      outline: none;
+    }
+
+    /* BUTTON ROW */
+    .edu-actions-row {
+      margin-top: 22px;
+      display: flex;
+      gap: 10px;
+    }
+
+    /* =========================
+   PREMIUM DOWNLOAD BUTTON
+========================= */
+
+    body .download-btn-premium,
+    .btn-premium {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+      transition: all 0.25s ease;
+    }
+
+    .btn-premium {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+      transition: all 0.25s ease;
+    }
+
+    .btn-premium i {
+      font-size: 14px;
+    }
+
+    .btn-premium:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(34, 197, 94, 0.45);
+    }
+
+    .btn-premium:active {
+      transform: translateY(0);
+    }
+
+
+    body .download-btn-premium {
+      position: fixed;
+      left: 50%;
+      display: none;
+      bottom: 20px;
+      /* space from bottom */
+      transform: translateX(-50%);
+      width: 200px;
+      /* make it solid */
+      z-index: 10000;
+      /* above everything */
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    body .download-btn-premium.open {
+      display: block;
+    }
+
+
+    /* Hover */
+    .btn-premium:hover {
+      box-shadow: 0 2px 5px rgba(32, 14, 50, 0.45);
+    }
+
+    .btn-premium:hover i {
+      transform: translateY(2px);
+    }
+
+    .delete-raw {
+      width: 90%;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .btn-premium {
+        width: 100%;
+        /* FULL WIDTH ON MOBILE */
+        min-width: unset;
+      }
+
+      #previewBtn {
+        width: fit-content;
+      }
+    }
+
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 24px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .preview-wrapper {
+      height: 100%;
+    }
+
+    /* Section Card */
+    .profile-section {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      border: 1px solid #f0f0f0;
+      transition: 0.3s ease;
+      display: grid;
+      grid-template-columns: 2.5fr 1fr;
+      position: relative;
+    }
+
+    .profile-section:hover {
+      box-shadow: 0 1px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Title */
+    .profile-section h4 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 18px;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      text-transform: none;
+    }
+
+    .profile-section .Personal-details-main {
+      margin-top: 10px;
+      padding: 0;
+
+    }
+
+    .profile-section li {
+      margin-bottom: 5px;
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+    }
+
+    .Personal-details-main li {
+      list-style-type: none;
+    }
+
+    .Personal-details-main li p {
+      margin: 2px;
+    }
+
+    .fa-solid,
+    .fas {
+      font-size: 22px;
+      margin-right: 10px;
+    }
+
+    .fa-chevron-down {
+      font-size: 10px;
+    }
+
+    .fa-plus {
+      font-size: 17px;
+    }
+
+    /* Upload + Remove Row */
+    .photo-upload {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Upload Button */
+    .upload-btn {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s ease;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+    }
+
+    .upload-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    /* Remove Button */
+    .remove-btn {
+      background: #f3f4f6;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s ease;
+      color: #444;
+    }
+
+    .remove-btn:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .photoMain {
+      width: 80px;
+      height: 80px;
+      overflow: hidden;
+      /* ✅ CLIPS EVERYTHING */
+      position: relative;
+      border-radius: 50%;
+      border: 1px solid rgba(192, 175, 175, 0.397);
+    }
+
+    /* ============================
+   PREMIUM LEVEL SELECT
+============================ */
+
+    .language-level {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+
+      width: 100%;
+      padding: 10px 38px 10px 12px;
+
+      font-size: 13px;
+      font-weight: 500;
+      color: #1f2937;
+
+      background-color: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    /* Dropdown arrow */
+    .language-level {
+      background-image:
+        linear-gradient(45deg, transparent 50%, #6b7280 50%),
+        linear-gradient(135deg, #6b7280 50%, transparent 50%),
+        linear-gradient(to right, #ffffff, #ffffff);
+
+      background-position:
+        calc(100% - 18px) calc(50% - 3px),
+        calc(100% - 13px) calc(50% - 3px),
+        100% 0;
+
+      background-size:
+        5px 5px,
+        5px 5px,
+        2.5em 100%;
+
+      background-repeat: no-repeat;
+    }
+
+    /* Hover */
+    .language-level:hover {
+      border-color: #c7d2fe;
+    }
+
+
+
+    /* Focus */
+    .language-level:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow:
+        0 0 0 3px rgba(99, 102, 241, 0.15),
+        0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Disabled */
+    .language-level:disabled {
+      background-color: #f9fafb;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    /* Preview Container */
+    .photo-preview {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    /* Profile Image */
+    .photo-preview img {
+      width: 250px;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 50%;
+      transition: 0.4s ease;
+      z-index: 1000;
+      position: absolute;
+      top: 0;
+    }
+
+    .photo-preview img:hover {
+      transform: scale(1.05);
+    }
+
+    .section-block {
+      margin-bottom: 20px;
+      overflow-y: scroll;
+    }
+
+    .section-block h4 i {
+      margin-right: 12px;
+    }
+
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px
+    }
+
+
+    .zoom-controls {
+      margin-bottom: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .zoom-controls button {
+      height: 32px;
+      width: 32px;
+      border-radius: 6px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+    }
+
+    .preview-wrap {
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+      overflow-y: scroll;
+      padding: 10px;
+      height: 100vh;
+    }
+
+    .preview-wrap::-webkit-scrollbar {
+      display: none;
+    }
+
+    @media (min-width:1500px) {
+      .layout {
+        display: grid;
+        grid-template-columns: 600px 1fr;
+        gap: 24px;
+        padding: 24px;
+        max-width: 1500px;
+        margin: 0 auto;
+      }
+    }
+
+    #resumePreview {
+      background: white;
+      width: 794px;
+      min-width: 794px;
+      min-height: 1122px;
+      max-height: 1122px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      margin-bottom: 20px;
+      transform-origin: top center;
+      transition: transform 0.2s ease;
+    }
+
+    #resumePreview {
+      cursor: zoom-in;
+      /* shows magnifying glass with "+" */
+    }
+
+    #resumePreview:hover {
+      cursor: zoom-in;
+      /* ensures hover shows zoom-in */
+    }
+
+    /* MOBILE */
+    @media(max-width:900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .layout .aside {
+        height: auto;
+      }
+    }
+
+    /* ===== GLOBAL ===== */
+    .layout .aside {
+      width: 100%;
+      overflow-y: auto;
+      height: 100vh;
+      font-family: "Inter", sans-serif;
+      scrollbar-width: none;
+      background: inherit;
+      box-shadow: none;
+      padding: 10px 10px 100px 10px;
+      position: relative;
+      transition: 450ms ease-in-out;
+    }
+
+    /* Scrollbar */
+    .layout .aside::-webkit-scrollbar {
+      width: 6px;
+    }
+
+
+    /* SECTION CARD */
+    .section-block {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      width: 100%;
+      height: fit-content;
+    }
+
+    /* HEADER */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      color: var(--primary);
+    }
+
+    .section-header h4 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      color: #111;
+      letter-spacing: 0.3px;
+    }
+
+    .section-header i,
+    .editProfileBtn i,
+    .overlay-content h4 i {
+      background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* TOGGLE BUTTON */
+    .toggle-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: none;
+      background: #fbfcfd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .toggle-btn:hover {
+      background: #f3f4f5;
+    }
+
+    .toggle-btn .fa-solid {
+      margin-right: 0;
+    }
+
+    .chevron {
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid #555;
+      border-bottom: 2px solid #555;
+      transform: rotate(45deg);
+      transition: transform 0.3s ease;
+    }
+
+    .toggle-btn.active {
+      transform: rotate(-177deg);
+    }
+
+    /* CONTENT */
+    .section-content {
+      overflow: hidden;
+      height: 0;
+      transition: height 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .close-section-content {
+      height: 0;
+    }
+
+    .open-section-content {
+      height: fit-content;
+    }
+
+    /* INNER CONTENT SPACING */
+    .section-inner {
+      padding-top: 3px;
+    }
+
+    /* SMALL BUTTON */
+    .small-btn {
+      display: block;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: none;
+      background: #f8f9fc;
+      color: var(--primary);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      margin: 10px auto;
+      border: 1px solid rgba(195, 203, 218, 0.664);
+      font-weight: 700;
+    }
+
+    .small-btn:hover {
+      transform: translateY(-1px);
+    }
+
+
+    .section-block:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    /* Titles */
+    .section-block h4 {
+      margin-bottom: 14px;
+      font-size: 14px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .profile-section h4 {
+      text-transform: none;
+      margin-bottom: 0;
+      margin-top: 5px;
+    }
+
+    .skill-row .remove-btn {
+      border: none;
+      background: transparent;
+      color: #ef4444;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0 6px;
+    }
+
+    .skill-row .remove-btn:hover {
+      color: #dc2626;
+    }
+
+    /* ===== INPUTS ===== */
+    input,
+    textarea {
+      width: 100%;
+      border: var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      color: var(--primary);
+      font-size: 14px;
+      transition: all 0.25s ease;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Rows */
+    .row {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .small_wrapper {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .row.small input {
+      flex: 1;
+    }
+
+    /* ===== BUTTONS ===== */
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.25s ease;
+    }
+
+    /* Move buttons */
+    .move {
+      background: #fbfcfd;
+      color: var(--muted);
+      border: 1px solid #eef0f3;
+      font-weight: 700;
+      height: 40px;
+      font-weight: 800;
+    }
+
+    .move:hover {
+      background: #f3f4f5;
+    }
+
+    /* Delete buttons */
+    .delete,
+    .delbullet,
+    .btn.tiny {
+      color: var(--primary);
+      border: var(--border);
+      background: transparent;
+    }
+
+    .delete .fa-solid {
+      font-size: 15px;
+      background: linear-gradient(135deg, rgb(117, 1, 1), rgb(216, 49, 49), rgb(201, 182, 182));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .delete {
+      background: none;
+      border: none;
+    }
+
+    .delete:hover,
+    .btn.tiny:hover {
+      opacity: 0.8;
+    }
+
+    .delete:hover {
+      background: none;
+      border: none;
+    }
+
+    .delbullet:hover {
+      opacity: 0.8;
+    }
+
+    .delbullet {
+      border: none;
+      padding: 0;
+    }
+
+    .delbullet .fa-solid {
+      margin-left: 10px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Add bullet button */
+    .addbullet {
+      background: transparent;
+      color: var(--primary);
+      padding: 5px;
+      border-radius: 8px;
+      border: var(--border);
+    }
+
+    .addbullet .fa-solid {
+      margin-left: 7px;
+    }
+
+    .addbullet:hover {
+      opacity: 0.8;
+    }
+
+    /* ===== ITEM CARD ===== */
+    .item {
+      padding: 14px;
+      border-radius: 14px;
+      border: var(--border);
+      margin-bottom: 14px;
+      transition: 0.3s ease;
+    }
+
+    .item:hover {
+      transform: translateY(-2px);
+    }
+
+    .initials {
+      font-size: 26px;
+      font-weight: bold;
+      color: #94a3b8;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 50%;
+      border: 2px solid gray;
+    }
+
+    .profilePhotoUpload {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 30% 20%, rgba(79, 70, 229, .15), transparent 60%), radial-gradient(circle at 70% 80%, rgba(34, 197, 94, .15), transparent 60%), rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(14px);
+      opacity: 0;
+      pointer-events: auto;
+      transition: opacity .45s ease, transform .45s ease;
+      padding: 5px;
+      overflow-y: scroll;
+    }
+
+    .profilePhotoUpload::-webkit-scrollbar {
+      display: none;
+    }
+
+    .profilePhotoUpload.hidden {
+      display: none;
+    }
+
+
+    @media (max-width:550px) {
+      .profilePhotoUpload {
+        padding: 0;
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+      }
+
+      .profilePhotoUpload .upload-card {
+        border-radius: unset;
+        box-shadow: unset;
+      }
+    }
+
+    @media (max-width:900px) {
+      .layout {
+        padding: 0;
+      }
+
+      body .closeBtn {
+        color: var(--muted);
+        position: fixed;
+        top: 6px;
+        right: 10px;
+        border-radius: 50px;
+        width: 40px;
+        height: 40px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.267);
+        display: none;
+        z-index: 10000;
+      }
+
+      body .closeBtn.open {
+        display: block;
+      }
+
+      .preview-wrap {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 9998;
+        display: none;
+        background-color: hsl(40 22% 94% / var(--tw-bg-opacity));
+        backdrop-filter: blur(14px);
+        pointer-events: auto;
+        transition: 450ms ease-in-out;
+        padding: 3px;
+        overflow-y: scroll;
+        opacity: 0;
+      }
+
+      .preview-wrap.open {
+        display: flex;
+      }
+
+      #resumePreview {
+        transform-origin: top center;
+        margin-top: 1%;
+      }
+
+
+      .header-right .btn-premium {
+        display: none;
+      }
+
+      .header-right {
+        display: none;
+      }
+
+      .layout .aside {
+        max-width: 650px;
+        margin: 0 auto;
+      }
+
+      .preview-btn {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        position: fixed;
+        bottom: 30px;
+        left: 5px;
+      }
+
+      .preview-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+        border-color: #6366f1;
+      }
+
+      .preview-btn .file-icon {
+        color: #4f688d;
+        transition: 0.25s ease;
+        font-weight: 300;
+      }
+
+      .preview-btn .glass-icon {
+        color: #4f688d;
+        transform: scale(0.74);
+        transition: 0.25s ease;
+        margin: 5px;
+
+      }
+
+      .preview-btn:hover .file-icon {
+        color: #c7d2fe;
+      }
+
+      .preview-btn:hover .glass-icon {
+        transform: scale(1.05);
+      }
+    }
+
+    .mainLogo {
+      width: 135px;
+      height: 45px;
+    }
+
+    @media (max-width:500px) {
+      .mainLogo {
+        width: 115px;
+        height: 40px;
+      }
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 30% 20%, rgba(79, 70, 229, .15), transparent 60%), radial-gradient(circle at 70% 80%, rgba(34, 197, 94, .15), transparent 60%), rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(14px);
+      opacity: 1;
+      pointer-events: auto;
+      transition: opacity .45s ease, transform .45s ease;
+      padding: 5px;
+    }
+
+    .upload-card {
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      border-radius: 22px;
+      padding: 36px 34px;
+      text-align: center;
+      width: 100%;
+      max-width: 800px;
+      box-shadow: 0 40px 90px rgba(0, 0, 0, .35), inset 0 0 0 1px rgba(255, 255, 255, .6);
+      animation: floatIn .8s cubic-bezier(.2, .8, .2, 1);
+      overflow-y: scroll;
+    }
+
+    .row1 {
+      width: 100%;
+      float: right;
+    }
+
+    .row1 .closeProfilePhotoUpload {
+      float: right;
+    }
+
+    .row1 .closeProfilePhotoUpload .fa-solid {
+      margin-right: 0;
+    }
+
+    .row2 {
+      width: 100%;
+      background: black;
+      min-height: 350px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .ProfileImageContainer {
+      width: 250px;
+      height: 250px;
+      background: white;
+      overflow: hidden;
+      position: relative;
+      border-radius: 50%;
+      border: #22c55e 2px solid;
+    }
+
+    .ProfileImageContainer img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+
+    .backdrop {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.719);
+      inset: 0;
+      z-index: 100;
+      display: none;
+      opacity: 0;
+    }
+
+    .backdrop.open {
+      display: flex;
+    }
+
+    .backdrop.opacity {
+      opacity: 1;
+    }
+
+
+    .row3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 20px;
+    }
+
+
+    .resizer {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      max-width: 200px;
+      margin: 0 auto;
+    }
+
+    .resizer input {
+      padding: 0;
+      margin-bottom: 3px;
+    }
+
+    .resizer input {
+      padding: 0;
+      margin-bottom: 3px;
+    }
+
+    .resizer .fa-solid {
+      margin-right: 0;
+    }
+
+    .saveImage {
+      background: rgb(27, 165, 57);
+      color: white;
+
+    }
+
+    .saveImage,
+    .removeImage,
+    .changeImage {
+      width: 150px;
+      margin: 40px auto;
+      font-weight: 900;
+      box-shadow: 0 1px 10px rgba(0, 0, 0, 0.219);
+    }
+
+    .changeImage {
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.25s ease;
+      margin: 20px auto;
+    }
+
+    .row3 .left {
+      display: flex;
+      flex-direction: column;
+      max-height: 150px;
+    }
+
+    @media (max-width:550px) {
+      .upload-card {
+        padding: 10px;
+      }
+
+      .saveImage {
+        margin: 8px auto;
+      }
+
+      .row3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-height:645px) {
+      .upload-card {
+        border-radius: 0;
+      }
+
+      .overlay {
+        padding: 0;
+      }
+    }
+
+    .profile-section .right .photo-preview img {
+      width: 80px;
+      height: 80px;
+      top: unset;
+      cursor: pointer;
+      z-index: unset;
+    }
+
+    .profile-section .right {
+      position: relative;
+      height: 90px;
+    }
+
+
+
+
+    .backdropBtn {
+      background: transparent;
+      width: 80%;
+      height: 100%;
+      z-index: 9998;
+      position: absolute;
+      top: 0;
+      cursor: pointer;
+    }
+
+    .editProfileBtn {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      border: 2px solid #a56b6c;
+      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .editProfileBtn .fa-solid {
+      font-size: 20px;
+      margin-right: 0;
+      color: rgb(11, 11, 46);
+    }
+
+    @media (max-width:500px) {
+      .profile-section {
+        display: flex;
+        flex-direction: column-reverse;
+      }
+
+      .editProfileBtn {
+        top: 10px;
+      }
+
+      .profile-section .right .photo-preview img {
+        position: unset;
+      }
+    }
+
+    .overlay-content {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .form-group {
+      padding: 5px;
+    }
+
+    .form-group label {
+      padding-left: 5px;
+      padding-bottom: 5px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .overlay-content .right .photo-preview img {
+      width: 100px;
+      height: 100px;
+      top: unset;
+      cursor: pointer;
+      position: unset;
+    }
+
+    .overlay-personalDetails {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      scrollbar-width: 0px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      backdrop-filter: blur(14px);
+      opacity: 0;
+      pointer-events: auto;
+      transition: ease-in-out 450ms;
+      padding: 5px;
+      padding-bottom: 6em;
+      overflow-y: scroll;
+      height: fit-content;
+      z-index: 999;
+    }
+
+    .overlay-personalDetails.hidden {
+      display: none;
+    }
+
+    .overlay-content h2 {
+      padding: 10px;
+      color: var(--primary);
+    }
+
+    .overlay-content h4 {
+      width: 100%;
+      color: var(--primary);
+      text-align: center;
+    }
+
+    .savePersonalDetails {
+      position: fixed;
+      top: 180px;
+      left: 0;
+      z-index: 999;
+      width: 120px;
+      display: block;
+      margin: 0 auto;
+      opacity: 0;
+      transition: ease-in-out 450ms;
+      font-weight: 600;
+      font-size: 16px;
+      background: rgb(27, 165, 57);
+      color: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transform: translateX(-20px);
+      animation: pulse 2.2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, .45);
+      }
+
+      70% {
+        box-shadow: 0 0 0 9px rgba(79, 70, 229, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+      }
+    }
+
+    .savePersonalDetails.hidden {
+      display: none;
+    }
+
+    .opacity {
+      opacity: 1;
+    }
+
+    @media (min-width:901px) {
+      .preview-wrap.open {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 9998;
+        display: flex;
+        background-color: hsl(40 22% 94% / var(--tw-bg-opacity));
+        backdrop-filter: blur(14px);
+        pointer-events: auto;
+        transition: 450ms ease-in-out;
+        padding: 3px;
+        overflow-y: scroll;
+        opacity: 1;
+      }
+
+
+      #previewBtn {
+        display: none;
+      }
+
+      .savePersonalDetails {
+        top: 56.3%;
+        left: 0;
+        z-index: 999;
+        transform: translateX(-20px);
+      }
+
+      body .closeBtn {
+        color: var(--muted);
+        position: fixed;
+        top: 6px;
+        right: 10px;
+        border-radius: 50px;
+        width: 40px;
+        height: 40px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.267);
+        display: none;
+        z-index: 10000;
+      }
+
+      body .closeBtn.open {
+        display: block;
+      }
+    }
+
+    /* Scrollbar */
+    .overlay-personalDetails::-webkit-scrollbar {
+      display: none;
+    }
+
+    .section-block::-webkit-scrollbar {
+      display: none;
+    }
+
+
+    @media (max-height:670px) {
+      .row2 {
+        height: 280px;
+        max-height: 280px;
+        min-height: unset;
+      }
+    }
+
+    .row-skill-hobby {
+      border: unset;
+      padding: 0;
+    }
+
+    .row-skill-hobby input {
+      margin-bottom: 5px;
+      border: 1px solid var(--border)
+    }
+
+    .row-skill-hobby {
+      display: flex;
+      gap: 5px;
+      flex-wrap: nowrap;
+      width: 100%
+    }
+
+    .row-skill-hobby .btn {
+      border: none;
+    }
+
+    .row-skill-hobby .btn .fa-solid {
+      margin-top: -15px;
+      margin-right: 0;
+      background: linear-gradient(135deg, rgb(117, 1, 1), rgb(216, 49, 49), rgb(201, 182, 182));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 15px;
+    }
+
+    /* EXPERIENCE CARD */
+    .exp-card {
+      background: #f8f9fc;
+      border-radius: 14px;
+      margin-bottom: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    .exp-card:hover {
+      border-color: #6366f1;
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+    }
+
+    .exp-sep {
+      color: #6366f1;
+      margin: 0 6px;
+    }
+
+    .chevron {
+      transition: transform 0.3s ease;
+    }
+
+    /* COLLAPSIBLE BODY */
+    .exp-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.35s ease;
+      padding: 0 20px;
+    }
+
+    .exp-card.active .exp-body {
+      max-height: 1000px;
+      padding: 20px;
+    }
+
+    /* Move buttons */
+    .move-group {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+    }
+
+    /* EDUCATION CARD */
+    .edu-card {
+      background: #f8f9fc;
+      border-radius: 14px;
+      margin-bottom: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    .edu-card:hover {
+      border-color: #22c55e;
+      box-shadow: 0 8px 25px rgba(34, 197, 94, 0.15);
+    }
+
+    /* HEADER */
+    .edu-header {
+      padding: 16px 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .edu-title {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .edu-sep {
+      color: #22c55e;
+      margin: 0 6px;
+    }
+
+    .edu-actions {
+      color: #94a3b8;
+    }
+
+    .edu-chevron {
+      transition: transform 0.3s ease;
+    }
+
+    /* COLLAPSIBLE */
+    .edu-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.35s ease;
+      padding: 0 20px;
+    }
+
+    .edu-card.active .edu-body {
+      max-height: 800px;
+      padding: 20px;
+    }
+
+    .edu-card.active .edu-chevron {
+      transform: rotate(180deg);
+    }
+
+    .edu-move-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .exp-card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 10px 30px rgba(59, 130, 246, 0.15);
+    }
+
+    /* HEADER */
+    .exp-header {
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .exp-title {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .exp-sep {
+      color: #3b82f6;
+      margin: 0 6px;
+    }
+
+    .exp-chevron {
+      transition: 0.3s ease;
+    }
+
+    .exp-card.active .exp-chevron {
+      transform: rotate(180deg);
+    }
+
+    /* BODY */
+    .exp-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: 0.35s ease;
+      padding: 0 22px;
+    }
+
+    .exp-card.active .exp-body {
+      max-height: 1200px;
+      padding: 22px;
+    }
+
+    /* GRID */
+    .exp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    /* RESPONSIBILITIES */
+    .exp-bullets-section {
+      margin-top: 10px;
+    }
+
+    .section-label {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .bullet-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .bullet-input {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .bullet-delete .fa-solid {
+      margin-right: 0;
+      margin-top: -25px;
+    }
+
+    .btn-danger {
+      border: none;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.25s;
+      background: transparent;
+    }
+
+    .btn-danger .fa-solid {
+      margin-right: 0;
+      background: linear-gradient(135deg, rgb(117, 1, 1), rgb(216, 49, 49), rgb(201, 182, 182));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* ADD BUTTON */
+    .midnight-add {
+      margin-top: 10px;
+      background: #f8f9fc;
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 12px;
+      color: #2b3e55;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+
+    .avatar {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      color: var(--brand);
+      font-weight: 700;
+      font-size: 20px
+    }
+
+    /* ACTION ROW */
+    .exp-actions-row {
+      margin-top: 24px;
+      display: flex;
+      gap: 10px;
+    }
+
+    /* CARD */
+    .ref-card {
+      background-color: #f8f9fc;
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 22px;
+      overflow: hidden;
+      transition: 0.3s ease;
+    }
+
+    .ref-card:hover {
+      border-color: #a855f7;
+      box-shadow: 0 10px 30px rgba(168, 85, 247, 0.15);
+    }
+
+    /* HEADER */
+    .ref-header {
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .ref-title {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .ref-sep {
+      color: #a855f7;
+      margin: 0 6px;
+    }
+
+    .ref-chevron {
+      transition: 0.3s ease;
+    }
+
+    .ref-card.active .ref-chevron {
+      transform: rotate(180deg);
+    }
+
+    /* BODY */
+    .ref-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: 0.35s ease;
+      padding: 0 22px;
+    }
+
+    .ref-card.active .ref-body {
+      max-height: 900px;
+      padding: 22px;
+    }
+
+    /* GRID */
+    .ref-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    /* ACTION ROW */
+    .ref-actions-row {
+      margin-top: 24px;
+      display: flex;
+      gap: 10px;
+    }
+
+    #photoPreviewContainer,
+    .photoPreviewContainer {
+      overflow: hidden;
+    }
+
+    #photoPreviewContainer img,
+    .photoPreviewContainer img {
+      object-fit: cover;
+      transition: transform 0.2s ease;
+    }
+
+    .resume-page {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .resume-page:not(:last-child) {
+      page-break-after: always;
+    }
+
+    /* ============================
+   ADD MORE (COLLAPSIBLE)
+============================ */
+
+    .extra-section {
+      margin-top: 12px;
+    }
+
+    /* Header button */
+    .extra-toggle {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      background: transparent;
+      border: none;
+      padding: 8px 0;
+
+      font-size: 13px;
+      font-weight: 600;
+      color: #4f46e5;
+      cursor: pointer;
+    }
+
+    .extra-toggle .chevron {
+      transition: transform 0.3s ease;
+    }
+
+    /* Content wrapper (animated) */
+    .extra-content {
+      max-height: 0;
+      overflow: hidden;
+      transition:
+        max-height 0.45s ease,
+        opacity 0.25s ease;
+      opacity: 0;
+    }
+
+    /* Inner spacing */
+    .extra-inner {
+      padding-top: 10px;
+    }
+
+    /* Open state */
+    .extra-section.open .extra-content {
+      max-height: 600px;
+      /* large enough for content */
+      opacity: 1;
+    }
+
+    .extra-section.open .extra-toggle .chevron {
+      transform: rotate(180deg);
+    }
+
+    /* ============================
+   PREMIUM TOAST NOTIFICATIONS
+============================ */
+
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      min-width: 260px;
+      max-width: 340px;
+      padding: 12px 14px;
+
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+
+      box-shadow:
+        0 10px 25px rgba(0, 0, 0, 0.08),
+        0 4px 10px rgba(0, 0, 0, 0.04);
+
+      font-size: 13px;
+      font-weight: 500;
+      color: #1f2937;
+
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      opacity: 0;
+      transform: translateY(10px);
+      animation: toast-in 0.35s ease forwards;
+
+      pointer-events: auto;
+    }
+
+    /* Variants */
+    .toast.error {
+      border-left: 4px solid #ef4444;
+    }
+
+    .toast.warn {
+      border-left: 4px solid #f59e0b;
+    }
+
+    .toast.info {
+      border-left: 4px solid #6366f1;
+    }
+
+    /* Icon */
+    .toast-icon {
+      font-size: 16px;
+    }
+
+    /* Animations */
+    @keyframes toast-in {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes toast-out {
+      to {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+    }
+
+    .edu-card:hover {
+      border-color: #22c55e;
+      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.15);
+    }
+
+    .edu-sep {
+      color: #22c55e;
+      margin: 0 6px;
+    }
+
+    .edu-chevron {
+      transition: transform 0.3s ease;
+    }
+
+    .edu-card.active .edu-chevron {
+      transform: rotate(180deg);
+    }
+
+    /* BODY */
+    .edu-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.35s ease;
+      padding: 0 22px;
+    }
+
+    .edu-card.active .edu-body {
+      max-height: 900px;
+      padding: 22px;
+    }
+
+    /* GRID */
+    .edu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    /* FIELD */
+    .field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .field input {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      transition: 0.25s;
+    }
+
+    .field input:focus {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+      outline: none;
+    }
+
+    /* BUTTON ROW */
+    .edu-actions-row {
+      margin-top: 22px;
+      display: flex;
+      gap: 10px;
+    }
+
+    /* midnight BUTTONS */
+    .btn-midnight {
+      cursor: pointer;
+      transition: 0.25s;
+      height: 30px;
+    }
+
+    .layout-overlay {
+      position: fixed;
+      inset: 0;
+      background: white;
+      backdrop-filter: blur(8px);
+      display: none;
+      z-index: 9999;
+      overflow: auto;
+    }
+
+    .layout-modal {
+      max-width: 1200px;
+      margin: auto;
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      margin-top: -40px;
+      animation: modalIn .3s ease;
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px)
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    .layout-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .close-btn {
+      border: none;
+      background: #f3f3f3;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .template-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    .filter {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid #ddd;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+
+    }
+
+    .filter.active {
+      background: #20c997;
+      color: white;
+      border: none;
+    }
+
+    .template-group {
+      margin-bottom: 40px;
+    }
+
+    .group-title {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .template-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      transition: .25s;
+    }
+
+    .template-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .template-card img {
+      width: 100%;
+      display: block;
+    }
+
+    .template-card span {
+      display: block;
+      padding: 12px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+    }
+
+    /* responsive */
+    @media(max-width:900px) {
+      .template-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media(max-width:600px) {
+      .template-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .template-image {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: .3s;
+    }
+
+    .template-image img {
+      width: 100%;
+      display: block;
+      transition: transform .4s ease;
+    }
+
+    .template-card:hover img {
+      transform: scale(1.05);
+    }
+
+    .template-card:hover .template-image {
+      border: 2px solid #6c63ff;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .2);
+    }
+
+    .template-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: .3s;
+    }
+
+    .template-card:hover .template-overlay {
+      opacity: 1;
+    }
+
+    .use-template-btn {
+      background: #6c63ff;
+      color: white;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .template-name {
+      display: block;
+      text-align: center;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+
+    .layout-header {
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      padding: 24px 28px;
+
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+
+      position: sticky;
+      top: 0;
+      z-index: 10;
+
+    }
+
+    /* Left side */
+
+    .header-left h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0;
+      color: #111;
+      letter-spacing: -0.3px;
+    }
+
+    .header-subtitle {
+      margin-top: 4px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    /* Close button */
+
+    .close-btn {
+
+      width: 38px;
+      height: 38px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 10px;
+
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: white;
+
+      cursor: pointer;
+
+      font-size: 16px;
+
+      transition: all .25s ease;
+
+    }
+
+    /* hover */
+
+    .close-btn:hover {
+
+      background: #f5f5f5;
+      transform: scale(1.05);
+
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+
+    }
+
+    /* active */
+
+    .close-btn:active {
+      transform: scale(.95);
+    }
+
+    /* mobile */
+
+    @media (max-width:768px) {
+
+      .layout-header {
+        padding: 18px 20px;
+      }
+
+      .header-left h2 {
+        font-size: 18px;
+      }
+
+      .header-subtitle {
+        font-size: 13px;
+      }
+
+    }
+
+    /* wrapper */
+    .template-filter-wrapper {
+      position: relative;
+      padding: 16px 0;
+    }
+
+    /* filter nav */
+    .template-filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* pill buttons */
+    .filter {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, .08);
+      background: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .25s ease;
+    }
+
+    /* hover */
+    .filter:hover {
+      background: #f6f7fb;
+      transform: translateY(-1px);
+    }
+
+    /* active */
+    .filter.active {
+      background: #6c63ff;
+      color: white;
+      border-color: #6c63ff;
+      box-shadow: 0 6px 18px rgba(108, 99, 255, .25);
+
+    }
+
+    /* mobile menu button */
+    .filter-menu-btn {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 0, 0, .1);
+      background: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: .25s;
+    }
+
+    .filter-menu-btn:hover {
+      background: #f4f4f4;
+    }
+
+    /* responsive */
+
+    @media (max-width:768px) {
+
+      .template-filters {
+        position: absolute;
+        top: 60px;
+        left: 24px;
+        right: 24px;
+        background: white;
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, .15);
+        flex-direction: column;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-10px);
+        transition: .25s;
+      }
+
+      /* show mobile menu */
+
+      .template-filters.open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+        z-index: 100;
+      }
+
+      .filter-menu-btn {
+        display: flex;
+      }
+
+    }
+
+    #addExpBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #addEduBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #addrefBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #addSkillBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #addinterestBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #addLanguageBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #summaryCounter {
+      margin-top: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #6b7280;
+      text-align: right;
+      letter-spacing: 0.3px;
+      transition: all .25s ease;
+    }
+
+    /* Near limit warning */
+    #summaryCounter.warning {
+      color: #f59e0b;
+    }
+
+    /* Limit reached */
+    #summaryCounter.limit {
+      color: #ef4444;
+      font-weight: 600;
+    }
+
+    .btn-midnight .fa-solid {
+      margin-right: 0;
+      font-size: 14px;
+    }
+
+    .layout-preview-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+
+      cursor: pointer;
+
+      background: linear-gradient(135deg, #8F1417, #E5393D);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+
+      transition: all 0.25s ease;
+    }
+
+    .layout-preview-btn i {
+      font-size: 14px;
+    }
+
+    .layout-preview-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+    }
+
+    .layout-preview-btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="logo">
+      <img src="./assets/logo.png" alt="logo" class="mainLogo">
+    </div>
+
+    <div class="header-right">
+
+      <button class="layout-preview-btn" onclick="openLayoutPreview(data.template)">
+        <i class="fa-solid fa-layer-group"></i>
+        Change Template
+      </button>
+      <select id="templateSelect" style="display: none;">
+        <option value="midnight">midnight</option>
+        <option value="minimal">Minimal</option>
+        <option value="creative">Creative</option>
+        <option value="recruiter">Recruiter</option>
+        <option value="ats">ATS</option>
+      </select>
+
+      <button id="pdfBtn" class="btn-premium">
+        <i class="fa-solid fa-file-arrow-down"></i>
+        Download
+      </button>
+    </div>
+
+    <!-- Toggle Button -->
+    <div class="menu-toggle" id="menuToggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </header>
+
+  <!-- Mobile Slide Panel -->
+  <div class="mobile-panel" id="mobilePanel">
+
+    <button class="layout-preview-btn" onclick="openLayoutPreview(data.template)">
+      <i class="fa-solid fa-layer-group"></i>
+      Change Template
+    </button>
+
+    <button class="btn-premium">
+      <i class="fa-solid fa-file-arrow-down"></i>
+      Download PDF
+    </button>
+  </div>
+
+  <div class="backdrop"></div>
+
+
+
+  <div id="layoutOverlay" class="layout-overlay">
+    <!-- HEADER -->
+    <div class="layout-header">
+
+      <div class="header-left">
+        <h2>Choose a Resume Template</h2>
+        <p class="header-subtitle">Select a layout to instantly preview your resume</p>
+      </div>
+
+      <button class="close-btn" onclick="closeLayoutPreview()" aria-label="Close">
+        <span>✕</span>
+      </button>
+
+    </div>
+
+    <div class="layout-modal">
+
+
+
+      <div class="template-filter-wrapper">
+
+        <!-- MOBILE MENU BUTTON -->
+        <button class="filter-menu-btn" onclick="toggleFilterMenu()">
+          <span class="menu-icon">☰</span>
+          <span>Filters</span>
+        </button>
+
+        <!-- FILTER NAV -->
+        <div class="template-filters" id="templateFilters">
+
+          <button class="filter active" data-filter="all">All</button>
+          <button class="filter" data-filter="midnight">Modern</button>
+          <button class="filter" data-filter="Modern-ATS">Modern-ATS</button>
+          <button class="filter" data-filter="creative">Creative</button>
+          <button class="filter" data-filter="ats">ATS</button>
+
+        </div>
+
+      </div>
+
+      <!-- TEMPLATE CONTAINER -->
+      <div class="template-container">
+
+        <!-- midnight GROUP -->
+        <div class="template-group" data-group="midnight">
+
+          <h3 class="group-title">Modern Two-Column</h3>
+
+          <div class="template-grid">
+
+            <!-- midnight -->
+            <div class="template-card" data-template="midnight">
+              <div class="template-image">
+                <img src="./assets/Midnight-I.png" alt="midnight Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" onclick="selectTemplate('midnight')">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Midnight Professional</span>
+            </div>
+
+            <!-- Golden Executive -->
+            <div class="template-card" data-template="goldenexecutive">
+              <div class="template-image">
+                <img src="./assets/goldenexecutive.png" alt="Golden Executive">
+                <div class="template-overlay">
+                  <button class="use-template-btn" onclick="selectTemplate('goldenexecutive')">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Golden Executive</span>
+            </div>
+
+            <!-- pinkcorporate -->
+            <div class="template-card" data-template="pinkcorporate">
+              <div class="template-image">
+                <img src="./assets/pinkcorporate.png" alt="Pink Corporate Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" onclick="selectTemplate('pinkcorporate')">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Pink Corporate</span>
+            </div>
+
+
+
+            <!-- midnight -->
+            <div class="template-card" data-template="promidnight">
+              <div class="template-image">
+                <img src="./assets/Midnight-II.png" alt="promidnight Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" onclick="selectTemplate('promidnight')">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Midnight Professional II</span>
+            </div>
+
+            <!-- Golden Executive -->
+            <div class="template-card" data-template="goldenexecutiveII">
+              <div class="template-image">
+                <img src="./assets/goldenexecutiveII.png" alt="Golden ExecutiveII">
+                <div class="template-overlay">
+                  <button class="use-template-btn" onclick="selectTemplate('goldenexecutiveII')">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Golden ExecutiveII</span>
+            </div>
+
+            <!-- pinkcorporate -->
+            <div class="template-card" data-template="pinkcorporateII">
+              <div class="template-image">
+                <img src="./assets/pinkcorporateII.png" alt="Pink Corporate Resume II">
+                <div class="template-overlay">
+                  <button class="use-template-btn" onclick="selectTemplate('pinkcorporateII')">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Pink CorporateII</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIMPLE GROUP -->
+        <div class="template-group" data-group="Modern-ATS">
+          <h3 class="group-title">Modern-ATS</h3>
+          <div class="template-grid">
+            <!-- MINIMAL -->
+            <div class="template-card" data-template="Modern-ATS">
+              <div class="template-image">
+                <img src="./assets/Modernats.png" alt="Modern-ATS Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" onclick="selectTemplate('Modernats')">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Modern-ATS-Photo</span>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- CREATIVE GROUP -->
+        <div class="template-group" data-group="creative">
+
+          <h3 class="group-title">Creative</h3>
+
+          <div class="template-grid">
+
+            <div class="template-card" data-template="creative">
+              <div class="template-image">
+                <img src="./assets/image.png" alt="Creative Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" onclick="selectTemplate('creative')">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Creative</span>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ATS GROUP -->
+        <div class="template-group" data-group="ats">
+
+          <h3 class="group-title">ATS Friendly</h3>
+
+          <div class="template-grid">
+
+            <div class="template-card" data-template="ats">
+              <div class="template-image">
+                <img src="./assets/image.png" alt="ATS Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" onclick="selectTemplate('ats')">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">ATS Friendly</span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  <main class="layout">
+
+    <!-- LEFT PANEL -->
+    <aside class="aside">
+
+      <div class="section-block profile-section">
+        <div class="editProfileBtn">
+          <i class="fa-solid fa-pen" id="editProfileBtn"></i>
+        </div>
+        <div class="left">
+          <h4 class="name" style="font-size: 1.2rem;"></h4>
+          <h4 class="tittle" style="color: #7e7b7b;">Software Engineer</h4>
+          <ul class="Personal-details-main">
+            <li><span style="display:inline-flex;align-items:center;margin-right:6px;color:#6f93c1">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                  <path
+                    d="M3 5a2 2 0 0 1 2-2h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2C9.8 19 5 14.2 5 7a2 2 0 0 1-2-2z"
+                    stroke="#6f93c1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </span>
+              <p class="phoneNo">+27725320406</p>
+            </li>
+            <li><span style="display:inline-flex;align-items:center;margin-right:6px;color:#6f93c1">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                  <rect x="3" y="5" width="18" height="14" rx="2" stroke="#6f93c1" stroke-width="1.5"></rect>
+                  <path d="M3 7l9 6 9-6" stroke="#6f93c1" stroke-width="1.5"></path>
+                </svg>
+              </span>
+              <p class="emailAd">mphojames9@gmail.com</p>
+            </li>
+            <li><span style="display:inline-flex;align-items:center;margin-right:6px;color:#6f93c1">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                  <path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z" stroke="#6f93c1" stroke-width="1.5"></path>
+                  <circle cx="12" cy="10" r="2.5" stroke="#6f93c1" stroke-width="1.5"></circle>
+                </svg>
+              </span>
+              <p class="locationAd">Adonis st 14569 EXT11 Soshanguve South 0152</p>
+            </li>
+          </ul>
+
+        </div>
+        <div class="right">
+          <div class="photoMain">
+            <div id="photoPreviewContainer" class="photo-preview"></div>
+            <div class="backdropBtn"></div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- EXPERIENCE -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-briefcase"></i> Experience</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="section-content">
+          <div class="section-inner">
+            <button class="small-btn" id="addExpBtn">
+              <i class="fa-solid fa-plus"></i> Add Entry
+            </button>
+            <div id="experienceContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDUCATION -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-graduation-cap"></i> Education</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="section-content">
+          <div class="section-inner">
+            <button class="small-btn" id="addEduBtn">
+              <i class="fa-solid fa-plus"></i> Add Entry
+            </button>
+            <div id="educationContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SKILLS -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-toolbox"></i>Skills</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+
+        <div class="section-content" style="height:auto;">
+          <div class="section-inner">
+            <button class="small-btn" id="addSkillBtn">
+              <i class="fa-solid fa-plus"></i> Add Skill
+            </button>
+
+            <div id="skillsContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Languages -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-language"></i> Languages</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+
+        <div class="section-content" style="height:auto;">
+          <div class="section-inner">
+            <button class="small-btn" id="addLanguageBtn">
+              <i class="fa-solid fa-plus"></i> Add Language
+            </button>
+            <div id="languagesContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERESTS -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-heart"></i> Interests</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="section-content">
+          <div class="section-inner">
+            <button class="small-btn" id="addinterestBtn">
+              <i class="fa-solid fa-plus"></i> Add Entry
+            </button>
+            <div id="interestsContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REFERENCES -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-user-check"></i> References</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="section-content">
+          <div class="section-inner">
+            <button class="small-btn" id="addrefBtn">
+              <i class="fa-solid fa-plus"></i> Add Entry
+            </button>
+            <div id="referencesContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay-personalDetails hidden" id="editDetails-overay">
+        <div class="overlay-content">
+          <h2>Edit Personal Details</h2>
+          <div class="right">
+            <h4>Profile Picture</h4>
+            <div id="photoPreviewContainer" class="photo-preview">
+              <img src="./assets/profile.png" alt="" class="src">
+            </div>
+          </div>
+          <div class="section-block">
+            <h4>
+              <i class="fa-solid fa-user-pen"></i>
+              Summary
+            </h4>
+            <textarea id="summary" placeholder="Professional Summary" maxlength="250" oninput="updateCounter()">
+</textarea>
+
+            <div id="summaryCounter">0 / 250</div>
+
+            <div class="section-header">
+              <h4><i class="fa-solid fa-id-card"></i>Personal Details</h4>
+            </div>
+            <div class="section-inner">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input id="fullName" placeholder="Full Name">
+              </div>
+              <div class="form-group">
+                <label>Professional Title</label>
+                <input id="title" placeholder="Title">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input id="email" placeholder="Email">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input id="phone" placeholder="Phone">
+              </div>
+              <div class="form-group">
+                <label>Location</label>
+                <input id="location" placeholder="Location">
+              </div>
+              <div class="form-group">
+                <label>Website</label>
+                <input id="website" placeholder="Website">
+              </div>
+              <div class="form-group">
+                <label>LinkedIn</label>
+                <input id="linkedin" placeholder="LinkedIn">
+              </div>
+              <div class="extra-section">
+
+                <button type="button" class="extra-toggle" aria-expanded="false">
+                  <span>Add more details</span>
+                  <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
+                    <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </button>
+
+                <div class="extra-content">
+                  <div class="extra-inner">
+
+                    <div class="form-group">
+                      <label>Date of Birth</label>
+                      <input id="dob" type="date">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Gender</label>
+                      <input id="gender" placeholder="Gender">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Race</label>
+                      <input id="race" placeholder="Race">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Religion</label>
+                      <input id="religion" placeholder="Religion">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Marital Status</label>
+                      <input id="maritalStatus" placeholder="Marital Status">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Driver's Licence</label>
+                      <input id="driversLicence" placeholder="e.g. Code B">
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+    </aside>
+
+    <button class="savePersonalDetails hidden">
+      <i class="fa-solid fa-save"></i>Save
+    </button>
+    <button id="pdfBtn" class="download-btn-premium">
+      <i class="fa-solid fa-file-arrow-down"></i>
+      Download
+    </button>
+    <button class="closeBtn"><i class="fa-solid fa-multiply" id="editResume"></i></button>
+    <!-- RIGHT PREVIEW -->
+    <section class="preview-wrap">
+      <div id="resumePreview"></div>
+    </section>
+
+    <button class="preview-btn" id="previewBtn">
+      <span class="fa-stack">
+        <i class="fa-regular fa-file fa-stack-2x file-icon"></i>
+        <i class="fa-solid fa-magnifying-glass fa-stack-1x glass-icon"></i>
+      </span>
+    </button>
+  </main>
+
+  <div class="profilePhotoUpload hidden" id="profilePhotoUpload">
+    <div class="upload-card">
+      <div class="row1">
+        <button class="closeProfilePhotoUpload" id="closeProfilePhotoUpload">
+          <i class="fa-solid fa-multiply"></i>
+        </button>
+      </div>
+      <h3>Image Uploader</h3>
+      <div class="row2">
+        <div class="ProfileImageContainer" id="photoPreviewContainer">
+
+          <div id="photoPreviewContainer" class="photo-preview">
+
+          </div>
+        </div>
+
+      </div>
+
+
+      <div class="row3">
+        <div class="right">
+          <div class="resizer">
+            <i class="fa-solid fa-image" style="font-size: 15px;"></i>
+            <input id="photoScale" type="range" min="100" max="200" value="100">
+            <i class="fa-solid fa-image"></i>
+          </div>
+
+          <button class="saveImage"><i class="fa-solid fa-save" style="font-size: 18px;"></i>Done
+          </button>
+        </div>
+        <div class="left">
+          <button class="removeImage" id="removePhotoBtn"
+            style=" margin-bottom: 0; margin-top: 15px; color: rgb(236, 55, 55);"><i class="fa-solid fa-trash"
+              style="font-size: 18px;"></i>Remove
+          </button>
+          <label for="profilePicInput" class="changeImage" style=" margin-bottom: 0;"><i class="fa-solid fa-plus"
+              style="font-size: 18px;"></i>
+            <span>Add/Change</span>
+            <input type="file" id="profilePicInput" accept="image/*" hidden>
+          </label>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div id="toast-container"></div>
+    <!-- html2pdf for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="app.js"></script>
+    <script src="script.js" defer></script>
+
+
+</body>
+
+</html>

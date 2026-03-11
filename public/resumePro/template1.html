@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium Resume</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+/* ---------- GLOBAL ---------- */
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:'Montserrat',sans-serif;
+background:#eaeaea;
+}
+
+.resume{
+width:900px;
+margin:auto;
+background:#1f3b3f;
+color:#cfd9da;
+overflow:hidden;
+}
+
+/* ---------- HEADER ---------- */
+
+.header{
+background:#2f9a9b;
+text-align:center;
+padding:60px 40px 140px 40px;
+position:relative;
+}
+
+.header h1{
+color:white;
+letter-spacing:8px;
+font-weight:700;
+font-size:36px;
+}
+
+.header h2{
+color:#d7f0ef;
+font-weight:300;
+letter-spacing:5px;
+font-size:14px;
+margin-top:10px;
+}
+
+/* curved layers */
+
+.wave1{
+position:absolute;
+bottom:0;
+left:0;
+width:100%;
+height:120px;
+background:#237f83;
+border-top-left-radius:60% 100%;
+border-top-right-radius:60% 100%;
+}
+
+.wave2{
+position:absolute;
+bottom:-40px;
+left:0;
+width:100%;
+height:140px;
+background:#1f3b3f;
+border-top-left-radius:50% 100%;
+border-top-right-radius:50% 100%;
+}
+
+/* profile image */
+
+.profile{
+position:absolute;
+bottom:-45px;
+left:50%;
+transform:translateX(-50%);
+width:90px;
+height:90px;
+border-radius:50%;
+border:6px solid #1f3b3f;
+overflow:hidden;
+}
+
+.profile img{
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+/* ---------- CONTACT BAR ---------- */
+
+.contact{
+display:flex;
+justify-content:space-between;
+padding:20px 80px;
+font-size:12px;
+background:#237f83;
+color:#e8f7f7;
+}
+
+.contact div{
+width:33%;
+text-align:center;
+}
+
+/* ---------- MAIN LAYOUT ---------- */
+
+.main{
+display:flex;
+padding:80px 60px 60px 60px;
+gap:50px;
+}
+
+.left{
+flex:2;
+}
+
+.right{
+flex:1;
+}
+
+/* ---------- SECTION ---------- */
+
+.section{
+margin-bottom:40px;
+}
+
+.section h3{
+color:#41c2c2;
+letter-spacing:4px;
+font-size:14px;
+margin-bottom:20px;
+}
+
+.job-title{
+font-weight:600;
+font-size:12px;
+color:#ffffff;
+margin-bottom:10px;
+}
+
+.text{
+font-size:12px;
+line-height:1.6;
+margin-bottom:12px;
+}
+
+ul{
+padding-left:20px;
+font-size:12px;
+}
+
+/* ---------- SKILLS ---------- */
+
+.skill{
+margin-bottom:14px;
+}
+
+.skill span{
+font-size:11px;
+display:block;
+margin-bottom:4px;
+}
+
+.bar{
+background:#0d2325;
+height:6px;
+position:relative;
+}
+
+.bar::after{
+content:"";
+position:absolute;
+left:0;
+top:0;
+height:100%;
+width:70%;
+background:#3ac2c3;
+}
+
+/* ---------- REFERENCES ---------- */
+
+.ref{
+font-size:12px;
+margin-bottom:15px;
+line-height:1.5;
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media(max-width:900px){
+
+.resume{
+width:100%;
+}
+
+.main{
+flex-direction:column;
+padding:80px 30px;
+}
+
+.contact{
+flex-direction:column;
+gap:10px;
+}
+
+.contact div{
+width:100%;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="resume">
+
+<!-- HEADER -->
+
+<div class="header">
+
+<h1>JOHN RESUMGO</h1>
+<h2>GRAPHIC DESIGNER</h2>
+
+<div class="wave1"></div>
+<div class="wave2"></div>
+
+<div class="profile">
+<img src="https://i.pravatar.cc/200">
+</div>
+
+</div>
+
+<!-- CONTACT -->
+
+<div class="contact">
+<div>Street Address<br>City State Zip</div>
+<div>(123) 456-7890</div>
+<div>email@address.com</div>
+</div>
+
+<!-- MAIN -->
+
+<div class="main">
+
+<!-- LEFT -->
+
+<div class="left">
+
+<div class="section">
+<h3>EXPERIENCE</h3>
+
+<div class="job-title">
+JOB TITLE - (DEC. 2012 - PRESENT) - COMPANY NAME
+</div>
+
+<p class="text">
+Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+</p>
+
+<ul>
+<li>Major accomplishment example</li>
+<li>Another accomplishment example</li>
+</ul>
+
+<br>
+
+<div class="job-title">
+JOB TITLE - (2006 - 2012) - COMPANY NAME
+</div>
+
+<p class="text">
+Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+</p>
+
+<ul>
+<li>Major accomplishment example</li>
+<li>Another accomplishment example</li>
+</ul>
+
+</div>
+
+<div class="section">
+
+<h3>EDUCATION</h3>
+
+<div class="job-title">
+DIPLOMA (2003-2005) - SCHOOL NAME
+</div>
+
+<p class="text">
+Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+</p>
+
+<br>
+
+<div class="job-title">
+DIPLOMA (2000-2003) - SCHOOL NAME
+</div>
+
+<p class="text">
+Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+</p>
+
+</div>
+
+</div>
+
+<!-- RIGHT -->
+
+<div class="right">
+
+<div class="section">
+
+<h3>SKILLS</h3>
+
+<div class="skill">
+<span>SKILL 1</span>
+<div class="bar"></div>
+</div>
+
+<div class="skill">
+<span>SKILL 2</span>
+<div class="bar"></div>
+</div>
+
+<div class="skill">
+<span>SKILL 3</span>
+<div class="bar"></div>
+</div>
+
+<div class="skill">
+<span>SKILL 4</span>
+<div class="bar"></div>
+</div>
+
+<div class="skill">
+<span>SKILL 5</span>
+<div class="bar"></div>
+</div>
+
+</div>
+
+<div class="section">
+
+<h3>REFERENCES</h3>
+
+<div class="ref">
+James Smith<br>
+Job Title - Company Name<br>
+(123) 456-7890
+</div>
+
+<div class="ref">
+James Smith<br>
+Job Title - Company Name<br>
+(123) 456-7890
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>

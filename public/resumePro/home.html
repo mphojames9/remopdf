@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<title>AI Resume Builder</title>
+
+<style>
+
+/* RESET */
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Inter,system-ui,Arial;
+}
+
+body{
+background:#f5f7fb;
+color:#111;
+overflow-x:hidden;
+}
+
+/* NAVBAR */
+
+header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px 8%;
+background:white;
+box-shadow:0 3px 20px rgba(0,0,0,.05);
+position:sticky;
+top:0;
+z-index:100;
+}
+
+.logo{
+font-weight:700;
+font-size:22px;
+color:#2563eb;
+}
+
+nav{
+display:flex;
+gap:20px;
+align-items:center;
+}
+
+nav a{
+text-decoration:none;
+color:#444;
+font-weight:500;
+}
+
+.btn{
+padding:10px 18px;
+border-radius:8px;
+font-weight:600;
+cursor:pointer;
+border:none;
+}
+
+.btn-outline{
+background:white;
+border:1px solid #ddd;
+}
+
+.btn-primary{
+background:#2563eb;
+color:white;
+}
+
+/* HERO */
+
+.hero{
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:100px 8%;
+gap:50px;
+flex-wrap:wrap;
+}
+
+.hero-text{
+max-width:520px;
+}
+
+.hero h1{
+font-size:48px;
+line-height:1.2;
+margin-bottom:20px;
+}
+
+.hero p{
+color:#666;
+font-size:18px;
+margin-bottom:25px;
+}
+
+.hero-buttons{
+display:flex;
+gap:15px;
+}
+
+/* 3D CARD AREA */
+.cards-wrapper{
+position:relative;
+width:320px;
+height:320px;
+margin:auto;
+
+transform-style:preserve-3d;
+
+perspective:1000px;
+}
+
+.resume-card{
+position:absolute;
+width:200px;
+height:280px;
+background:white;
+border-radius:12px;
+box-shadow:0 15px 40px rgba(0,0,0,.15);
+padding:18px;
+transition:all .8s ease;
+}
+
+/* POSITIONS */
+
+.card-front{
+transform:translate(-50%,-50%) scale(1);
+top:50%;
+left:50%;
+z-index:3;
+}
+
+.card-right{
+transform:translate(40%,-45%) scale(.9) rotate(6deg);
+top:50%;
+left:50%;
+z-index:2;
+opacity:.9;
+}
+
+.card-left{
+transform:translate(-140%,-45%) scale(.9) rotate(-6deg);
+top:50%;
+left:50%;
+z-index:1;
+opacity:.9;
+}
+
+.resume-card:nth-child(2){animation-delay:1s;}
+.resume-card:nth-child(3){animation-delay:2s;}
+
+.resume-line{
+height:10px;
+background:#e6e9f2;
+border-radius:6px;
+margin-bottom:8px;
+}
+
+.resume-line.title{
+height:14px;
+width:70%;
+background:#2563eb;
+}
+
+.resume-line.small{
+width:60%;
+}
+
+@keyframes float{
+0%{transform:translateY(0)}
+50%{transform:translateY(-15px)}
+100%{transform:translateY(0)}
+}
+
+
+@keyframes scroll{
+0%{transform:translateX(0)}
+100%{transform:translateX(-50%)}
+}
+
+/* FEATURES */
+
+.section{
+padding:90px 8%;
+text-align:center;
+}
+
+.section h2{
+font-size:34px;
+margin-bottom:40px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+gap:25px;
+}
+
+.feature-card{
+background:white;
+padding:30px;
+border-radius:10px;
+box-shadow:0 8px 25px rgba(0,0,0,.06);
+}
+
+.feature-card h3{
+margin:10px 0;
+}
+
+/* SLIDER SECTION */
+
+.slider-section{
+padding:80px 0;
+text-align:center;
+}
+
+.slider-title{
+font-size:34px;
+font-weight:700;
+margin-bottom:40px;
+}
+
+.template-slider{
+width:900px;
+margin:auto;
+overflow:hidden;
+position:relative;
+}
+
+.template-track{
+display:flex;
+transition:transform .6s ease;
+}
+
+.template-card{
+min-width:260px;
+height:360px;
+background:white;
+border-radius:12px;
+margin:0 15px;
+box-shadow:0 8px 25px rgba(0,0,0,0.1);
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:20px;
+font-weight:bold;
+position:relative;
+overflow:hidden;
+}
+
+.template-card.active{
+transform:scale(1.08);
+border:3px solid #4f73ff;
+}
+
+.slider-arrow{
+position:absolute;
+top:50%;
+transform:translateY(-50%);
+background:white;
+border:none;
+font-size:22px;
+width:45px;
+height:45px;
+border-radius:50%;
+box-shadow:0 4px 15px rgba(0,0,0,0.2);
+cursor:pointer;
+}
+
+.slider-arrow.left{left:-20px;}
+.slider-arrow.right{right:-20px;}
+
+.template-preview{
+display:flex;
+align-items:center;
+justify-content:center;
+width:100%;
+height:100%;
+font-weight:bold;
+}
+
+/* hover overlay */
+
+.template-overlay{
+position:absolute;
+inset:0;
+background:rgba(0,0,0,0.45);
+display:flex;
+align-items:center;
+justify-content:center;
+opacity:0;
+transition:opacity .25s ease;
+}
+
+.template-card:hover .template-overlay{
+opacity:1;
+}
+
+/* button */
+
+.use-template-btn{
+background:#2563eb;
+color:white;
+border:none;
+padding:12px 20px;
+border-radius:8px;
+font-weight:600;
+cursor:pointer;
+transition:transform .2s;
+}
+
+.use-template-btn:hover{
+transform:scale(1.05);
+}
+
+/* =========================
+RESPONSIVE DESIGN
+========================= */
+
+/* Large tablets */
+@media (max-width: 1024px){
+
+.hero{
+padding:80px 6%;
+}
+
+.hero-text {
+  margin: 0 auto;
+}
+
+.hero h1{
+font-size:38px;
+}
+
+.template-slider{
+width:90%;
+}
+
+.cards-wrapper{
+transform:scale(.9);
+}
+
+}
+
+/* Tablets */
+@media (max-width: 768px){
+
+header{
+gap:15px;
+padding:18px 6%;
+}
+
+nav{
+flex-wrap:wrap;
+justify-content:center;
+}
+
+.hero{
+flex-direction:column;
+text-align:center;
+padding:70px 6%;
+}
+
+.hero-text{
+max-width:100%;
+}
+
+.hero h1{
+font-size:34px;
+}
+
+.hero-buttons{
+justify-content:center;
+flex-wrap:wrap;
+}
+
+.cards-wrapper{
+margin-top:30px;
+transform:scale(.85);
+}
+
+.section{
+padding:70px 6%;
+}
+
+.template-slider{
+width:95%;
+}
+
+.slider-arrow{
+display:none;
+}
+
+}
+
+/* Mobile phones */
+@media (max-width: 480px){
+
+.logo{
+font-size:20px;
+}
+
+.hero{
+padding:60px 5%;
+}
+
+.hero h1{
+font-size:28px;
+}
+
+.hero p{
+font-size:16px;
+}
+
+.btn{
+padding:10px 14px;
+font-size:14px;
+}
+
+.cards-wrapper{
+width:260px;
+height:260px;
+transform:scale(.75);
+}
+
+.feature-card{
+padding:20px;
+}
+
+.section h2{
+font-size:26px;
+}
+
+.slider-title{
+font-size:26px;
+}
+
+.template-card{
+min-width:220px;
+height:320px;
+margin:0 10px;
+}
+
+.marquee img{
+height:30px;
+}
+
+}
+
+/* Extra small phones */
+@media (max-width: 360px){
+
+.hero h1{
+font-size:24px;
+}
+
+.template-card{
+min-width:200px;
+height:300px;
+}
+
+.cards-wrapper{
+transform:scale(.65);
+}
+
+}
+
+/* =========================
+ULTRA MOBILE SUPPORT (300px+)
+========================= */
+
+@media (max-width: 400px){
+
+header{
+padding:14px 12px;
+gap:10px;
+}
+
+.logo{
+font-size:18px;
+}
+
+nav{
+width:100%;
+flex-wrap:wrap;
+justify-content:center;
+gap:10px;
+}
+
+.btn{
+padding:8px 12px;
+font-size:13px;
+}
+
+.hero{
+padding:40px 14px;
+gap:25px;
+}
+
+.hero h1{
+font-size:22px;
+line-height:1.3;
+}
+
+.hero p{
+font-size:14px;
+}
+
+.hero-buttons{
+flex-direction:column;
+width:100%;
+}
+
+.hero-buttons .btn{
+width:100%;
+}
+
+/* 3D cards */
+
+.cards-wrapper{
+width:220px;
+height:220px;
+transform:scale(.6);
+}
+
+/* feature section */
+
+.section{
+padding:50px 14px;
+}
+
+.section h2{
+font-size:22px;
+}
+
+/* marquee logos */
+
+.marquee img{
+height:24px;
+}
+
+/* template slider */
+
+.template-slider{
+width:100%;
+padding:0 10px;
+}
+
+.template-card{
+min-width:180px;
+height:260px;
+margin:0 8px;
+font-size:16px;
+}
+
+.slider-arrow{
+display:none;
+}
+
+.use-template-btn{
+padding:10px 14px;
+font-size:13px;
+}
+
+}
+
+.features-premium{
+background:#f8fafc;
+padding:90px 8%;
+text-align:center;
+}
+
+.features-premium h2{
+font-size:34px;
+margin-bottom:15px;
+}
+
+.section-sub{
+max-width:700px;
+margin:0 auto 50px;
+color:#666;
+font-size:18px;
+}
+
+/* GRID */
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+gap:25px;
+}
+
+/* CARD */
+
+.feature-card{
+background:white;
+padding:35px 25px;
+border-radius:14px;
+box-shadow:0 10px 30px rgba(0,0,0,.06);
+transition:all .25s ease;
+}
+
+.feature-card:hover{
+transform:translateY(-6px);
+box-shadow:0 18px 40px rgba(0,0,0,.1);
+}
+
+.feature-card i{
+font-size:30px;
+margin-bottom:15px;
+display:block;
+}
+
+/* ICON COLORS */
+
+.icon-green{
+color:#22c55e;
+}
+
+.icon-blue{
+color:#2563eb;
+}
+
+.icon-red{
+color:#ef4444;
+}
+
+.feature-card h3{
+font-size:18px;
+margin-bottom:8px;
+}
+
+.feature-card p{
+color:#666;
+font-size:15px;
+line-height:1.5;
+}
+
+/* MOBILE */
+
+@media (max-width:600px){
+
+.features-premium{
+padding:60px 20px;
+}
+
+.features-premium h2{
+font-size:26px;
+}
+
+.section-sub{
+font-size:15px;
+}
+
+}
+
+/* HERO IMPROVEMENTS */
+
+.hero-text h1{
+font-size:48px;
+font-weight:800;
+line-height:1.2;
+margin-bottom:18px;
+}
+
+.hero-text p{
+font-size:18px;
+color:#666;
+margin-bottom:28px;
+max-width:520px;
+}
+
+/* badge */
+
+.hero-badge{
+display:inline-flex;
+align-items:center;
+gap:8px;
+background:#ecfdf5;
+color:#16a34a;
+padding:6px 12px;
+border-radius:20px;
+font-size:13px;
+font-weight:600;
+margin-bottom:15px;
+}
+
+.hero-badge i{
+font-size:12px;
+}
+
+/* buttons */
+
+.hero-buttons{
+display:flex;
+gap:14px;
+flex-wrap:wrap;
+}
+
+.hero-buttons .btn{
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+/* trust line */
+
+.hero-trust{
+margin-top:18px;
+font-size:14px;
+color:#666;
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+.hero-trust i{
+color:#22c55e;
+}
+
+/* MOBILE */
+
+@media (max-width:600px){
+
+.hero-text h1{
+font-size:30px;
+}
+
+.hero-text p{
+font-size:16px;
+}
+
+.hero-buttons{
+flex-direction:column;
+width:100%;
+}
+
+.hero-buttons .btn{
+width:100%;
+justify-content:center;
+}
+}
+
+/* LOGO */
+
+.logo{
+display:flex;
+align-items:center;
+}
+
+.mainLogo{
+height:38px;
+width:auto;
+}
+
+/* NAV */
+
+nav{
+display:flex;
+align-items:center;
+gap:20px;
+}
+
+nav a{
+text-decoration:none;
+color:#444;
+font-weight:500;
+}
+
+/* MOBILE */
+
+@media (max-width:600px){
+
+header{
+gap:10px;
+}
+
+nav{
+width:100%;
+justify-content:center;
+}
+
+.mainLogo{
+height:32px;
+}
+}
+
+/* =====================
+MENU BUTTON
+===================== */
+
+.menu-btn{
+display:none;
+flex-direction:column;
+justify-content:center;
+gap:5px;
+width:40px;
+height:40px;
+border:none;
+background:none;
+cursor:pointer;
+z-index:200;
+}
+
+.menu-btn span{
+width:24px;
+height:2px;
+background:#111;
+border-radius:3px;
+transition:.35s;
+}
+
+/* hamburger animation */
+
+.menu-btn.active span:nth-child(1){
+transform:rotate(45deg) translate(5px,5px);
+}
+
+.menu-btn.active span:nth-child(2){
+opacity:0;
+}
+
+.menu-btn.active span:nth-child(3){
+transform:rotate(-45deg) translate(5px,-5px);
+}
+
+/* =====================
+BACKDROP
+===================== */
+
+.menu-backdrop{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.35);
+backdrop-filter:blur(8px);
+opacity:0;
+pointer-events:none;
+transition:.35s;
+z-index:120;
+}
+
+.menu-backdrop.active{
+opacity:1;
+pointer-events:auto;
+}
+
+/* =====================
+MOBILE MENU PANEL
+===================== */
+
+.mobile-menu{
+position:fixed;
+top:0;
+right:-280px;
+width:260px;
+height:100vh;
+background:white;
+box-shadow:-10px 0 30px rgba(0,0,0,.1);
+padding:90px 30px;
+display:flex;
+flex-direction:column;
+gap:25px;
+transition:.4s cubic-bezier(.77,0,.18,1);
+z-index:150;
+}
+
+.mobile-menu.active{
+right:0;
+}
+
+.mobile-menu a{
+text-decoration:none;
+font-size:18px;
+color:#333;
+font-weight:600;
+}
+
+.mobile-menu .btn{
+margin-top:10px;
+}
+
+/* =====================
+RESPONSIVE
+===================== */
+
+@media (max-width:768px){
+
+.desktop-nav{
+display:none;
+}
+
+.menu-btn{
+display:flex;
+}
+
+header{
+justify-content:space-between;
+}
+}
+
+/* CONTACT NAV BUTTON */
+
+.nav-contact{
+display:flex;
+align-items:center;
+gap:6px;
+padding:8px 14px;
+border-radius:8px;
+font-weight:500;
+color:#444;
+text-decoration:none;
+transition:all .25s ease;
+}
+
+.nav-contact i{
+font-size:14px;
+color:#2563eb;
+}
+
+/* hover */
+
+.nav-contact:hover{
+background:#f1f5ff;
+color:#2563eb;
+transform:translateY(-1px);
+}
+
+.nav-contact{
+background:#f8fafc;
+border:1px solid #e5e7eb;
+}
+
+/* SLIDER HEADER */
+
+.slider-header{
+text-align:center;
+margin-bottom:50px;
+padding:0 20px;
+}
+
+.slider-title{
+font-size:34px;
+font-weight:800;
+line-height:1.2;
+color:#111;
+}
+
+.slider-title span{
+color:#2563eb;
+position:relative;
+}
+
+/* highlight underline */
+
+.slider-title span::after{
+content:"";
+position:absolute;
+left:0;
+bottom:-4px;
+width:100%;
+height:6px;
+background:#dbeafe;
+border-radius:4px;
+z-index:-1;
+}
+
+/* subtitle */
+
+.slider-sub{
+margin-top:12px;
+color:#666;
+font-size:17px;
+max-width:620px;
+margin-left:auto;
+margin-right:auto;
+line-height:1.5;
+}
+
+/* mobile */
+
+@media (max-width:600px){
+
+.slider-title{
+font-size:26px;
+}
+
+.slider-sub{
+font-size:15px;
+}
+
+}
+
+.template-card{
+min-width:260px;
+height:360px;
+background:white;
+border-radius:14px;
+margin:0 16px;
+box-shadow:0 10px 30px rgba(0,0,0,.1);
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:20px;
+font-weight:600;
+position:relative;
+overflow:hidden;
+
+transition:all .4s ease;
+}
+
+/* side cards */
+
+.template-track .template-card:not(.active){
+transform:scale(.9);
+opacity:.7;
+}
+
+.template-overlay{
+position:absolute;
+inset:0;
+background:linear-gradient(
+to top,
+rgba(0,0,0,.65),
+rgba(0,0,0,.15)
+);
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+opacity:0;
+transition:.25s;
+}
+
+.template-card:hover .template-overlay{
+opacity:1;
+}
+
+/* =========================
+ULTRA PREMIUM FOOTER
+========================= */
+
+.footer-pro{
+position:relative;
+
+background:
+radial-gradient(circle at top,#1e293b33,transparent 40%),
+linear-gradient(180deg,#0b0f19,#020617);
+
+color:#cbd5f5;
+padding:90px 8% 35px;
+margin-top:120px;
+overflow:hidden;
+}
+
+/* GLOW BACKGROUND */
+
+.footer-glow{
+position:absolute;
+top:-200px;
+left:50%;
+transform:translateX(-50%);
+width:800px;
+height:400px;
+background:radial-gradient(circle,#2563eb33,transparent);
+filter:blur(120px);
+}
+
+/* INNER GRID */
+
+.footer-inner{
+position:relative;
+z-index:2;
+
+display:grid;
+grid-template-columns:2fr 2fr 1.5fr;
+gap:60px;
+
+max-width:1300px;
+margin:auto;
+}
+
+/* BRAND */
+
+.footer-brand p{
+margin-top:15px;
+font-size:15px;
+line-height:1.6;
+color:#94a3b8;
+max-width:330px;
+}
+
+.footer-logo{
+height:42px;
+margin-bottom:8px;
+}
+
+/* SOCIAL */
+
+.footer-social{
+margin-top:20px;
+display:flex;
+gap:12px;
+}
+
+.footer-social a{
+width:38px;
+height:38px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:#0f172a;
+border-radius:10px;
+color:white;
+transition:.25s;
+}
+
+.footer-social a:hover{
+background:#2563eb;
+transform:translateY(-3px);
+}
+
+/* LINKS */
+
+.footer-links{
+display:flex;
+gap:60px;
+}
+
+.footer-col{
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+.footer-col h4{
+color:white;
+margin-bottom:10px;
+font-size:16px;
+}
+
+.footer-col a{
+text-decoration:none;
+color:#94a3b8;
+font-size:14px;
+transition:.25s;
+}
+
+.footer-col a:hover{
+color:white;
+transform:translateX(4px);
+}
+
+/* NEWSLETTER */
+
+.footer-news h4{
+font-size:18px;
+color:white;
+}
+
+.footer-news p{
+color:#94a3b8;
+margin:10px 0 18px;
+font-size:14px;
+}
+
+.news-form{
+display:flex;
+background:#0f172a;
+border-radius:10px;
+overflow:hidden;
+border:1px solid #1e293b;
+}
+
+.news-form input{
+flex:1;
+padding:12px 14px;
+border:none;
+outline:none;
+background:transparent;
+color:white;
+font-size:14px;
+}
+
+.news-form button{
+background:#2563eb;
+border:none;
+color:white;
+width:48px;
+cursor:pointer;
+transition:.25s;
+}
+
+.news-form button:hover{
+background:#1d4ed8;
+}
+
+/* DIVIDER */
+
+.footer-divider{
+height:1px;
+background:linear-gradient(
+to right,
+transparent,
+#1e293b,
+transparent
+);
+margin:60px auto 25px;
+max-width:1200px;
+}
+
+/* BOTTOM */
+
+.footer-bottom{
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+gap:15px;
+
+font-size:14px;
+color:#94a3b8;
+
+max-width:1200px;
+margin:auto;
+}
+
+/* =========================
+RESPONSIVE
+========================= */
+
+@media (max-width:1000px){
+
+.footer-inner{
+grid-template-columns:1fr;
+gap:40px;
+}
+
+.footer-links{
+flex-wrap:wrap;
+gap:40px;
+}
+
+}
+
+@media (max-width:600px){
+
+.footer-pro{
+padding:70px 25px 30px;
+}
+
+.footer-bottom{
+flex-direction:column;
+align-items:flex-start;
+}
+
+}
+
+/* HEADER SCROLL BEHAVIOR */
+
+header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px 8%;
+background:white;
+box-shadow:0 3px 20px rgba(0,0,0,.05);
+position:sticky;
+top:0;
+z-index:100;
+
+transition:transform .35s ease, opacity .35s ease;
+}
+
+/* hidden state */
+
+header.hide{
+transform:translateY(-120%);
+opacity:0;
+}
+
+</style>
+</head>
+
+<body>
+
+    <header>
+
+<div class="logo">
+<img src="./assets/logo.png" alt="ResumePro logo" class="mainLogo">
+</div>
+
+<nav class="desktop-nav">
+    <a href="#" class="nav-contact">
+<i class="fa-solid fa-envelope"></i>
+Contact
+</a>
+
+<button class="btn btn-primary">
+<i class="fa-solid fa-file-circle-plus"></i>
+Build Resume
+</button>
+</nav>
+
+<!-- MOBILE MENU BUTTON -->
+
+<button class="menu-btn" id="menuBtn">
+<span></span>
+<span></span>
+<span></span>
+</button>
+
+</header>
+
+<!-- BACKDROP -->
+
+<div class="menu-backdrop" id="menuBackdrop"></div>
+
+<!-- MOBILE MENU PANEL -->
+
+<div class="mobile-menu" id="mobileMenu">
+
+<a href="#" class="nav-contact">
+<i class="fa-solid fa-envelope"></i>
+Contact
+</a>
+
+<button class="btn btn-primary">
+<i class="fa-solid fa-file-circle-plus"></i>
+Build Resume
+</button>
+
+</div>
+
+<section class="hero">
+<div class="hero-text">
+<div class="hero-badge">
+<i class="fa-solid fa-circle-check"></i>
+Free • No login required
+</div>
+
+<h1>
+Create a professional resume that gets you hired
+</h1>
+
+<p>
+Build a modern ATS-friendly resume in minutes using ResumePro. 
+Choose a professional template, fill in your details, and download your resume instantly.
+</p>
+
+<div class="hero-buttons">
+<button class="btn btn-primary">
+<i class="fa-solid fa-file-circle-plus"></i>
+Create Resume
+</button>
+
+<button class="btn btn-outline">
+<i class="fa-solid fa-wand-magic-sparkles"></i>
+Improve Resume
+</button>
+</div>
+
+<div class="hero-trust">
+<i class="fa-solid fa-shield-check"></i>
+100% Free • No login required • Instant PDF download
+</div>
+
+</div>
+
+<div class="cards-wrapper">
+
+<div class="resume-card card-front">
+<div class="resume-line title"></div>
+<div class="resume-line"></div>
+<div class="resume-line"></div>
+<div class="resume-line small"></div>
+<div class="resume-line"></div>
+<div class="resume-line"></div>
+</div>
+
+<div class="resume-card card-right">
+<div class="resume-line title"></div>
+<div class="resume-line"></div>
+<div class="resume-line"></div>
+<div class="resume-line small"></div>
+<div class="resume-line"></div>
+<div class="resume-line"></div>
+</div>
+
+<div class="resume-card card-left">
+<div class="resume-line title"></div>
+<div class="resume-line"></div>
+<div class="resume-line"></div>
+<div class="resume-line small"></div>
+<div class="resume-line"></div>
+<div class="resume-line"></div>
+</div>
+
+</div>
+
+</section>
+
+<section class="section features-premium">
+
+<h2>Why choose ResumePro</h2>
+
+<p class="section-sub">
+ResumePro is a new modern resume builder that helps you create a professional resume in minutes. 
+No login required and completely free to use.
+</p>
+
+<div class="grid">
+
+<div class="feature-card">
+<i class="fa-solid fa-bolt icon-green"></i>
+<h3>Fast Resume Builder</h3>
+<p>Create a professional resume in minutes using our simple and fast builder.</p>
+</div>
+
+<div class="feature-card">
+<i class="fa-solid fa-file-circle-check icon-blue"></i>
+<h3>ATS Friendly</h3>
+<p>Our templates are designed to pass applicant tracking systems used by recruiters.</p>
+</div>
+
+<div class="feature-card">
+<i class="fa-solid fa-palette icon-red"></i>
+<h3>Modern Templates</h3>
+<p>Choose from clean, modern resume templates designed for today's job market.</p>
+</div>
+
+<div class="feature-card">
+<i class="fa-solid fa-file-arrow-down icon-green"></i>
+<h3>Download Instantly</h3>
+<p>Download your resume as a professional PDF instantly when you're done.</p>
+</div>
+
+<div class="feature-card">
+<i class="fa-solid fa-user-check icon-blue"></i>
+<h3>No Login Required</h3>
+<p>Start building your resume immediately without creating an account.</p>
+</div>
+
+<div class="feature-card">
+<i class="fa-solid fa-gift icon-red"></i>
+<h3>Free to Use</h3>
+<p>ResumePro is new and currently free for everyone to use.</p>
+</div>
+
+</div>
+
+</section>
+
+<section class="slider-section">
+
+<div class="slider-header">
+
+<h2 class="slider-title">
+Resume templates that get you <span>noticed</span> and hired
+</h2>
+
+<p class="slider-sub">
+Professional, ATS-friendly resume templates designed to help you stand out to recruiters.
+</p>
+
+</div>
+
+<div class="template-slider">
+
+<button class="slider-arrow left" onclick="prev()">❮</button>
+
+<div class="template-track" id="track">
+
+<div class="template-card">
+  <div class="template-preview">Template 6</div>
+  <div class="template-overlay">
+    <button class="use-template-btn">Use Template</button>
+  </div>
+</div>
+
+<div class="template-card">
+  <div class="template-preview">Template 1</div>
+  <div class="template-overlay">
+    <button class="use-template-btn">Use Template</button>
+  </div>
+</div>
+
+<div class="template-card">
+  <div class="template-preview">Template 2</div>
+  <div class="template-overlay">
+    <button class="use-template-btn">Use Template</button>
+  </div>
+</div>
+
+<div class="template-card">
+  <div class="template-preview">Template 3</div>
+  <div class="template-overlay">
+    <button class="use-template-btn">Use Template</button>
+  </div>
+</div>
+
+<div class="template-card">
+  <div class="template-preview">Template 4</div>
+  <div class="template-overlay">
+    <button class="use-template-btn">Use Template</button>
+  </div>
+</div>
+
+<div class="template-card">
+  <div class="template-preview">Template 5</div>
+  <div class="template-overlay">
+    <button class="use-template-btn">Use Template</button>
+  </div>
+</div>
+
+<div class="template-card">
+  <div class="template-preview">Template 6</div>
+  <div class="template-overlay">
+    <button class="use-template-btn">Use Template</button>
+  </div>
+</div>
+
+<div class="template-card">
+  <div class="template-preview">Template 1</div>
+  <div class="template-overlay">
+    <button class="use-template-btn">Use Template</button>
+  </div>
+</div>
+
+</div>
+
+<button class="slider-arrow right" onclick="next()">❯</button>
+</div>
+</section>
+<footer class="footer-pro">
+
+<div class="footer-glow"></div>
+
+<div class="footer-inner">
+
+<!-- BRAND -->
+
+<div class="footer-brand">
+
+<img src="./assets/logo.png" class="footer-logo" alt="ResumePro logo">
+
+<p>
+Build modern ATS-friendly resumes in minutes with ResumePro. 
+Choose a template, fill your details and download instantly.
+</p>
+
+<div class="footer-social">
+
+<a href="#"><i class="fa-brands fa-twitter"></i></a>
+<a href="#"><i class="fa-brands fa-linkedin"></i></a>
+<a href="#"><i class="fa-brands fa-facebook"></i></a>
+<a href="#"><i class="fa-brands fa-github"></i></a>
+
+</div>
+
+</div>
+
+<!-- LINKS -->
+
+<div class="footer-links">
+
+<div class="footer-col">
+<h4>Product</h4>
+<a href="#">Create Resume</a>
+<a href="#">Templates</a>
+<a href="#">Resume Checker</a>
+<a href="#">Download PDF</a>
+</div>
+
+<div class="footer-col">
+<h4>Company</h4>
+<a href="#">About</a>
+<a href="#">Contact</a>
+<a href="#">Careers</a>
+<a href="#">Press</a>
+</div>
+
+<div class="footer-col">
+<h4>Resources</h4>
+<a href="#">Career Tips</a>
+<a href="#">Interview Guide</a>
+<a href="#">Job Search</a>
+<a href="#">Help Center</a>
+</div>
+
+</div>
+
+<!-- NEWSLETTER -->
+
+<div class="footer-news">
+
+<h4>Stay updated</h4>
+
+<p>Get resume tips and career advice.</p>
+
+<div class="news-form">
+
+<input type="email" placeholder="Your email">
+
+<button>
+<i class="fa-solid fa-paper-plane"></i>
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="footer-divider"></div>
+
+<div class="footer-bottom">
+
+<p>© 2026 ><strong>ResumePro</strong>  Built for modern job seekers</p>
+</div>
+
+</footer>
+
+<script>
+
+/* 3D CARD TILT */
+
+const heroCards=document.querySelectorAll(".resume-card");
+
+heroCards.forEach(card=>{
+card.addEventListener("mousemove",e=>{
+
+const rect=card.getBoundingClientRect()
+
+const x=e.clientX-rect.left
+const y=e.clientY-rect.top
+
+const midX=rect.width/2
+const midY=rect.height/2
+
+const rotateX=-(y-midY)/10
+const rotateY=(x-midX)/10
+
+card.style.transform += ` rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
+
+})
+
+card.addEventListener("mouseleave",()=>{
+card.style.transform="rotateX(0) rotateY(0)"
+})
+})
+
+const track = document.getElementById("track")
+const cards = document.querySelectorAll(".resume-card")
+
+let cardWidth = 290
+
+function next(){
+
+track.style.transition = "transform .6s ease"
+track.style.transform = `translateX(-${cardWidth}px)`
+
+setTimeout(()=>{
+
+track.appendChild(track.firstElementChild)
+
+track.style.transition = "none"
+track.style.transform = `translateX(0px)`
+
+},600)
+
+}
+
+function prev(){
+
+track.insertBefore(track.lastElementChild, track.firstElementChild)
+
+track.style.transition = "none"
+track.style.transform = `translateX(-${cardWidth}px)`
+
+setTimeout(()=>{
+track.style.transition = "transform .6s ease"
+track.style.transform = `translateX(0px)`
+},10)
+
+}
+
+const slider = document.querySelector(".template-slider")
+
+slider.addEventListener("mouseenter", () => {
+clearInterval(sliderInterval)
+})
+
+slider.addEventListener("mouseleave", () => {
+sliderInterval = setInterval(next,3000)
+})
+let sliderInterval = setInterval(next,3000)
+
+function rotateCards(){
+
+heroCards.forEach(card=>{
+
+if(card.classList.contains("card-front")){
+card.classList.remove("card-front")
+card.classList.add("card-right")
+}
+
+else if(card.classList.contains("card-right")){
+card.classList.remove("card-right")
+card.classList.add("card-left")
+}
+
+else if(card.classList.contains("card-left")){
+card.classList.remove("card-left")
+card.classList.add("card-front")
+}
+})
+}
+
+const menuBtn = document.getElementById("menuBtn")
+const menu = document.getElementById("mobileMenu")
+const backdrop = document.getElementById("menuBackdrop")
+
+function toggleMenu(){
+
+menuBtn.classList.toggle("active")
+menu.classList.toggle("active")
+backdrop.classList.toggle("active")
+
+}
+
+menuBtn.addEventListener("click", toggleMenu)
+backdrop.addEventListener("click", toggleMenu)
+
+/* ======================
+HEADER SHOW / HIDE ON SCROLL
+====================== */
+
+let lastScroll = 0
+const header = document.querySelector("header")
+
+window.addEventListener("scroll", () => {
+
+const currentScroll = window.pageYOffset
+
+if(currentScroll > lastScroll && currentScroll > 80){
+
+// scrolling down
+header.classList.add("hide")
+
+}else{
+
+// scrolling up
+header.classList.remove("hide")
+
+}
+
+lastScroll = currentScroll
+
+})
+
+setInterval(rotateCards,6000)
+
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,156 @@
+.menu-toggle{
+  display:none;
+  width:45px;
+  height:45px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(10px);
+  cursor:pointer;
+  align-items:center;
+  justify-content:center;
+  transition:.4s;
+  position:relative;
+}
+
+.menu-toggle span{
+  position:absolute;
+  width:22px;
+  height:2px;
+  background:rgb(51, 49, 49);
+  border-radius:2px;
+  transition:.4s;
+}
+
+.menu-toggle span:nth-child(1){ top:14px; }
+.menu-toggle span:nth-child(2){ top:21px; }
+.menu-toggle span:nth-child(3){ top:28px; }
+
+/* Active Animation */
+
+.menu-toggle.active span:nth-child(1){
+  transform: rotate(45deg);
+  top:21px;
+}
+
+.menu-toggle.active span:nth-child(2){
+  opacity:0;
+}
+
+.menu-toggle.active span:nth-child(3){
+  transform: rotate(-45deg);
+  top:21px;
+}
+
+/* Glow Hover */
+
+.menu-toggle:hover{
+  transform:scale(1.05);
+}
+
+/* ===================== */
+/* MOBILE DROPDOWN PANEL */
+/* ===================== */
+
+.mobile-panel{
+  position:fixed;
+  top:60px;
+  right:-100%;
+  width:300px;
+  height:calc(100vh - 60px);
+  backdrop-filter:blur(22px);
+  background-color: hsl(40 22% 94% / var(--tw-bg-opacity));
+  border-left:1px solid rgba(255,255,255,0.08);
+  padding:30px;
+  display:flex;
+  flex-direction:column;
+  gap:25px;
+  transition: right .6s cubic-bezier(.77,0,.18,1);
+  z-index:999;
+}
+
+@media (max-width:380px){
+    .mobile-panel{
+        width:250px;
+    }
+}
+
+.mobile-panel.active{
+  right:0;
+}
+
+/* Animation Items */
+
+.mobile-panel > *{
+  opacity:0;
+  transform:translateX(40px);
+  transition:.5s ease;
+}
+
+.mobile-panel.active > *{
+  opacity:1;
+  transform:translateX(0);
+}
+
+.mobile-panel.active > *:nth-child(1){ transition-delay:.2s; }
+.mobile-panel.active > *:nth-child(2){ transition-delay:.35s; }
+
+/* Responsive */
+
+@media(max-width:900px){
+  .header-right{
+    display:none;
+  }
+  .menu-toggle{
+    display:flex;
+  }
+}
+
+
+
+
+.section_Template_1,
+.timeline_Template_1,
+.ref-card_Template_1 {
+  break-inside: avoid;
+}
+
+.item-head_Template_1 {
+  break-after: avoid;
+}
+
+.section_Template_2,
+.timeline_Template_2,
+.ref-card_Template_2 {
+  break-inside: avoid;
+}
+
+.item-head_Template_2 {
+  break-after: avoid;
+}
+
+
+
+.language-row {
+  display: grid;
+  grid-template-columns: 1fr 140px auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.language-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lang-level {
+  display: flex;
+  gap: 4px;
+}
+
+.test{
+  flex-direction: column-reverse;
+  position: absolute;
+}
+
