@@ -18,6 +18,12 @@ const resumePreview = document.querySelector('#resumePreview');
 const overlay = document.getElementById('layoutOverlay');
 const track = document.getElementById('carouselTrack');
 const nameEl = document.getElementById('templateName');
+let asideGradient =
+localStorage.getItem("resumeAsideGradient")
+||
+"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+
+let accentColor = "#2563eb";
 
   const icon = (svg) =>
     `<span style="display:inline-flex;align-items:center;margin-right:6px;color:#6f93c1">
@@ -4142,8 +4148,29 @@ margin-bottom:12px;
 }
 
 function renderModernEdgeATS() {
+
+  let accentColor = "#2563eb";
+
+const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+if(colors && colors.length){
+accentColor = colors[Math.floor(colors.length/2)];
+}
+
 const p = photoHtml();
 const selectedTemplate = data.template;
+
+
+
+
+/* EXTRACT ACCENT COLOR FROM GRADIENT */
+
+const match = asideGradient.match(/#([0-9a-fA-F]{6})/g);
+
+if(match && match.length >= 2){
+accentColor = match[1];
+}
+
 
 const personalFields = [
 { key: "phone", icon: ICONS.phone_w },
@@ -4160,8 +4187,9 @@ const personalFields = [
 ];
 
 return `
+
 <aside style="
-background:linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8);
+background:${asideGradient};
 color:#ffffff;
 padding:34px 26px;
 display:flex;
@@ -4169,33 +4197,33 @@ flex-direction:column;
 gap:28px;
 ">
 
-    <div style="text-align:center;" class="overflow">
+<div style="text-align:center;" class="overflow">
 
-      <h1 style="
+<h1 style="
 font-size:24px;
 font-weight:700;
 line-height:1.2;
 margin-bottom:6px;
 ">
-        ${escapeHtml(data.personal.fullName || '')}
-      </h1>
+${escapeHtml(data.personal.fullName || '')}
+</h1>
 
-      <div style="font-size:13px;opacity:.9;">
-        ${escapeHtml(data.personal.title || '')}
-      </div>
+<div style="font-size:13px;opacity:.9;">
+${escapeHtml(data.personal.title || '')}
+</div>
 
-    </div>
+</div>
 
-    <div style="
+<div style="
 display:grid;
 grid-template-columns:3fr auto;
 align-items:end;
 margin-top:40px;
 ">
 
-      <div>
+<div>
 
-        <ul style="
+<ul style="
 list-style:none;
 padding:0;
 margin:0;
@@ -4204,20 +4232,20 @@ grid-template-columns:1fr 1fr 1fr;
 gap:6px 12px;
 ">
 
-          ${personalFields
-          .filter(f => data.personal[f.key])
-          .map(f => `
-          <li class="overflow" style="display:flex;align-items:center;gap:8px;">
-            ${icon(f.icon)}
-            ${escapeHtml(data.personal[f.key])}
-          </li>
-          `).join('')}
+${personalFields
+.filter(f => data.personal[f.key])
+.map(f => `
+<li class="overflow" style="display:flex;align-items:center;gap:8px;">
+${icon(f.icon)}
+${escapeHtml(data.personal[f.key])}
+</li>
+`).join('')}
 
-        </ul>
+</ul>
 
-      </div>
+</div>
 
-      <div style="
+<div style="
 margin-left:16px;
 width:100px;
 height:100px;
@@ -4225,140 +4253,136 @@ flex-shrink:0;
 border-radius:50%;
 overflow:hidden;
 ">
-        ${p}
-      </div>
+${p}
+</div>
 
-    </div>
+</div>
 
-  </aside>
-
-
-
-  <main class="content_Template_1" id="${selectedTemplate}" style="padding:36px 42px; background: white;
-    box-sizing: border-box;
-    overflow: visible;">
+</aside>
 
 
-    ${data.summary ? `
-    <section class="overflow" style="margin-bottom:28px">
+<main class="content_Template_1" id="${selectedTemplate}" style="
+padding:36px 42px;
+background:white;
+box-sizing:border-box;
+overflow:visible;
+">
 
-      <h2 style="
+
+${data.summary ? `
+<section class="overflow" style="margin-bottom:28px">
+
+<h2 style="
 font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#1e3a8a;
+color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
 margin-bottom:12px;
 ">
-        Professional Summary
-      </h2>
+Professional Summary
+</h2>
 
-      <p style="color:#374151">
-        ${escapeHtml(data.summary)}
-      </p>
+<p style="color:#374151">
+${escapeHtml(data.summary)}
+</p>
 
-    </section>
-    ` : ''}
+</section>
+` : ''}
 
 
+${hasExperience() ? `
+<section style="margin-bottom:28px">
 
-    ${hasExperience() ? `
-    <section style="margin-bottom:28px">
-
-      <h2 class="overflow" style="
+<h2 class="overflow" style="
 font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#1e3a8a;
+color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
 margin-bottom:14px;
 ">
-        Experience
-      </h2>
+Experience
+</h2>
 
-      ${data.experience.map(exp => `
-      <div class="overflow" style="margin-bottom:20px">
+${data.experience.map(exp => `
+<div class="overflow" style="margin-bottom:20px">
 
-        <div style="
-display:flex;
-justify-content:space-between;
-flex-wrap:wrap;
-">
+<div style="display:flex;justify-content:space-between;flex-wrap:wrap;">
 
-          <strong style="font-size:15px;color:#111827">
-            ${escapeHtml(exp.role)}
-          </strong>
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
 
-          <span style="font-size:12px;color:#6b7280">
-            ${[exp.start, exp.end].filter(Boolean).join(' - ')}
-          </span>
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
 
-        </div>
+</div>
 
-        <div style="
+<div style="
 font-size:13px;
 color:#374151;
 font-weight:600;
 margin-top:3px;
 ">
-          ${escapeHtml(exp.campany)}
-        </div>
+${escapeHtml(exp.campany)}
+</div>
 
-        ${exp.bullets?.length ? `
-        <ul style="margin-top:8px;padding-left:18px">
-          ${exp.bullets.map(b => `
-          <li class="overflow" style="margin-bottom:5px">
-            ${escapeHtml(b)}
-          </li>
-          `).join('')}
-        </ul>
-        ` : ''}
+${exp.bullets?.length ? `
+<ul style="margin-top:8px;padding-left:18px">
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px">
+${escapeHtml(b)}
+</li>
+`).join('')}
+</ul>
+` : ''}
 
-      </div>
-      `).join('')}
+</div>
+`).join('')}
 
-    </section>
-    ` : ''}
+</section>
+` : ''}
 
 
+${hasEducation() ? `
+<section style="margin-bottom:28px">
 
-    ${hasEducation() ? `
-    <section style="margin-bottom:28px">
-
-      <h2 class="overflow" style="
+<h2 class="overflow" style="
 font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#1e3a8a;
+color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
 margin-bottom:14px;
 ">
-        Education
-      </h2>
+Education
+</h2>
 
-      ${data.education.map(edu => `
-      <div class="overflow" style="margin-bottom:16px">
+${data.education.map(edu => `
+<div class="overflow" style="margin-bottom:16px">
 
-        <strong style="font-size:15px">
-          ${escapeHtml(edu.degree)}
-        </strong>
+<strong style="font-size:15px">
+${escapeHtml(edu.degree)}
+</strong>
 
-        <div style="font-size:13px;color:#374151">
-          ${escapeHtml(edu.school)}
-          ${edu.year ? ` • ${escapeHtml(edu.year)}` : ''}
-        </div>
+<div style="font-size:13px;color:#374151">
+${escapeHtml(edu.school)}
+${edu.year ? ` • ${escapeHtml(edu.year)}` : ''}
+</div>
 
-      </div>
-      `).join('')}
+</div>
+`).join('')}
 
-    </section>
-    ` : ''}
+</section>
+` : ''}
 
 
 ${hasSkills() ? `
@@ -4368,7 +4392,7 @@ ${hasSkills() ? `
 font-size:13px;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#2563eb;
+color:${accentColor};
 margin-bottom:12px;
 font-weight:700;
 ">
@@ -4383,13 +4407,7 @@ gap:10px 16px;
 
 ${data.skills.map(skill=>{
 
-const levelMap={
-basic:2,
-intermediate:3,
-advanced:4,
-native:5
-}
-
+const levelMap={basic:2,intermediate:3,advanced:4,native:5}
 const level=levelMap[skill.level] || 3
 const totalDots = 5
 
@@ -4407,15 +4425,13 @@ font-size:13px;
 <div style="display:flex;gap:4px">
 
 ${Array.from({length: totalDots}).map((_,i)=>`
-
 <span style="
 width:8px;
 height:8px;
 border-radius:50%;
 display:inline-block;
-background:${i < level ? '#2563eb' : '#e5e7eb'};
+background:${i < level ? accentColor : '#e5e7eb'};
 "></span>
-
 `).join('')}
 
 </div>
@@ -4438,7 +4454,7 @@ ${hasLanguage() ? `
 font-size:13px;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#2563eb;
+color:${accentColor};
 margin-bottom:12px;
 font-weight:700;
 ">
@@ -4454,23 +4470,13 @@ font-size:13px;
 
 ${data.languages.map(l => {
 
-const levelMap = {
-basic:2,
-intermediate:3,
-advanced:4,
-native:5
-}
-
+const levelMap={basic:2,intermediate:3,advanced:4,native:5}
 const level = levelMap[l.level?.toLowerCase()] || 3
 const totalDots = 5
 
-return `
+return`
 
-<div style="
-display:flex;
-justify-content:space-between;
-align-items:center;
-">
+<div style="display:flex;justify-content:space-between;align-items:center;">
 
 <span>${escapeHtml(l.name)}</span>
 
@@ -4482,7 +4488,7 @@ width:8px;
 height:8px;
 border-radius:50%;
 display:inline-block;
-background:${i < level ? '#2563eb' : '#e5e7eb'};
+background:${i < level ? accentColor : '#e5e7eb'};
 "></span>
 `).join('')}
 
@@ -4498,94 +4504,72 @@ background:${i < level ? '#2563eb' : '#e5e7eb'};
 </section>
 ` : ''}
 
-
-    ${hasReferences() ? `
-    <section class="overflow" style="margin-bottom:20px">
-
-      <h2 class="overflow" style="
-font-size:14px;
-font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.2px;
-color:#1e3a8a;
-border-bottom:2px solid #e5e7eb;
-padding-bottom:6px;
-margin-bottom:12px;
-">
-        References
-      </h2>
-
-      ${data.references.map(ref => `
-      <div class="overflow" style="margin-bottom:14px">
-
-        <strong>${escapeHtml(ref.name)}</strong>
-
-        <div style="color:#374151">
-          ${escapeHtml(ref.campany || '')}
-        </div>
-
-        ${ref.phone ? `<div>${escapeHtml(ref.phone)}</div>` : ''}
-        ${ref.email ? `<div>${escapeHtml(ref.email)}</div>` : ''}
-
-      </div>
-      `).join('')}
-
-    </section>
-    ` : ''}
-
-  </main>
-</div>
+</main>
 `;
 }
 
 function renderATS() {
+
 const p = photoHtml();
+
+/* GET SAVED GRADIENT */
+let asideGradient =
+localStorage.getItem("resumeAsideGradient") ||
+"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+
+/* EXTRACT ACCENT COLOR */
+let accentColor = "#2563eb";
+const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+if(colors && colors.length){
+accentColor = colors[Math.floor(colors.length/2)];
+}
 
 return `
 
 <div class="resume_ats" style="
-    font-family:'Inter', Arial, Helvetica, sans-serif;
-    font-size:15px;
-    line-height:1.75;
-    color:#0f172a;
-    max-width:820px;
-    margin:auto;
-    padding:50px;
-    max-height:1122px;
-    overflow:hidden;
+font-family:'Inter', Arial, Helvetica, sans-serif;
+font-size:15px;
+line-height:1.75;
+color:#0f172a;
+max-width:820px;
+margin:auto;
+padding:50px;
+max-height:1122px;
+overflow:hidden;
 ">
 
 <!-- HEADER -->
 
 <header style="
-    margin-bottom:36px;
-    padding-bottom:18px;
-    border-bottom:3px solid #2563eb;
+margin-bottom:36px;
+padding-bottom:18px;
+border-bottom:3px solid ${accentColor};
 ">
 
 <h1 style="
-    font-size:34px;
-    font-weight:800;
-    letter-spacing:.6px;
-    margin-bottom:4px;
+font-size:34px;
+font-weight:800;
+letter-spacing:.6px;
+margin-bottom:4px;
 ">
 ${escapeHtml(data.personal.fullName || '')}
 </h1>
 
 <p style="
-    font-size:17px;
-    color:#2563eb;
-    font-weight:600;
-    margin:6px 0;
+font-size:17px;
+color:${accentColor};
+font-weight:600;
+margin:6px 0;
 ">
 ${escapeHtml(data.personal.title || '')}
 </p>
 
 <p style="
-    font-size:13px;
-    margin-top:10px;
-    line-height:1.8;
-    color:#475569;
+font-size:13px;
+margin-top:10px;
+line-height:1.8;
+color:#475569;
 ">
 
 ${data.personal.phone ? `${escapeHtml(data.personal.phone)} • ` : ''}
@@ -4599,21 +4583,19 @@ ${data.personal.linkedin ? `${escapeHtml(data.personal.linkedin)}` : ''}
 </header>
 
 
-<!-- SUMMARY -->
-
 ${data.summary && data.summary.trim() ? `
 
 <section style="margin-bottom:32px">
 
 <h2 style="
-    font-size:13px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:1.5px;
-    color:#0f172a;
-    padding-left:10px;
-    border-left:4px solid #2563eb;
-    margin-bottom:14px;
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:14px;
 ">
 Professional Summary
 </h2>
@@ -4623,24 +4605,23 @@ ${escapeHtml(data.summary)}
 </p>
 
 </section>
+
 ` : ''}
 
-
-<!-- EXPERIENCE -->
 
 ${hasExperience() ? `
 
 <section style="margin-bottom:32px">
 
 <h2 style="
-    font-size:13px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:1.5px;
-    color:#0f172a;
-    padding-left:10px;
-    border-left:4px solid #2563eb;
-    margin-bottom:16px;
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
 ">
 Professional Experience
 </h2>
@@ -4649,19 +4630,11 @@ ${data.experience.map(exp => `
 
 <div style="margin-bottom:22px">
 
-<strong style="
-    font-size:16px;
-    font-weight:700;
-">
+<strong style="font-size:16px;font-weight:700">
 ${escapeHtml(exp.role)}
 </strong>
 
-<div style="
-    font-size:13px;
-    color:#475569;
-    margin-top:4px;
-    line-height:1.6;
-">
+<div style="font-size:13px;color:#475569;margin-top:4px;line-height:1.6">
 
 <div>
 ${escapeHtml(exp.campany)}
@@ -4677,16 +4650,14 @@ ${[exp.start, exp.end].filter(d => d && d.trim()).join(' - ')}
 
 ${exp.bullets && exp.bullets.length ? `
 
-<ul style="
-    margin-top:10px;
-    padding-left:18px;
-    line-height:1.7;
-">
+<ul style="margin-top:10px;padding-left:18px;line-height:1.7">
+
 ${exp.bullets.map(b => `
 <li style="margin-bottom:6px">
 ${escapeHtml(b)}
 </li>
 `).join('')}
+
 </ul>
 
 ` : ''}
@@ -4696,24 +4667,23 @@ ${escapeHtml(b)}
 `).join('')}
 
 </section>
+
 ` : ''}
 
-
-<!-- EDUCATION -->
 
 ${hasEducation() ? `
 
 <section style="margin-bottom:32px">
 
 <h2 style="
-    font-size:13px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:1.5px;
-    color:#0f172a;
-    padding-left:10px;
-    border-left:4px solid #2563eb;
-    margin-bottom:16px;
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
 ">
 Education
 </h2>
@@ -4726,28 +4696,14 @@ ${data.education.map(edu => `
 ${escapeHtml(edu.degree)}
 </strong>
 
-<div style="
-    font-size:13px;
-    color:#475569;
-    margin-top:4px;
-">
+<div style="font-size:13px;color:#475569;margin-top:4px">
 ${escapeHtml(edu.school)}
 </div>
 
 ${edu.year ? `
-<div style="
-    font-size:13px;
-    color:#64748b;
-    margin-top:2px;
-">
+<div style="font-size:13px;color:#64748b;margin-top:2px">
 ${escapeHtml(edu.year)}
 </div>
-` : ''}
-
-${edu.discription ? `
-<p style="margin-top:6px">
-${escapeHtml(edu.discription)}
-</p>
 ` : ''}
 
 </div>
@@ -4755,32 +4711,29 @@ ${escapeHtml(edu.discription)}
 `).join('')}
 
 </section>
+
 ` : ''}
 
-
-<!-- SKILLS -->
 
 ${hasSkills() ? `
 
 <section style="margin-bottom:32px">
 
 <h2 style="
-    font-size:13px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:1.5px;
-    color:#0f172a;
-    padding-left:10px;
-    border-left:4px solid #2563eb;
-    margin-bottom:16px;
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
 ">
 Skills
 </h2>
 
-<ul style="
-    padding-left:18px;
-    line-height:1.7;
-">
+<ul style="padding-left:18px;line-height:1.7">
+
 ${data.skills
 .filter(skill => skill.name?.trim())
 .map(skill => `
@@ -4788,35 +4741,33 @@ ${data.skills
 ${escapeHtml(skill.name)}
 </li>
 `).join('')}
+
 </ul>
 
 </section>
+
 ` : ''}
 
-
-<!-- LANGUAGES -->
 
 ${hasLanguage() ? `
 
 <section style="margin-bottom:32px">
 
 <h2 style="
-    font-size:13px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:1.5px;
-    color:#0f172a;
-    padding-left:10px;
-    border-left:4px solid #2563eb;
-    margin-bottom:16px;
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
 ">
 Languages
 </h2>
 
-<ul style="
-    padding-left:18px;
-    line-height:1.7;
-">
+<ul style="padding-left:18px;line-height:1.7">
+
 ${data.languages
 .filter(lang => lang.name?.trim())
 .map(lang => `
@@ -4825,27 +4776,27 @@ ${escapeHtml(lang.name)}
 ${lang.level ? ` — ${escapeHtml(lang.level)}` : ''}
 </li>
 `).join('')}
+
 </ul>
 
 </section>
+
 ` : ''}
 
-
-<!-- REFERENCES -->
 
 ${hasReferences() ? `
 
 <section>
 
 <h2 style="
-    font-size:13px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:1.5px;
-    color:#0f172a;
-    padding-left:10px;
-    border-left:4px solid #2563eb;
-    margin-bottom:16px;
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
 ">
 References
 </h2>
@@ -4858,10 +4809,7 @@ ${data.references.map(ref => `
 ${escapeHtml(ref.name)}
 </strong>
 
-<div style="
-    color:#475569;
-    margin-top:3px;
-">
+<div style="color:#475569;margin-top:3px">
 ${escapeHtml(ref.campany || '')}
 </div>
 
@@ -4869,9 +4817,11 @@ ${ref.phone ? `<div style="margin-top:2px">${escapeHtml(ref.phone)}</div>` : ''}
 ${ref.email ? `<div style="margin-top:2px">${escapeHtml(ref.email)}</div>` : ''}
 
 </div>
+
 `).join('')}
 
 </section>
+
 ` : ''}
 
 </div>
@@ -4880,52 +4830,65 @@ ${ref.email ? `<div style="margin-top:2px">${escapeHtml(ref.email)}</div>` : ''}
 }
 
 function renderApexATS() {
+
 const p = photoHtml();
+
+/* GET SAVED GRADIENT */
+let asideGradient =
+localStorage.getItem("resumeAsideGradient") ||
+"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+
+/* EXTRACT ACCENT COLOR */
+let accentColor = "#2563eb";
+const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+if(colors && colors.length){
+accentColor = colors[Math.floor(colors.length/2)];
+}
 
 return `
 
 <div class="resume_ats" style="
-  font-family:'Segoe UI', Arial, Helvetica, sans-serif;
-  font-size:14px;
-  line-height:1.75;
-  color:#1f2937;
-  max-width:860px;
-  margin:auto;
-  background:#ffffff;
-  padding:48px 50px;
+font-family:'Segoe UI', Arial, Helvetica, sans-serif;
+font-size:14px;
+line-height:1.75;
+color:#1f2937;
+max-width:860px;
+margin:auto;
+background:#ffffff;
+padding:48px 50px;
 ">
 
 <!-- HEADER -->
 
 <header style="
-  margin-bottom:36px;
-  padding-bottom:22px;
-  border-bottom:3px solid #2563eb;
+margin-bottom:36px;
+padding-bottom:22px;
+border-bottom:3px solid ${accentColor};
 ">
 
 <h1 style="
-  font-size:34px;
-  font-weight:800;
-  letter-spacing:.4px;
-  color:#0f172a;
-  margin:0 0 6px 0;
+font-size:34px;
+font-weight:800;
+letter-spacing:.4px;
+color:#0f172a;
+margin:0 0 6px 0;
 ">
 ${escapeHtml(data.personal.fullName || '')}
 </h1>
 
 <p style="
-  font-size:18px;
-  color:#2563eb;
-  font-weight:600;
-  margin-bottom:10px;
+font-size:18px;
+color:${accentColor};
+font-weight:600;
+margin-bottom:10px;
 ">
 ${escapeHtml(data.personal.title || '')}
 </p>
 
 <p style="
-  font-size:13px;
-  color:#4b5563;
-  line-height:1.8;
+font-size:13px;
+color:#4b5563;
+line-height:1.8;
 ">
 
 ${data.personal.phone ? `${escapeHtml(data.personal.phone)} • ` : ''}
@@ -4939,51 +4902,45 @@ ${data.personal.linkedin ? `${escapeHtml(data.personal.linkedin)}` : ''}
 </header>
 
 
-<!-- SUMMARY -->
-
 ${data.summary && data.summary.trim() ? `
 
 <section style="margin-bottom:34px">
 
 <h2 style="
-  font-size:13px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.4px;
-  color:#0f172a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:8px;
-  margin-bottom:14px;
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:14px;
 ">
 Professional Summary
 </h2>
 
-<p style="
-  color:#374151;
-  font-size:14px;
-">
+<p style="color:#374151;font-size:14px">
 ${escapeHtml(data.summary)}
 </p>
 
 </section>
+
 ` : ''}
 
-
-<!-- EXPERIENCE -->
 
 ${hasExperience() ? `
 
 <section style="margin-bottom:34px">
 
 <h2 style="
-  font-size:13px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.4px;
-  color:#0f172a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:8px;
-  margin-bottom:16px;
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:16px;
 ">
 Professional Experience
 </h2>
@@ -4992,46 +4949,25 @@ ${data.experience.map(exp => `
 
 <div style="margin-bottom:24px">
 
-<div style="
-  display:flex;
-  justify-content:space-between;
-  flex-wrap:wrap;
-  margin-bottom:4px;
-">
+<div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:4px">
 
-<strong style="
-  font-size:15px;
-  color:#0f172a;
-  font-weight:700;
-">
+<strong style="font-size:15px;color:#0f172a;font-weight:700">
 ${escapeHtml(exp.role)}
 </strong>
 
-<span style="
-  font-size:13px;
-  color:#6b7280;
-">
+<span style="font-size:13px;color:#6b7280">
 ${[exp.start, exp.end].filter(d => d && d.trim()).join(' - ')}
 </span>
 
 </div>
 
-<div style="
-  font-size:13px;
-  color:#374151;
-  font-weight:600;
-  margin-bottom:6px;
-">
+<div style="font-size:13px;color:#374151;font-weight:600;margin-bottom:6px">
 ${escapeHtml(exp.campany)}
 </div>
 
 ${exp.bullets && exp.bullets.length ? `
 
-<ul style="
-  padding-left:18px;
-  margin-top:6px;
-  line-height:1.7;
-">
+<ul style="padding-left:18px;margin-top:6px;line-height:1.7">
 
 ${exp.bullets.map(b => `
 <li style="margin-bottom:6px">
@@ -5052,21 +4988,19 @@ ${escapeHtml(b)}
 ` : ''}
 
 
-<!-- EDUCATION -->
-
 ${hasEducation() ? `
 
 <section style="margin-bottom:34px">
 
 <h2 style="
-  font-size:13px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.4px;
-  color:#0f172a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:8px;
-  margin-bottom:16px;
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:16px;
 ">
 Education
 </h2>
@@ -5075,30 +5009,14 @@ ${data.education.map(edu => `
 
 <div style="margin-bottom:18px">
 
-<strong style="
-  font-size:15px;
-  color:#0f172a;
-">
+<strong style="font-size:15px;color:#0f172a">
 ${escapeHtml(edu.degree)}
 </strong>
 
-<div style="
-  font-size:13px;
-  color:#374151;
-  margin-top:4px;
-">
+<div style="font-size:13px;color:#374151;margin-top:4px">
 ${escapeHtml(edu.school)}
 ${edu.year ? ` • ${escapeHtml(edu.year)}` : ''}
 </div>
-
-${edu.discription ? `
-<p style="
-  margin-top:6px;
-  color:#4b5563;
-">
-${escapeHtml(edu.discription)}
-</p>
-` : ''}
 
 </div>
 
@@ -5109,60 +5027,48 @@ ${escapeHtml(edu.discription)}
 ` : ''}
 
 
-<!-- SKILLS -->
-
 ${hasSkills() ? `
 
 <section style="margin-bottom:34px">
 
 <h2 style="
-  font-size:13px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.4px;
-  color:#0f172a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:8px;
-  margin-bottom:16px;
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:16px;
 ">
 Skills
 </h2>
 
 <div style="
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px 28px;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:14px 28px;
 ">
 
-${data.skills
-.filter(skill => skill.name?.trim())
-.map(skill => {
+${data.skills.map(skill => {
 
 const levelMap = {
-  basic: 40,
-  intermediate: 65,
-  advanced: 85,
-  native: 100
+basic:40,
+intermediate:65,
+advanced:85,
+native:100
 };
 
 let level = skill.level;
-
-if (typeof level === "string") {
-  level = levelMap[level.toLowerCase()] ?? 0;
+if(typeof level === "string"){
+level = levelMap[level.toLowerCase()] ?? 0;
 }
-
-level = Math.max(0, Math.min(100, Number(level)));
 
 return `
 
 <div>
 
-<div style="
-  display:flex;
-  justify-content:space-between;
-  font-size:13px;
-  margin-bottom:4px;
-">
+<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
 
 <span style="font-weight:600;color:#1f2937">
 ${escapeHtml(skill.name)}
@@ -5175,25 +5081,25 @@ ${level}%
 </div>
 
 <div style="
-  height:6px;
-  background:#e5e7eb;
-  border-radius:4px;
-  overflow:hidden;
+height:6px;
+background:#e5e7eb;
+border-radius:4px;
+overflow:hidden;
 ">
 
 <div style="
-  height:100%;
-  width:${level}%;
-  background:linear-gradient(90deg,#2563eb,#1d4ed8);
-  border-radius:4px;
-">
-</div>
+height:100%;
+width:${level}%;
+background:${accentColor};
+border-radius:4px;
+"></div>
 
 </div>
 
 </div>
 
 `;
+
 }).join('')}
 
 </div>
@@ -5203,34 +5109,36 @@ ${level}%
 ` : ''}
 
 
-<!-- LANGUAGES -->
-
 ${hasLanguage() ? `
 
 <section style="margin-bottom:34px">
 
 <h2 style="
-  font-size:13px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.4px;
-  color:#0f172a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:8px;
-  margin-bottom:14px;
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:14px;
 ">
 Languages
 </h2>
 
-<ul style="padding-left:18px">
+<ul style="padding-left:18px;font-size:14px;line-height:1.7">
 
 ${data.languages
 .filter(lang => lang.name?.trim())
 .map(lang => `
+
 <li style="margin-bottom:6px">
-${escapeHtml(lang.name)}
+
+<strong>${escapeHtml(lang.name)}</strong>
 ${lang.level ? ` – ${escapeHtml(lang.level)}` : ''}
+
 </li>
+
 `).join('')}
 
 </ul>
@@ -5240,21 +5148,19 @@ ${lang.level ? ` – ${escapeHtml(lang.level)}` : ''}
 ` : ''}
 
 
-<!-- REFERENCES -->
-
 ${hasReferences() ? `
 
 <section>
 
 <h2 style="
-  font-size:13px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.4px;
-  color:#0f172a;
-  border-bottom:2px solid #e5e7eb;
-  padding-bottom:8px;
-  margin-bottom:14px;
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:14px;
 ">
 References
 </h2>
@@ -5263,10 +5169,7 @@ ${data.references.map(ref => `
 
 <div style="margin-bottom:18px">
 
-<strong style="
-  font-size:15px;
-  color:#0f172a;
-">
+<strong style="font-size:15px;color:#0f172a">
 ${escapeHtml(ref.name)}
 </strong>
 
@@ -5289,295 +5192,7 @@ ${ref.email ? `<div style="font-size:13px">${escapeHtml(ref.email)}</div>` : ''}
 `;
 }
 
-function renderVertexATS() {
-  injectModernAtsTemplateStyles()
-  const p = photoHtml();
 
-  return `
-  <div class="resume_Template_1">
-            <aside class="header" 
-        style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);
-            padding: 40px 40px 80px 40px;
-            color: white;
-            position: relative;">
-
-            <div class="header-grid" 
-            style="display: flex;
-            justify-content: space-between;
-            align-items: center;">
-            <div>
-
-                    <div class="name"
-                     style="font-size: 42px;
-                    font-family: Space Grotesk;
-                    font-weight: 700;
-                    letter-spacing: 2px;">${escapeHtml(data.personal.fullName || '')}</div>
-
-                    <div class="title" 
-                    style="opacity: .85;
-                    margin-top: 6px;
-                    letter-spacing: 2px;
-                    font-size: 14px;">${escapeHtml(data.personal.title || '')}</div>
-                    </div>
-
-                <ul class="contact-list_Template_1" style="display: grid;grid-template-columns: 1fr 1fr;">
-
-    ${data.personal.phone
-      ? `<li style="font-size:14px">${icon(ICONS.phone_w)}${escapeHtml(data.personal.phone)}</li>`
-      : ''}
-
-    ${data.personal.email
-      ? `<li style="font-size:14px">${icon(ICONS.email_w)}${escapeHtml(data.personal.email)}</li>`
-      : ''}
-
-    ${data.personal.location
-      ? `<li style="font-size:14px">${icon(ICONS.location_w)}${escapeHtml(data.personal.location)}</li>`
-      : ''}
-
-    ${data.personal.website
-      ? `<li style="font-size:14px">${icon(ICONS.website_w)}${escapeHtml(data.personal.website)}</li>`
-      : ''}
-
-    ${data.personal.linkedin
-      ? `<li style="font-size:14px">${icon(ICONS.linkedin_w)}${escapeHtml(data.personal.linkedin)}</li>`
-      : ''}
-
-    ${data.personal.dob
-      ? `<li style="font-size:14px">${icon(ICONS.calendar_w)}${escapeHtml(data.personal.dob)}</li>`
-      : ''}
-    ${data.personal.gender
-      ? `<li style="font-size:14px">${icon(ICONS.user_w)}${escapeHtml(data.personal.gender)}</li>`
-      : ''}
-
-${data.personal.race
-      ? `<li style="font-size:14px">${icon(ICONS.group_w)}${escapeHtml(data.personal.race)}</li>`
-      : ''}
-
-${data.personal.religion
-      ? `<li style="font-size:14px">${icon(ICONS.faith_w)}${escapeHtml(data.personal.religion)}</li>`
-      : ''}
-
-${data.personal.maritalStatus
-      ? `<li style="font-size:14px">${icon(ICONS.heart_w)}${escapeHtml(data.personal.maritalStatus)}</li>`
-      : ''}
-
-${data.personal.driversLicence
-      ? `<li style="font-size:14px">${icon(ICONS.car_w)}${escapeHtml(data.personal.driversLicence)}</li>`
-      : ''}
-  </ul>
-            </div>
-
-            <div class="profile" 
-            style="position: absolute;
-            display: flex;
-            justify-content: center;
-            bottom: -55px;
-            left: 60px;
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 6px solid white;
-            background: #0f172a;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, .25);">
-            <div>${p}</div>
-            </div>
-        </aside>
-        <main class="content_Template_1"
-            style="padding: 100px 60px 60px 60px;">
-            <!-- LEFT SIDE -->
-
-            <div>
-          ${data.summary && data.summary.trim()
-           ? `
-          <section class="overflow" style="margin-top:50px">
-         <div>
-         <h2 style="margin-bottom:20px">${ICONS.profile}<span style="margin-left:30px">Profile</span></h2>
-         </div>
-         <p style="color:#475569; line-height: 1.6;">${escapeHtml(data.summary)}</p>
-          </section>
-            `: ''}
-            </div>
-
-            ${hasExperience() ? `
-            <div class="heading_Template_1 overflow" style="margin-bottom: 5px; margin-top: 40px;">
-            <h2>${ICONS.experience}<span>Professional Experience</span></h2>
-           <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-           </div>
-            ` : ``}
-
-          ${data.experience.map(exp => `
-          <!-- EXPERIENCE ITEM -->
-          <div class="overflow" style="margin-top:1rem;font-weight:bold; display:flex; justify-content:space-between;">
-          <p style="font-weight:800">${escapeHtml(exp.campany)}</p>
-          ${[exp.start, exp.end].some(d => d && d.trim())
-          ? `<i style="font-weight:400;font-size:13px;">${[exp.start, exp.end]
-            .filter(d => d && d.trim())
-            .join(' – ')}</i>`
-          : ''
-        }
-  </div>
-
-          <p class="overflow" style="margin:0;font-weight:600;color:rgb(59,57,57); margin-bottom: 5px;">
-          ${escapeHtml(exp.role)}
-           </p>
-
-        ${exp.bullets && exp.bullets.length
-          ? `
-       ${exp.bullets.map(b => `
-        <li class="overflow ${b?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-       ${escapeHtml(b)}
-        </li>
-          `).join('')}
-      `
-          : ''
-        }
-`).join('')}
-
-${hasEducation() && `
-<!-- EDUCATION HEADING -->
-<div class="heading_Template_1 overflow" id="h2-edu" style="margin-bottom:5px;">
-  <h2>
-    ${ICONS.education}<span>EDUCATION</span>
-  </h2>
-  <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-</div>
-`}
-
-        <!-- EDUCATION ITEM -->
-        ${data.education.map(edu => `
-              <div class="overflow" style="margin-top:1rem;;font-weight:bold; display: flex; justify-content: space-between;">
-              <p style="font-weight: 800">${escapeHtml(edu.degree)}</p>
-              <i style="margin:0; float: right; font-weight:400; font-size: 13px; list-style-type: none;">${escapeHtml(edu.year || '')}</i>
-            </div>
-            <p class="overflow" style="margin:0; font-weight: 600; margin-bottom:5px; color: rgb(59, 57, 57);">${escapeHtml(edu.school)}</p>
-              <li class="overflow" style="display:flex;white-space:pre-wrap;">
-              </li>
-
-              <li class="overflow ${edu.discription?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-             ${escapeHtml(edu.discription)}
-             </li>
-              `).join('')}
-              
-              
-              <section class="section_Template_1 overflow">
-              ${hasSkills() ? `
-              <div class="heading_Template_1">
-              <h2>
-              ${ICONS.skill}
-             <span>Skills</span>
-              </h2>
-            <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-            </div>
-             ` : ""}
-
-           <ul class="skills-list_Template_1 overflow">
-           ${data.skills
-         .filter(skill => skill.name?.trim())
-         .map(skill => `
-          <li style="color:#475569;">
-          ${escapeHtml(skill.name)}
-          ${skill.level ? renderLanguageLevel(skill.level) : ""}
-          </li>
-          `).join('')}
-           </ul>
-          </section>
-
-            <section class="section_Template_1 overflow">
-                ${hasLanguage() ? `
-            <div class="heading_Template_1">
-            <h2>
-            ${ICONS.language}
-            <span>Languages</span>
-           </h2>
-            <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-           </div>
-            ` : ""}
-
-      <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
-        ${data.languages
-        .filter(lang => lang.name?.trim())
-         .map(lang => `
-        <li class="language-item_Template_1" style="color:#475569;">
-         <span class="language-name_Template_1">
-          ${escapeHtml(lang.name)}
-         </span>
-       ${renderLanguageLevel(lang.level)}
-        </li>
-      `).join('')}
-      </ul>
-    </section>
-
-            
-          ${hasInterest() && `
-          <section class="section_Template_1 overflow">
-           <div class="heading_Template_1">
-            <h2>
-            ${ICONS.interests}
-           <span>Interests</span>
-           </h2>
-          <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-          </div>
-        `}
-
-          <ul class="skills-list_Template_1 interests-list_Template_1">
-         ${data.interests
-          .filter(i => i && i.trim() !== '')
-          .map(i => `
-            <li class="interest-item_Template_2" style="color:#475569;">
-              ${escapeHtml(i)}
-            </li>
-          `).join('')}
-         </ul>
-        </section>
-
-            <section class="section_Template_1 overflow">
-         ${hasReferences() ? `
-        <div class="heading_Template_3" style="margin-top:30px">
-        <h2><span>References</span></h2>
-        </div>
-        ` : ``}
-          ${data.references.map(ref => `
-         <div class="ref-card-wrapper">
-          <div class="ref-card_Template_1">
-
-        ${ref.name ? `<h4>${escapeHtml(ref.name)}</h4>` : ''}
-
-         ${(ref.campany || ref.position) ? `
-         <p class="ref-line">
-          ${ICONS.campany}
-          ${[
-              ref.campany
-                ? `<strong>${escapeHtml(ref.campany)}</strong>`
-                : '',
-              ref.position
-                ? escapeHtml(ref.position)
-                : ''
-            ].filter(Boolean).join(' / ')}
-        </p>
-      ` : ''}
-
-      ${ref.phone ? `
-        <p class="ref-line">
-          ${ICONS.phone}
-          ${escapeHtml(ref.phone)}
-        </p>
-      ` : ''}
-
-      ${ref.email ? `
-        <p class="ref-line">
-          ${ICONS.email}
-          ${escapeHtml(ref.email)}
-        </p>
-      ` : ''}
-          </div>
-        </div>
-        `).join('')}
-
-        </main>
-  </div>
-  `;
-}
 
 
 
@@ -7691,6 +7306,79 @@ function updateCounter(){
     counter.classList.add("limit");
   }
 }
+
+
+/* extract accent color from gradient */
+
+
+const match = asideGradient.match(/#([0-9a-fA-F]{6})/g);
+if(match && match.length >= 2){
+accentColor = match[1]; 
+}
+
+
+
+function applyAsideGradient(){
+
+const asides =
+document.querySelectorAll("#resumePreview aside");
+
+asides.forEach(a=>{
+
+a.style.transition="background 0.4s ease";
+
+a.style.background=asideGradient;
+
+});
+
+}
+
+/* COLOR CLICK */
+
+document.querySelectorAll(".color-card")
+.forEach(card=>{
+
+card.addEventListener("click",()=>{
+
+asideGradient = card.dataset.color;
+
+localStorage.setItem(
+"resumeAsideGradient",
+asideGradient
+);
+
+/* update aside instantly */
+applyAsideGradient();
+
+/* re-render resume so headings + dots update */
+renderPreview();
+
+});
+});
+
+
+
+/* PANEL TOGGLE */
+
+const palette =
+document.getElementById("colorPalette");
+
+const toggleColor =
+document.getElementById("paletteToggle");
+
+toggleColor.addEventListener("click",()=>{
+
+palette.classList.toggle("open");
+
+});
+
+
+
+/* APPLY AFTER TEMPLATE RENDER */
+
+setTimeout(applyAsideGradient,200);
+
+
 document.addEventListener("DOMContentLoaded", updateCounter);
 renderPreview();
 save();
