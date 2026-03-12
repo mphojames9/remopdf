@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Resume Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="./assets/icon.png">
+  <link rel="stylesheet" href="./styles/templates.css">
+  <link rel="stylesheet" href="./styles/slider.css">
+  <link rel="stylesheet" href="./styles/main.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="logo">
+      <a href="./index.html"><img src="./assets/logo.png" alt="logo" class="mainLogo"></a>
+      
+    </div>
+
+    <div class="header-right">
+
+      <button class="layout-preview-btn">
+        <i class="fa-solid fa-layer-group"></i>
+        Change Template
+      </button>
+      <select id="templateSelect" style="display: none;">
+        <option value="midnight">midnight</option>
+        <option value="minimal">Minimal</option>
+        <option value="creative">Creative</option>
+        <option value="recruiter">Recruiter</option>
+        <option value="ats">ATS</option>
+      </select>
+
+      <button id="pdfBtn" class="btn-premium">
+        <i class="fa-solid fa-file-arrow-down"></i>
+        Download
+      </button>
+    </div>
+
+    <!-- Toggle Button -->
+    <div class="menu-toggle" id="menuToggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </header>
+
+  <!-- Mobile Slide Panel -->
+  <div class="mobile-panel" id="mobilePanel">
+
+    <button class="layout-preview-btn" onclick="openLayoutPreview(data.template)">
+      <i class="fa-solid fa-layer-group"></i>
+      Change Template
+    </button>
+
+    <button class="btn-premium">
+      <i class="fa-solid fa-file-arrow-down"></i>
+      Download PDF
+    </button>
+  </div>
+
+  <div class="backdrop"></div>
+
+
+
+  <div id="layoutOverlay" class="layout-overlay">
+    <!-- HEADER -->
+    <div class="layout-header">
+
+      <div class="header-left">
+        <h2>Choose a Resume Template</h2>
+        <p class="header-subtitle">Select a layout to instantly preview your resume</p>
+      </div>
+
+      <button class="close-btn" id="close-preview" aria-label="Close">
+        <span>✕</span>
+      </button>
+
+    </div>
+
+    <div class="layout-modal">
+
+
+
+      <div class="template-filter-wrapper">
+
+        <!-- MOBILE MENU BUTTON -->
+        <button class="filter-menu-btn" onclick="toggleFilterMenu()">
+          <span class="menu-icon">☰</span>
+          <span>Filters</span>
+        </button>
+
+        <!-- FILTER NAV -->
+        <div class="template-filters" id="templateFilters">
+
+          <button class="filter active" data-filter="all">All</button>
+          <button class="filter" data-filter="midnight">Modern</button>
+          <button class="filter" data-filter="Modern-ATS">Modern-ATS</button>
+          <button class="filter" data-filter="creative">Creative</button>
+          <button class="filter" data-filter="ats">ATS</button>
+
+        </div>
+
+      </div>
+
+      <!-- TEMPLATE CONTAINER -->
+      <div class="template-container">
+
+        <!-- midnight GROUP -->
+        <div class="template-group" data-group="midnight">
+
+          <h3 class="group-title">Modern Two-Column</h3>
+
+          <div class="template-grid">
+
+            <!-- midnight -->
+            <div class="template-card" data-template="midnight">
+              <div class="template-image">
+                <img src="./assets/Midnight-I.png" alt="midnight Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" id="midnight">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Midnight Professional</span>
+            </div>
+
+            <!-- Golden Executive -->
+            <div class="template-card" data-template="goldenexecutive">
+              <div class="template-image">
+                <img src="./assets/goldenexecutive.png" alt="Golden Executive">
+                <div class="template-overlay">
+                  <button class="use-template-btn" id="goldenexecutive">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Golden Executive</span>
+            </div>
+
+            <!-- pinkcorporate -->
+            <div class="template-card" data-template="pinkcorporate">
+              <div class="template-image">
+                <img src="./assets/pinkcorporate.png" alt="Pink Corporate Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" id="pinkcorporate">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Pink Corporate</span>
+            </div>
+
+
+
+            <!-- midnight -->
+            <div class="template-card" data-template="promidnight">
+              <div class="template-image">
+                <img src="./assets/Midnight-II.png" alt="promidnight Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" id="promidnight">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Midnight Professional II</span>
+            </div>
+
+            <!-- Golden Executive -->
+            <div class="template-card" data-template="goldenexecutiveII">
+              <div class="template-image">
+                <img src="./assets/goldenexecutiveII.png" alt="Golden ExecutiveII">
+                <div class="template-overlay">
+                  <button class="use-template-btn" id="goldenexecutiveII">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Golden ExecutiveII</span>
+            </div>
+
+            <!-- pinkcorporate -->
+            <div class="template-card" data-template="pinkcorporateII">
+              <div class="template-image">
+                <img src="./assets/pinkcorporateII.png" alt="Pink Corporate Resume II">
+                <div class="template-overlay">
+                  <button class="use-template-btn" id="pinkcorporateII">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Pink CorporateII</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIMPLE GROUP -->
+        <div class="template-group" data-group="Modern-ATS">
+          <h3 class="group-title">Modern-ATS</h3>
+          <div class="template-grid">
+            <!-- MINIMAL -->
+            <div class="template-card" data-template="Modernats">
+              <div class="template-image">
+                <img src="./assets/Modernats.png" alt="Modern-ATS Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" id="Modernats">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Modern-ATS-Photo</span>
+            </div>
+
+            <!-- MODERN ATS CLEAN -->
+            <div class="template-card" data-template="ModernatsClean">
+              <div class="template-image">
+                <img src="./assets/modern-ats-clean.png" alt="Modern ATS Clean Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" id="ModernatsClean">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Modern-ATS-Clean</span>
+            </div>
+
+
+            <!-- MODERN EDGE ATS -->
+            <div class="template-card" data-template="ModernEdgeATS">
+              <div class="template-image">
+                <img src="./assets/modern-edge-ats.png" alt="Modern Edge ATS Resume">
+
+                <div class="template-overlay">
+                  <button class="use-template-btn" id="ModernEdgeATS">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Modern-Edge-ATS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ATS GROUP -->
+      <div class="template-group" data-group="ats">
+
+        <h3 class="group-title">ATS Friendly</h3>
+
+        <div class="template-grid">
+
+          <div class="template-card" data-template="ats">
+            <div class="template-image">
+              <img src="./assets/image.png" alt="ATS Resume">
+              <div class="template-overlay">
+                <button class="use-template-btn" id="ats">
+                  Use Template
+                </button>
+              </div>
+            </div>
+            <span class="template-name">NeoATS</span>
+          </div>
+
+          <div class="template-card" data-template="apexats">
+            <div class="template-image">
+              <img src="./assets/apex-ats.png" alt="Apex ATS Resume">
+              <div class="template-overlay">
+                <button class="use-template-btn" id="apexats">
+                  Use Template
+                </button>
+              </div>
+            </div>
+            <span class="template-name">ApexATS</span>
+          </div>
+
+          <div class="template-card" data-template="vertexats">
+            <div class="template-image">
+              <img src="./assets/vertex-ats.png" alt="Vertex ATS Resume">
+              <div class="template-overlay">
+                <button class="use-template-btn" id="vertexats">
+                  Use Template
+                </button>
+              </div>
+            </div>
+            <span class="template-name">VertexATS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+
+
+
+  <main class="layout">
+
+    <!-- LEFT PANEL -->
+    <aside class="aside">
+
+      <div class="section-block profile-section">
+        <div class="editProfileBtn">
+          <i class="fa-solid fa-pen" id="editProfileBtn"></i>
+        </div>
+        <div class="left">
+          <h4 class="name" style="font-size: 1.2rem;"></h4>
+          <h4 class="tittle" style="color: #7e7b7b;">Software Engineer</h4>
+          <ul class="Personal-details-main">
+            <li><span style="display:inline-flex;align-items:center;margin-right:6px;color:#6f93c1">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                  <path
+                    d="M3 5a2 2 0 0 1 2-2h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2C9.8 19 5 14.2 5 7a2 2 0 0 1-2-2z"
+                    stroke="#6f93c1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </span>
+              <p class="phoneNo">+27725320406</p>
+            </li>
+            <li><span style="display:inline-flex;align-items:center;margin-right:6px;color:#6f93c1">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                  <rect x="3" y="5" width="18" height="14" rx="2" stroke="#6f93c1" stroke-width="1.5"></rect>
+                  <path d="M3 7l9 6 9-6" stroke="#6f93c1" stroke-width="1.5"></path>
+                </svg>
+              </span>
+              <p class="emailAd">mphojames9@gmail.com</p>
+            </li>
+            <li><span style="display:inline-flex;align-items:center;margin-right:6px;color:#6f93c1">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                  <path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z" stroke="#6f93c1" stroke-width="1.5"></path>
+                  <circle cx="12" cy="10" r="2.5" stroke="#6f93c1" stroke-width="1.5"></circle>
+                </svg>
+              </span>
+              <p class="locationAd">Adonis st 14569 EXT11 Soshanguve South 0152</p>
+            </li>
+          </ul>
+
+        </div>
+        <div class="right">
+          <div class="photoMain">
+            <div id="photoPreviewContainer" class="photo-preview"></div>
+            <div class="backdropBtn"></div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- EXPERIENCE -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-briefcase"></i> Experience</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="section-content">
+          <div class="section-inner">
+            <button class="small-btn" id="addExpBtn">
+              <i class="fa-solid fa-plus"></i> Add Entry
+            </button>
+            <div id="experienceContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDUCATION -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-graduation-cap"></i> Education</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="section-content">
+          <div class="section-inner">
+            <button class="small-btn" id="addEduBtn">
+              <i class="fa-solid fa-plus"></i> Add Entry
+            </button>
+            <div id="educationContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SKILLS -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-toolbox"></i>Skills</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+
+        <div class="section-content" style="height:auto;">
+          <div class="section-inner">
+            <button class="small-btn" id="addSkillBtn">
+              <i class="fa-solid fa-plus"></i> Add Skill
+            </button>
+
+            <div id="skillsContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Languages -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-language"></i> Languages</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+
+        <div class="section-content" style="height:auto;">
+          <div class="section-inner">
+            <button class="small-btn" id="addLanguageBtn">
+              <i class="fa-solid fa-plus"></i> Add Language
+            </button>
+            <div id="languagesContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERESTS -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-heart"></i> Interests</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="section-content">
+          <div class="section-inner">
+            <button class="small-btn" id="addinterestBtn">
+              <i class="fa-solid fa-plus"></i> Add Entry
+            </button>
+            <div id="interestsContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REFERENCES -->
+      <div class="section-block">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-user-check"></i> References</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="section-content">
+          <div class="section-inner">
+            <button class="small-btn" id="addrefBtn">
+              <i class="fa-solid fa-plus"></i> Add Entry
+            </button>
+            <div id="referencesContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay-personalDetails hidden" id="editDetails-overay">
+        <div class="overlay-content">
+          <h2>Edit Personal Details</h2>
+          <div class="right">
+            <h4>Profile Picture</h4>
+            <div id="photoPreviewContainer" class="photo-preview">
+              <img src="./assets/profile.png" alt="" class="src">
+            </div>
+          </div>
+          <div class="section-block">
+            <h4>
+              <i class="fa-solid fa-user-pen"></i>
+              Summary
+            </h4>
+            <textarea id="summary" placeholder="Professional Summary" maxlength="250">
+</textarea>
+
+            <div id="summaryCounter">0 / 250</div>
+
+            <div class="section-header">
+              <h4><i class="fa-solid fa-id-card"></i>Personal Details</h4>
+            </div>
+            <div class="section-inner">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input id="fullName" placeholder="Full Name">
+              </div>
+              <div class="form-group">
+                <label>Professional Title</label>
+                <input id="title" placeholder="Title">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input id="email" placeholder="Email">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input id="phone" placeholder="Phone">
+              </div>
+              <div class="form-group">
+                <label>Location</label>
+                <input id="location" placeholder="Location">
+              </div>
+              <div class="form-group">
+                <label>Website</label>
+                <input id="website" placeholder="Website">
+              </div>
+              <div class="form-group">
+                <label>LinkedIn</label>
+                <input id="linkedin" placeholder="LinkedIn">
+              </div>
+              <div class="extra-section">
+
+                <button type="button" class="extra-toggle" aria-expanded="false">
+                  <span>Add more details</span>
+                  <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
+                    <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </button>
+
+                <div class="extra-content">
+                  <div class="extra-inner">
+
+                    <div class="form-group">
+                      <label>Date of Birth</label>
+                      <input id="dob" type="date">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Gender</label>
+                      <input id="gender" placeholder="Gender">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Race</label>
+                      <input id="race" placeholder="Race">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Religion</label>
+                      <input id="religion" placeholder="Religion">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Marital Status</label>
+                      <input id="maritalStatus" placeholder="Marital Status">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Driver's Licence</label>
+                      <input id="driversLicence" placeholder="e.g. Code B">
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+    </aside>
+
+    <button class="savePersonalDetails hidden">
+      <i class="fa-solid fa-save"></i>Save
+    </button>
+    <button id="pdfBtn" class="download-btn-premium">
+      <i class="fa-solid fa-file-arrow-down"></i>
+      Download
+    </button>
+    <button class="closeBtn"><i class="fa-solid fa-multiply" id="editResume"></i></button>
+    <!-- RIGHT PREVIEW -->
+    <section class="preview-wrap">
+      <div id="resumePreview"></div>
+    </section>
+
+    <button class="preview-btn" id="previewBtn">
+      <span class="fa-stack">
+        <i class="fa-regular fa-file fa-stack-2x file-icon"></i>
+        <i class="fa-solid fa-magnifying-glass fa-stack-1x glass-icon"></i>
+      </span>
+    </button>
+  </main>
+
+  <div class="profilePhotoUpload hidden" id="profilePhotoUpload">
+    <div class="upload-card">
+      <div class="row1">
+        <button class="closeProfilePhotoUpload" id="closeProfilePhotoUpload">
+          <i class="fa-solid fa-multiply"></i>
+        </button>
+      </div>
+      <h3>Image Uploader</h3>
+      <div class="row2">
+        <div class="ProfileImageContainer" id="photoPreviewContainer">
+
+          <div id="photoPreviewContainer" class="photo-preview">
+
+          </div>
+        </div>
+
+      </div>
+
+
+      <div class="row3">
+        <div class="right">
+          <div class="resizer">
+            <i class="fa-solid fa-image" style="font-size: 15px;"></i>
+            <input id="photoScale" type="range" min="100" max="200" value="100">
+            <i class="fa-solid fa-image"></i>
+          </div>
+
+          <button class="saveImage"><i class="fa-solid fa-save" style="font-size: 18px;"></i>Done
+          </button>
+        </div>
+        <div class="left">
+          <button class="removeImage" id="removePhotoBtn"
+            style=" margin-bottom: 0; margin-top: 15px; color: rgb(236, 55, 55);"><i class="fa-solid fa-trash"
+              style="font-size: 18px;"></i>Remove
+          </button>
+          <label for="profilePicInput" class="changeImage" style=" margin-bottom: 0;"><i class="fa-solid fa-plus"
+              style="font-size: 18px;"></i>
+            <span>Add/Change</span>
+            <input type="file" id="profilePicInput" accept="image/*" hidden>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- PREMIUM COLOR PALETTE -->
+  <div id="colorPalette">
+
+    <button id="paletteToggle" title="Change Resume Theme">
+      <i class="fa-solid fa-palette"></i>
+    </button>
+
+    <div class="palette-panel">
+
+      <h4>Resume Theme</h4>
+
+      <div class="palette-grid">
+
+        <div class="color-card" data-color="linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)">
+        </div>
+
+        <div class="color-card" data-color="linear-gradient(180deg,#0f172a,#1e293b,#334155)">
+        </div>
+
+        <div class="color-card" data-color="linear-gradient(180deg,#134e4a,#0f766e,#115e59)">
+        </div>
+
+        <div class="color-card" data-color="linear-gradient(180deg,#3f1d2e,#7c2d12,#9a3412)">
+        </div>
+
+        <div class="color-card" data-color="linear-gradient(180deg,#3b0764,#6b21a8,#581c87)">
+        </div>
+
+        <div class="color-card" data-color="linear-gradient(180deg,#111827,#1f2937,#374151)">
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+  <div id="toast-container"></div>
+  <!-- html2pdf for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="../../dist/resumeBuilder.bundle.js"></script>
+  <script src="script.js" defer></script>
+
+
+</body>
+
+</html>

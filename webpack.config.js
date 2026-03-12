@@ -4,7 +4,7 @@ module.exports = {
   entry: {
     main: './src/index.js',
     editor: './src/editor.js',
-    resume: './src/app.js'
+    resumeBuilder: './src/resumeBuilder.js'
   },
 
   output: {

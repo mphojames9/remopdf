@@ -1,3 +1,6 @@
+import updateCounter from "./resume/components";
+import injectPinkCorporateTemplateStylesII from "./resume/injectPinkCorporateTemplateStylesII"
+
 /* =========================
    DOM ELEMENTS
 ========================= */
@@ -3783,7 +3786,21 @@ function renderCreative() {
 }
 
 function renderModernAtsClean() {
+
 const p = photoHtml();
+
+/* GET SAVED GRADIENT */
+let asideGradient =
+localStorage.getItem("resumeAsideGradient") ||
+"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+
+/* EXTRACT ACCENT COLOR */
+let accentColor = "#2563eb";
+const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+if(colors && colors.length){
+accentColor = colors[Math.floor(colors.length/2)];
+}
 
 const personalFields = [
 { key: "phone", icon: ICONS.phone_w },
@@ -3801,348 +3818,509 @@ const personalFields = [
 
 return `
 <div class="resume_Template_1">
-  <aside style="
-background:#2563eb;
+<aside style="
+background:${asideGradient};
 color:#ffffff;
-padding:32px 24px;
+padding:36px 28px;
 display:grid;
 grid-template-rows:auto 1fr;
+font-family:'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+letter-spacing:.2px;
 ">
 
-    <div style="text-align:center;" class="overflow">
+<div style="text-align:center;" class="overflow">
 
-      <h1 style="
-font-size:24px;
-font-weight:700;
-line-height:1.2;
+<h1 style="
+font-size:28px;
+font-weight:800;
+line-height:1.15;
 margin-bottom:6px;
+letter-spacing:.6px;
+text-transform:uppercase;
+font-family:'Inter','Segoe UI',sans-serif;
 ">
-        ${escapeHtml(data.personal.fullName || '')}
-      </h1>
+${escapeHtml(data.personal.fullName || '')}
+</h1>
 
-      <div style="font-size:13px;opacity:.9;">
-        ${escapeHtml(data.personal.title || '')}
-      </div>
+<div style="
+font-size:13.5px;
+opacity:.85;
+letter-spacing:1.6px;
+text-transform:uppercase;
+font-weight:500;
+margin-top:4px;
+">
+${escapeHtml(data.personal.title || '')}
+</div>
 
-    </div>
+</div>
 
-    <div style="
+
+<div style="
 display:grid;
-grid-template-columns:3fr auto;
+grid-template-columns:1fr auto;
 align-items:end;
-margin-top:40px;
+margin-top:42px;
+gap:20px;
 ">
 
-      <div>
+<div>
 
-        <ul style="
+<ul style="
 list-style:none;
 padding:0;
 margin:0;
 display:grid;
-grid-template-columns:1fr 1fr 1fr;
-gap:6px 12px;
+grid-template-columns:1fr 1fr;
+gap:10px 14px;
+font-size:13px;
+font-weight:500;
 ">
 
-          ${personalFields
-          .filter(f => data.personal[f.key])
-          .map(f => `
-          <li class="overflow" style="display:flex;align-items:center;gap:8px;">
-            ${icon(f.icon)}
-            ${escapeHtml(data.personal[f.key])}
-          </li>
-          `).join('')}
+${personalFields
+.filter(f => data.personal[f.key])
+.map(f => `
+<li class="overflow" style="
+display:flex;
+align-items:center;
+gap:8px;
+opacity:.95;
+">
+${icon(f.icon)}
+<span style="line-height:1.3">
+${escapeHtml(data.personal[f.key])}
+</span>
+</li>
+`).join('')}
 
-        </ul>
+</ul>
 
-      </div>
+</div>
 
-      <div style="
-margin-left:16px;
-width:100px;
-height:100px;
+<div style="
+margin-left:10px;
+width:110px;
+height:110px;
 flex-shrink:0;
 border-radius:50%;
 overflow:hidden;
+border:3px solid rgba(255,255,255,.25);
+box-shadow:0 10px 30px rgba(0,0,0,.25);
 ">
-        ${p}
-      </div>
+${p}
+</div>
 
-    </div>
+</div>
 
-  </aside>
-
-
-
-  <main class="content_Template_1" style="padding:36px 42px; background: white;
-    box-sizing: border-box;
-    overflow: visible;">
+</aside>
 
 
-    ${data.summary ? `
-    <section class="overflow" style="margin-bottom:28px">
+<main class="content_Template_1" style="
+padding:36px 42px;
+background:white;
+box-sizing:border-box;
+overflow:visible;
+">
 
-      <h2 style="
+
+${data.summary ? `
+<section class="overflow" style="margin-bottom:28px">
+
+<h2 style="
 font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#1e3a8a;
+color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
 margin-bottom:12px;
 ">
-        Professional Summary
-      </h2>
+Professional Summary
+</h2>
 
-      <p style="color:#374151">
-        ${escapeHtml(data.summary)}
-      </p>
+<p style="color:#374151">
+${escapeHtml(data.summary)}
+</p>
 
-    </section>
-    ` : ''}
+</section>
+` : ''}
 
 
+${hasExperience() ? `
+<section style="margin-bottom:28px">
 
-    ${hasExperience() ? `
-    <section style="margin-bottom:28px">
-
-      <h2 class="overflow" style="
+<h2 class="overflow" style="
 font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#1e3a8a;
+color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
 margin-bottom:14px;
 ">
-        Experience
-      </h2>
+Experience
+</h2>
 
-      ${data.experience.map(exp => `
-      <div class="overflow" style="margin-bottom:20px">
+${data.experience.map(exp => `
+<div class="overflow" style="margin-bottom:20px">
 
-        <div style="
+<div style="
 display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-          <strong style="font-size:15px;color:#111827">
-            ${escapeHtml(exp.role)}
-          </strong>
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
 
-          <span style="font-size:12px;color:#6b7280">
-            ${[exp.start, exp.end].filter(Boolean).join(' - ')}
-          </span>
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
 
-        </div>
+</div>
 
-        <div style="
+<div style="
 font-size:13px;
 color:#374151;
 font-weight:600;
 margin-top:3px;
 ">
-          ${escapeHtml(exp.campany)}
-        </div>
+${escapeHtml(exp.campany)}
+</div>
 
-        ${exp.bullets?.length ? `
-        <ul style="margin-top:8px;padding-left:18px">
-          ${exp.bullets.map(b => `
-          <li class="overflow" style="margin-bottom:5px">
-            ${escapeHtml(b)}
-          </li>
-          `).join('')}
-        </ul>
-        ` : ''}
+${exp.bullets?.length ? `
+<ul style="margin-top:8px;padding-left:18px">
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px">
+${escapeHtml(b)}
+</li>
+`).join('')}
+</ul>
+` : ''}
 
-      </div>
-      `).join('')}
+</div>
+`).join('')}
 
-    </section>
-    ` : ''}
+</section>
+` : ''}
 
 
+${hasSkills() ? `
+<section style="margin-bottom:26px">
 
-    ${hasEducation() ? `
-    <section style="margin-bottom:28px">
-
-      <h2 class="overflow" style="
+<h2 class="overflow" style="
 font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#1e3a8a;
-border-bottom:2px solid #e5e7eb;
-padding-bottom:6px;
-margin-bottom:14px;
-">
-        Education
-      </h2>
-
-      ${data.education.map(edu => `
-      <div class="overflow" style="margin-bottom:16px">
-
-        <strong style="font-size:15px">
-          ${escapeHtml(edu.degree)}
-        </strong>
-
-        <div style="font-size:13px;color:#374151">
-          ${escapeHtml(edu.school)}
-          ${edu.year ? ` • ${escapeHtml(edu.year)}` : ''}
-        </div>
-
-      </div>
-      `).join('')}
-
-    </section>
-    ` : ''}
-
-
-
-    ${hasSkills() ? `
-    <section style="margin-bottom:26px">
-
-      <h2 class="overflow" style="
-font-size:14px;
-font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.2px;
-color:#1e3a8a;
+color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
 margin-bottom:12px;
 ">
-        Skills
-      </h2>
+Skills
+</h2>
 
-      <div style="
+<div style="
 display:grid;
 grid-template-columns:1fr 1fr 1fr;
 gap:10px 16px;
 ">
 
-        ${data.skills
-        .filter(s => s.name?.trim())
-        .map(skill => {
+${data.skills
+.filter(s => s.name?.trim())
+.map(skill => {
 
-        const levelMap = {
-        basic:40,
-        intermediate:65,
-        advanced:85,
-        native:95
-        };
+const levelMap = {
+basic:40,
+intermediate:65,
+advanced:85,
+native:95
+};
 
-        const level = levelMap[skill.level] || 70;
+const level = levelMap[skill.level] || 70;
 
-        return `
-        <div class="overflow">
+return `
+<div class="overflow">
 
-          <div style="
+<div style="
 display:flex;
 justify-content:space-between;
 font-size:12px;
 margin-bottom:4px;
 ">
-            <span>${escapeHtml(skill.name)}</span>
-            <span>${skill.level || ''}</span>
-          </div>
+<span>${escapeHtml(skill.name)}</span>
+<span>${skill.level || ''}</span>
+</div>
 
-          <div style="
+<div style="
 height:5px;
 background:#e5e7eb;
 border-radius:4px;
 ">
 
-            <div style="
+<div style="
 height:100%;
 width:${level}%;
-background:#2563eb;
+background:${accentColor};
 border-radius:4px;
 "></div>
 
-          </div>
+</div>
 
-        </div>
-        `;
-        }).join('')}
+</div>
+`;
+}).join('')}
 
-      </div>
+</div>
 
-    </section>
-    ` : ''}
+</section>
+` : ''}
 
 
+${hasLanguage() ? `
+<section class="overflow" style="margin-bottom:28px">
 
-    ${hasLanguage() ? `
-    <section class="overflow" style="margin-bottom:28px">
-
-      <h2 style="
+<h2 style="
 font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#1e3a8a;
+color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
 margin-bottom:12px;
 ">
-        Languages
-      </h2>
+Languages
+</h2>
 
-      <ul style="padding-left:16px;font-size:13px">
-        ${data.languages
-        .filter(l => l.name?.trim())
-        .map(l => `
-        <li class="overflow" style="margin-bottom:6px">
-          ${escapeHtml(l.name)}
-          ${l.level ? ` – ${escapeHtml(l.level)}` : ''}
-        </li>
-        `).join('')}
-      </ul>
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:10px 16px;
+">
 
-    </section>
-    ` : ''}
+${data.languages
+.filter(l => l.name?.trim())
+.map(l => {
 
+const levelMap = {
+basic:40,
+intermediate:65,
+advanced:85,
+native:100
+};
 
+const level = levelMap[l.level?.toLowerCase?.()] || 70;
 
-    ${hasReferences() ? `
-    <section class="overflow" style="margin-bottom:20px">
+return `
 
-      <h2 class="overflow" style="
+<div class="overflow">
+
+<div style="
+display:flex;
+justify-content:space-between;
+font-size:12px;
+margin-bottom:4px;
+">
+
+<span>${escapeHtml(l.name)}</span>
+
+<span>${escapeHtml(l.level || '')}</span>
+
+</div>
+
+<div style="
+height:5px;
+background:#e5e7eb;
+border-radius:4px;
+overflow:hidden;
+">
+
+<div style="
+height:100%;
+width:${level}%;
+background:${accentColor};
+border-radius:4px;
+"></div>
+
+</div>
+
+</div>
+
+`;
+
+}).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasInterest() ? `
+<section class="overflow" style="margin-bottom:26px">
+
+<h2 style="
 font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.2px;
-color:#1e3a8a;
+color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
 margin-bottom:12px;
 ">
-        References
-      </h2>
+Interests
+</h2>
 
-      ${data.references.map(ref => `
-      <div class="overflow" style="margin-bottom:14px">
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+">
 
-        <strong>${escapeHtml(ref.name)}</strong>
+${data.interests
+.filter(i => i?.trim())
+.map(i => `
 
-        <div style="color:#374151">
-          ${escapeHtml(ref.campany || '')}
-        </div>
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+padding:6px 10px;
+font-size:12px;
+border-radius:20px;
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+">
 
-        ${ref.phone ? `<div>${escapeHtml(ref.phone)}</div>` : ''}
-        ${ref.email ? `<div>${escapeHtml(ref.email)}</div>` : ''}
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2"
+stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 21s-6-4.35-9-8.5A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9 7.5C18 16.65 12 21 12 21z"/>
+</svg>
 
-      </div>
-      `).join('')}
+${escapeHtml(i)}
 
-    </section>
-    ` : ''}
+</div>
 
-  </main>
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasReferences() ? `
+<section class="overflow" style="margin-bottom:26px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+References
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:16px;
+">
+
+${data.references.map(ref => `
+<div class="overflow" style="
+border:1px solid #e5e7eb;
+border-left:4px solid ${accentColor};
+border-radius:6px;
+padding:14px;
+background:#fafafa;
+">
+
+<strong style="
+font-size:14px;
+color:#111827;
+display:block;
+margin-bottom:4px;
+">
+${escapeHtml(ref.name)}
+</strong>
+
+<div style="
+font-size:13px;
+color:#374151;
+margin-bottom:8px;
+">
+${escapeHtml(ref.campany || '')}
+</div>
+
+${ref.phone ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+margin-bottom:4px;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M22 16.92v3a2 2 0 0 1-2.18 2 
+19.79 19.79 0 0 1-8.63-3.07 
+19.5 19.5 0 0 1-6-6 
+19.79 19.79 0 0 1-3.07-8.67 
+A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 
+12.84 12.84 0 0 0 .7 2.81 
+2 2 0 0 1-.45 2.11L8.09 9.91
+a16 16 0 0 0 6 6l1.27-1.27
+a2 2 0 0 1 2.11-.45
+12.84 12.84 0 0 0 2.81.7
+A2 2 0 0 1 22 16.92z"/>
+</svg>
+
+${escapeHtml(ref.phone)}
+
+</div>
+` : ''}
+
+${ref.email ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4 4h16v16H4z"/>
+<polyline points="22,6 12,13 2,6"/>
+</svg>
+
+${escapeHtml(ref.email)}
+
+</div>
+` : ''}
+
+</div>
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+</main>
 </div>
 `;
 }
@@ -5670,6 +5848,18 @@ function showToast(message, type = 'info', duration = 5500) {
   }, duration);
 }
 
+document.querySelectorAll('.layout-preview-btn').forEach(button => button.addEventListener('click',()=>{
+  openLayoutPreview()
+}))
+
+document.querySelector('#close-preview').addEventListener('click',()=>{
+  closeLayoutPreview()
+})
+
+document.querySelectorAll('.use-template-btn').forEach(button => button.addEventListener('click',(e)=>{
+selectTemplate(`${e.target.id}`)
+}))
+
 function openLayoutPreview() {
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
@@ -5689,24 +5879,9 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeLayoutPreview();
 });
 
-
-
 let currentIndex = 0;
 
 
-function openLayoutPreview(templateId) {
-  currentIndex = TEMPLATE_LIBRARY.findIndex(t => t.id === templateId);
-  if (currentIndex < 0) currentIndex = 0;
-
-  updateCarousel();
-  overlay.classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeLayoutPreview() {
-  overlay.classList.remove('active');
-  document.body.style.overflow = '';
-}
 
 function updateCarousel() {
   track.style.transform = `translateX(-${currentIndex * 100}%)`;
@@ -5775,19 +5950,6 @@ document.querySelectorAll(".filter").forEach(btn => {
   })
 
 })
-
-function openLayoutPreview() {
-
-  document
-    .getElementById("layoutOverlay")
-    .style.display = "block"
-}
-
-function closeLayoutPreview() {
-  document
-    .getElementById("layoutOverlay")
-    .style.display = "none"
-}
 
 function selectTemplate(template) {
   data.template = template
@@ -6793,138 +6955,7 @@ MAIN CONTENT
   }
 }
 
-function injectPinkCorporateTemplateStylesII(){
-  if (!document.getElementById('pink-corporate-styleII')) {
-    const style = document.createElement('style');
-    style.id = 'pink-corporate-styleII';
 
-    style.textContent = `
-
-/* ====================
-SIDEBAR
-==================== */
-.sidebar_Template_3{
-  width:34%;
-  padding:50px 30px;
-  background:linear-gradient(180deg,#f472a1 0%, #e75480 100%);
-  color:white;
-
-}
-
-.ref-card_Template_3 h4 {
-  margin: 10px 0;
-
-}
-
-/* PHOTO */
-.photo-wrap_Template_3{
-  width:140px;
-  height:140px;
-  border-radius:50%;
-  overflow:hidden;
-  margin:0 auto 25px;
-  border:5px solid white;
-  box-shadow:0 10px 30px rgba(0,0,0,0.2);
-}
-
-/* SIDEBAR TITLES */
-.section-title_Template_3{
-  font-size:16px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.5px;
-  margin-bottom:15px;
-  color:white;
-  
-  
-
-}
-
-/* NAME */
-.name_Template_3{
-      font-size: 24px;
-    font-weight: 700;
-    text-align: center;
-    letter-spacing: 0.5px;
-  color:var(--dark);
-}
-
-.role_Template_3{
-  font-size: 14px;
-    text-align: center;
-    margin-top: 6px;
-  color: whitesmoke;
-}
-
-/* CONTACT */
-.contact-list_Template_3 li{
-  font-size:13px;
-  margin-bottom:10px;
-  color:white;
-}
-
-.side-section_Template_3 {
-  margin-top:10px ;
-}
-
-.side-section_Template_3 li {
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-}
-/* ====================
-MAIN CONTENT
-==================== */
-.content_Template_1{
-  width:66%;
-  padding:50px;
-  background:white;
-}
-
-/* SECTION HEADINGS */
-.heading_Template_3 h2{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  font-size:17px;
-  font-weight:700;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  border-bottom:2px solid #fce7ef;
-  padding-bottom:6px;
-  margin-bottom:15px;
-}
-
-/* ABOUT TEXT */
-.about_Template_3{
-  font-size:15px;
-  line-height:1.5;
-  color: white;
-  font-weight: 500;
-}
-
-/* TIMELINE */
-.timeline_Template_3{
-  margin-bottom:25px;
-  padding-left:20px;
-  border-left:2px solid #f80961;
-}
-
-/* SKILLS */
-.skills-list_Template_3{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-}
-
-.skills-list_Template_3 li{
-  font-size:14px;
-  color:white;
-}
-
-`;
-    document.head.appendChild(style);
-  }
-}
 
 function injectpromidnighttTemplateStylesII() {
   if (!document.getElementById('promidnight-template-style')) {
@@ -7213,99 +7244,11 @@ function injectModernAtsTemplateStyles() {
   }
 }
 
-function injectAtsTemplateStyles() {
-  if (!document.getElementById('Modern-ATS-template-style')) {
 
-    const style = document.createElement('style');
-    style.id = 'Modern-ATS-template-style';
-
-    style.textContent = `
-      :root { 
-        --text-colors-primary:rgba(0,0, 0, 0.87); 
-        --background-color:rgba(255, 255, 255, 1);
-        --common-black:rgba(0,0, 0, 1);
-        --divider:rgba(0, 0, 0, 1)
-      ;
-    
-      } /*reset style*/ *, *::before, *::after { box-sizing: border-box; } body, h1,
-      h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd, ul { margin: 0; padding: 0;
-      } .template { color: var(--text-colors-primary); background:
-      var(--background-color); } .template * { font-family:
-        "Tinos", serif
-      !important; } ul { list-style: none; } .resume-template-scope { min-height: 11in; } .resume-template-scope {
-      min-height: 11in; line-height: 18px; font-size: 14px; -webkit-font-smoothing:
-      antialiased; -moz-osx-font-smoothing: grayscale; } img, picture, video,
-      canvas, svg { display: block; max-width: 100%; height: auto; } input, button,
-      textarea, select { font: inherit; } a { color: inherit; font: inherit;
-      text-decoration: none; } .divider { margin: 8px 0 12px; display: flex;
-      flex-direction: column; justify-content: space-between; height: 4px;
-      border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
-      } .mt8{ margin-top: 8px; } .photo { width: 72px; height: 72px; object-fit:
-      cover; border-radius: 50%; overflow: hidden; border: 1px solid rgba(0, 0, 0,
-      0.15); } /*typography*/ .title { font-style: normal; letter-spacing: 0.58px;
-      line-height: 44px; } .subtitle { font-size: 18px; text-transform: uppercase;
-      text-align: center; font-weight: 700; line-height: normal; } .bold {
-      font-weight: 700; } .italic { font-style: italic; } .uppercase {
-      text-transform: uppercase; } .underline { text-decoration: underline; } .fs14{
-      font-size: 14px; } .fs16{ font-size: 16px; } .fs24{ font-size: 24px; } .fs40{
-      font-size: 40px; } .ls28 { letter-spacing: 0.28px; } /*main*/ .container {
-      width: 100%; max-width: 956px; margin: 0 auto; padding: 32px 56px; min-height:
-      100%; } .header{ display: flex; padding: 5px 0 16px; flex-direction: column;
-      justify-content: center; align-items: center; gap: 8px; } .address {
-      text-transform: uppercase; display: flex; align-items: center;
-      justify-content: center; flex-wrap: wrap; width: 100%; gap: 8px; font-style:
-      normal; text-align: center; } .position { line-height: normal; } .summary,
-      .hobbies{ padding: 4px 0 24px; } section { padding-top: 4px; }
-      .section-content { display: flex; gap: 24px; } 
-      .content-details { 
-        display: grid;
-        grid-template-rows: 1fr 1fr;
-        gap: 4px;
-        text-align: end; 
-        }
-       .content {
-      display: flex; gap: 12px; flex: 1; flex-direction: column; } 
-      .content-title,
-      .education-title,
-      .internships-title {
-      display: flex; flex-direction: column; font-size: 16px; line-height: normal;
-      gap: 4px; max-width: 50%; 
-      }
-      .course-title {
-      display: grid; grid-template-rows: 1fr 1fr; font-size: 16px; line-height: normal;
-      gap: 4px; max-width: 50%; 
-      }
-       .content-top { display: flex; gap: 25px;
-      justify-content: space-between; } .content-text { display: flex;
-      flex-direction: row; gap: 2px; flex-wrap: wrap; } .content-list { display:
-      flex; flex-direction: column; gap: 6px; } .content-list li{ position:
-      relative; padding-left: 12px; } .content-list li::before { content: '•';
-      position: absolute; left: 0; top: 3px; color: var(--text-colors-primary);
-      font-size: 1em; line-height: 1; } .item { padding-bottom: 20px; } .location {
-      font-weight: 400; }
-    `;
-
-    document.head.appendChild(style);
-  }
-}
-
-function updateCounter(){
-  const textarea = document.getElementById("summary");
-  const counter = document.getElementById("summaryCounter");
-  
-  const length = textarea.value.length;
-  counter.textContent = length + " / 250";
-
-  counter.classList.remove("warning","limit");
-
-  if(length > 200){
-    counter.classList.add("warning");
-  }
-
-  if(length === 250){
-    counter.classList.add("limit");
-  }
-}
+const textarea = document.getElementById("summary");
+textarea.addEventListener("keydown",()=>{
+updateCounter() 
+})
 
 
 /* extract accent color from gradient */
