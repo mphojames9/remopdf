@@ -89,12 +89,12 @@
 
         <button class="btn btn-outline">
           <a href="../index.html" style="color: #111; text-decoration: none;"><i class="fa-solid fa-file-pdf"></i>
-          PDF Tool
-        </a>  
+            PDF Tool
+          </a>
         </button>
       </div>
 
-      <div class="hero-trust"> 
+      <div class="hero-trust">
         <i class="fa-solid fa-shield-check"></i>
         100% Free • No login required • Instant PDF download
       </div>
@@ -206,61 +206,88 @@
       <div class="template-track" id="track">
 
         <div class="template-card">
-          <div class="template-preview">Template 6</div>
+          <div class="template-preview">Golden Executive</div>
           <div class="template-overlay">
-            <button class="use-template-btn">Use Template</button>
+            <button class="use-template-btn" id="goldenexecutive">Use Template</button>
           </div>
         </div>
 
         <div class="template-card">
-          <div class="template-preview">Template 1</div>
+          <div class="template-preview">Golden Executive II</div>
           <div class="template-overlay">
-            <button class="use-template-btn">Use Template</button>
+            <button class="use-template-btn" id="goldenexecutiveII">Use Template</button>
           </div>
         </div>
 
         <div class="template-card">
-          <div class="template-preview">Template 2</div>
+          <div class="template-preview">Creative</div>
           <div class="template-overlay">
-            <button class="use-template-btn">Use Template</button>
+            <button class="use-template-btn" id="creative">Use Template</button>
           </div>
         </div>
 
         <div class="template-card">
-          <div class="template-preview">Template 3</div>
+          <div class="template-preview">Modern Edge ATS</div>
           <div class="template-overlay">
-            <button class="use-template-btn">Use Template</button>
+            <button class="use-template-btn" id="ModernEdgeATS">Use Template</button>
           </div>
         </div>
 
         <div class="template-card">
-          <div class="template-preview">Template 4</div>
+          <div class="template-preview">Pink Corporate</div>
           <div class="template-overlay">
-            <button class="use-template-btn">Use Template</button>
+            <button class="use-template-btn" id="pinkcorporate">Use Template</button>
           </div>
         </div>
 
         <div class="template-card">
-          <div class="template-preview">Template 5</div>
+          <div class="template-preview">Pink Corporate II</div>
           <div class="template-overlay">
-            <button class="use-template-btn">Use Template</button>
+            <button class="use-template-btn" id="pinkcorporateII">Use Template</button>
           </div>
         </div>
 
         <div class="template-card">
-          <div class="template-preview">Template 6</div>
+          <div class="template-preview">Modern ATS Photo</div>
           <div class="template-overlay">
-            <button class="use-template-btn">Use Template</button>
+            <button class="use-template-btn" id="Modernats">Use Template</button>
           </div>
         </div>
 
         <div class="template-card">
-          <div class="template-preview">Template 1</div>
+          <div class="template-preview">Pro Midnight</div>
           <div class="template-overlay">
-            <button class="use-template-btn">Use Template</button>
+            <button class="use-template-btn" id="promidnight">Use Template</button>
           </div>
         </div>
 
+        <div class="template-card">
+          <div class="template-preview">Modern ATS Clean</div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="ModernatsClean">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <div class="template-preview">Classic ATS</div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="ats">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <div class="template-preview">Vertex ATS</div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="vertexats">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <div class="template-preview">Apex ATS</div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="apexats">Use Template</button>
+          </div>
+        </div>
       </div>
 
       <button class="slider-arrow right" onclick="next()">❯</button>
@@ -649,14 +676,32 @@
 
             document.querySelector(".success-animation").style.display = "none";
             document.getElementById("contactForm").style.display = "block";
-
             form.reset();
-
           }, 2500);
-
         })
-
     });
+
+     document.querySelectorAll(".use-template-btn").forEach(btn => {
+
+  btn.addEventListener("click", () => {
+
+    const template = btn.id
+
+    // get current resume data
+    const resumeData = JSON.parse(localStorage.getItem("resume:data")) || {}
+
+    // update template directly
+    resumeData.template = template
+
+    // save back to localStorage
+    localStorage.setItem("resume:data", JSON.stringify(resumeData))
+
+    // go to builder
+    window.location.href = "./builder.html"
+
+  })
+
+})
 
   </script>
 
