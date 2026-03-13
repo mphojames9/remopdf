@@ -3817,38 +3817,57 @@ const personalFields = [
 ];
 
 return `
-<div class="resume_Template_1">
+<div class="resume_Template_1" style="
+display:grid;
+grid-template-rows:auto 1fr;
+width:100%;
+">
+
 <aside style="
-background:${asideGradient};
+background:
+linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.15)),
+${asideGradient};
 color:#ffffff;
-padding:36px 28px;
+padding:42px 32px;
+page-break-inside:avoid;
 display:grid;
 grid-template-rows:auto 1fr;
 font-family:'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif;
 letter-spacing:.2px;
+position:relative;
+overflow:hidden;
 ">
+
+<div style="
+position:absolute;
+top:-120px;
+right:-120px;
+width:260px;
+height:260px;
+background:radial-gradient(circle,rgba(255,255,255,.15),transparent 70%);
+pointer-events:none;
+"></div>
+
 
 <div style="text-align:center;" class="overflow">
 
 <h1 style="
-font-size:28px;
+font-size:30px;
 font-weight:800;
-line-height:1.15;
-margin-bottom:6px;
-letter-spacing:.6px;
+line-height:1.1;
+margin-bottom:8px;
+letter-spacing:.8px;
 text-transform:uppercase;
-font-family:'Inter','Segoe UI',sans-serif;
 ">
 ${escapeHtml(data.personal.fullName || '')}
 </h1>
 
 <div style="
-font-size:13.5px;
+font-size:13px;
 opacity:.85;
-letter-spacing:1.6px;
+letter-spacing:2px;
 text-transform:uppercase;
 font-weight:500;
-margin-top:4px;
 ">
 ${escapeHtml(data.personal.title || '')}
 </div>
@@ -3860,8 +3879,8 @@ ${escapeHtml(data.personal.title || '')}
 display:grid;
 grid-template-columns:1fr auto;
 align-items:end;
-margin-top:42px;
-gap:20px;
+margin-top:48px;
+gap:24px;
 ">
 
 <div>
@@ -3871,7 +3890,7 @@ list-style:none;
 padding:0;
 margin:0;
 display:grid;
-grid-template-columns:1fr 1fr;
+grid-template-columns:repeat(3, 1fr);
 gap:10px 14px;
 font-size:13px;
 font-weight:500;
@@ -3887,9 +3906,14 @@ gap:8px;
 opacity:.95;
 ">
 ${icon(f.icon)}
-<span style="line-height:1.3">
+
+<span style="
+line-height:1.3;
+letter-spacing:.2px;
+">
 ${escapeHtml(data.personal[f.key])}
 </span>
+
 </li>
 `).join('')}
 
@@ -3897,17 +3921,22 @@ ${escapeHtml(data.personal[f.key])}
 
 </div>
 
+
 <div style="
-margin-left:10px;
 width:110px;
 height:110px;
 flex-shrink:0;
 border-radius:50%;
 overflow:hidden;
-border:3px solid rgba(255,255,255,.25);
-box-shadow:0 10px 30px rgba(0,0,0,.25);
+border:3px solid rgba(255,255,255,.28);
+box-shadow:
+0 12px 30px rgba(0,0,0,.35),
+inset 0 0 0 2px rgba(255,255,255,.08);
+background:rgba(255,255,255,.04);
 ">
+
 ${p}
+
 </div>
 
 </div>
@@ -3999,6 +4028,73 @@ ${escapeHtml(b)}
 </li>
 `).join('')}
 </ul>
+` : ''}
+
+</div>
+`).join('')}
+
+</section>
+` : ''}
+
+${hasEducation() ? `
+<section style="margin-bottom:28px">
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+Education
+</h2>
+
+${data.education.map(edu => `
+<div class="overflow" style="margin-bottom:18px">
+
+<div style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[
+edu.start,
+edu.end,
+edu.startYear,
+edu.endYear,
+edu.year
+].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
+
+${edu.description?.trim() ? `
+<div style="
+font-size:13px;
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;
+">
+${escapeHtml(edu.description)}
+</div>
 ` : ''}
 
 </div>
@@ -5234,13 +5330,34 @@ const levelMap = {
 basic:40,
 intermediate:65,
 advanced:85,
+expert:90,
 native:100
 };
 
 let level = skill.level;
-if(typeof level === "string"){
-level = levelMap[level.toLowerCase()] ?? 0;
+
+// convert string levels
+if (typeof level === "string") {
+
+const normalized = level.trim().toLowerCase();
+
+if (levelMap[normalized] !== undefined) {
+level = levelMap[normalized];
+} 
+else if (!isNaN(level)) {
+level = Number(level);
+} 
+else {
+level = 70; // default
 }
+
+}
+
+// ensure number
+if (typeof level !== "number") level = 70;
+
+// clamp between 0-100
+level = Math.max(0, Math.min(level, 100));
 
 return `
 
@@ -5299,31 +5416,149 @@ letter-spacing:1.4px;
 color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:8px;
-margin-bottom:14px;
+margin-bottom:16px;
 ">
 Languages
 </h2>
 
-<ul style="padding-left:18px;font-size:14px;line-height:1.7">
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:14px 28px;
+">
 
 ${data.languages
 .filter(lang => lang.name?.trim())
-.map(lang => `
+.map(lang => {
 
-<li style="margin-bottom:6px">
+const levelMap = {
+basic:40,
+intermediate:65,
+advanced:85,
+fluent:90,
+native:100
+};
 
-<strong>${escapeHtml(lang.name)}</strong>
-${lang.level ? ` – ${escapeHtml(lang.level)}` : ''}
+let level = lang.level;
 
-</li>
+if (typeof level === "string") {
 
-`).join('')}
+const normalized = level.trim().toLowerCase();
 
-</ul>
+if (levelMap[normalized] !== undefined) {
+level = levelMap[normalized];
+}
+else if (!isNaN(level)) {
+level = Number(level);
+}
+else {
+level = 70;
+}
+
+}
+
+if (typeof level !== "number") level = 70;
+
+level = Math.max(0, Math.min(level, 100));
+
+return `
+
+<div>
+
+<div style="
+display:flex;
+justify-content:space-between;
+font-size:13px;
+margin-bottom:4px;
+">
+
+<span style="font-weight:600;color:#1f2937">
+${escapeHtml(lang.name)}
+</span>
+
+<span style="color:#6b7280">
+${escapeHtml(lang.level || '')}
+</span>
+
+</div>
+
+<div style="
+height:6px;
+background:#e5e7eb;
+border-radius:4px;
+overflow:hidden;
+">
+
+<div style="
+height:100%;
+width:${level}%;
+background:${accentColor};
+border-radius:4px;
+"></div>
+
+</div>
+
+</div>
+
+`;
+
+}).join('')}
+
+</div>
 
 </section>
 
 ` : ''}
+
+${hasInterest() ? `
+
+<section style="margin-bottom:34px">
+
+<h2 style="
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:14px;
+">
+Interests
+</h2>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:10px 16px;
+font-size:14px;
+color:#374151;
+">
+
+${data.interests
+.filter(i => i?.trim())
+.map(i => `
+
+<div style="
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+padding:6px 12px;
+border-radius:16px;
+font-size:13px;
+">
+
+${escapeHtml(i)}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</section>
+
+` : ''}
+
 
 
 ${hasReferences() ? `
@@ -5369,6 +5604,484 @@ ${ref.email ? `<div style="font-size:13px">${escapeHtml(ref.email)}</div>` : ''}
 </div>
 `;
 }
+
+function renderVertexATS() {
+
+const p = photoHtml();
+
+/* GET SAVED GRADIENT */
+let asideGradient =
+localStorage.getItem("resumeAsideGradient") ||
+"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+
+/* EXTRACT ACCENT COLOR */
+let accentColor = "#2563eb";
+const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+if(colors && colors.length){
+accentColor = colors[Math.floor(colors.length/2)];
+}
+
+return `
+
+<div class="resume_ats" style="
+font-family:'Segoe UI', Arial, Helvetica, sans-serif;
+font-size:14px;
+line-height:1.75;
+color:#1f2937;
+max-width:860px;
+margin:auto;
+background:#ffffff;
+padding:48px 50px;
+">
+
+<!-- HEADER -->
+
+<header style="
+margin-bottom:36px;
+padding-bottom:22px;
+border-bottom:3px solid ${accentColor};
+">
+
+<h1 style="
+font-size:34px;
+font-weight:800;
+letter-spacing:.4px;
+color:#0f172a;
+margin:0 0 6px 0;
+">
+${escapeHtml(data.personal.fullName || '')}
+</h1>
+
+<p style="
+font-size:18px;
+color:${accentColor};
+font-weight:600;
+margin-bottom:10px;
+">
+${escapeHtml(data.personal.title || '')}
+</p>
+
+<p style="
+font-size:13px;
+color:#4b5563;
+line-height:1.8;
+">
+
+${data.personal.phone ? `${escapeHtml(data.personal.phone)} • ` : ''}
+${data.personal.email ? `${escapeHtml(data.personal.email)} • ` : ''}
+${data.personal.location ? `${escapeHtml(data.personal.location)} • ` : ''}
+${data.personal.website ? `${escapeHtml(data.personal.website)} • ` : ''}
+${data.personal.linkedin ? `${escapeHtml(data.personal.linkedin)}` : ''}
+
+</p>
+
+</header>
+
+
+${data.summary && data.summary.trim() ? `
+
+<section style="margin-bottom:34px">
+
+<h2 style="
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:14px;
+">
+Professional Summary
+</h2>
+
+<p style="color:#374151;font-size:14px">
+${escapeHtml(data.summary)}
+</p>
+
+</section>
+
+` : ''}
+
+
+${hasExperience() ? `
+
+<section style="margin-bottom:34px">
+
+<h2 style="
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:16px;
+">
+Professional Experience
+</h2>
+
+${data.experience.map(exp => `
+
+<div style="margin-bottom:24px">
+
+<div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:4px">
+
+<strong style="font-size:15px;color:#0f172a;font-weight:700">
+${escapeHtml(exp.role)}
+</strong>
+
+<span style="font-size:13px;color:#6b7280">
+${[exp.start, exp.end].filter(d => d && d.trim()).join(' - ')}
+</span>
+
+</div>
+
+<div style="font-size:13px;color:#374151;font-weight:600;margin-bottom:6px">
+${escapeHtml(exp.campany)}
+</div>
+
+${exp.bullets && exp.bullets.length ? `
+
+<ul style="padding-left:18px;margin-top:6px;line-height:1.7">
+
+${exp.bullets.map(b => `
+<li style="margin-bottom:6px">
+${escapeHtml(b)}
+</li>
+`).join('')}
+
+</ul>
+
+` : ''}
+
+</div>
+
+`).join('')}
+
+</section>
+
+` : ''}
+
+
+${hasEducation() ? `
+
+<section style="margin-bottom:34px">
+
+<h2 style="
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:16px;
+">
+Education
+</h2>
+
+${data.education.map(edu => `
+
+<div style="margin-bottom:18px">
+
+<strong style="font-size:15px;color:#0f172a">
+${escapeHtml(edu.degree)}
+</strong>
+
+<div style="font-size:13px;color:#374151;margin-top:4px">
+${escapeHtml(edu.school)}
+${edu.year ? ` • ${escapeHtml(edu.year)}` : ''}
+</div>
+
+</div>
+
+`).join('')}
+
+</section>
+
+` : ''}
+
+${hasSkills() ? `
+
+<section style="margin-bottom:34px">
+
+<h2 style="
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:16px;
+">
+Skills
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:14px 28px;
+">
+
+${data.skills
+.filter(skill => skill.name?.trim())
+.map(skill => {
+
+const levelMap = {
+basic:40,
+intermediate:65,
+advanced:85,
+expert:90,
+native:100
+};
+
+let level = skill.level;
+
+if(typeof level === "string"){
+
+const normalized = level.trim().toLowerCase();
+
+if(levelMap[normalized] !== undefined){
+level = levelMap[normalized];
+}
+else if(!isNaN(level)){
+level = Number(level);
+}
+else{
+level = 70;
+}
+
+}
+
+if(typeof level !== "number") level = 70;
+
+level = Math.max(0, Math.min(level,100));
+
+const dots = Math.ceil(level / 20);
+
+return `
+
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:13px;
+">
+
+<span style="font-weight:600;color:#1f2937">
+${escapeHtml(skill.name)}
+</span>
+
+<div style="display:flex;gap:6px">
+
+${[1,2,3,4,5].map(i => `
+
+<div style="
+width:8px;
+height:8px;
+border-radius:50%;
+background:${i <= dots ? accentColor : '#e5e7eb'};
+"></div>
+
+`).join('')}
+
+</div>
+
+</div>
+
+`;
+
+}).join('')}
+
+</div>
+
+</section>
+
+` : ''}
+
+${hasLanguage() ? `
+
+<section style="margin-bottom:34px">
+
+<h2 style="
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:16px;
+">
+Languages
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:14px 28px;
+">
+
+${data.languages
+.filter(lang => lang.name?.trim())
+.map(lang => {
+
+const levelMap = {
+basic:1,
+intermediate:2,
+advanced:3,
+fluent:4,
+native:5
+};
+
+let dots = 3;
+
+if(typeof lang.level === "string"){
+const normalized = lang.level.trim().toLowerCase();
+
+if(levelMap[normalized] !== undefined){
+dots = levelMap[normalized];
+}
+}
+
+return `
+
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:13px;
+">
+
+<span style="font-weight:600;color:#1f2937">
+${escapeHtml(lang.name)}
+</span>
+
+<div style="display:flex;gap:6px">
+
+${[1,2,3,4,5].map(i => `
+
+<div style="
+width:8px;
+height:8px;
+border-radius:50%;
+background:${i <= dots ? accentColor : '#e5e7eb'};
+"></div>
+
+`).join('')}
+
+</div>
+
+</div>
+
+`;
+
+}).join('')}
+
+</div>
+
+</section>
+
+` : ''}
+
+
+${hasInterest() ? `
+
+<section style="margin-bottom:34px">
+
+<h2 style="
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:14px;
+">
+Interests
+</h2>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:10px 16px;
+font-size:14px;
+color:#374151;
+">
+
+${data.interests
+.filter(i => i?.trim())
+.map(i => `
+
+<div style="
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+padding:6px 12px;
+border-radius:16px;
+font-size:13px;
+">
+
+${escapeHtml(i)}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</section>
+
+` : ''}
+
+
+
+${hasReferences() ? `
+
+<section>
+
+<h2 style="
+font-size:13px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.4px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:8px;
+margin-bottom:14px;
+">
+References
+</h2>
+
+${data.references.map(ref => `
+
+<div style="margin-bottom:18px">
+
+<strong style="font-size:15px;color:#0f172a">
+${escapeHtml(ref.name)}
+</strong>
+
+<div style="color:#374151">
+${escapeHtml(ref.campany || '')}
+</div>
+
+${ref.phone ? `<div style="font-size:13px">${escapeHtml(ref.phone)}</div>` : ''}
+${ref.email ? `<div style="font-size:13px">${escapeHtml(ref.email)}</div>` : ''}
+
+</div>
+
+`).join('')}
+
+</section>
+
+` : ''}
+
+</div>
+`;
+}
+
 
 
 
