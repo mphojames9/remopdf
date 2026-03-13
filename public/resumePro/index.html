@@ -16,7 +16,7 @@
 
     <div class="logo">
       <a href="../index.html">
-      <img src="./assets/logo.png" alt="ResumePro logo" class="mainLogo">
+        <img src="./assets/logo.png" alt="ResumePro logo" class="mainLogo">
       </a>
     </div>
 
@@ -88,12 +88,13 @@
         </button>
 
         <button class="btn btn-outline">
-          <i class="fa-solid fa-wand-magic-sparkles"></i>
-          Improve Resume
+          <a href="../index.html" style="color: #111; text-decoration: none;"><i class="fa-solid fa-file-pdf"></i>
+          PDF Tool
+        </a>  
         </button>
       </div>
 
-      <div class="hero-trust">
+      <div class="hero-trust"> 
         <i class="fa-solid fa-shield-check"></i>
         100% Free • No login required • Instant PDF download
       </div>
@@ -354,55 +355,97 @@
 
   </footer>
 
-  <!-- CONTACT OVERLAY -->
+  <!-- PREMIUM CONTACT MODAL -->
 
-<div id="contactOverlay">
+  <div id="contactOverlay">
 
-<div class="contact-box">
+    <div class="contact-modal">
 
-<button class="close-contact" id="closeContact">
-<i class="fa-solid fa-xmark"></i>
-</button>
+      <button id="closeContact" class="close-contact">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
 
-<h2>Contact Us</h2>
+      <div class="contact-header">
 
-<p>Have a question or feedback? Send us a message.</p>
+        <div class="contact-icon">
+          <i class="fa-solid fa-paper-plane"></i>
+        </div>
 
-<form id="contactForm">
+        <h2>Contact ResumePro</h2>
 
-<input
-type="text"
-name="from_name"
-placeholder="Your name"
-required
->
+        <p class="contact-sub">
+          Have a question or feedback? We'd love to hear from you.
+        </p>
 
-<input
-type="email"
-name="from_email"
-placeholder="Your email"
-required
->
+      </div>
 
-<textarea
-name="message"
-placeholder="Your message"
-required
-></textarea>
+      <form id="contactForm">
 
-<button type="submit" class="send-btn">
-Send Message
-</button>
+        <!-- Honeypot -->
+        <input type="text" name="company" class="honeypot">
 
-</form>
+        <div class="form-group">
 
-<p id="formStatus"></p>
+          <i class="fa-regular fa-user input-icon"></i>
 
-</div>
+          <input type="text" name="from_name" placeholder=" " required>
 
-</div>
+          <label>Your name</label>
 
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+        </div>
+
+        <div class="form-group">
+
+          <i class="fa-regular fa-envelope input-icon"></i>
+
+          <input type="email" name="from_email" placeholder=" " required>
+
+          <label>Your email</label>
+
+        </div>
+
+        <div class="form-group textarea-group">
+
+          <i class="fa-regular fa-comment input-icon"></i>
+
+          <textarea name="message" placeholder=" " required></textarea>
+
+          <label>Your message</label>
+
+        </div>
+
+        <button type="submit" class="send-btn">
+
+          <span class="btn-text">
+            <i class="fa-solid fa-paper-plane"></i>
+            Send Message
+          </span>
+
+          <span class="btn-loader"></span>
+
+        </button>
+
+      </form>
+
+      <div id="formStatus"></div>
+
+      <div class="success-animation">
+
+        <i class="fa-solid fa-circle-check"></i>
+
+        <p>Message sent successfully!</p>
+
+      </div>
+
+      <p class="contact-note">
+        We respect your privacy. Your email will never be shared.
+      </p>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
 
     /* 3D CARD TILT */
@@ -520,80 +563,100 @@ Send Message
 
     setInterval(rotateCards, 6000)
 
-
-
     const EMAILJS_SERVICE_ID = 'service_a7c5ag9';
-const EMAILJS_TEMPLATE_ID = 'template_5bc1mt5';
-const EMAILJS_PUBLIC_KEY = 'drD2CBWiRuBzQGBEO';
+    const EMAILJS_TEMPLATE_ID = 'template_5bc1mt5';
+    const EMAILJS_PUBLIC_KEY = 'drD2CBWiRuBzQGBEO';
 
-emailjs.init(EMAILJS_PUBLIC_KEY);
-
-/* OPEN / CLOSE */
-
-const overlay = document.getElementById("contactOverlay");
-const openBtn = document.getElementById("openContact");
-const closeBtn = document.getElementById("closeContact");
-
-openBtn.addEventListener("click",(e)=>{
-e.preventDefault();
-overlay.classList.add("active");
-});
-
-closeBtn.addEventListener("click",()=>{
-overlay.classList.remove("active");
-});
-
-overlay.addEventListener("click",(e)=>{
-if(e.target === overlay){
-overlay.classList.remove("active");
-}
-});
+    emailjs.init(EMAILJS_PUBLIC_KEY);
 
 
-/* SEND EMAIL */
+    /* OPEN MODAL */
 
-const form = document.getElementById("contactForm");
-const status = document.getElementById("formStatus");
+    const overlay = document.getElementById("contactOverlay");
+    const openBtns = document.querySelectorAll(".nav-contact");
+    const closeBtn = document.getElementById("closeContact");
 
-form.addEventListener("submit",function(e){
+    openBtns.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        overlay.classList.add("active");
+      });
+    });
 
-e.preventDefault();
+    closeBtn.addEventListener("click", () => {
+      overlay.classList.remove("active");
+    });
 
-const formData = {
-from_name: form.from_name.value,
-from_email: form.from_email.value,
-message: form.message.value
-};
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        overlay.classList.remove("active");
+      }
+    });
 
-status.innerHTML = "Sending...";
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        overlay.classList.remove("active");
+      }
+    });
 
-emailjs.send(
-EMAILJS_SERVICE_ID,
-EMAILJS_TEMPLATE_ID,
-formData
-)
 
-.then(()=>{
+    /* FORM */
 
-status.innerHTML = "✅ Message sent successfully!";
-form.reset();
+    const form = document.getElementById("contactForm");
+    const status = document.getElementById("formStatus");
 
-setTimeout(()=>{
-overlay.classList.remove("active");
-status.innerHTML="";
-},2000);
+    const loader = document.querySelector(".btn-loader");
+    const btnText = document.querySelector(".btn-text");
 
-})
 
-.catch((error)=>{
+    form.addEventListener("submit", (e) => {
 
-status.innerHTML = "❌ Failed to send message";
-console.error(error);
+      e.preventDefault();
 
-});
+      /* honeypot spam protection */
 
-});
+      if (form.company.value !== "") {
+        return;
+      }
 
+      loader.style.display = "inline-block";
+      btnText.textContent = "Sending...";
+
+      const data = {
+
+        from_name: form.from_name.value,
+        from_email: form.from_email.value,
+        message: form.message.value
+
+      };
+
+      emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        data
+      )
+
+        .then(() => {
+
+          document.querySelector(".success-animation").style.display = "block";
+          document.getElementById("contactForm").style.display = "none";
+
+          setTimeout(() => {
+
+            overlay.classList.remove("active");
+            document.querySelector('.btn-text').innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Message'
+            loader.style.display = "none";
+
+            document.querySelector(".success-animation").style.display = "none";
+            document.getElementById("contactForm").style.display = "block";
+
+            form.reset();
+
+          }, 2500);
+
+        })
+
+    });
 
   </script>
 

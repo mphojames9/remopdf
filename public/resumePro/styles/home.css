@@ -1275,14 +1275,15 @@ transform:translateY(-120%);
 opacity:0;
 }
 
-/* CONTACT OVERLAY */
+/* OVERLAY */
 
 #contactOverlay{
 
 position:fixed;
 inset:0;
-background:rgba(0,0,0,0.55);
-backdrop-filter:blur(6px);
+
+background:rgba(15,23,42,.65);
+backdrop-filter:blur(12px);
 
 display:flex;
 align-items:center;
@@ -1290,113 +1291,315 @@ justify-content:center;
 
 opacity:0;
 visibility:hidden;
+
 transition:.35s;
 
 z-index:9999;
 
 }
 
-/* ACTIVE */
-
 #contactOverlay.active{
-
 opacity:1;
 visibility:visible;
-
 }
 
-/* BOX */
 
-.contact-box{
+/* MODAL */
 
-width:420px;
-background:white;
-border-radius:16px;
-padding:36px;
+.contact-modal{
 
-box-shadow:0 30px 80px rgba(0,0,0,.25);
+width:460px;
+max-width:90%;
 
-animation:popup .35s ease;
+padding:40px;
+
+border-radius:18px;
+
+background:rgba(255,255,255,.8);
+
+backdrop-filter:blur(18px);
 
 position:relative;
 
+box-shadow:
+0 40px 120px rgba(0,0,0,.35);
+
+border:1px solid rgba(255,255,255,.4);
+
+animation:modalEnter .35s ease;
+
 }
 
-/* CLOSE BUTTON */
+/* GRADIENT BORDER GLOW */
+
+.contact-modal::before{
+
+content:"";
+
+position:absolute;
+inset:-1px;
+
+border-radius:18px;
+
+background:linear-gradient(135deg,#2563eb,#6366f1,#9333ea);
+
+z-index:-1;
+
+filter:blur(18px);
+opacity:.35;
+
+}
+
+/* HEADER */
+
+.contact-header{
+text-align:center;
+margin-bottom:26px;
+}
+
+.contact-icon{
+
+width:56px;
+height:56px;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+margin:auto;
+
+border-radius:16px;
+
+background:linear-gradient(135deg,#2563eb,#6366f1);
+
+color:white;
+font-size:22px;
+
+margin-bottom:14px;
+
+}
+
+.contact-sub{
+font-size:14px;
+color:#6b7280;
+}
+
+
+/* CLOSE */
 
 .close-contact{
 
 position:absolute;
-right:16px;
 top:16px;
+right:18px;
 
 border:none;
 background:none;
+
 font-size:20px;
 cursor:pointer;
 
 }
 
+
 /* FORM */
 
-.contact-box form{
+.form-group{
 
-display:flex;
-flex-direction:column;
-gap:14px;
-margin-top:18px;
+position:relative;
+margin-bottom:18px;
 
 }
 
-.contact-box input,
-.contact-box textarea{
+.form-group input,
+.form-group textarea{
 
-padding:12px;
-border-radius:8px;
+width:100%;
+
+padding:14px 14px 14px 44px;
+
+border-radius:12px;
+
 border:1px solid #e5e7eb;
+
 font-size:14px;
 
-}
-
-.contact-box textarea{
-
-min-height:120px;
-resize:none;
-
-}
-
-.send-btn{
-
-background:#2563eb;
-color:white;
-border:none;
-padding:12px;
-border-radius:10px;
-font-weight:600;
-cursor:pointer;
+background:white;
 
 transition:.2s;
 
 }
 
-.send-btn:hover{
+.form-group textarea{
+min-height:120px;
+resize:none;
+}
 
-background:#1d4ed8;
+/* ICON */
+
+.input-icon{
+
+position:absolute;
+left:14px;
+top:15px;
+
+font-size:14px;
+color:#9ca3af;
 
 }
 
-/* POPUP ANIMATION */
+/* FLOATING LABEL */
 
-@keyframes popup{
+.form-group label{
+
+position:absolute;
+
+left:44px;
+top:15px;
+
+font-size:13px;
+color:#9ca3af;
+
+pointer-events:none;
+
+transition:.2s;
+background:white;
+padding:0 4px;
+
+}
+
+.form-group input:focus,
+.form-group textarea:focus{
+
+border-color:#6366f1;
+box-shadow:0 0 0 3px rgba(99,102,241,.15);
+
+}
+
+.form-group input:focus + label,
+.form-group textarea:focus + label,
+.form-group input:not(:placeholder-shown) + label,
+.form-group textarea:not(:placeholder-shown) + label{
+
+top:-8px;
+font-size:11px;
+color:#6366f1;
+
+}
+
+
+/* BUTTON */
+
+.send-btn{
+
+width:100%;
+padding:14px;
+
+border:none;
+border-radius:12px;
+
+background:linear-gradient(135deg,#2563eb,#6366f1);
+
+color:white;
+
+font-weight:600;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+gap:8px;
+
+cursor:pointer;
+
+transition:.25s;
+
+}
+
+.send-btn:hover{
+
+transform:translateY(-2px);
+
+box-shadow:0 14px 40px rgba(99,102,241,.35);
+
+}
+
+/* LOADER */
+
+.btn-loader{
+
+width:16px;
+height:16px;
+
+border:2px solid white;
+border-top:2px solid transparent;
+
+border-radius:50%;
+
+animation:spin .6s linear infinite;
+
+display:none;
+
+}
+
+@keyframes spin{
+to{transform:rotate(360deg);}
+}
+
+
+/* SUCCESS */
+
+.success-animation{
+
+display:none;
+text-align:center;
+margin-top:20px;
+
+}
+
+.success-animation i{
+
+font-size:40px;
+color:#22c55e;
+
+margin-bottom:8px;
+
+}
+
+
+/* NOTE */
+
+.contact-note{
+
+margin-top:18px;
+
+font-size:12px;
+color:#9ca3af;
+
+text-align:center;
+
+}
+
+
+/* ANIMATION */
+
+@keyframes modalEnter{
 
 from{
-transform:translateY(20px);
 opacity:0;
+transform:translateY(20px) scale(.97);
 }
 
 to{
-transform:translateY(0);
 opacity:1;
+transform:translateY(0) scale(1);
 }
 
+}
+
+
+/* HONEYPOT */
+
+.honeypot{
+display:none;
 }
