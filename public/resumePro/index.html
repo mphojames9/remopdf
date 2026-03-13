@@ -21,7 +21,7 @@
     </div>
 
     <nav class="desktop-nav">
-      <a href="#" class="nav-contact">
+      <a href="#" class="nav-contact" id="openContact">
         <i class="fa-solid fa-envelope"></i>
         Contact
       </a>
@@ -51,7 +51,7 @@
 
   <div class="mobile-menu" id="mobileMenu">
 
-    <a href="#" class="nav-contact">
+    <a href="#" class="nav-contact" id="openContact">
       <i class="fa-solid fa-envelope"></i>
       Contact
     </a>
@@ -354,6 +354,55 @@
 
   </footer>
 
+  <!-- CONTACT OVERLAY -->
+
+<div id="contactOverlay">
+
+<div class="contact-box">
+
+<button class="close-contact" id="closeContact">
+<i class="fa-solid fa-xmark"></i>
+</button>
+
+<h2>Contact Us</h2>
+
+<p>Have a question or feedback? Send us a message.</p>
+
+<form id="contactForm">
+
+<input
+type="text"
+name="from_name"
+placeholder="Your name"
+required
+>
+
+<input
+type="email"
+name="from_email"
+placeholder="Your email"
+required
+>
+
+<textarea
+name="message"
+placeholder="Your message"
+required
+></textarea>
+
+<button type="submit" class="send-btn">
+Send Message
+</button>
+
+</form>
+
+<p id="formStatus"></p>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
 
     /* 3D CARD TILT */
@@ -470,6 +519,80 @@
     })
 
     setInterval(rotateCards, 6000)
+
+
+
+    const EMAILJS_SERVICE_ID = 'service_a7c5ag9';
+const EMAILJS_TEMPLATE_ID = 'template_5bc1mt5';
+const EMAILJS_PUBLIC_KEY = 'drD2CBWiRuBzQGBEO';
+
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+/* OPEN / CLOSE */
+
+const overlay = document.getElementById("contactOverlay");
+const openBtn = document.getElementById("openContact");
+const closeBtn = document.getElementById("closeContact");
+
+openBtn.addEventListener("click",(e)=>{
+e.preventDefault();
+overlay.classList.add("active");
+});
+
+closeBtn.addEventListener("click",()=>{
+overlay.classList.remove("active");
+});
+
+overlay.addEventListener("click",(e)=>{
+if(e.target === overlay){
+overlay.classList.remove("active");
+}
+});
+
+
+/* SEND EMAIL */
+
+const form = document.getElementById("contactForm");
+const status = document.getElementById("formStatus");
+
+form.addEventListener("submit",function(e){
+
+e.preventDefault();
+
+const formData = {
+from_name: form.from_name.value,
+from_email: form.from_email.value,
+message: form.message.value
+};
+
+status.innerHTML = "Sending...";
+
+emailjs.send(
+EMAILJS_SERVICE_ID,
+EMAILJS_TEMPLATE_ID,
+formData
+)
+
+.then(()=>{
+
+status.innerHTML = "✅ Message sent successfully!";
+form.reset();
+
+setTimeout(()=>{
+overlay.classList.remove("active");
+status.innerHTML="";
+},2000);
+
+})
+
+.catch((error)=>{
+
+status.innerHTML = "❌ Failed to send message";
+console.error(error);
+
+});
+
+});
 
 
   </script>

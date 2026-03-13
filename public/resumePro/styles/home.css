@@ -1274,3 +1274,129 @@ header.hide{
 transform:translateY(-120%);
 opacity:0;
 }
+
+/* CONTACT OVERLAY */
+
+#contactOverlay{
+
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.55);
+backdrop-filter:blur(6px);
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+opacity:0;
+visibility:hidden;
+transition:.35s;
+
+z-index:9999;
+
+}
+
+/* ACTIVE */
+
+#contactOverlay.active{
+
+opacity:1;
+visibility:visible;
+
+}
+
+/* BOX */
+
+.contact-box{
+
+width:420px;
+background:white;
+border-radius:16px;
+padding:36px;
+
+box-shadow:0 30px 80px rgba(0,0,0,.25);
+
+animation:popup .35s ease;
+
+position:relative;
+
+}
+
+/* CLOSE BUTTON */
+
+.close-contact{
+
+position:absolute;
+right:16px;
+top:16px;
+
+border:none;
+background:none;
+font-size:20px;
+cursor:pointer;
+
+}
+
+/* FORM */
+
+.contact-box form{
+
+display:flex;
+flex-direction:column;
+gap:14px;
+margin-top:18px;
+
+}
+
+.contact-box input,
+.contact-box textarea{
+
+padding:12px;
+border-radius:8px;
+border:1px solid #e5e7eb;
+font-size:14px;
+
+}
+
+.contact-box textarea{
+
+min-height:120px;
+resize:none;
+
+}
+
+.send-btn{
+
+background:#2563eb;
+color:white;
+border:none;
+padding:12px;
+border-radius:10px;
+font-weight:600;
+cursor:pointer;
+
+transition:.2s;
+
+}
+
+.send-btn:hover{
+
+background:#1d4ed8;
+
+}
+
+/* POPUP ANIMATION */
+
+@keyframes popup{
+
+from{
+transform:translateY(20px);
+opacity:0;
+}
+
+to{
+transform:translateY(0);
+opacity:1;
+}
+
+}
