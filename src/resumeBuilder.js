@@ -1501,6 +1501,25 @@ document.querySelectorAll('.input_data').forEach(input => {
   input.addEventListener('input', updateHoverState);
 });
 
+function setPdfStep(step){
+
+  document.querySelectorAll(".pdfSteps li").forEach((li,i)=>{
+    li.classList.remove("active");
+
+    if(i+1 < step){
+      li.classList.add("done");
+    }
+  });
+
+  const active = document.getElementById("step"+step);
+  if(active) active.classList.add("active");
+
+  const progress = document.getElementById("pdfProgress");
+  progress.style.width = (step-1)*33 + "%";
+
+}
+
+
 function downloadPDF(atsMode) {
 
   const preview = refs.resumePreview;
@@ -1519,82 +1538,95 @@ function downloadPDF(atsMode) {
     return;
   }
 
-  // 🔥 get ALL resume pages
-let pages = [...preview.querySelectorAll('.resume-page')].filter(page => {
-  const main = page.querySelector('main');
-  return main && main.innerText.trim().length > 0;
-});
+  // get pages
+  let pages = [...preview.querySelectorAll('.resume-page')].filter(page => {
+    const main = page.querySelector('main');
+    return main && main.innerText.trim().length > 0;
+  });
 
+  // wrapper
+  const wrapper = document.createElement('div');
+  wrapper.style.background = '#fff';
+  wrapper.style.width = '794px';
+  wrapper.style.margin = '0';
+  wrapper.style.padding = '0';
+  wrapper.style.position = 'relative';
 
-  // temp wrapper
- const wrapper = document.createElement('div');
-wrapper.style.background = '#fff';
-wrapper.style.width = '794px';
-wrapper.style.margin = '0';
-wrapper.style.padding = '0';
-wrapper.style.position = 'relative';
+  pages.forEach(page => {
 
-pages.forEach((page, i) => {
+    const clone = page.cloneNode(true);
 
-  const clone = page.cloneNode(true);
+    const template = clone.querySelector('.resume_Template_1');
+    if (template) {
+      template.style.marginLeft = "-10px";
+    }
 
-  // 🔥 shift template only for PDF
-  const template = clone.querySelector('.resume_Template_1');
-  if (template) {
-    template.style.marginLeft = "-10px";
-  }
+    wrapper.appendChild(clone);
 
-  wrapper.appendChild(clone);
-
-});
+  });
 
   document.body.appendChild(wrapper);
 
-const opt = {
-  margin: 0,
-  filename: filename,
-  image: { type: "jpeg", quality: 1 },
+  const overlay = document.getElementById("pdfOverlay");
+  overlay.classList.add("active");
 
-  html2canvas: {
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    scrollX: 0,
-    scrollY: 0
-  },
+  setPdfStep(1);
 
-  jsPDF: {
-    unit: "px",
-    format: [792, 1122],
-    orientation: "portrait"
-  },
+  const opt = {
+    margin: 0,
+    filename: filename,
+    image: { type: "jpeg", quality: 1 },
 
-pagebreak: {
-  mode: []
-}
-};
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      scrollX: 0,
+      scrollY: 0
+    },
 
-html2pdf()
-  .set(opt)
-  .from(wrapper)
-  .toPdf()
-  .get('pdf')
-  .then((pdf) => {
+    jsPDF: {
+      unit: "px",
+      format: [792, 1122],
+      orientation: "portrait"
+    },
 
-    const totalPages = pdf.internal.getNumberOfPages();
+    pagebreak: { mode: [] }
+  };
 
-    // 🔥 delete the last page
-    if (totalPages > 1) {
-      pdf.deletePage(totalPages);
-    }
+  setTimeout(()=>setPdfStep(2),400);
 
-    // download AFTER deleting
-    pdf.save(filename);
+  html2pdf()
+    .set(opt)
+    .from(wrapper)
+    .toPdf()
+    .get('pdf')
+    .then((pdf)=>{
 
-  })
-  .then(() => {
-    wrapper.remove(); // cleanup
-  });
+      setPdfStep(3);
+
+      const totalPages = pdf.internal.getNumberOfPages();
+
+      if(totalPages > 1){
+        pdf.deletePage(totalPages);
+      }
+
+      setPdfStep(4);
+
+      pdf.save(filename);
+
+    })
+    .then(()=>{
+
+      document.getElementById("pdfProgress").style.width="100%";
+
+      setTimeout(()=>{
+        overlay.classList.remove("active");
+      },700);
+
+      wrapper.remove();
+
+    });
 }
 
 function renderPreview(highlightKeywords) {
