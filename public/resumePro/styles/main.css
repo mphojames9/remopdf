@@ -2580,3 +2580,27 @@
     transform:scale(1);
   }
 }
+
+.pdfSteps li{
+  font-size:14px;
+  padding:7px 0;
+  color:#9ca3af;
+
+  opacity:0;
+  transform:translateY(6px);
+  transition:.35s;
+}
+
+.pdfSteps li.show{
+  opacity:1;
+  transform:translateY(0);
+}
+
+.pdfSteps li.active{
+  color:#2563eb;
+  font-weight:600;
+}
+
+.pdfSteps li.done{
+  color:#10b981;
+}

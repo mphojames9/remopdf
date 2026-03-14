@@ -22,62 +22,62 @@ const overlay = document.getElementById('layoutOverlay');
 const track = document.getElementById('carouselTrack');
 const nameEl = document.getElementById('templateName');
 let asideGradient =
-localStorage.getItem("resumeAsideGradient")
-||
-"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+  localStorage.getItem("resumeAsideGradient")
+  ||
+  "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
 let accentColor = "#2563eb";
 
-  const icon = (svg) =>
-    `<span style="display:inline-flex;align-items:center;margin-right:6px;color:#6f93c1">
+const icon = (svg) =>
+  `<span style="display:inline-flex;align-items:center;margin-right:6px;color:#6f93c1">
       ${svg}
     </span>`;
 
 
-  const ICONS = {
-    interests: `
+const ICONS = {
+  interests: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
         <path d="M12 21s-6-4.35-9-8.5C1 9 3.5 6 6.5 6c1.74 0 3.41 1.01 4.5 2.09C12.09 7.01 13.76 6 15.5 6 18.5 6 21 9 21 12.5 18 16.65 12 21 12 21z"
         stroke="rgb(117,125,129)" stroke-width="1.5"></path>
       </svg>`,
 
-    language: `
+  language: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
         <path d="M4 5h16M4 12h10M4 19h16"
           stroke="rgb(117,125,129)" stroke-width="1.5"></path>
       </svg>`,
 
-       skill: `
+  skill: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
         <path d="M12 2l2.5 5 5.5.8-4 4 .9 5.7-4.9-2.6-4.9 2.6.9-5.7-4-4 5.5-.8L12 2z"
           stroke="rgb(117,125,129)" stroke-width="1.5"></path>
       </svg>`,
 
-      profile: `
+  profile: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
         <circle cx="12" cy="8" r="4" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
         <path d="M4 20a8 8 0 0 1 16 0" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
       </svg>`,
 
-    education: `
+  education: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
         <path d="M3 7l9-4 9 4-9 4-9-4z" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
         <path d="M5 10v6c0 1 3 3 7 3s7-2 7-3v-6" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
       </svg>`,
 
-    experience: `
+  experience: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
         <rect x="3" y="7" width="18" height="13" rx="2" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
         <path d="M9 7V5h6v2" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
       </svg>`,
 
-    references: `
+  references: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
         <circle cx="12" cy="7" r="3.5" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
         <path d="M5 21a7 7 0 0 1 14 0" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
       </svg>`,
 
-    contact: `
+  contact: `
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
         <path d="M3 5a2 2 0 0 1 2-2h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2
         C9.8 19 5 14.2 5 7a2 2 0 0 1-2-2z"
@@ -85,36 +85,36 @@ let accentColor = "#2563eb";
       </svg>`,
 
 
-    interests: `
+  interests: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
         <path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2
         4 4 0 0 1 7 2c0 5.6-7 10-7 10z"
         stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
       </svg>`,
 
-    phone: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+  phone: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
       <path d="M3 5a2 2 0 0 1 2-2h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2C9.8 19 5 14.2 5 7a2 2 0 0 1-2-2z"
         stroke="#6f93c1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`,
 
-    email: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+  email: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
       <rect x="3" y="5" width="18" height="14" rx="2" stroke="#6f93c1" stroke-width="1.5"/>
       <path d="M3 7l9 6 9-6" stroke="#6f93c1" stroke-width="1.5"/>
     </svg>`,
 
-    location: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+  location: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
       <path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"
         stroke="#6f93c1" stroke-width="1.5"/>
       <circle cx="12" cy="10" r="2.5" stroke="#6f93c1" stroke-width="1.5"/>
     </svg>`,
 
-    website: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+  website: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
       <circle cx="12" cy="12" r="9" stroke="#6f93c1" stroke-width="1.5"/>
       <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"
         stroke="#6f93c1" stroke-width="1.5"/>
     </svg>`,
 
-    linkedin: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+  linkedin: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none">
       <rect x="3" y="3" width="18" height="18" rx="3"
         stroke="#6f93c1" stroke-width="1.5"/>
       <path d="M8 11v5M8 8h.01M12 16v-3a2 2 0 0 1 4 0v3"
@@ -122,19 +122,19 @@ let accentColor = "#2563eb";
     </svg>`,
 
 
-    skills: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+  skills: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none">
       <path d="M12 2l2.5 5 5.5.8-4 4 .9 5.7-4.9-2.6-4.9 2.6.9-5.7-4-4 5.5-.8L12 2z"
         stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
     </svg>`,
 
-    campany: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+  campany: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none">
     <rect x="3" y="7" width="18" height="13" rx="2"
       stroke="#6f93c1" stroke-width="1.5"/>
     <path d="M9 7V5h6v2"
       stroke="#6f93c1" stroke-width="1.5"/>
   </svg>`,
 
-    calendar: `
+  calendar: `
 <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
   <rect x="3" y="4" width="18" height="17" rx="2"
     stroke="#6f93c1" stroke-width="1.5"/>
@@ -142,14 +142,14 @@ let accentColor = "#2563eb";
     stroke="#6f93c1" stroke-width="1.5"/>
 </svg>`,
 
-    heart: `
+  heart: `
 <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
   <path d="M12 21s-7-4.5-7-10.5a4 4 0 0 1 7-2.5
            4 4 0 0 1 7 2.5c0 6-7 10.5-7 10.5z"
     stroke="#6f93c1" stroke-width="1.5"/>
 </svg>`,
 
-    user: `
+  user: `
 <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
   <circle cx="12" cy="7.5" r="3.5"
     stroke="#6f93c1" stroke-width="1.5"/>
@@ -157,13 +157,13 @@ let accentColor = "#2563eb";
     stroke="#6f93c1" stroke-width="1.5"/>
 </svg>`,
 
-    faith: `
+  faith: `
 <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
   <path d="M12 2.5v19M5.5 9.5h13"
     stroke="#6f93c1" stroke-width="1.5" stroke-linecap="round"/>
 </svg>`,
 
-    group: `
+  group: `
 <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
   <circle cx="7.5" cy="9" r="3"
     stroke="#6f93c1" stroke-width="1.5"/>
@@ -173,7 +173,7 @@ let accentColor = "#2563eb";
     stroke="#6f93c1" stroke-width="1.5"/>
 </svg>`,
 
-    car: `
+  car: `
 <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
   <rect x="3" y="9" width="18" height="7" rx="2"
     stroke="#6f93c1" stroke-width="1.5"/>
@@ -185,13 +185,13 @@ let accentColor = "#2563eb";
     stroke="#6f93c1" stroke-width="1.5"/>
 </svg>`,
 
-    language: `
+  language: `
 <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
   <path d="M4 5h16M4 12h10M4 19h16"
     stroke="rgb(117,125,129)" stroke-width="1.5"/>
 </svg>`,
 
-   contact_w: `
+  contact_w: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
         <path d="M3 5a2 2 0 0 1 2-2h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2
         C9.8 19 5 14.2 5 7a2 2 0 0 1-2-2z"
@@ -199,36 +199,36 @@ let accentColor = "#2563eb";
       </svg>`,
 
 
-    phone_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+  phone_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
       <path d="M3 5a2 2 0 0 1 2-2h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2C9.8 19 5 14.2 5 7a2 2 0 0 1-2-2z"
         stroke="#fafafa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`,
 
-    email_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+  email_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
       <rect x="3" y="5" width="18" height="14" rx="2" stroke="#fafafa" stroke-width="1.6"/>
       <path d="M3 7l9 6 9-6" stroke="#fafafa" stroke-width="1.6"/>
     </svg>`,
 
-    location_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+  location_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
       <path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"
         stroke="#fafafa" stroke-width="1.6"/>
       <circle cx="12" cy="10" r="2.5" stroke="#fafafa" stroke-width="1.6"/>
     </svg>`,
 
-    website_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+  website_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
       <circle cx="12" cy="12" r="9" stroke="#fafafa" stroke-width="1.5"/>
       <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"
        stroke="#fafafa" stroke-width="1.6"/>
     </svg>`,
 
-    linkedin_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+  linkedin_w: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none">
       <rect x="3" y="3" width="20" height="20" rx="3"
         stroke="#f1f1f1" stroke-width="1.5"/>
       <path d="M8 11v5M8 8h.01M12 16v-3a2 2 0 0 1 4 0v3"
         stroke="#fafafa" stroke-width="1.6" stroke-linecap="round"/>
     </svg>`,
 
-    calendar_w: `
+  calendar_w: `
 <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
   <rect x="3" y="4" width="18" height="17" rx="2"
     stroke="#fafafa" stroke-width="1.6""/>
@@ -236,14 +236,14 @@ let accentColor = "#2563eb";
     stroke="#fafafa" stroke-width="1.6"/>
 </svg>`,
 
-    heart_w: `
+  heart_w: `
 <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
   <path d="M12 21s-7-4.5-7-10.5a4 4 0 0 1 7-2.5
            4 4 0 0 1 7 2.5c0 6-7 10.5-7 10.5z"
     stroke="#fafafa" stroke-width="1.6"/>
 </svg>`,
 
-    user_w: `
+  user_w: `
 <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
   <circle cx="12" cy="7.5" r="3.5"
     stroke="#fafafa" stroke-width="1.6"/>
@@ -251,13 +251,13 @@ let accentColor = "#2563eb";
     stroke="#fafafa" stroke-width="1.6"/>
 </svg>`,
 
-    faith_w: `
+  faith_w: `
 <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
   <path d="M12 2.5v19M5.5 9.5h13"
     stroke="#fafafa" stroke-width="1.6" stroke-linecap="round"/>
 </svg>`,
 
-    group_w: `
+  group_w: `
 <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
   <circle cx="7.5" cy="9" r="3"
     stroke="#fafafa" stroke-width="1.6"/>
@@ -267,7 +267,7 @@ let accentColor = "#2563eb";
     stroke="#fafafa" stroke-width="1.6"/>
 </svg>`,
 
-    car_w: `
+  car_w: `
 <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
   <rect x="3" y="9" width="18" height="7" rx="2"
     stroke="#fafafa" stroke-width="1.6"/>
@@ -279,7 +279,7 @@ let accentColor = "#2563eb";
     stroke="#fafafa" stroke-width="1.6"/>
 </svg>`,
 
-  };
+};
 
 /* =========================
    GLOBAL STATE
@@ -779,9 +779,9 @@ function bindProfileInputs() {
 
 // --- Render lists (experience, education, skills, references) -----------------------
 function renderLists() {
-validateReferenceAdd();
-validateSkillAdd();
-validateLanguageAdd();
+  validateReferenceAdd();
+  validateSkillAdd();
+  validateLanguageAdd();
   // Education
   refs.educationContainer.innerHTML = '';
   data.education.forEach((edu) => {
@@ -1217,7 +1217,7 @@ function expInputHandler(e) {
     // 🔥 LIVE update editor header
     if (field === 'role' || field === 'campany') {
       updateExpHeader(idVal);
-      validateExperienceAdd(); 
+      validateExperienceAdd();
     }
   }
   // 🔥 check button state
@@ -1261,7 +1261,7 @@ function eduInputHandler(e) {
   // 🔥 LIVE editor header update
   if (field === 'degree' || field === 'school') {
     updateEduHeader(eduId);
-    
+
   }
 
   updatePreviewLive();
@@ -1449,7 +1449,7 @@ function moveItem(arr, idVal, delta) {
 // --- Buttons ------------------------------------------------------------
 function bindButtons() {
   refs.addExpBtn.addEventListener('click', () => {
-    
+
     data.experience.unshift({
       id: id(),
       role: "",
@@ -1457,7 +1457,7 @@ function bindButtons() {
       start: "",
       end: "",
       bullets: [""]
-      
+
     });
     renderLists();
     renderPreview();
@@ -1473,7 +1473,7 @@ function bindButtons() {
   //References
   refs.addRefBtn.addEventListener('click', () => {
     data.references.unshift({ id: id(), name: "", campany: "", position: "", phone: "", email: "" });
-    renderLists(); renderPreview(); save();validateReferenceAdd();
+    renderLists(); renderPreview(); save(); validateReferenceAdd();
   });
 
 
@@ -1503,20 +1503,27 @@ document.querySelectorAll('.input_data').forEach(input => {
 
 function setPdfStep(step){
 
-  document.querySelectorAll(".pdfSteps li").forEach((li,i)=>{
-    li.classList.remove("active");
+  const steps = document.querySelectorAll(".pdfSteps li");
 
-    if(i+1 < step){
-      li.classList.add("done");
+  steps.forEach((li,i)=>{
+
+    if(i < step){
+
+      li.classList.add("show");
+
+      if(i < step-1){
+        li.classList.remove("active");
+        li.classList.add("done");
+      }else{
+        li.classList.add("active");
+      }
+
     }
-  });
 
-  const active = document.getElementById("step"+step);
-  if(active) active.classList.add("active");
+  });
 
   const progress = document.getElementById("pdfProgress");
   progress.style.width = (step-1)*33 + "%";
-
 }
 
 
@@ -1594,20 +1601,20 @@ function downloadPDF(atsMode) {
     pagebreak: { mode: [] }
   };
 
-  setTimeout(()=>setPdfStep(2),400);
+  setTimeout(() => setPdfStep(2), 400);
 
   html2pdf()
     .set(opt)
     .from(wrapper)
     .toPdf()
     .get('pdf')
-    .then((pdf)=>{
+    .then((pdf) => {
 
       setPdfStep(3);
 
       const totalPages = pdf.internal.getNumberOfPages();
 
-      if(totalPages > 1){
+      if (totalPages > 1) {
         pdf.deletePage(totalPages);
       }
 
@@ -1616,13 +1623,13 @@ function downloadPDF(atsMode) {
       pdf.save(filename);
 
     })
-    .then(()=>{
+    .then(() => {
 
-      document.getElementById("pdfProgress").style.width="100%";
+      document.getElementById("pdfProgress").style.width = "100%";
 
-      setTimeout(()=>{
+      setTimeout(() => {
         overlay.classList.remove("active");
-      },700);
+      }, 700);
 
       wrapper.remove();
 
@@ -1651,7 +1658,7 @@ function renderPreview(highlightKeywords) {
       case 'ModernatsClean': return renderModernAtsClean();
       case 'ats': return renderATS();
       case "vertexats": return renderVertexATS();
-      case "apexats":return renderApexATS();
+      case "apexats": return renderApexATS();
       default: return rendermidnight();
     }
   })();
@@ -1718,9 +1725,9 @@ function microSplitOverflow(pageObj, PAGE_HEIGHT) {
 
   while (currentPage.page.scrollHeight > PAGE_HEIGHT) {
 
-      console.log("⚠️ OVERFLOW DETECTED");
-  console.log("Page height:", currentPage.scrollHeight);
-  console.log("Max allowed:", PAGE_HEIGHT);
+    console.log("⚠️ OVERFLOW DETECTED");
+    console.log("Page height:", currentPage.scrollHeight);
+    console.log("Max allowed:", PAGE_HEIGHT);
 
     const main = currentPage.main;
     const overflowEls = Array.from(main.querySelectorAll('.overflow'));
@@ -1748,17 +1755,17 @@ function microSplitOverflow(pageObj, PAGE_HEIGHT) {
 
 function createPageWithSidebar(sidebarNode) {
   const selectedTemplate = data.template;
-console.log(selectedTemplate)  
+  console.log(selectedTemplate)
   const page = document.createElement('div');
   page.className = 'resume-page resume professional';
   page.style.minHeight = '1122px';
 
   const wrapper = document.createElement('div');
-wrapper.style.background = '#fff';
-wrapper.style.width = '794px';
-wrapper.style.margin = '0';
-wrapper.style.padding = '0';
-wrapper.style.position = 'relative';
+  wrapper.style.background = '#fff';
+  wrapper.style.width = '794px';
+  wrapper.style.margin = '0';
+  wrapper.style.padding = '0';
+  wrapper.style.position = 'relative';
   wrapper.className = `resume_Template_1 ${selectedTemplate}`;
 
   const sidebarClone = sidebarNode.cloneNode(true);
@@ -2034,8 +2041,8 @@ ${data.experience.map(exp => `
 
         <ul class="skills-list_Template_1 overflow">
          ${data.skills
-        .filter(skill => skill.name?.trim())
-        .map(skill => `
+      .filter(skill => skill.name?.trim())
+      .map(skill => `
         <li>
           ${escapeHtml(skill.name)}
           ${skill.level ? renderLanguageLevel(skill.level) : ""}
@@ -2057,8 +2064,8 @@ ${data.experience.map(exp => `
 
       <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
         ${data.languages
-        .filter(lang => lang.name?.trim())
-         .map(lang => `
+      .filter(lang => lang.name?.trim())
+      .map(lang => `
         <li class="language-item_Template_1">
          <span class="language-name_Template_1">
           ${escapeHtml(lang.name)}
@@ -2095,13 +2102,13 @@ ${data.experience.map(exp => `
          <p class="ref-line">
           ${ICONS.campany}
           ${[
-              ref.campany
-                ? `<strong>${escapeHtml(ref.campany)}</strong>`
-                : '',
-              ref.position
-                ? escapeHtml(ref.position)
-                : ''
-            ].filter(Boolean).join(' / ')}
+            ref.campany
+              ? `<strong>${escapeHtml(ref.campany)}</strong>`
+              : '',
+            ref.position
+              ? escapeHtml(ref.position)
+              : ''
+          ].filter(Boolean).join(' / ')}
         </p>
       ` : ''}
 
@@ -2300,8 +2307,8 @@ ${data.experience.map(exp => `
 
         <ul class="skills-list_Template_1 overflow">
          ${data.skills
-        .filter(skill => skill.name?.trim())
-        .map(skill => `
+      .filter(skill => skill.name?.trim())
+      .map(skill => `
         <li>
           ${escapeHtml(skill.name)}
           ${skill.level ? renderLanguageLevel(skill.level) : ""}
@@ -2322,8 +2329,8 @@ ${data.experience.map(exp => `
 
       <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
         ${data.languages
-        .filter(lang => lang.name?.trim())
-         .map(lang => `
+      .filter(lang => lang.name?.trim())
+      .map(lang => `
         <li class="language-item_Template_1">
          <span class="language-name_Template_1">
           ${escapeHtml(lang.name)}
@@ -2360,13 +2367,13 @@ ${data.experience.map(exp => `
          <p class="ref-line">
           ${ICONS.campany}
           ${[
-              ref.campany
-                ? `<strong>${escapeHtml(ref.campany)}</strong>`
-                : '',
-              ref.position
-                ? escapeHtml(ref.position)
-                : ''
-            ].filter(Boolean).join(' / ')}
+            ref.campany
+              ? `<strong>${escapeHtml(ref.campany)}</strong>`
+              : '',
+            ref.position
+              ? escapeHtml(ref.position)
+              : ''
+          ].filter(Boolean).join(' / ')}
         </p>
       ` : ''}
 
@@ -2558,8 +2565,8 @@ ${data.experience.map(exp => `
 
         <ul class="skills-list_Template_1 overflow">
          ${data.skills
-        .filter(skill => skill.name?.trim())
-        .map(skill => `
+      .filter(skill => skill.name?.trim())
+      .map(skill => `
         <li>
           ${escapeHtml(skill.name)}
           ${skill.level ? renderLanguageLevel(skill.level) : ""}
@@ -2580,8 +2587,8 @@ ${data.experience.map(exp => `
 
       <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
         ${data.languages
-        .filter(lang => lang.name?.trim())
-         .map(lang => `
+      .filter(lang => lang.name?.trim())
+      .map(lang => `
         <li class="language-item_Template_1">
          <span class="language-name_Template_1">
           ${escapeHtml(lang.name)}
@@ -2605,8 +2612,8 @@ ${data.experience.map(exp => `
 
           <ul class="skills-list_Template_1 interests-list_Template_1">
          ${data.interests
-          .filter(i => i && i.trim() !== '')
-          .map(i => `
+      .filter(i => i && i.trim() !== '')
+      .map(i => `
             <li class="interest-item_Template_2">
               ${escapeHtml(i)}
             </li>
@@ -2634,13 +2641,13 @@ ${hasReferences() ? `
          <p class="ref-line">
           ${ICONS.campany}
           ${[
-              ref.campany
-                ? `<strong>${escapeHtml(ref.campany)}</strong>`
-                : '',
-              ref.position
-                ? escapeHtml(ref.position)
-                : ''
-            ].filter(Boolean).join(' / ')}
+            ref.campany
+              ? `<strong>${escapeHtml(ref.campany)}</strong>`
+              : '',
+            ref.position
+              ? escapeHtml(ref.position)
+              : ''
+          ].filter(Boolean).join(' / ')}
         </p>
       ` : ''}
 
@@ -2832,8 +2839,8 @@ ${data.experience.map(exp => `
 
         <ul class="skills-list_Template_1 overflow">
          ${data.skills
-        .filter(skill => skill.name?.trim())
-        .map(skill => `
+      .filter(skill => skill.name?.trim())
+      .map(skill => `
         <li>
           ${escapeHtml(skill.name)}
           ${skill.level ? renderLanguageLevel(skill.level) : ""}
@@ -2854,8 +2861,8 @@ ${data.experience.map(exp => `
 
       <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
         ${data.languages
-        .filter(lang => lang.name?.trim())
-         .map(lang => `
+      .filter(lang => lang.name?.trim())
+      .map(lang => `
         <li class="language-item_Template_1">
          <span class="language-name_Template_1">
           ${escapeHtml(lang.name)}
@@ -2879,8 +2886,8 @@ ${data.experience.map(exp => `
 
           <ul class="skills-list_Template_1 interests-list_Template_1">
          ${data.interests
-          .filter(i => i && i.trim() !== '')
-          .map(i => `
+      .filter(i => i && i.trim() !== '')
+      .map(i => `
             <li class="interest-item_Template_2">
               ${escapeHtml(i)}
             </li>
@@ -2908,13 +2915,13 @@ ${hasReferences() ? `
          <p class="ref-line">
           ${ICONS.campany}
           ${[
-              ref.campany
-                ? `<strong>${escapeHtml(ref.campany)}</strong>`
-                : '',
-              ref.position
-                ? escapeHtml(ref.position)
-                : ''
-            ].filter(Boolean).join(' / ')}
+            ref.campany
+              ? `<strong>${escapeHtml(ref.campany)}</strong>`
+              : '',
+            ref.position
+              ? escapeHtml(ref.position)
+              : ''
+          ].filter(Boolean).join(' / ')}
         </p>
       ` : ''}
 
@@ -3108,8 +3115,8 @@ ${data.experience.map(exp => `
 
         <ul class="skills-list_Template_1 overflow">
          ${data.skills
-        .filter(skill => skill.name?.trim())
-        .map(skill => `
+      .filter(skill => skill.name?.trim())
+      .map(skill => `
         <li>
           ${escapeHtml(skill.name)}
           ${skill.level ? renderLanguageLevel(skill.level) : ""}
@@ -3133,8 +3140,8 @@ ${data.experience.map(exp => `
 
            <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
           ${data.languages
-         .filter(lang => lang.name?.trim())
-         .map(lang => `
+      .filter(lang => lang.name?.trim())
+      .map(lang => `
          <li class="language-item_Template_1">
          <span class="language-name_Template_1">
           ${escapeHtml(lang.name)}
@@ -3158,8 +3165,8 @@ ${data.experience.map(exp => `
 
           <ul class="skills-list_Template_1 interests-list_Template_1">
          ${data.interests
-          .filter(i => i && i.trim() !== '')
-          .map(i => `
+      .filter(i => i && i.trim() !== '')
+      .map(i => `
             <li class="interest-item_Template_2">
               ${escapeHtml(i)}
             </li>
@@ -3184,13 +3191,13 @@ ${hasReferences() ? `
          <p class="ref-line">
           ${ICONS.campany}
           ${[
-              ref.campany
-                ? `<strong>${escapeHtml(ref.campany)}</strong>`
-                : '',
-              ref.position
-                ? escapeHtml(ref.position)
-                : ''
-            ].filter(Boolean).join(' / ')}
+            ref.campany
+              ? `<strong>${escapeHtml(ref.campany)}</strong>`
+              : '',
+            ref.position
+              ? escapeHtml(ref.position)
+              : ''
+          ].filter(Boolean).join(' / ')}
         </p>
       ` : ''}
 
@@ -3385,8 +3392,8 @@ ${data.experience.map(exp => `
 
         <ul class="skills-list_Template_1 overflow">
          ${data.skills
-        .filter(skill => skill.name?.trim())
-        .map(skill => `
+      .filter(skill => skill.name?.trim())
+      .map(skill => `
         <li>
           ${escapeHtml(skill.name)}
           ${skill.level ? renderLanguageLevel(skill.level) : ""}
@@ -3410,8 +3417,8 @@ ${data.experience.map(exp => `
 
       <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
         ${data.languages
-        .filter(lang => lang.name?.trim())
-         .map(lang => `
+      .filter(lang => lang.name?.trim())
+      .map(lang => `
         <li class="language-item_Template_1">
          <span class="language-name_Template_1">
           ${escapeHtml(lang.name)}
@@ -3435,8 +3442,8 @@ ${data.experience.map(exp => `
 
           <ul class="skills-list_Template_1 interests-list_Template_1">
          ${data.interests
-          .filter(i => i && i.trim() !== '')
-          .map(i => `
+      .filter(i => i && i.trim() !== '')
+      .map(i => `
             <li class="interest-item_Template_2">
               ${escapeHtml(i)}
             </li>
@@ -3461,13 +3468,13 @@ ${hasReferences() ? `
          <p class="ref-line">
           ${ICONS.campany}
           ${[
-              ref.campany
-                ? `<strong>${escapeHtml(ref.campany)}</strong>`
-                : '',
-              ref.position
-                ? escapeHtml(ref.position)
-                : ''
-            ].filter(Boolean).join(' / ')}
+            ref.campany
+              ? `<strong>${escapeHtml(ref.campany)}</strong>`
+              : '',
+            ref.position
+              ? escapeHtml(ref.position)
+              : ''
+          ].filter(Boolean).join(' / ')}
         </p>
       ` : ''}
 
@@ -3495,17 +3502,17 @@ ${hasReferences() ? `
 
 function ModernAtsPhoto() {
   /* GET SAVED GRADIENT */
-let asideGradient =
-localStorage.getItem("resumeAsideGradient") ||
-"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
-/* EXTRACT ACCENT COLOR */
-let accentColor = "#2563eb";
-const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
 
-if(colors && colors.length){
-accentColor = colors[Math.floor(colors.length/2)];
-}
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
 
   const p = photoHtml();
 
@@ -3716,12 +3723,12 @@ ${escapeHtml(edu.degree || '')}
 
 <span style="font-size:12px;color:#6b7280">
 ${[
-edu.start,
-edu.end,
-edu.startYear,
-edu.endYear,
-edu.year
-].filter(Boolean).join(' - ')}
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
 </span>
 
 </div>
@@ -3771,19 +3778,19 @@ gap:10px 16px;
 ">
 
 ${data.skills
-.filter(s => s.name?.trim())
-.map(skill => {
+        .filter(s => s.name?.trim())
+        .map(skill => {
 
-const levelMap = {
-basic:25,
-conversational:50,
-advanced:85,
-native:100
-};
+          const levelMap = {
+            basic: 25,
+            conversational: 50,
+            advanced: 85,
+            native: 100
+          };
 
-const level = levelMap[skill.level] || 70;
+          const level = levelMap[skill.level] || 70;
 
-return `
+          return `
 <div class="overflow">
 
 <div style="
@@ -3812,7 +3819,7 @@ border-radius:4px;
 
 </div>
 `;
-}).join('')}
+        }).join('')}
 
 </div>
 
@@ -3843,19 +3850,19 @@ gap:10px 16px;
 ">
 
 ${data.languages
-.filter(l => l.name?.trim())
-.map(l => {
+        .filter(l => l.name?.trim())
+        .map(l => {
 
-const levelMap = {
-basic:25,
-intermediate:50,
-advanced:85,
-native:100
-};
+          const levelMap = {
+            basic: 25,
+            intermediate: 50,
+            advanced: 85,
+            native: 100
+          };
 
-const level = levelMap[l.level?.toLowerCase?.()] || 70;
+          const level = levelMap[l.level?.toLowerCase?.()] || 70;
 
-return `
+          return `
 <div class="overflow">
 <div style="
 display:flex;
@@ -3884,7 +3891,7 @@ border-radius:4px;
 
 `;
 
-}).join('')}
+        }).join('')}
 
 </div>
 
@@ -3914,8 +3921,8 @@ gap:8px;
 ">
 
 ${data.interests
-.filter(i => i?.trim())
-.map(i => `
+        .filter(i => i?.trim())
+        .map(i => `
 
 <div style="
 display:flex;
@@ -4059,36 +4066,36 @@ ${escapeHtml(ref.email)}
 
 function renderModernAtsClean() {
 
-const p = photoHtml();
+  const p = photoHtml();
 
-/* GET SAVED GRADIENT */
-let asideGradient =
-localStorage.getItem("resumeAsideGradient") ||
-"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+  /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
-/* EXTRACT ACCENT COLOR */
-let accentColor = "#2563eb";
-const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
 
-if(colors && colors.length){
-accentColor = colors[Math.floor(colors.length/2)];
-}
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
 
-const personalFields = [
-{ key: "phone", icon: ICONS.phone_w },
-{ key: "email", icon: ICONS.email_w },
-{ key: "location", icon: ICONS.location_w },
-{ key: "website", icon: ICONS.website_w },
-{ key: "linkedin", icon: ICONS.linkedin_w },
-{ key: "dob", icon: ICONS.calendar_w },
-{ key: "gender", icon: ICONS.user_w },
-{ key: "race", icon: ICONS.group_w },
-{ key: "religion", icon: ICONS.faith_w },
-{ key: "maritalStatus", icon: ICONS.heart_w },
-{ key: "driversLicence", icon: ICONS.car_w }
-];
+  const personalFields = [
+    { key: "phone", icon: ICONS.phone_w },
+    { key: "email", icon: ICONS.email_w },
+    { key: "location", icon: ICONS.location_w },
+    { key: "website", icon: ICONS.website_w },
+    { key: "linkedin", icon: ICONS.linkedin_w },
+    { key: "dob", icon: ICONS.calendar_w },
+    { key: "gender", icon: ICONS.user_w },
+    { key: "race", icon: ICONS.group_w },
+    { key: "religion", icon: ICONS.faith_w },
+    { key: "maritalStatus", icon: ICONS.heart_w },
+    { key: "driversLicence", icon: ICONS.car_w }
+  ];
 
-return `
+  return `
 <div class="resume_Template_1" style="
 display:block;
 width:100%;
@@ -4135,8 +4142,8 @@ gap:6px 12px;
 ">
 
 ${personalFields
-.filter(f => data.personal[f.key])
-.map(f => `
+      .filter(f => data.personal[f.key])
+      .map(f => `
 <li class="overflow" style="display:flex;align-items:center;gap:8px;">
 ${icon(f.icon)}
 ${escapeHtml(data.personal[f.key])}
@@ -4279,12 +4286,12 @@ ${escapeHtml(edu.degree || '')}
 
 <span style="font-size:12px;color:#6b7280">
 ${[
-edu.start,
-edu.end,
-edu.startYear,
-edu.endYear,
-edu.year
-].filter(Boolean).join(' - ')}
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
 </span>
 
 </div>
@@ -4334,19 +4341,19 @@ gap:10px 16px;
 ">
 
 ${data.skills
-.filter(s => s.name?.trim())
-.map(skill => {
+        .filter(s => s.name?.trim())
+        .map(skill => {
 
-const levelMap = {
-basic:25,
-conversational:50,
-advanced:85,
-native:100
-};
+          const levelMap = {
+            basic: 25,
+            conversational: 50,
+            advanced: 85,
+            native: 100
+          };
 
-const level = levelMap[skill.level] || 70;
+          const level = levelMap[skill.level] || 70;
 
-return `
+          return `
 <div class="overflow">
 
 <div style="
@@ -4375,7 +4382,7 @@ border-radius:4px;
 
 </div>
 `;
-}).join('')}
+        }).join('')}
 
 </div>
 
@@ -4406,19 +4413,19 @@ gap:10px 16px;
 ">
 
 ${data.languages
-.filter(l => l.name?.trim())
-.map(l => {
+        .filter(l => l.name?.trim())
+        .map(l => {
 
-const levelMap = {
-basic:25,
-intermediate:50,
-advanced:85,
-native:100
-};
+          const levelMap = {
+            basic: 25,
+            intermediate: 50,
+            advanced: 85,
+            native: 100
+          };
 
-const level = levelMap[l.level?.toLowerCase?.()] || 70;
+          const level = levelMap[l.level?.toLowerCase?.()] || 70;
 
-return `
+          return `
 <div class="overflow">
 <div style="
 display:flex;
@@ -4447,7 +4454,7 @@ border-radius:4px;
 
 `;
 
-}).join('')}
+        }).join('')}
 
 </div>
 
@@ -4477,8 +4484,8 @@ gap:8px;
 ">
 
 ${data.interests
-.filter(i => i?.trim())
-.map(i => `
+        .filter(i => i?.trim())
+        .map(i => `
 
 <div style="
 display:flex;
@@ -4623,42 +4630,42 @@ function renderModernEdgeATS() {
 
   let accentColor = "#2563eb";
 
-const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
 
-if(colors && colors.length){
-accentColor = colors[Math.floor(colors.length/2)];
-}
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
 
-const p = photoHtml();
-const selectedTemplate = data.template;
-
-
+  const p = photoHtml();
+  const selectedTemplate = data.template;
 
 
-/* EXTRACT ACCENT COLOR FROM GRADIENT */
-
-const match = asideGradient.match(/#([0-9a-fA-F]{6})/g);
-
-if(match && match.length >= 2){
-accentColor = match[1];
-}
 
 
-const personalFields = [
-{ key: "phone", icon: ICONS.phone_w },
-{ key: "email", icon: ICONS.email_w },
-{ key: "location", icon: ICONS.location_w },
-{ key: "website", icon: ICONS.website_w },
-{ key: "linkedin", icon: ICONS.linkedin_w },
-{ key: "dob", icon: ICONS.calendar_w },
-{ key: "gender", icon: ICONS.user_w },
-{ key: "race", icon: ICONS.group_w },
-{ key: "religion", icon: ICONS.faith_w },
-{ key: "maritalStatus", icon: ICONS.heart_w },
-{ key: "driversLicence", icon: ICONS.car_w }
-];
+  /* EXTRACT ACCENT COLOR FROM GRADIENT */
 
-return `
+  const match = asideGradient.match(/#([0-9a-fA-F]{6})/g);
+
+  if (match && match.length >= 2) {
+    accentColor = match[1];
+  }
+
+
+  const personalFields = [
+    { key: "phone", icon: ICONS.phone_w },
+    { key: "email", icon: ICONS.email_w },
+    { key: "location", icon: ICONS.location_w },
+    { key: "website", icon: ICONS.website_w },
+    { key: "linkedin", icon: ICONS.linkedin_w },
+    { key: "dob", icon: ICONS.calendar_w },
+    { key: "gender", icon: ICONS.user_w },
+    { key: "race", icon: ICONS.group_w },
+    { key: "religion", icon: ICONS.faith_w },
+    { key: "maritalStatus", icon: ICONS.heart_w },
+    { key: "driversLicence", icon: ICONS.car_w }
+  ];
+
+  return `
 
 <aside style="
 background:${asideGradient};
@@ -4705,8 +4712,8 @@ gap:6px 12px;
 ">
 
 ${personalFields
-.filter(f => data.personal[f.key])
-.map(f => `
+      .filter(f => data.personal[f.key])
+      .map(f => `
 <li class="overflow" style="display:flex;align-items:center;gap:8px;">
 ${icon(f.icon)}
 ${escapeHtml(data.personal[f.key])}
@@ -4875,13 +4882,13 @@ grid-template-columns:1fr 1fr 1fr;
 gap:10px 16px;
 ">
 
-${data.skills.map(skill=>{
+${data.skills.map(skill => {
 
-const levelMap={basic:2,intermediate:3,advanced:4,native:5}
-const level=levelMap[skill.level] || 3
-const totalDots = 5
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[skill.level] || 3
+        const totalDots = 5
 
-return`
+        return `
 
 <div style="
 display:flex;
@@ -4894,7 +4901,7 @@ font-size:13px;
 
 <div style="display:flex;gap:4px">
 
-${Array.from({length: totalDots}).map((_,i)=>`
+${Array.from({ length: totalDots }).map((_, i) => `
 <span style="
 width:8px;
 height:8px;
@@ -4909,7 +4916,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-}).join('')}
+      }).join('')}
 
 </div>
 
@@ -4940,11 +4947,11 @@ font-size:13px;
 
 ${data.languages.map(l => {
 
-const levelMap={basic:2,intermediate:3,advanced:4,native:5}
-const level = levelMap[l.level?.toLowerCase()] || 3
-const totalDots = 5
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[l.level?.toLowerCase()] || 3
+        const totalDots = 5
 
-return`
+        return `
 
 <div style="display:flex;justify-content:space-between;align-items:center;">
 
@@ -4952,7 +4959,7 @@ return`
 
 <div style="display:flex;gap:4px">
 
-${Array.from({length: totalDots}).map((_,i)=>`
+${Array.from({ length: totalDots }).map((_, i) => `
 <span style="
 width:8px;
 height:8px;
@@ -4967,7 +4974,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-}).join('')}
+      }).join('')}
 
 </div>
 
@@ -4980,22 +4987,22 @@ background:${i < level ? accentColor : '#e5e7eb'};
 
 function renderATS() {
 
-const p = photoHtml();
+  const p = photoHtml();
 
-/* GET SAVED GRADIENT */
-let asideGradient =
-localStorage.getItem("resumeAsideGradient") ||
-"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+  /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
-/* EXTRACT ACCENT COLOR */
-let accentColor = "#2563eb";
-const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
 
-if(colors && colors.length){
-accentColor = colors[Math.floor(colors.length/2)];
-}
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
 
-return `
+  return `
 
 <div class="resume_ats" style="
 font-family:'Inter', Arial, Helvetica, sans-serif;
@@ -5205,8 +5212,8 @@ Skills
 <ul style="padding-left:18px;line-height:1.7">
 
 ${data.skills
-.filter(skill => skill.name?.trim())
-.map(skill => `
+        .filter(skill => skill.name?.trim())
+        .map(skill => `
 <li style="margin-bottom:6px">
 ${escapeHtml(skill.name)}
 </li>
@@ -5239,8 +5246,8 @@ Languages
 <ul style="padding-left:18px;line-height:1.7">
 
 ${data.languages
-.filter(lang => lang.name?.trim())
-.map(lang => `
+        .filter(lang => lang.name?.trim())
+        .map(lang => `
 <li style="margin-bottom:6px">
 ${escapeHtml(lang.name)}
 ${lang.level ? ` — ${escapeHtml(lang.level)}` : ''}
@@ -5301,21 +5308,21 @@ ${ref.email ? `<div style="margin-top:2px">${escapeHtml(ref.email)}</div>` : ''}
 
 function renderApexATS() {
 
-const p = photoHtml();
+  const p = photoHtml();
 
-/* GET SAVED GRADIENT */
-let asideGradient =
-localStorage.getItem("resumeAsideGradient") ||
-"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+  /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
-/* EXTRACT ACCENT COLOR */
-let accentColor = "#2563eb";
-const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
-if(colors && colors.length){
-accentColor = colors[Math.floor(colors.length/2)];
-}
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
 
-return `
+  return `
 
 <div class="resume_ats" style="
 font-family:'Segoe UI', Arial, Helvetica, sans-serif;
@@ -5522,40 +5529,40 @@ gap:14px 28px;
 
 ${data.skills.map(skill => {
 
-const levelMap = {
-basic:40,
-intermediate:65,
-advanced:85,
-expert:90,
-native:100
-};
+    const levelMap = {
+      basic: 40,
+      intermediate: 65,
+      advanced: 85,
+      expert: 90,
+      native: 100
+    };
 
-let level = skill.level;
+    let level = skill.level;
 
-// convert string levels
-if (typeof level === "string") {
+    // convert string levels
+    if (typeof level === "string") {
 
-const normalized = level.trim().toLowerCase();
+      const normalized = level.trim().toLowerCase();
 
-if (levelMap[normalized] !== undefined) {
-level = levelMap[normalized];
-} 
-else if (!isNaN(level)) {
-level = Number(level);
-} 
-else {
-level = 70; // default
-}
+      if (levelMap[normalized] !== undefined) {
+        level = levelMap[normalized];
+      }
+      else if (!isNaN(level)) {
+        level = Number(level);
+      }
+      else {
+        level = 70; // default
+      }
 
-}
+    }
 
-// ensure number
-if (typeof level !== "number") level = 70;
+    // ensure number
+    if (typeof level !== "number") level = 70;
 
-// clamp between 0-100
-level = Math.max(0, Math.min(level, 100));
+    // clamp between 0-100
+    level = Math.max(0, Math.min(level, 100));
 
-return `
+    return `
 
 <div>
 
@@ -5591,7 +5598,7 @@ border-radius:4px;
 
 `;
 
-}).join('')}
+  }).join('')}
 
 </div>
 
@@ -5624,40 +5631,40 @@ gap:14px 28px;
 ">
 
 ${data.languages
-.filter(lang => lang.name?.trim())
-.map(lang => {
+        .filter(lang => lang.name?.trim())
+        .map(lang => {
 
-const levelMap = {
-basic:40,
-intermediate:65,
-advanced:85,
-fluent:90,
-native:100
-};
+          const levelMap = {
+            basic: 40,
+            intermediate: 65,
+            advanced: 85,
+            fluent: 90,
+            native: 100
+          };
 
-let level = lang.level;
+          let level = lang.level;
 
-if (typeof level === "string") {
+          if (typeof level === "string") {
 
-const normalized = level.trim().toLowerCase();
+            const normalized = level.trim().toLowerCase();
 
-if (levelMap[normalized] !== undefined) {
-level = levelMap[normalized];
-}
-else if (!isNaN(level)) {
-level = Number(level);
-}
-else {
-level = 70;
-}
+            if (levelMap[normalized] !== undefined) {
+              level = levelMap[normalized];
+            }
+            else if (!isNaN(level)) {
+              level = Number(level);
+            }
+            else {
+              level = 70;
+            }
 
-}
+          }
 
-if (typeof level !== "number") level = 70;
+          if (typeof level !== "number") level = 70;
 
-level = Math.max(0, Math.min(level, 100));
+          level = Math.max(0, Math.min(level, 100));
 
-return `
+          return `
 
 <div>
 
@@ -5698,7 +5705,7 @@ border-radius:4px;
 
 `;
 
-}).join('')}
+        }).join('')}
 
 </div>
 
@@ -5732,8 +5739,8 @@ color:#374151;
 ">
 
 ${data.interests
-.filter(i => i?.trim())
-.map(i => `
+        .filter(i => i?.trim())
+        .map(i => `
 
 <div style="
 background:#f1f5f9;
@@ -5803,21 +5810,21 @@ ${ref.email ? `<div style="font-size:13px">${escapeHtml(ref.email)}</div>` : ''}
 
 function renderVertexATS() {
 
-const p = photoHtml();
+  const p = photoHtml();
 
-/* GET SAVED GRADIENT */
-let asideGradient =
-localStorage.getItem("resumeAsideGradient") ||
-"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+  /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
-/* EXTRACT ACCENT COLOR */
-let accentColor = "#2563eb";
-const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
-if(colors && colors.length){
-accentColor = colors[Math.floor(colors.length/2)];
-}
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
 
-return `
+  return `
 
 <div class="resume_ats" style="
 font-family:'Segoe UI', Arial, Helvetica, sans-serif;
@@ -6022,42 +6029,42 @@ gap:14px 28px;
 ">
 
 ${data.skills
-.filter(skill => skill.name?.trim())
-.map(skill => {
+        .filter(skill => skill.name?.trim())
+        .map(skill => {
 
-const levelMap = {
-basic:40,
-intermediate:65,
-advanced:85,
-expert:90,
-native:100
-};
+          const levelMap = {
+            basic: 40,
+            intermediate: 65,
+            advanced: 85,
+            expert: 90,
+            native: 100
+          };
 
-let level = skill.level;
+          let level = skill.level;
 
-if(typeof level === "string"){
+          if (typeof level === "string") {
 
-const normalized = level.trim().toLowerCase();
+            const normalized = level.trim().toLowerCase();
 
-if(levelMap[normalized] !== undefined){
-level = levelMap[normalized];
-}
-else if(!isNaN(level)){
-level = Number(level);
-}
-else{
-level = 70;
-}
+            if (levelMap[normalized] !== undefined) {
+              level = levelMap[normalized];
+            }
+            else if (!isNaN(level)) {
+              level = Number(level);
+            }
+            else {
+              level = 70;
+            }
 
-}
+          }
 
-if(typeof level !== "number") level = 70;
+          if (typeof level !== "number") level = 70;
 
-level = Math.max(0, Math.min(level,100));
+          level = Math.max(0, Math.min(level, 100));
 
-const dots = Math.ceil(level / 20);
+          const dots = Math.ceil(level / 20);
 
-return `
+          return `
 
 <div style="
 display:flex;
@@ -6072,7 +6079,7 @@ ${escapeHtml(skill.name)}
 
 <div style="display:flex;gap:6px">
 
-${[1,2,3,4,5].map(i => `
+${[1, 2, 3, 4, 5].map(i => `
 
 <div style="
 width:8px;
@@ -6089,7 +6096,7 @@ background:${i <= dots ? accentColor : '#e5e7eb'};
 
 `;
 
-}).join('')}
+        }).join('')}
 
 </div>
 
@@ -6121,28 +6128,28 @@ gap:14px 28px;
 ">
 
 ${data.languages
-.filter(lang => lang.name?.trim())
-.map(lang => {
+        .filter(lang => lang.name?.trim())
+        .map(lang => {
 
-const levelMap = {
-basic:1,
-intermediate:2,
-advanced:3,
-fluent:4,
-native:5
-};
+          const levelMap = {
+            basic: 1,
+            intermediate: 2,
+            advanced: 3,
+            fluent: 4,
+            native: 5
+          };
 
-let dots = 3;
+          let dots = 3;
 
-if(typeof lang.level === "string"){
-const normalized = lang.level.trim().toLowerCase();
+          if (typeof lang.level === "string") {
+            const normalized = lang.level.trim().toLowerCase();
 
-if(levelMap[normalized] !== undefined){
-dots = levelMap[normalized];
-}
-}
+            if (levelMap[normalized] !== undefined) {
+              dots = levelMap[normalized];
+            }
+          }
 
-return `
+          return `
 
 <div style="
 display:flex;
@@ -6157,7 +6164,7 @@ ${escapeHtml(lang.name)}
 
 <div style="display:flex;gap:6px">
 
-${[1,2,3,4,5].map(i => `
+${[1, 2, 3, 4, 5].map(i => `
 
 <div style="
 width:8px;
@@ -6174,7 +6181,7 @@ background:${i <= dots ? accentColor : '#e5e7eb'};
 
 `;
 
-}).join('')}
+        }).join('')}
 
 </div>
 
@@ -6209,8 +6216,8 @@ color:#374151;
 ">
 
 ${data.interests
-.filter(i => i?.trim())
-.map(i => `
+        .filter(i => i?.trim())
+        .map(i => `
 
 <div style="
 background:#f1f5f9;
@@ -6757,16 +6764,16 @@ function showToast(message, type = 'info', duration = 5500) {
   }, duration);
 }
 
-document.querySelectorAll('.layout-preview-btn').forEach(button => button.addEventListener('click',()=>{
+document.querySelectorAll('.layout-preview-btn').forEach(button => button.addEventListener('click', () => {
   openLayoutPreview()
 }))
 
-document.querySelector('#close-preview').addEventListener('click',()=>{
+document.querySelector('#close-preview').addEventListener('click', () => {
   closeLayoutPreview()
 })
 
-document.querySelectorAll('.use-template-btn').forEach(button => button.addEventListener('click',(e)=>{
-selectTemplate(`${e.target.id}`)
+document.querySelectorAll('.use-template-btn').forEach(button => button.addEventListener('click', (e) => {
+  selectTemplate(`${e.target.id}`)
 }))
 
 function openLayoutPreview() {
@@ -7153,7 +7160,7 @@ li {
   }
 }
 
-function injectGoldSlateTemplateStyles(){
+function injectGoldSlateTemplateStyles() {
   if (!document.getElementById('midnight-goldSlate-style')) {
     const style = document.createElement('style');
     style.id = 'midnight-template-style';
@@ -7418,7 +7425,7 @@ li {
   }
 }
 
-function injectGoldSlateTemplateStylesII(){
+function injectGoldSlateTemplateStylesII() {
   if (!document.getElementById('goldSlate-styleII')) {
     const style = document.createElement('style');
     style.id = 'goldSlate-styleII';
@@ -7683,7 +7690,7 @@ li {
   }
 }
 
-function injectPinkCorporateTemplateStyles(){
+function injectPinkCorporateTemplateStyles() {
   if (!document.getElementById('pink-corporate-style')) {
     const style = document.createElement('style');
     style.id = 'pink-corporate-style';
@@ -8086,8 +8093,8 @@ li {
 }
 
 const textarea = document.getElementById("summary");
-textarea.addEventListener("keydown",()=>{
-updateCounter() 
+textarea.addEventListener("keydown", () => {
+  updateCounter()
 })
 
 
@@ -8095,63 +8102,63 @@ updateCounter()
 
 
 const match = asideGradient.match(/#([0-9a-fA-F]{6})/g);
-if(match && match.length >= 2){
-accentColor = match[1]; 
+if (match && match.length >= 2) {
+  accentColor = match[1];
 }
 
 
 
-function applyAsideGradient(){
+function applyAsideGradient() {
 
-const asides =
-document.querySelectorAll("#resumePreview aside");
+  const asides =
+    document.querySelectorAll("#resumePreview aside");
 
-asides.forEach(a=>{
+  asides.forEach(a => {
 
-a.style.transition="background 0.4s ease";
+    a.style.transition = "background 0.4s ease";
 
-a.style.background=asideGradient;
+    a.style.background = asideGradient;
 
-});
+  });
 
 }
 
 /* COLOR CLICK */
 
 document.querySelectorAll(".color-card")
-.forEach(card=>{
+  .forEach(card => {
 
-card.addEventListener("click",()=>{
+    card.addEventListener("click", () => {
 
-asideGradient = card.dataset.color;
+      asideGradient = card.dataset.color;
 
-localStorage.setItem(
-"resumeAsideGradient",
-asideGradient
-);
+      localStorage.setItem(
+        "resumeAsideGradient",
+        asideGradient
+      );
 
-/* update aside instantly */
-applyAsideGradient();
+      /* update aside instantly */
+      applyAsideGradient();
 
-/* re-render resume so headings + dots update */
-renderPreview();
+      /* re-render resume so headings + dots update */
+      renderPreview();
 
-});
-});
+    });
+  });
 
 
 
 /* PANEL TOGGLE */
 
 const palette =
-document.getElementById("colorPalette");
+  document.getElementById("colorPalette");
 
 const toggleColor =
-document.getElementById("paletteToggle");
+  document.getElementById("paletteToggle");
 
-toggleColor.addEventListener("click",()=>{
+toggleColor.addEventListener("click", () => {
 
-palette.classList.toggle("open");
+  palette.classList.toggle("open");
 
 });
 
@@ -8159,7 +8166,7 @@ palette.classList.toggle("open");
 
 /* APPLY AFTER TEMPLATE RENDER */
 
-setTimeout(applyAsideGradient,200);
+setTimeout(applyAsideGradient, 200);
 
 
 document.addEventListener("DOMContentLoaded", updateCounter);
