@@ -1520,10 +1520,11 @@ function downloadPDF(atsMode) {
   }
 
   // 🔥 get ALL resume pages
-const pages = [...preview.querySelectorAll('.resume-page')].filter(page => {
+let pages = [...preview.querySelectorAll('.resume-page')].filter(page => {
   const main = page.querySelector('main');
   return main && main.innerText.trim().length > 0;
 });
+
 
   // temp wrapper
  const wrapper = document.createElement('div');
@@ -1573,13 +1574,27 @@ pagebreak: {
 }
 };
 
-  html2pdf()
-    .set(opt)
-    .from(wrapper)
-    .save()
-    .then(() => {
-      wrapper.remove(); // cleanup
-    });
+html2pdf()
+  .set(opt)
+  .from(wrapper)
+  .toPdf()
+  .get('pdf')
+  .then((pdf) => {
+
+    const totalPages = pdf.internal.getNumberOfPages();
+
+    // 🔥 delete the last page
+    if (totalPages > 1) {
+      pdf.deletePage(totalPages);
+    }
+
+    // download AFTER deleting
+    pdf.save(filename);
+
+  })
+  .then(() => {
+    wrapper.remove(); // cleanup
+  });
 }
 
 function renderPreview(highlightKeywords) {
