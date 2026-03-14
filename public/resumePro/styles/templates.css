@@ -348,27 +348,46 @@ z-index:9999;
 }
 
 
-/* TOGGLE BUTTON */
-
 #paletteToggle{
-width:40px;
-height:40px;
-border:none;
-border-radius:14px;
-color:#ef4444;
-font-size:20px;
-cursor:pointer;
+  position:relative;
+  width:48px;
+  height:48px;
+  border:none;
+  border-radius:50%;
+  cursor:pointer;
 
-display:flex;
-align-items:center;
-justify-content:center;
-transition:0.3s;
+  color:white;
+  font-size:18px;
+
+  background:linear-gradient(135deg,#2563eb,#7c3aed);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  /* animations */
+  animation:
+    paletteFloat 3s ease-in-out infinite,
+    paletteGradient 6s linear infinite;
+
+  background-size:200% 200%;
 }
 
-#paletteToggle:hover{
-transform:scale(1.08);
+/* floating up & down */
+
+@keyframes paletteFloat{
+  0%{ transform:translateY(0); }
+  50%{ transform:translateY(-6px); }
+  100%{ transform:translateY(0); }
 }
 
+/* animated gradient */
+
+@keyframes paletteGradient{
+  0%{ background-position:0% 50%; }
+  50%{ background-position:100% 50%; }
+  100%{ background-position:0% 50%; }
+}
 
 /* PANEL */
 

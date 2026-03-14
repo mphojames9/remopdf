@@ -1528,6 +1528,9 @@ function setPdfStep(step){
 
 
 function downloadPDF(atsMode) {
+  document.querySelectorAll(".pdfSteps li").forEach(li=>{
+  li.classList.remove("show","active","done");
+});
 
   const preview = refs.resumePreview;
   const templateClass = atsMode ? 'ats' : (data.template || 'goldenexecutive');
