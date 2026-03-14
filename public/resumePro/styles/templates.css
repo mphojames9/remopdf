@@ -41,6 +41,7 @@
   position: relative;
 }
 
+
 .promidnight, .goldenexecutiveII, .pinkcorporateII {
   flex-direction: row-reverse;
   width: 100%;
@@ -54,14 +55,17 @@
   flex-direction: column;
 }
 
+.midnight, .goldenexecutive, .pinkcorporate {
+  flex-direction: row;
+}
+
 #Modernats {
   width:100%;
 }
 
 
 
-.ats, .ModernatsClean {
-  display: flex;
+.ats, .ModernatsClean, .ModernEdgeATS {
   flex-direction: column;
 }
 
