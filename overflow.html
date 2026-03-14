@@ -1,0 +1,125 @@
+${hasExperience() ? `
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+Experience
+</h2>
+
+${data.experience.map(exp => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
+${escapeHtml(exp.campany)}
+</div>
+
+${exp.bullets?.length ? `
+
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px; margin-left: 18px">
+${escapeHtml(b)}
+</li>
+`).join('')}
+` : ''}
+
+`).join('')}
+
+` : ''}
+
+
+
+
+
+
+${hasEducation() ? `
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+margin-top: 28px;
+">
+Education
+</h2>
+
+${data.education.map(edu => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[
+edu.start,
+edu.end,
+edu.startYear,
+edu.endYear,
+edu.year
+].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
+
+${edu.description?.trim() ? `
+<div class="overflow" style="
+font-size:13px;
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
+
+
+`).join('')}
+
+` : ''}

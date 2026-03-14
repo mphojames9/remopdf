@@ -434,7 +434,6 @@ transform:scale(1.1);
 
 
 /* GRADIENTS */
-
 .color-card:nth-child(1){
 background:linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8);
 }
@@ -458,3 +457,30 @@ background:linear-gradient(180deg,#3b0764,#6b21a8,#581c87);
 .color-card:nth-child(6){
 background:linear-gradient(180deg,#111827,#1f2937,#374151);
 }
+
+/* NEW PREMIUM GRADIENTS */
+
+.color-card:nth-child(7){
+background:linear-gradient(180deg,#020617,#0f172a,#1e293b);
+}
+
+.color-card:nth-child(8){
+background:linear-gradient(180deg,#1e1b4b,#312e81,#4338ca);
+}
+
+.color-card:nth-child(9){
+background:linear-gradient(180deg,#052e16,#065f46,#047857);
+}
+
+.color-card:nth-child(10){
+background:linear-gradient(180deg,#2e1065,#4c1d95,#6d28d9);
+}
+
+.color-card:nth-child(11){
+background:linear-gradient(180deg,#3f3f46,#52525b,#71717a);
+}
+
+.color-card:nth-child(12){
+background:linear-gradient(180deg,#1c1917,#292524,#44403c);
+}
+

@@ -284,75 +284,7 @@ let accentColor = "#2563eb";
 /* =========================
    GLOBAL STATE
 ========================= */
-const TEMPLATE_LIBRARY = [
-  {
-    id: 'midnight',
-    name: 'midnight',
-    image: '/mnt/data/8c084f86-b9fa-4010-988d-7f50782de721.png'
-  },
 
-  {
-    id: 'promidnight',
-    name: 'promidnight',
-    image: '/mnt/data/8c084f86-b9fa-4010-988d-7f50782de721.png'
-  },
-
-  {
-    id: 'goldenexecutive',
-    name: 'goldenexecutive',
-    image: '/images/templates/goldenexecutive.png'
-  },
-
-   {   id: 'goldenexecutiveII',
-    name: 'goldenexecutiveII',
-    image: '/images/templates/goldenexecutiveII.png'
-  },
-  {
-    id: 'creative',
-    name: 'Creative',
-    image: '/images/templates/creative.png'
-  },
-  {
-    id: 'pinkcorporate',
-    name: 'pinkcorporate',
-    image: '/images/templates/recruiter.png'
-  },
-    {
-    id: 'pinkcorporateII',
-    name: 'pinkcorporateII',
-    image: '/images/templates/recruiter.png'
-  },
-
-      {
-    id: 'Modernats',
-    name: 'Modernats',
-    image: '/images/templates/recruiter.png'
-  },
-
-  {
-  id: 'ModernatsClean',
-  name: 'ModernatsClean',
-  image: '/images/templates/modern-ats-clean.png'
-},
-
-{
-  id: 'ModernEdgeATS',
-  name: 'ModernEdgeATS',
-  image: '/images/templates/modern-ats-clean.png'
-},
-
-{
-  id: 'apexats',
-  name: 'apexats',
-  image: '/images/templates/modern-ats-clean.png'
-}, 
-
-{
-  id: 'vertexats',
-  name: 'vertexats',
-  image: '/images/templates/modern-ats-clean.png'
-}
-];
 const LANGUAGE_LEVELS = [
   { value: 'basic', label: 'Basic' },
   { value: 'conversational', label: 'Conversational' },
@@ -1588,40 +1520,58 @@ function downloadPDF(atsMode) {
   }
 
   // 🔥 get ALL resume pages
-  const pages = preview.querySelectorAll('.resume-page');
+const pages = [...preview.querySelectorAll('.resume-page')].filter(page => {
+  const main = page.querySelector('main');
+  return main && main.innerText.trim().length > 0;
+});
 
   // temp wrapper
-  const wrapper = document.createElement('div');
-  wrapper.style.background = '#fff';
+ const wrapper = document.createElement('div');
+wrapper.style.background = '#fff';
+wrapper.style.width = '794px';
+wrapper.style.margin = '0';
+wrapper.style.padding = '0';
+wrapper.style.position = 'relative';
 
-  pages.forEach((page, i) => {
-    const clone = page.cloneNode(true);
+pages.forEach((page, i) => {
 
-    // force page break except last
-    if (i !== pages.length - 1) {
-      clone.style.pageBreakAfter = 'always';
-    }
+  const clone = page.cloneNode(true);
 
-    wrapper.appendChild(clone);
-  });
+  // 🔥 shift template only for PDF
+  const template = clone.querySelector('.resume_Template_1');
+  if (template) {
+    template.style.marginLeft = "-10px";
+  }
+
+  wrapper.appendChild(clone);
+
+});
 
   document.body.appendChild(wrapper);
 
-  const opt = {
-    margin: 0,
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      logging: false
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait'
-    }
-  };
+const opt = {
+  margin: 0,
+  filename: filename,
+  image: { type: "jpeg", quality: 1 },
+
+  html2canvas: {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    scrollX: 0,
+    scrollY: 0
+  },
+
+  jsPDF: {
+    unit: "px",
+    format: [792, 1122],
+    orientation: "portrait"
+  },
+
+pagebreak: {
+  mode: []
+}
+};
 
   html2pdf()
     .set(opt)
@@ -1721,6 +1671,10 @@ function microSplitOverflow(pageObj, PAGE_HEIGHT) {
 
   while (currentPage.page.scrollHeight > PAGE_HEIGHT) {
 
+      console.log("⚠️ OVERFLOW DETECTED");
+  console.log("Page height:", currentPage.scrollHeight);
+  console.log("Max allowed:", PAGE_HEIGHT);
+
     const main = currentPage.main;
     const overflowEls = Array.from(main.querySelectorAll('.overflow'));
 
@@ -1753,6 +1707,11 @@ console.log(selectedTemplate)
   page.style.minHeight = '1122px';
 
   const wrapper = document.createElement('div');
+wrapper.style.background = '#fff';
+wrapper.style.width = '794px';
+wrapper.style.margin = '0';
+wrapper.style.padding = '0';
+wrapper.style.position = 'relative';
   wrapper.className = `resume_Template_1 ${selectedTemplate}`;
 
   const sidebarClone = sidebarNode.cloneNode(true);
@@ -3488,7 +3447,19 @@ ${hasReferences() ? `
 }
 
 function ModernAtsPhoto() {
-  injectModernAtsTemplateStyles()
+  /* GET SAVED GRADIENT */
+let asideGradient =
+localStorage.getItem("resumeAsideGradient") ||
+"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+
+/* EXTRACT ACCENT COLOR */
+let accentColor = "#2563eb";
+const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+if(colors && colors.length){
+accentColor = colors[Math.floor(colors.length/2)];
+}
+
   const p = photoHtml();
 
   return `
@@ -3579,372 +3550,7 @@ ${data.personal.driversLicence
             <div>${p}</div>
             </div>
         </aside>
-        <main class="content_Template_1"
-            style="padding: 100px 60px 60px 60px;">
-            <!-- LEFT SIDE -->
-
-            <div>
-          ${data.summary && data.summary.trim()
-           ? `
-          <section class="overflow" style="margin-top:50px">
-         <div>
-         <h2 style="margin-bottom:20px">${ICONS.profile}<span style="margin-left:30px">Profile</span></h2>
-         </div>
-         <p style="color:#475569; line-height: 1.6;">${escapeHtml(data.summary)}</p>
-          </section>
-            `: ''}
-            </div>
-
-            ${hasExperience() ? `
-            <div class="heading_Template_1 overflow" style="margin-bottom: 5px; margin-top: 40px;">
-            <h2>${ICONS.experience}<span>Professional Experience</span></h2>
-           <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-           </div>
-            ` : ``}
-
-          ${data.experience.map(exp => `
-          <!-- EXPERIENCE ITEM -->
-          <div class="overflow" style="margin-top:1rem;font-weight:bold; display:flex; justify-content:space-between;">
-          <p style="font-weight:800">${escapeHtml(exp.campany)}</p>
-          ${[exp.start, exp.end].some(d => d && d.trim())
-          ? `<i style="font-weight:400;font-size:13px;">${[exp.start, exp.end]
-            .filter(d => d && d.trim())
-            .join(' – ')}</i>`
-          : ''
-        }
-  </div>
-
-          <p class="overflow" style="margin:0;font-weight:600;color:rgb(59,57,57); margin-bottom: 5px;">
-          ${escapeHtml(exp.role)}
-           </p>
-
-        ${exp.bullets && exp.bullets.length
-          ? `
-       ${exp.bullets.map(b => `
-        <li class="overflow ${b?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-       ${escapeHtml(b)}
-        </li>
-          `).join('')}
-      `
-          : ''
-        }
-`).join('')}
-
-${hasEducation() && `
-<!-- EDUCATION HEADING -->
-<div class="heading_Template_1 overflow" id="h2-edu" style="margin-bottom:5px;">
-  <h2>
-    ${ICONS.education}<span>EDUCATION</span>
-  </h2>
-  <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-</div>
-`}
-
-        <!-- EDUCATION ITEM -->
-        ${data.education.map(edu => `
-              <div class="overflow" style="margin-top:1rem;;font-weight:bold; display: flex; justify-content: space-between;">
-              <p style="font-weight: 800">${escapeHtml(edu.degree)}</p>
-              <i style="margin:0; float: right; font-weight:400; font-size: 13px; list-style-type: none;">${escapeHtml(edu.year || '')}</i>
-            </div>
-            <p class="overflow" style="margin:0; font-weight: 600; margin-bottom:5px; color: rgb(59, 57, 57);">${escapeHtml(edu.school)}</p>
-              <li class="overflow" style="display:flex;white-space:pre-wrap;">
-              </li>
-
-              <li class="overflow ${edu.discription?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-             ${escapeHtml(edu.discription)}
-             </li>
-              `).join('')}
-              
-              
-              <section class="section_Template_1 overflow">
-              ${hasSkills() ? `
-              <div class="heading_Template_1">
-              <h2>
-              ${ICONS.skill}
-             <span>Skills</span>
-              </h2>
-            <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-            </div>
-             ` : ""}
-
-           <ul class="skills-list_Template_1 overflow">
-           ${data.skills
-         .filter(skill => skill.name?.trim())
-         .map(skill => `
-          <li style="color:#475569;">
-          ${escapeHtml(skill.name)}
-          ${skill.level ? renderLanguageLevel(skill.level) : ""}
-          </li>
-          `).join('')}
-           </ul>
-          </section>
-
-            <section class="section_Template_1 overflow">
-                ${hasLanguage() ? `
-            <div class="heading_Template_1">
-            <h2>
-            ${ICONS.language}
-            <span>Languages</span>
-           </h2>
-            <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-           </div>
-            ` : ""}
-
-      <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
-        ${data.languages
-        .filter(lang => lang.name?.trim())
-         .map(lang => `
-        <li class="language-item_Template_1" style="color:#475569;">
-         <span class="language-name_Template_1">
-          ${escapeHtml(lang.name)}
-         </span>
-       ${renderLanguageLevel(lang.level)}
-        </li>
-      `).join('')}
-      </ul>
-    </section>
-
-            
-          ${hasInterest() && `
-          <section class="section_Template_1 overflow">
-           <div class="heading_Template_1">
-            <h2>
-            ${ICONS.interests}
-           <span>Interests</span>
-           </h2>
-          <div class="rule" style="background: linear-gradient(135deg, #0f172a, #1e293b, #0ea5a4);"></div>
-          </div>
-        `}
-
-          <ul class="skills-list_Template_1 interests-list_Template_1">
-         ${data.interests
-          .filter(i => i && i.trim() !== '')
-          .map(i => `
-            <li class="interest-item_Template_2" style="color:#475569;">
-              ${escapeHtml(i)}
-            </li>
-          `).join('')}
-         </ul>
-        </section>
-
-            <section class="section_Template_1 overflow">
-         ${hasReferences() ? `
-        <div class="heading_Template_3" style="margin-top:30px">
-        <h2><span>References</span></h2>
-        </div>
-        ` : ``}
-          ${data.references.map(ref => `
-         <div class="ref-card-wrapper">
-          <div class="ref-card_Template_1">
-
-        ${ref.name ? `<h4>${escapeHtml(ref.name)}</h4>` : ''}
-
-         ${(ref.campany || ref.position) ? `
-         <p class="ref-line">
-          ${ICONS.campany}
-          ${[
-              ref.campany
-                ? `<strong>${escapeHtml(ref.campany)}</strong>`
-                : '',
-              ref.position
-                ? escapeHtml(ref.position)
-                : ''
-            ].filter(Boolean).join(' / ')}
-        </p>
-      ` : ''}
-
-      ${ref.phone ? `
-        <p class="ref-line">
-          ${ICONS.phone}
-          ${escapeHtml(ref.phone)}
-        </p>
-      ` : ''}
-
-      ${ref.email ? `
-        <p class="ref-line">
-          ${ICONS.email}
-          ${escapeHtml(ref.email)}
-        </p>
-      ` : ''}
-          </div>
-        </div>
-        `).join('')}
-
-        </main>
-  </div>
-  `;
-}
-
-function renderCreative() {
-  const p = photoHtml();
-  return `
-      <div class="r-top">
-        <div class="r-left">${p}<div style="margin-top:12px"><div class="name">${escapeHtml(data.personal.fullName || '')}</div><div class="title">${escapeHtml(data.personal.title || '')}</div><div class="contact small">${escapeHtml(data.personal.location || '')}</div><div style="margin-top:12px"><h4>Skills</h4><div class="small">${data.skills.map(s => escapeHtml(s)).join(', ')}</div></div></div></div>
-        <div class="r-right"><div class="section"><h4>About</h4><div class="small">${escapeHtml(data.summary || '')}</div></div><div class="section"><h4>Experience</h4>${data.experience.map(exp => `<div class="job"><strong>${escapeHtml(exp.role)}</strong> — ${escapeHtml(exp.campany)} <div class="meta small">${escapeHtml(exp.start || '')} — ${escapeHtml(exp.end || '')}</div><ul class="bullets">${(exp.bullets || []).map(b => `<li>${escapeHtml(b)}</li>`).join('')}</ul></div>`).join('')}</div><div class="section"><h4>Education</h4>${data.education.map(edu => `<div class="job"><strong>${escapeHtml(edu.school)}</strong> — ${escapeHtml(edu.degree)} <div class="meta small">${escapeHtml(edu.year || '')}</div></div>`).join('')}</div></div>
-      </div>
-    `;
-}
-
-function renderModernAtsClean() {
-
-const p = photoHtml();
-
-/* GET SAVED GRADIENT */
-let asideGradient =
-localStorage.getItem("resumeAsideGradient") ||
-"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
-
-/* EXTRACT ACCENT COLOR */
-let accentColor = "#2563eb";
-const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
-
-if(colors && colors.length){
-accentColor = colors[Math.floor(colors.length/2)];
-}
-
-const personalFields = [
-{ key: "phone", icon: ICONS.phone_w },
-{ key: "email", icon: ICONS.email_w },
-{ key: "location", icon: ICONS.location_w },
-{ key: "website", icon: ICONS.website_w },
-{ key: "linkedin", icon: ICONS.linkedin_w },
-{ key: "dob", icon: ICONS.calendar_w },
-{ key: "gender", icon: ICONS.user_w },
-{ key: "race", icon: ICONS.group_w },
-{ key: "religion", icon: ICONS.faith_w },
-{ key: "maritalStatus", icon: ICONS.heart_w },
-{ key: "driversLicence", icon: ICONS.car_w }
-];
-
-return `
-<div class="resume_Template_1" style="
-display:grid;
-grid-template-rows:auto 1fr;
-width:100%;
-">
-
-<aside style="
-background:
-linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.15)),
-${asideGradient};
-color:#ffffff;
-padding:42px 32px;
-page-break-inside:avoid;
-display:grid;
-grid-template-rows:auto 1fr;
-font-family:'Inter','Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-letter-spacing:.2px;
-position:relative;
-overflow:hidden;
-">
-
-<div style="
-position:absolute;
-top:-120px;
-right:-120px;
-width:260px;
-height:260px;
-background:radial-gradient(circle,rgba(255,255,255,.15),transparent 70%);
-pointer-events:none;
-"></div>
-
-
-<div style="text-align:center;" class="overflow">
-
-<h1 style="
-font-size:30px;
-font-weight:800;
-line-height:1.1;
-margin-bottom:8px;
-letter-spacing:.8px;
-text-transform:uppercase;
-">
-${escapeHtml(data.personal.fullName || '')}
-</h1>
-
-<div style="
-font-size:13px;
-opacity:.85;
-letter-spacing:2px;
-text-transform:uppercase;
-font-weight:500;
-">
-${escapeHtml(data.personal.title || '')}
-</div>
-
-</div>
-
-
-<div style="
-display:grid;
-grid-template-columns:1fr auto;
-align-items:end;
-margin-top:48px;
-gap:24px;
-">
-
-<div>
-
-<ul style="
-list-style:none;
-padding:0;
-margin:0;
-display:grid;
-grid-template-columns:repeat(3, 1fr);
-gap:10px 14px;
-font-size:13px;
-font-weight:500;
-">
-
-${personalFields
-.filter(f => data.personal[f.key])
-.map(f => `
-<li class="overflow" style="
-display:flex;
-align-items:center;
-gap:8px;
-opacity:.95;
-">
-${icon(f.icon)}
-
-<span style="
-line-height:1.3;
-letter-spacing:.2px;
-">
-${escapeHtml(data.personal[f.key])}
-</span>
-
-</li>
-`).join('')}
-
-</ul>
-
-</div>
-
-
-<div style="
-width:110px;
-height:110px;
-flex-shrink:0;
-border-radius:50%;
-overflow:hidden;
-border:3px solid rgba(255,255,255,.28);
-box-shadow:
-0 12px 30px rgba(0,0,0,.35),
-inset 0 0 0 2px rgba(255,255,255,.08);
-background:rgba(255,255,255,.04);
-">
-
-${p}
-
-</div>
-
-</div>
-
-</aside>
-
-
-<main class="content_Template_1" style="
+        <main class="content_Template_1" style="
 padding:36px 42px;
 background:white;
 box-sizing:border-box;
@@ -3977,7 +3583,6 @@ ${escapeHtml(data.summary)}
 
 
 ${hasExperience() ? `
-<section style="margin-bottom:28px">
 
 <h2 class="overflow" style="
 font-size:14px;
@@ -3993,9 +3598,8 @@ Experience
 </h2>
 
 ${data.experience.map(exp => `
-<div class="overflow" style="margin-bottom:20px">
 
-<div style="
+<div class="overflow" style="
 display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
@@ -4011,33 +3615,31 @@ ${[exp.start, exp.end].filter(Boolean).join(' - ')}
 
 </div>
 
-<div style="
+<div class="overflow" style="
 font-size:13px;
 color:#374151;
 font-weight:600;
 margin-top:3px;
+margin-bottom: 8px;
 ">
 ${escapeHtml(exp.campany)}
 </div>
 
 ${exp.bullets?.length ? `
-<ul style="margin-top:8px;padding-left:18px">
+
 ${exp.bullets.map(b => `
-<li class="overflow" style="margin-bottom:5px">
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
 ${escapeHtml(b)}
 </li>
 `).join('')}
-</ul>
 ` : ''}
 
-</div>
 `).join('')}
 
-</section>
 ` : ''}
 
+
 ${hasEducation() ? `
-<section style="margin-bottom:28px">
 
 <h2 class="overflow" style="
 font-size:14px;
@@ -4048,14 +3650,14 @@ color:${accentColor};
 border-bottom:2px solid #e5e7eb;
 padding-bottom:6px;
 margin-bottom:14px;
+margin-top: 28px;
 ">
 Education
 </h2>
 
 ${data.education.map(edu => `
-<div class="overflow" style="margin-bottom:18px">
 
-<div style="
+<div class="overflow" style="
 display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
@@ -4077,7 +3679,7 @@ edu.year
 
 </div>
 
-<div style="
+<div class="overflow" style="
 font-size:13px;
 color:#374151;
 font-weight:600;
@@ -4086,28 +3688,23 @@ margin-top:3px;
 ${escapeHtml(edu.school || '')}
 </div>
 
-${edu.description?.trim() ? `
-<div style="
-font-size:13px;
+${edu.discription?.trim() ? `
+<div class="overflow" style="
 color:#4b5563;
 margin-top:6px;
-line-height:1.5;
+line-height:1.5;margin-left: 18px;
 ">
-${escapeHtml(edu.description)}
+${escapeHtml(edu.discription)}
 </div>
 ` : ''}
-
-</div>
 `).join('')}
-
-</section>
 ` : ''}
 
 
 ${hasSkills() ? `
-<section style="margin-bottom:26px">
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
 
-<h2 class="overflow" style="
+<h2 style="
 font-size:14px;
 font-weight:700;
 text-transform:uppercase;
@@ -4131,10 +3728,10 @@ ${data.skills
 .map(skill => {
 
 const levelMap = {
-basic:40,
-intermediate:65,
+basic:25,
+conversational:50,
 advanced:85,
-native:95
+native:100
 };
 
 const level = levelMap[skill.level] || 70;
@@ -4149,7 +3746,6 @@ font-size:12px;
 margin-bottom:4px;
 ">
 <span>${escapeHtml(skill.name)}</span>
-<span>${skill.level || ''}</span>
 </div>
 
 <div style="
@@ -4178,7 +3774,7 @@ border-radius:4px;
 
 
 ${hasLanguage() ? `
-<section class="overflow" style="margin-bottom:28px">
+<section class="overflow" style="margin-bottom:28px; margin-top:18px">
 
 <h2 style="
 font-size:14px;
@@ -4204,8 +3800,8 @@ ${data.languages
 .map(l => {
 
 const levelMap = {
-basic:40,
-intermediate:65,
+basic:25,
+intermediate:50,
 advanced:85,
 native:100
 };
@@ -4213,9 +3809,7 @@ native:100
 const level = levelMap[l.level?.toLowerCase?.()] || 70;
 
 return `
-
 <div class="overflow">
-
 <div style="
 display:flex;
 justify-content:space-between;
@@ -4224,9 +3818,6 @@ margin-bottom:4px;
 ">
 
 <span>${escapeHtml(l.name)}</span>
-
-<span>${escapeHtml(l.level || '')}</span>
-
 </div>
 
 <div style="
@@ -4235,16 +3826,13 @@ background:#e5e7eb;
 border-radius:4px;
 overflow:hidden;
 ">
-
 <div style="
 height:100%;
 width:${level}%;
 background:${accentColor};
 border-radius:4px;
 "></div>
-
 </div>
-
 </div>
 
 `;
@@ -4257,7 +3845,7 @@ border-radius:4px;
 ` : ''}
 
 ${hasInterest() ? `
-<section class="overflow" style="margin-bottom:26px">
+<section class="overflow" style="margin-bottom:26px; margin-top:18px">
 
 <h2 style="
 font-size:14px;
@@ -4311,7 +3899,570 @@ ${escapeHtml(i)}
 ` : ''}
 
 ${hasReferences() ? `
-<section class="overflow" style="margin-bottom:26px">
+<section class="overflow" style="margin-bottom:26px ; margin-top:18px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+References
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:16px;
+">
+
+${data.references.map(ref => `
+<div class="overflow" style="
+border:1px solid #e5e7eb;
+border-left:4px solid ${accentColor};
+border-radius:6px;
+padding:14px;
+background:#fafafa;
+">
+
+<strong style="
+font-size:14px;
+color:#111827;
+display:block;
+margin-bottom:4px;
+">
+${escapeHtml(ref.name)}
+</strong>
+
+<div style="
+font-size:13px;
+color:#374151;
+margin-bottom:8px;
+">
+${escapeHtml(ref.campany || '')}
+</div>
+
+${ref.phone ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+margin-bottom:4px;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M22 16.92v3a2 2 0 0 1-2.18 2 
+19.79 19.79 0 0 1-8.63-3.07 
+19.5 19.5 0 0 1-6-6 
+19.79 19.79 0 0 1-3.07-8.67 
+A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 
+12.84 12.84 0 0 0 .7 2.81 
+2 2 0 0 1-.45 2.11L8.09 9.91
+a16 16 0 0 0 6 6l1.27-1.27
+a2 2 0 0 1 2.11-.45
+12.84 12.84 0 0 0 2.81.7
+A2 2 0 0 1 22 16.92z"/>
+</svg>
+
+${escapeHtml(ref.phone)}
+
+</div>
+` : ''}
+
+${ref.email ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4 4h16v16H4z"/>
+<polyline points="22,6 12,13 2,6"/>
+</svg>
+
+${escapeHtml(ref.email)}
+
+</div>
+` : ''}
+
+</div>
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+</main>
+  </div>
+  `;
+}
+
+
+function renderModernAtsClean() {
+
+const p = photoHtml();
+
+/* GET SAVED GRADIENT */
+let asideGradient =
+localStorage.getItem("resumeAsideGradient") ||
+"linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
+
+/* EXTRACT ACCENT COLOR */
+let accentColor = "#2563eb";
+const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+if(colors && colors.length){
+accentColor = colors[Math.floor(colors.length/2)];
+}
+
+const personalFields = [
+{ key: "phone", icon: ICONS.phone_w },
+{ key: "email", icon: ICONS.email_w },
+{ key: "location", icon: ICONS.location_w },
+{ key: "website", icon: ICONS.website_w },
+{ key: "linkedin", icon: ICONS.linkedin_w },
+{ key: "dob", icon: ICONS.calendar_w },
+{ key: "gender", icon: ICONS.user_w },
+{ key: "race", icon: ICONS.group_w },
+{ key: "religion", icon: ICONS.faith_w },
+{ key: "maritalStatus", icon: ICONS.heart_w },
+{ key: "driversLicence", icon: ICONS.car_w }
+];
+
+return `
+<div class="resume_Template_1" style="
+display:block;
+width:100%;
+">
+
+
+<aside style="
+background:${asideGradient};
+color:#ffffff;
+padding:34px 26px;
+display:flex;
+flex-direction:column;
+gap:20px;
+">
+
+<div style="text-align:center;" class="overflow">
+<h1 style="
+font-size:35px;
+font-weight:700;
+line-height:1.2;
+margin-bottom:6px;
+">
+${escapeHtml(data.personal.fullName || '')}
+</h1>
+
+<div style="font-size:20px;opacity:.9;">
+${escapeHtml(data.personal.title || '')}
+</div>
+</div>
+
+<div style="
+display:grid;
+grid-template-columns:3fr auto;
+">
+<div>
+
+<ul style="
+list-style:none;
+padding:0;
+margin:0;
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:6px 12px;
+">
+
+${personalFields
+.filter(f => data.personal[f.key])
+.map(f => `
+<li class="overflow" style="display:flex;align-items:center;gap:8px;">
+${icon(f.icon)}
+${escapeHtml(data.personal[f.key])}
+</li>
+`).join('')}
+
+</ul>
+
+</div>
+
+<div style="
+margin-left:16px;
+width:100px;
+height:100px;
+flex-shrink:0;
+border-radius:50%;
+overflow:hidden;
+">
+${p}
+</div>
+</div>
+</aside>
+
+<main class="content_Template_1" style="
+padding:36px 42px;
+background:white;
+box-sizing:border-box;
+overflow:visible;
+">
+
+
+${data.summary ? `
+<section class="overflow" style="margin-bottom:28px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Professional Summary
+</h2>
+
+<p style="color:#374151">
+${escapeHtml(data.summary)}
+</p>
+
+</section>
+` : ''}
+
+
+${hasExperience() ? `
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+Experience
+</h2>
+
+${data.experience.map(exp => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
+${escapeHtml(exp.campany)}
+</div>
+
+${exp.bullets?.length ? `
+
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
+${escapeHtml(b)}
+</li>
+`).join('')}
+` : ''}
+
+`).join('')}
+
+` : ''}
+
+
+${hasEducation() ? `
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+margin-top: 28px;
+">
+Education
+</h2>
+
+${data.education.map(edu => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[
+edu.start,
+edu.end,
+edu.startYear,
+edu.endYear,
+edu.year
+].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
+
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
+`).join('')}
+` : ''}
+
+
+${hasSkills() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Skills
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:10px 16px;
+">
+
+${data.skills
+.filter(s => s.name?.trim())
+.map(skill => {
+
+const levelMap = {
+basic:25,
+conversational:50,
+advanced:85,
+native:100
+};
+
+const level = levelMap[skill.level] || 70;
+
+return `
+<div class="overflow">
+
+<div style="
+display:flex;
+justify-content:space-between;
+font-size:12px;
+margin-bottom:4px;
+">
+<span>${escapeHtml(skill.name)}</span>
+</div>
+
+<div style="
+height:5px;
+background:#e5e7eb;
+border-radius:4px;
+">
+
+<div style="
+height:100%;
+width:${level}%;
+background:${accentColor};
+border-radius:4px;
+"></div>
+
+</div>
+
+</div>
+`;
+}).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+
+${hasLanguage() ? `
+<section class="overflow" style="margin-bottom:28px; margin-top:18px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Languages
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:10px 16px;
+">
+
+${data.languages
+.filter(l => l.name?.trim())
+.map(l => {
+
+const levelMap = {
+basic:25,
+intermediate:50,
+advanced:85,
+native:100
+};
+
+const level = levelMap[l.level?.toLowerCase?.()] || 70;
+
+return `
+<div class="overflow">
+<div style="
+display:flex;
+justify-content:space-between;
+font-size:12px;
+margin-bottom:4px;
+">
+
+<span>${escapeHtml(l.name)}</span>
+</div>
+
+<div style="
+height:5px;
+background:#e5e7eb;
+border-radius:4px;
+overflow:hidden;
+">
+<div style="
+height:100%;
+width:${level}%;
+background:${accentColor};
+border-radius:4px;
+"></div>
+</div>
+</div>
+
+`;
+
+}).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasInterest() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:18px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Interests
+</h2>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+">
+
+${data.interests
+.filter(i => i?.trim())
+.map(i => `
+
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+padding:6px 10px;
+font-size:12px;
+border-radius:20px;
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+">
+
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2"
+stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 21s-6-4.35-9-8.5A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9 7.5C18 16.65 12 21 12 21z"/>
+</svg>
+
+${escapeHtml(i)}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasReferences() ? `
+<section class="overflow" margin-top:18px">
 
 <h2 style="
 font-size:14px;
@@ -4529,9 +4680,7 @@ overflow:hidden;
 ">
 ${p}
 </div>
-
 </div>
-
 </aside>
 
 
@@ -6592,28 +6741,6 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeLayoutPreview();
 });
 
-let currentIndex = 0;
-
-
-
-function updateCarousel() {
-  track.style.transform = `translateX(-${currentIndex * 100}%)`;
-  nameEl.textContent = TEMPLATE_LIBRARY[currentIndex].name;
-}
-
-/* Navigation */
-function nextTemplate() {
-  currentIndex = (currentIndex + 1) % TEMPLATE_LIBRARY.length;
-  updateCarousel();
-}
-
-function prevTemplate() {
-  currentIndex =
-    (currentIndex - 1 + TEMPLATE_LIBRARY.length) %
-    TEMPLATE_LIBRARY.length;
-  updateCarousel();
-}
-
 let currentTemplate = null
 
 document.querySelectorAll(".template-card").forEach(card => {
@@ -6744,14 +6871,6 @@ function injectmidnightTemplateStyles() {
       gap: 15px;
     }
     
-.resume {
-    width: 794px;
-    min-width: 794px;
-    min-height: 1122px;
-    max-height: 1122px;
-    margin-bottom: 30px;
-    background: #ffffff;
-}
 
 /* ================================
    SIDEBAR – GLASS + GRADIENT
@@ -7013,14 +7132,6 @@ function injectGoldSlateTemplateStyles(){
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   gap: 15px;
-}
-
-.resume {
-  width: 794px;
-  min-width: 794px;
-  min-height: 1122px;
-  max-height: 1122px;
-  margin-bottom: 30px;
 }
 
 /* ================================
@@ -7286,14 +7397,6 @@ function injectGoldSlateTemplateStylesII(){
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   gap: 15px;
-}
-
-.resume {
-  width: 794px;
-  min-width: 794px;
-  min-height: 1122px;
-  max-height: 1122px;
-  margin-bottom: 30px;
 }
 
 /* ================================
@@ -7700,14 +7803,6 @@ function injectpromidnighttTemplateStylesII() {
       gap: 15px;
     }
     
-.resume {
-    width: 794px;
-    min-width: 794px;
-    min-height: 1122px;
-    max-height: 1122px;
-    margin-bottom: 30px;
-    background: #ffffff;
-}
 
 /* ================================
    SIDEBAR – GLASS + GRADIENT
@@ -7942,21 +8037,6 @@ li {
     document.head.appendChild(style);
   }
 }
-
-function injectModernAtsTemplateStyles() {
-  if (!document.getElementById('Modern-ATS-template-style')) {
-
-    const style = document.createElement('style');
-    style.id = 'Modern-ATS-template-style';
-
-    style.textContent = `
-
-    `;
-
-    document.head.appendChild(style);
-  }
-}
-
 
 const textarea = document.getElementById("summary");
 textarea.addEventListener("keydown",()=>{
