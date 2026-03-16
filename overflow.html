@@ -1,50 +1,124 @@
-${hasExperience() ? `
+  return `
 
-<h2 class="overflow" style="
-font-size:14px;
-font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.2px;
+<div class="resume_ats" style="
+font-family:'Inter', Arial, Helvetica, sans-serif;
+font-size:15px;
+line-height:1.75;
+color:#0f172a;
+max-width:820px;
+margin:auto;
+padding:50px;
+max-height:1122px;
+overflow:hidden;
+">
+
+<!-- HEADER -->
+
+<header style="
+margin-bottom:36px;
+padding-bottom:18px;
+border-bottom:3px solid ${accentColor};
+">
+
+<h1 style="
+font-size:34px;
+font-weight:800;
+letter-spacing:.6px;
+margin-bottom:4px;
+">
+${escapeHtml(data.personal.fullName || '')}
+</h1>
+
+<p style="
+font-size:17px;
 color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:6px;
+font-weight:600;
+margin:6px 0;
+">
+${escapeHtml(data.personal.title || '')}
+</p>
+
+<p style="
+font-size:13px;
+margin-top:10px;
+line-height:1.8;
+color:#475569;
+">
+
+${data.personal.phone ? `${escapeHtml(data.personal.phone)} • ` : ''}
+${data.personal.email ? `${escapeHtml(data.personal.email)} • ` : ''}
+${data.personal.location ? `${escapeHtml(data.personal.location)} • ` : ''}
+${data.personal.website ? `${escapeHtml(data.personal.website)} • ` : ''}
+${data.personal.linkedin ? `${escapeHtml(data.personal.linkedin)}` : ''}
+
+</p>
+
+</header>
+
+
+${data.summary && data.summary.trim() ? `
+
+<h2 style="
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
 margin-bottom:14px;
 ">
-Experience
+Professional Summary
+</h2>
+
+<p style="color:#334155">
+${escapeHtml(data.summary)}
+</p>
+
+
+
+` : ''}
+
+${hasExperience() ? `
+
+<h2 style="
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
+margin-top:32px;
+">
+Professional Experience
 </h2>
 
 ${data.experience.map(exp => `
 
-<div class="overflow" style="
-display:flex;
-justify-content:space-between;
-flex-wrap:wrap;
-">
-
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:16px;font-weight:700">
 ${escapeHtml(exp.role)}
 </strong>
 
-<span style="font-size:12px;color:#6b7280">
-${[exp.start, exp.end].filter(Boolean).join(' - ')}
-</span>
+<div style="font-size:13px;color:#475569;margin-top:4px;line-height:1.6">
 
-</div>
-
-<div class="overflow" style="
-font-size:13px;
-color:#374151;
-font-weight:600;
-margin-top:3px;
-margin-bottom: 8px;
-">
+<div>
 ${escapeHtml(exp.campany)}
 </div>
 
-${exp.bullets?.length ? `
+${[exp.start, exp.end].some(d => d && d.trim()) ? `
+<div style="margin-top:2px">
+${[exp.start, exp.end].filter(d => d && d.trim()).join(' - ')}
+</div>
+` : ''}
+
+</div>
+
+${exp.bullets && exp.bullets.length ? `
 
 ${exp.bullets.map(b => `
-<li class="overflow" style="margin-bottom:5px; margin-left: 18px">
+<li style="margin-bottom:6px; padding-left:18px;">
 ${escapeHtml(b)}
 </li>
 `).join('')}
@@ -55,67 +129,35 @@ ${escapeHtml(b)}
 ` : ''}
 
 
-
-
-
-
 ${hasEducation() ? `
 
-<h2 class="overflow" style="
-font-size:14px;
-font-weight:700;
+<h2 style="
+margin-top:32px
+font-size:13px;
+font-weight:800;
 text-transform:uppercase;
-letter-spacing:1.2px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:6px;
-margin-bottom:14px;
-margin-top: 28px;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
 ">
 Education
 </h2>
 
 ${data.education.map(edu => `
 
-<div class="overflow" style="
-display:flex;
-justify-content:space-between;
-flex-wrap:wrap;
-">
-
-<strong style="font-size:15px;color:#111827">
-${escapeHtml(edu.degree || '')}
+<strong style="font-size:16px">
+${escapeHtml(edu.degree)}
 </strong>
 
-<span style="font-size:12px;color:#6b7280">
-${[
-edu.start,
-edu.end,
-edu.startYear,
-edu.endYear,
-edu.year
-].filter(Boolean).join(' - ')}
-</span>
-
+<div style="font-size:13px;color:#475569;margin-top:4px">
+${escapeHtml(edu.school)}
 </div>
 
-<div class="overflow" style="
-font-size:13px;
-color:#374151;
-font-weight:600;
-margin-top:3px;
-">
-${escapeHtml(edu.school || '')}
-</div>
-
-${edu.description?.trim() ? `
-<div class="overflow" style="
-font-size:13px;
-color:#4b5563;
-margin-top:6px;
-line-height:1.5;
-">
-${escapeHtml(edu.discription)}
+${edu.year ? `
+<div style="font-size:13px;color:#64748b;margin-top:2px">
+${escapeHtml(edu.year)}
 </div>
 ` : ''}
 
@@ -123,3 +165,117 @@ ${escapeHtml(edu.discription)}
 `).join('')}
 
 ` : ''}
+
+
+${hasSkills() ? `
+
+<section style="margin-bottom:32px; margin-top:32px">
+
+<h2 style="
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
+">
+Skills
+</h2>
+
+<ul style="padding-left:18px;line-height:1.7">
+
+${data.skills
+        .filter(skill => skill.name?.trim())
+        .map(skill => `
+<li style="margin-bottom:6px">
+${escapeHtml(skill.name)}
+</li>
+`).join('')}
+
+</ul>
+
+</section>
+
+` : ''}
+
+
+${hasLanguage() ? `
+
+<section style="margin-bottom:32px">
+
+<h2 style="
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
+">
+Languages
+</h2>
+
+<ul style="padding-left:18px;line-height:1.7">
+
+${data.languages
+        .filter(lang => lang.name?.trim())
+        .map(lang => `
+<li style="margin-bottom:6px">
+${escapeHtml(lang.name)}
+${lang.level ? ` — ${escapeHtml(lang.level)}` : ''}
+</li>
+`).join('')}
+
+</ul>
+
+</section>
+
+` : ''}
+
+
+${hasReferences() ? `
+
+<section>
+
+<h2 style="
+font-size:13px;
+font-weight:800;
+text-transform:uppercase;
+letter-spacing:1.5px;
+color:#0f172a;
+padding-left:10px;
+border-left:4px solid ${accentColor};
+margin-bottom:16px;
+">
+References
+</h2>
+
+${data.references.map(ref => `
+
+<div style="margin-bottom:18px">
+
+<strong style="font-size:16px">
+${escapeHtml(ref.name)}
+</strong>
+
+<div style="color:#475569;margin-top:3px">
+${escapeHtml(ref.campany || '')}
+</div>
+
+${ref.phone ? `<div style="margin-top:2px">${escapeHtml(ref.phone)}</div>` : ''}
+${ref.email ? `<div style="margin-top:2px">${escapeHtml(ref.email)}</div>` : ''}
+
+</div>
+
+`).join('')}
+
+</section>
+
+` : ''}
+
+</div>
+
+`;

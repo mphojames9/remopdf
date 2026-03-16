@@ -1,12 +1,4 @@
 import updateCounter from "./resume/components";
-import injectPinkCorporateTemplateStylesII from "./resume/injectPinkCorporateTemplateStylesII";
-import injectmidnightTemplateStyles from "./resume/injectmidnightTemplateStyles";
-import injectGoldSlateTemplateStyles from "./resume/injectGoldSlateTemplateStyles";
-import injectGoldSlateTemplateStylesII from "./resume/injectGoldSlateTemplateStylesII";
-import injectPinkCorporateTemplateStyles from "./resume/injectPinkCorporateTemplateStyles";
-import injectpromidnighttTemplateStylesII from "./resume/injectpromidnighttTemplateStylesII"
-
-
 /* =========================
    DOM ELEMENTS
 ========================= */
@@ -61,8 +53,8 @@ const ICONS = {
 
   profile: `
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-        <circle cx="12" cy="8" r="4" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
-        <path d="M4 20a8 8 0 0 1 16 0" stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
+        <circle cx="12" cy="8" r="4" stroke="rgb(245, 250, 252)" stroke-width="1.5"/>
+        <path d="M4 20a8 8 0 0 1 16 0" stroke="rgb(243, 246, 248)" stroke-width="1.5"/>
       </svg>`,
 
   education: `
@@ -87,7 +79,7 @@ const ICONS = {
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
         <path d="M3 5a2 2 0 0 1 2-2h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2
         C9.8 19 5 14.2 5 7a2 2 0 0 1-2-2z"
-        stroke="rgb(117, 125, 129)" stroke-width="1.5" stroke-linecap="round"/>
+        stroke="rgb(201, 214, 221)" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
 
 
@@ -778,7 +770,7 @@ function bindProfileInputs() {
   }
   if (refs.removePhotoBtn) {
     refs.removePhotoBtn.addEventListener('click', () => {
-      if (confirm('Remove profile photo?')) removePhoto();
+      removePhoto();
     });
   }
 }
@@ -841,7 +833,7 @@ function renderLists() {
         </div>
 
         <div class="field">
-          <label>Description</label>
+          <label>discription</label>
           <input class="input_data"
             data-id="${edu.id}"
             data-field="discription"
@@ -1879,12 +1871,21 @@ function hasReferences() {
 
 function rendermidnight() {
   const p = photoHtml();
-  injectmidnightTemplateStyles()
+    /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
 
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
   return `
   <div class="resume_Template_1" style="display:flex;">
-    <aside class="sidebar_Template_1">
+    <aside class="sidebar_Template_1" style='background:${asideGradient}'>
       <div class="photo-wrap_Template_1">${p}</div>
 
       <div style="margin-top:85px;text-align:center">
@@ -1916,48 +1917,82 @@ ${(
   </div>
   <ul class="contact-list_Template_1">
 
-    ${data.personal.phone
-      ? `<li>${icon(ICONS.phone)}${escapeHtml(data.personal.phone)}</li>`
-      : ''}
+   ${data.personal.phone
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.phone_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.email
-      ? `<li>${icon(ICONS.email)}${escapeHtml(data.personal.email)}</li>`
-      : ''}
+${data.personal.email
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.email_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.email)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.location
-      ? `<li>${icon(ICONS.location)}${escapeHtml(data.personal.location)}</li>`
-      : ''}
+${data.personal.location
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.location_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.location)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.website
-      ? `<li>${icon(ICONS.website)}${escapeHtml(data.personal.website)}</li>`
-      : ''}
+${data.personal.website
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.website_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.website)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.linkedin
-      ? `<li>${icon(ICONS.linkedin)}${escapeHtml(data.personal.linkedin)}</li>`
-      : ''}
+${data.personal.linkedin
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.dob
-      ? `<li>${icon(ICONS.calendar)}${escapeHtml(data.personal.dob)}</li>`
-      : ''}
-    ${data.personal.gender
-      ? `<li>${icon(ICONS.user)}${escapeHtml(data.personal.gender)}</li>`
-      : ''}
+${data.personal.dob
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
+     </li>`
+  : ''}
+
+${data.personal.gender
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.user_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.race
-      ? `<li>${icon(ICONS.group)}${escapeHtml(data.personal.race)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.group_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.race)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.religion
-      ? `<li>${icon(ICONS.faith)}${escapeHtml(data.personal.religion)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.faith_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.maritalStatus
-      ? `<li>${icon(ICONS.heart)}${escapeHtml(data.personal.maritalStatus)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.heart_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.driversLicence
-      ? `<li>${icon(ICONS.car)}${escapeHtml(data.personal.driversLicence)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.car_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
+     </li>`
+  : ''}
 
   </ul>
 </div>
@@ -1966,191 +2001,458 @@ ${data.personal.driversLicence
 
     </aside>
 <main class="content_Template_1" style="
-  display:flex;
-  flex-direction:column;
-  flex-grow:1;
-  background:#fff;
-  color:#0f172a;
-  font-size:10.5pt;
-  line-height:17px;
+padding:36px 42px;
+background:white;
+box-sizing:border-box;
+overflow:visible;
 ">
 
+
 ${hasExperience() ? `
-<div class="heading_Template_1 overflow" style="margin-bottom: 5px; margin-top: 5px;">
-  <h2>${ICONS.experience}<span>Professional Experience</span></h2>
-  <div class="rule"></div>
-</div>
-` : ``}
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+Experience
+</h2>
 
 ${data.experience.map(exp => `
-  <!-- EXPERIENCE ITEM -->
-  <div class="overflow" style="margin-top:1rem;font-weight:bold; display:flex; justify-content:space-between;">
-    <p style="font-weight:800">${escapeHtml(exp.campany)}</p>
-    ${[exp.start, exp.end].some(d => d && d.trim())
-          ? `<i style="font-weight:400;font-size:13px;">${[exp.start, exp.end]
-            .filter(d => d && d.trim())
-            .join(' – ')}</i>`
-          : ''
-        }
-  </div>
 
-  <p class="overflow" style="margin:0;font-weight:600;color:rgb(59,57,57); margin-bottom: 5px;">
-    ${escapeHtml(exp.role)}
-  </p>
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-  ${exp.bullets && exp.bullets.length
-          ? `
-    ${exp.bullets.map(b => `
-     <li class="overflow ${b?.trim() ? 'li' : ''}" style="color:#475569;">
-    ${escapeHtml(b)}
-        </li>
-          `).join('')}
-      `
-          : ''
-        }
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
+${escapeHtml(exp.campany)}
+</div>
+
+${exp.bullets?.length ? `
+
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
+${escapeHtml(b)}
+</li>
+`).join('')}
+` : ''}
+
 `).join('')}
 
+` : ''}
 
 
-        ${hasEducation() && `
-<!-- EDUCATION HEADING -->
-<div class="heading_Template_1 overflow" id="h2-edu" style="margin-bottom:5px;">
-  <h2>
-    ${ICONS.education}<span>EDUCATION</span>
-  </h2>
-  <div class="rule"></div>
+${hasEducation() ? `
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+margin-top: 28px;
+">
+Education
+</h2>
+
+${data.education.map(edu => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
+</span>
+
 </div>
-`}
 
-        <!-- EDUCATION ITEM -->
-        ${data.education.map(edu => `
-              <div class="overflow" style="margin-top:1rem;;font-weight:bold; display: flex; justify-content: space-between;">
-              <p style="font-weight: 800">${escapeHtml(edu.degree)}</p>
-              <i style="margin:0; float: right; font-weight:400; font-size: 13px; list-style-type: none;">${escapeHtml(edu.year || '')}</i>
-            </div>
-            <p class="overflow" style="margin:0; font-weight: 600; margin-bottom:5px; color: rgb(59, 57, 57);">${escapeHtml(edu.school)}</p>
-              <li class="overflow" style="display:flex;white-space:pre-wrap;">
-              </li>
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
 
-              <li class="overflow ${edu.discription?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-             ${escapeHtml(edu.discription)}
-             </li>
-              `).join('')}
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
+`).join('')}
+` : ''}
 
-            <section class="section_Template_1 overflow">
-        ${hasSkills() ? `
-       <div class="heading_Template_1">
-       <h2>
-        ${ICONS.skill}
-         <span>Skills</span>
-         </h2>
-         <div class="rule"></div>
-         </div>
-         ` : ""}
 
-        <ul class="skills-list_Template_1 overflow">
-         ${data.skills
-      .filter(skill => skill.name?.trim())
-      .map(skill => `
-        <li>
-          ${escapeHtml(skill.name)}
-          ${skill.level ? renderLanguageLevel(skill.level) : ""}
-        </li>
-        `).join('')}
-          </ul>
-        </section>
+${hasSkills() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
 
-            <section class="section_Template_1 overflow">
-            ${hasLanguage() ? `
-            <div class="heading_Template_1">
-            <h2>
-            ${ICONS.language}
-            <span>Languages</span>
-           </h2>
-            <div class="rule"></div>
-           </div>
-            ` : ""}
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Skills
+</h2>
 
-      <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
-        ${data.languages
-      .filter(lang => lang.name?.trim())
-      .map(lang => `
-        <li class="language-item_Template_1">
-         <span class="language-name_Template_1">
-          ${escapeHtml(lang.name)}
-         </span>
-       ${renderLanguageLevel(lang.level)}
-        </li>
-      `).join('')}
-      </ul>
-    </section>
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px 16px;
+">
 
-           <section class="section_Template_1 overflow">
-              <div class="heading_Template_1">
-                <h2>${ICONS.interests}<span>Interests</span>
-                </h2>
-                <div class="rule"></div>
-              </div>
-              <ul class="skills-list_Template_1">
-                <li>${data.interests.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</li>
-              </ul>
-            </section> 
+${data.skills
+        .filter(s => s.name?.trim())
+        .map(skill => {
 
-            <section class="section_Template_1 overflow">
-          <div class="heading_Template_1">
-          <h2>${ICONS.references}<span>References</span></h2>
-          <div class="rule"></div>
-          </div>
-          ${data.references.map(ref => `
-         <div class="ref-card-wrapper">
-          <div class="ref-card_Template_1">
+          const levelMap = {
+            basic: 25,
+            conversational: 50,
+            advanced: 85,
+            native: 100
+          };
 
-        ${ref.name ? `<h4>${escapeHtml(ref.name)}</h4>` : ''}
+          const level = levelMap[skill.level] || 70;
 
-         ${(ref.campany || ref.position) ? `
-         <p class="ref-line">
-          ${ICONS.campany}
-          ${[
-            ref.campany
-              ? `<strong>${escapeHtml(ref.campany)}</strong>`
-              : '',
-            ref.position
-              ? escapeHtml(ref.position)
-              : ''
-          ].filter(Boolean).join(' / ')}
-        </p>
-      ` : ''}
+          return `
+<div class="overflow">
 
-      ${ref.phone ? `
-        <p class="ref-line">
-          ${ICONS.phone}
-          ${escapeHtml(ref.phone)}
-        </p>
-      ` : ''}
+<div style="
+display:flex;
+justify-content:space-between;
+font-size:12px;
+margin-bottom:4px;
+">
+<span>${escapeHtml(skill.name)}</span>
+</div>
 
-      ${ref.email ? `
-        <p class="ref-line">
-          ${ICONS.email}
-          ${escapeHtml(ref.email)}
-        </p>
-      ` : ''}
-          </div>
-        </div>
-        `).join('')}
-      </section>
-        </main>
+<div style="
+height:5px;
+background:#e5e7eb;
+border-radius:4px;
+">
+
+<div style="
+height:100%;
+width:${level}%;
+background:${accentColor};
+border-radius:4px;
+"></div>
+
+</div>
+
+</div>
+`;
+        }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+
+${hasLanguage() ? `
+<section class="overflow" style="margin-bottom:28px; margin-top:28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Languages
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px 16px;
+">
+
+${data.languages
+        .filter(l => l.name?.trim())
+        .map(l => {
+
+          const levelMap = {
+            basic: 25,
+            intermediate: 50,
+            advanced: 85,
+            native: 100
+          };
+
+          const level = levelMap[l.level?.toLowerCase?.()] || 70;
+
+          return `
+<div class="overflow">
+<div style="
+display:flex;
+justify-content:space-between;
+font-size:12px;
+margin-bottom:4px;
+">
+
+<span>${escapeHtml(l.name)}</span>
+</div>
+
+<div style="
+height:5px;
+background:#e5e7eb;
+border-radius:4px;
+overflow:hidden;
+">
+<div style="
+height:100%;
+width:${level}%;
+background:${accentColor};
+border-radius:4px;
+"></div>
+</div>
+</div>
+
+`;
+
+        }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasInterest() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Interests
+</h2>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+">
+
+${data.interests
+        .filter(i => i?.trim())
+        .map(i => `
+
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+padding:6px 10px;
+font-size:12px;
+border-radius:20px;
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+">
+
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2"
+stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 21s-6-4.35-9-8.5A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9 7.5C18 16.65 12 21 12 21z"/>
+</svg>
+
+${escapeHtml(i)}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasReferences() ? `
+<section class="overflow" style="margin-bottom:26px ; margin-top:28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+References
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr;
+gap:16px;
+">
+
+${data.references.map(ref => `
+<div style="
+border:1px solid #e5e7eb;
+border-radius:6px;
+padding:14px;
+background:#fafafa;
+">
+
+<strong style="
+font-size:14px;
+color:#111827;
+display:block;
+margin-bottom:4px;
+">
+${escapeHtml(ref.name)}
+</strong>
+
+<div style="
+font-size:13px;
+color:#374151;
+margin-bottom:8px;
+">
+${escapeHtml(ref.campany || '')}
+</div>
+
+${ref.phone ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+margin-bottom:4px;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M22 16.92v3a2 2 0 0 1-2.18 2 
+19.79 19.79 0 0 1-8.63-3.07 
+19.5 19.5 0 0 1-6-6 
+19.79 19.79 0 0 1-3.07-8.67 
+A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 
+12.84 12.84 0 0 0 .7 2.81 
+2 2 0 0 1-.45 2.11L8.09 9.91
+a16 16 0 0 0 6 6l1.27-1.27
+a2 2 0 0 1 2.11-.45
+12.84 12.84 0 0 0 2.81.7
+A2 2 0 0 1 22 16.92z"/>
+</svg>
+
+${escapeHtml(ref.phone)}
+
+</div>
+` : ''}
+
+${ref.email ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4 4h16v16H4z"/>
+<polyline points="22,6 12,13 2,6"/>
+</svg>
+
+${escapeHtml(ref.email)}
+
+</div>
+` : ''}
+
+</div>
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+</main>
   </div>
   `;
 }
 
 function renderpromidnight() {
-  injectpromidnighttTemplateStylesII()
-  const p = photoHtml();
+ const p = photoHtml();
+    /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
   return `
-  <div class="resume_Template_1">
-    <aside class="sidebar_Template_1">
+  <div class="resume_Template_1" style="display:flex;">
+    <aside class="sidebar_Template_1" style='background:${asideGradient}'>
       <div class="photo-wrap_Template_1">${p}</div>
+
       <div style="margin-top:85px;text-align:center">
         <div class="name_Template_1">${escapeHtml(data.personal.fullName || '')}</div>
         <div class="role_Template_1">${escapeHtml(data.personal.title || '')}</div>
@@ -2181,48 +2483,81 @@ ${(
   <ul class="contact-list_Template_1">
 
     ${data.personal.phone
-      ? `<li>${icon(ICONS.phone)}${escapeHtml(data.personal.phone)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.phone_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.email
-      ? `<li>${icon(ICONS.email)}${escapeHtml(data.personal.email)}</li>`
-      : ''}
+${data.personal.email
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.email_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.email)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.location
-      ? `<li>${icon(ICONS.location)}${escapeHtml(data.personal.location)}</li>`
-      : ''}
+${data.personal.location
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.location_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.location)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.website
-      ? `<li>${icon(ICONS.website)}${escapeHtml(data.personal.website)}</li>`
-      : ''}
+${data.personal.website
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.website_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.website)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.linkedin
-      ? `<li>${icon(ICONS.linkedin)}${escapeHtml(data.personal.linkedin)}</li>`
-      : ''}
+${data.personal.linkedin
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.dob
-      ? `<li>${icon(ICONS.calendar)}${escapeHtml(data.personal.dob)}</li>`
-      : ''}
-    ${data.personal.gender
-      ? `<li>${icon(ICONS.user)}${escapeHtml(data.personal.gender)}</li>`
-      : ''}
+${data.personal.dob
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
+     </li>`
+  : ''}
+
+${data.personal.gender
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.user_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.race
-      ? `<li>${icon(ICONS.group)}${escapeHtml(data.personal.race)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.group_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.race)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.religion
-      ? `<li>${icon(ICONS.faith)}${escapeHtml(data.personal.religion)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.faith_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.maritalStatus
-      ? `<li>${icon(ICONS.heart)}${escapeHtml(data.personal.maritalStatus)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.heart_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.driversLicence
-      ? `<li>${icon(ICONS.car)}${escapeHtml(data.personal.driversLicence)}</li>`
-      : ''}
-
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.car_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
+     </li>`
+  : ''}
   </ul>
 </div>
 ` : ''}
@@ -2230,205 +2565,476 @@ ${data.personal.driversLicence
 
     </aside>
 <main class="content_Template_1" style="
-  display:flex;
-  flex-direction:column;
-  flex-grow:1;
-  background:#fff;
-  color:#0f172a;
-  font-size:10.5pt;
-  line-height:17px;
-  position:absolute;
-  left:0;
+padding:36px 42px;
+background:white;
+box-sizing:border-box;
+overflow:visible;
 ">
 
+
 ${hasExperience() ? `
-<div class="heading_Template_1 overflow" style="margin-bottom: 5px; margin-top: 5px;">
-  <h2>${ICONS.experience}<span>Professional Experience</span></h2>
-  <div class="rule"></div>
-</div>
-` : ``}
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+Experience
+</h2>
 
 ${data.experience.map(exp => `
-  <!-- EXPERIENCE ITEM -->
-  <div class="overflow" style="margin-top:1rem;font-weight:bold; display:flex; justify-content:space-between;">
-    <p style="font-weight:800">${escapeHtml(exp.campany)}</p>
-    ${[exp.start, exp.end].some(d => d && d.trim())
-          ? `<i style="font-weight:400;font-size:13px;">${[exp.start, exp.end]
-            .filter(d => d && d.trim())
-            .join(' – ')}</i>`
-          : ''
-        }
-  </div>
 
-  <p class="overflow" style="margin:0;font-weight:600;color:rgb(59,57,57); margin-bottom: 5px;">
-    ${escapeHtml(exp.role)}
-  </p>
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-  ${exp.bullets && exp.bullets.length
-          ? `
-    ${exp.bullets.map(b => `
-     <li class="overflow ${b?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-    ${escapeHtml(b)}
-        </li>
-          `).join('')}
-      `
-          : ''
-        }
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
+${escapeHtml(exp.campany)}
+</div>
+
+${exp.bullets?.length ? `
+
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
+${escapeHtml(b)}
+</li>
+`).join('')}
+` : ''}
+
 `).join('')}
 
+` : ''}
 
 
-        ${hasEducation() && `
-<!-- EDUCATION HEADING -->
-<div class="heading_Template_1 overflow" id="h2-edu" style="margin-bottom:5px;">
-  <h2>
-    ${ICONS.education}<span>EDUCATION</span>
-  </h2>
-  <div class="rule"></div>
+${hasEducation() ? `
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+margin-top: 28px;
+">
+Education
+</h2>
+
+${data.education.map(edu => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
+</span>
+
 </div>
-`}
 
-        <!-- EDUCATION ITEM -->
-        ${data.education.map(edu => `
-              <div class="overflow" style="margin-top:1rem;;font-weight:bold; display: flex; justify-content: space-between;">
-              <p style="font-weight: 800">${escapeHtml(edu.degree)}</p>
-              <i style="margin:0; float: right; font-weight:400; font-size: 13px; list-style-type: none;">${escapeHtml(edu.year || '')}</i>
-            </div>
-            <p class="overflow" style="margin:0; font-weight: 600; margin-bottom:5px; color: rgb(59, 57, 57);">${escapeHtml(edu.school)}</p>
-              <li class="overflow" style="display:flex;white-space:pre-wrap;">
-              </li>
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
 
-              <li class="overflow ${edu.discription?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-             ${escapeHtml(edu.discription)}
-             </li>
-              `).join('')}
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
+`).join('')}
+` : ''}
 
-             <section class="section_Template_1 overflow">
-        ${hasSkills() ? `
-       <div class="heading_Template_1">
-       <h2>
-        ${ICONS.skill}
-         <span>Skills</span>
-         </h2>
-         <div class="rule"></div>
-         </div>
-         ` : ""}
 
-        <ul class="skills-list_Template_1 overflow">
-         ${data.skills
-      .filter(skill => skill.name?.trim())
-      .map(skill => `
-        <li>
-          ${escapeHtml(skill.name)}
-          ${skill.level ? renderLanguageLevel(skill.level) : ""}
-        </li>
-        `).join('')}
-          </ul>
-        </section>
-                          <section class="section_Template_1 overflow">
-                ${hasLanguage() ? `
-            <div class="heading_Template_1">
-            <h2>
-            ${ICONS.language}
-            <span>Languages</span>
-           </h2>
-            <div class="rule"></div>
-           </div>
-            ` : ""}
+${hasSkills() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
 
-      <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
-        ${data.languages
-      .filter(lang => lang.name?.trim())
-      .map(lang => `
-        <li class="language-item_Template_1">
-         <span class="language-name_Template_1">
-          ${escapeHtml(lang.name)}
-         </span>
-       ${renderLanguageLevel(lang.level)}
-        </li>
-      `).join('')}
-      </ul>
-    </section>
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Skills
+</h2>
 
-            <section class="section_Template_1 overflow">
-              <div class="heading_Template_1">
-                <h2>${ICONS.interests}<span>Interests</span>
-                </h2>
-                <div class="rule"></div>
-              </div>
-              <ul class="skills-list_Template_1">
-                <li>${data.interests.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</li>
-              </ul>
-            </section>
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px 16px;
+">
 
-            <section class="section_Template_1 overflow">
-          <div class="heading_Template_1">
-          <h2>${ICONS.references}<span>References</span></h2>
-          <div class="rule"></div>
-          </div>
-          ${data.references.map(ref => `
-         <div class="ref-card-wrapper">
-          <div class="ref-card_Template_1">
+${data.skills
+        .filter(s => s.name?.trim())
+        .map(skill => {
 
-        ${ref.name ? `<h4>${escapeHtml(ref.name)}</h4>` : ''}
+          const levelMap = {
+            basic: 25,
+            conversational: 50,
+            advanced: 85,
+            native: 100
+          };
 
-         ${(ref.campany || ref.position) ? `
-         <p class="ref-line">
-          ${ICONS.campany}
-          ${[
-            ref.campany
-              ? `<strong>${escapeHtml(ref.campany)}</strong>`
-              : '',
-            ref.position
-              ? escapeHtml(ref.position)
-              : ''
-          ].filter(Boolean).join(' / ')}
-        </p>
-      ` : ''}
+          const level = levelMap[skill.level] || 70;
 
-      ${ref.phone ? `
-        <p class="ref-line">
-          ${ICONS.phone}
-          ${escapeHtml(ref.phone)}
-        </p>
-      ` : ''}
+          return `
+<div class="overflow">
 
-      ${ref.email ? `
-        <p class="ref-line">
-          ${ICONS.email}
-          ${escapeHtml(ref.email)}
-        </p>
-      ` : ''}
-          </div>
-        </div>
-        `).join('')}
-      </section>
-        </main>
+<div style="
+display:flex;
+justify-content:space-between;
+font-size:12px;
+margin-bottom:4px;
+">
+<span>${escapeHtml(skill.name)}</span>
+</div>
+
+<div style="
+height:5px;
+background:#e5e7eb;
+border-radius:4px;
+">
+
+<div style="
+height:100%;
+width:${level}%;
+background:${accentColor};
+border-radius:4px;
+"></div>
+
+</div>
+
+</div>
+`;
+        }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+
+${hasLanguage() ? `
+<section class="overflow" style="margin-bottom:28px; margin-top:28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Languages
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px 16px;
+">
+
+${data.languages
+        .filter(l => l.name?.trim())
+        .map(l => {
+
+          const levelMap = {
+            basic: 25,
+            intermediate: 50,
+            advanced: 85,
+            native: 100
+          };
+
+          const level = levelMap[l.level?.toLowerCase?.()] || 70;
+
+          return `
+<div class="overflow">
+<div style="
+display:flex;
+justify-content:space-between;
+font-size:12px;
+margin-bottom:4px;
+">
+
+<span>${escapeHtml(l.name)}</span>
+</div>
+
+<div style="
+height:5px;
+background:#e5e7eb;
+border-radius:4px;
+overflow:hidden;
+">
+<div style="
+height:100%;
+width:${level}%;
+background:${accentColor};
+border-radius:4px;
+"></div>
+</div>
+</div>
+
+`;
+
+        }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasInterest() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Interests
+</h2>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+">
+
+${data.interests
+        .filter(i => i?.trim())
+        .map(i => `
+
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+padding:6px 10px;
+font-size:12px;
+border-radius:20px;
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+">
+
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2"
+stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 21s-6-4.35-9-8.5A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9 7.5C18 16.65 12 21 12 21z"/>
+</svg>
+
+${escapeHtml(i)}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasReferences() ? `
+<section class="overflow" style="margin-bottom:26px ; margin-top:28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+References
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr;
+gap:16px;
+">
+
+${data.references.map(ref => `
+<div style="
+border:1px solid #e5e7eb;
+border-radius:6px;
+padding:14px;
+background:#fafafa;
+">
+
+<strong style="
+font-size:14px;
+color:#111827;
+display:block;
+margin-bottom:4px;
+">
+${escapeHtml(ref.name)}
+</strong>
+
+<div style="
+font-size:13px;
+color:#374151;
+margin-bottom:8px;
+">
+${escapeHtml(ref.campany || '')}
+</div>
+
+${ref.phone ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+margin-bottom:4px;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M22 16.92v3a2 2 0 0 1-2.18 2 
+19.79 19.79 0 0 1-8.63-3.07 
+19.5 19.5 0 0 1-6-6 
+19.79 19.79 0 0 1-3.07-8.67 
+A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 
+12.84 12.84 0 0 0 .7 2.81 
+2 2 0 0 1-.45 2.11L8.09 9.91
+a16 16 0 0 0 6 6l1.27-1.27
+a2 2 0 0 1 2.11-.45
+12.84 12.84 0 0 0 2.81.7
+A2 2 0 0 1 22 16.92z"/>
+</svg>
+
+${escapeHtml(ref.phone)}
+
+</div>
+` : ''}
+
+${ref.email ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4 4h16v16H4z"/>
+<polyline points="22,6 12,13 2,6"/>
+</svg>
+
+${escapeHtml(ref.email)}
+
+</div>
+` : ''}
+
+</div>
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+</main>
   </div>
   `;
 }
 
 function renderGoldenExecutive() {
-  const p = photoHtml();
-  injectGoldSlateTemplateStyles()
+      const p = photoHtml();
+    /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
   return `
-  <div class="resume_Template_1">
-    <aside class="sidebar_Template_2">
-      <div class="photo-wrap_Template_2">${p}</div>
+  <div class="resume_Template_1" style="display:flex;">
+    <aside class="sidebar_Template_1" style='background:${asideGradient}'>
+      <div class="photo-wrap_Template_1">${p}</div>
 
-      <div style="margin-top:35px;text-align:center">
-        <div class="name_Template_2">${escapeHtml(data.personal.fullName || '')}</div>
-        <div class="role_Template_2">${escapeHtml(data.personal.title || '')}</div>
+      <div style="margin-top:85px;text-align:center">
+        <div class="name_Template_1">${escapeHtml(data.personal.fullName || '')}</div>
+        <div class="role_Template_1">${escapeHtml(data.personal.title || '')}</div>
       </div>
 
       ${data.summary && data.summary.trim()
       ? `
-<section class="section_Template_2 summary">
-  <div  class="heading_Template_2">
-    <h2><span>Profile</span></h2>
+<section class="section_Template_1 summary">
+<div  class="heading_Template_1">
+<h2 style="color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;"><span>Profile</span></h2>
   </div>
-  <p class="about_Template_2">${escapeHtml(data.summary)}</p>
+  <p class="about_Template_1">${escapeHtml(data.summary)}</p>
 </section>
 `
       : ''}
@@ -2440,55 +3046,93 @@ ${(
       data.personal.website ||
       data.personal.linkedin
     ) ? `
-<div class="side-section_Template_2">
-  <div class="section-title_Template_2">
-    ${ICONS.contact} Contact
+<div class="side-section_Template_1">
+  <div class="section-title_Template_1" style="color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;"> Contact
   </div>
-  <ul class="contact-list_Template_2">
+  <ul class="contact-list_Template_1">
 
     ${data.personal.phone
-      ? `<li>${icon(ICONS.phone)}${escapeHtml(data.personal.phone)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.phone_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.email
-      ? `<li>${icon(ICONS.email)}${escapeHtml(data.personal.email)}</li>`
-      : ''}
+${data.personal.email
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.email_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.email)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.location
-      ? `<li>${icon(ICONS.location)}${escapeHtml(data.personal.location)}</li>`
-      : ''}
+${data.personal.location
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.location_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.location)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.website
-      ? `<li>${icon(ICONS.website)}${escapeHtml(data.personal.website)}</li>`
-      : ''}
+${data.personal.website
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.website_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.website)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.linkedin
-      ? `<li>${icon(ICONS.linkedin)}${escapeHtml(data.personal.linkedin)}</li>`
-      : ''}
+${data.personal.linkedin
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.dob
-      ? `<li>${icon(ICONS.calendar)}${escapeHtml(data.personal.dob)}</li>`
-      : ''}
-    ${data.personal.gender
-      ? `<li>${icon(ICONS.user)}${escapeHtml(data.personal.gender)}</li>`
-      : ''}
+${data.personal.dob
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
+     </li>`
+  : ''}
+
+${data.personal.gender
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.user_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.race
-      ? `<li>${icon(ICONS.group)}${escapeHtml(data.personal.race)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.group_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.race)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.religion
-      ? `<li>${icon(ICONS.faith)}${escapeHtml(data.personal.religion)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.faith_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.maritalStatus
-      ? `<li>${icon(ICONS.heart)}${escapeHtml(data.personal.maritalStatus)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.heart_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.driversLicence
-      ? `<li>${icon(ICONS.car)}${escapeHtml(data.personal.driversLicence)}</li>`
-      : ''}
-
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.car_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
+     </li>`
+  : ''}
   </ul>
 </div>
 ` : ''}
@@ -2496,213 +3140,482 @@ ${data.personal.driversLicence
 
     </aside>
 <main class="content_Template_1" style="
-  display:flex;
-  flex-direction:column;
-  flex-grow:1;
-  background:#fff;
-  color:#0f172a;
-  font-size:10.5pt;
-  line-height:17px;
+padding:36px 42px;
+background:white;
+box-sizing:border-box;
+overflow:visible;
 ">
 
+
 ${hasExperience() ? `
-<div class="heading_Template_2 overflow" style="margin-bottom: 5px; margin-top: 5px;">
-  <h2><span>Professional Experience</span></h2>
-</div>
-` : ``}
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:14px;
+">
+Experience
+</h2>
 
 ${data.experience.map(exp => `
-  <!-- EXPERIENCE ITEM -->
-  <div class="overflow" style="margin-top:1rem;font-weight:bold; display:flex; justify-content:space-between;">
-    <p style="font-weight:800">${escapeHtml(exp.campany)}</p>
-    ${[exp.start, exp.end].some(d => d && d.trim())
-          ? `<i style="font-weight:400;font-size:13px;">${[exp.start, exp.end]
-            .filter(d => d && d.trim())
-            .join(' – ')}</i>`
-          : ''
-        }
-  </div>
 
-  <p class="overflow" style="margin:0;font-weight:600;color:rgb(59,57,57); margin-bottom: 5px;">
-    ${escapeHtml(exp.role)}
-  </p>
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-  ${exp.bullets && exp.bullets.length
-          ? `
-    ${exp.bullets.map(b => `
-     <li class="overflow ${b?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-    ${escapeHtml(b)}
-        </li>
-          `).join('')}
-      `
-          : ''
-        }
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
+${escapeHtml(exp.campany)}
+</div>
+
+${exp.bullets?.length ? `
+
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
+${escapeHtml(b)}
+</li>
 `).join('')}
-                ${hasEducation() && `
-        <div class="heading_Template_2 overflow" id="h2-edu" style="margin-bottom:5px; margin-top:30px;">
-          <h2>
-            <span>EDUCATION</span>
-          </h2>
-        </div>
-`}
+` : ''}
 
-        <!-- EDUCATION ITEM -->
-        ${data.education.map(edu => `
-              <div class="overflow" style="margin-top:1rem;;font-weight:bold; display: flex; justify-content: space-between;">
-              <p style="font-weight: 800">${escapeHtml(edu.degree)}</p>
-              <i style="margin:0; float: right; font-weight:400; font-size: 13px; list-style-type: none;">${escapeHtml(edu.year || '')}</i>
-            </div>
-            <p class="overflow" style="margin:0; font-weight: 600; margin-bottom:5px; color: rgb(59, 57, 57);">${escapeHtml(edu.school)}</p>
-              <li class="overflow" style="display:flex;white-space:pre-wrap;">
-              </li>
+`).join('')}
 
-              <li class="overflow ${edu.discription?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-             ${escapeHtml(edu.discription)}
-             </li>
-              `).join('')}
+` : ''}
 
-              <section class="section_Template_1 overflow">
-        ${hasSkills() ? `
-       <div class="heading_Template_1">
-       <h2>
-        ${ICONS.skill}
-         <span>Skills</span>
-         </h2>
-         <div class="rule"></div>
-         </div>
-         ` : ""}
 
-        <ul class="skills-list_Template_1 overflow">
-         ${data.skills
-      .filter(skill => skill.name?.trim())
-      .map(skill => `
-        <li>
-          ${escapeHtml(skill.name)}
-          ${skill.level ? renderLanguageLevel(skill.level) : ""}
-        </li>
-        `).join('')}
-          </ul>
-        </section>
-                          <section class="section_Template_1 overflow">
-                ${hasLanguage() ? `
-            <div class="heading_Template_1">
-            <h2>
-            ${ICONS.language}
-            <span>Languages</span>
-           </h2>
-            <div class="rule"></div>
-           </div>
-            ` : ""}
+${hasEducation() ? `
 
-      <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
-        ${data.languages
-      .filter(lang => lang.name?.trim())
-      .map(lang => `
-        <li class="language-item_Template_1">
-         <span class="language-name_Template_1">
-          ${escapeHtml(lang.name)}
-         </span>
-       ${renderLanguageLevel(lang.level)}
-        </li>
-      `).join('')}
-      </ul>
-    </section>
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:14px;
+margin-top: 28px;
+">
+Education
+</h2>
 
-              ${hasInterest() && `
-          <section class="section_Template_1 overflow">
-           <div class="heading_Template_1">
-            <h2>
-            ${ICONS.interests}
-           <span>Interests</span>
-           </h2>
-          <div class="rule"></div>
-          </div>
-        `}
+${data.education.map(edu => `
 
-          <ul class="skills-list_Template_1 interests-list_Template_1">
-         ${data.interests
-      .filter(i => i && i.trim() !== '')
-      .map(i => `
-            <li class="interest-item_Template_2">
-              ${escapeHtml(i)}
-            </li>
-          `).join('')}
-         </ul>
-        </section>
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-          
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
+
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
+`).join('')}
+` : ''}
+
+
+${hasSkills() ? `
+<section style="margin-bottom: 26px;
+    margin-top: 28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:12px;
+">
+Skills
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px 16px;
+">
+
+${data.skills.map(skill => {
+
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[skill.level] || 3
+        const totalDots = 5
+
+        return `
+
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:13px;
+">
+
+<span>${escapeHtml(skill.name)}</span>
+
+<div style="display:flex;gap:4px">
+
+${Array.from({ length: totalDots }).map((_, i) => `
+<span style="
+width:8px;
+height:8px;
+border-radius:50%;
+display:inline-block;
+background:${i < level ? accentColor : '#e5e7eb'};
+"></span>
+`).join('')}
+
+</div>
+
+</div>
+
+`
+      }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasLanguage() ? `
+<section style="margin-bottom: 26px;
+    margin-top: 28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Languages
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px 16px;
+font-size:13px;
+">
+
+${data.languages.map(l => {
+
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[l.level?.toLowerCase()] || 3
+        const totalDots = 5
+
+        return `
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+
+<span>${escapeHtml(l.name)}</span>
+
+<div style="display:flex;gap:4px">
+
+${Array.from({ length: totalDots }).map((_, i) => `
+<span style="
+width:8px;
+height:8px;
+border-radius:50%;
+display:inline-block;
+background:${i < level ? accentColor : '#e5e7eb'};
+"></span>
+`).join('')}
+
+</div>
+
+</div>
+
+`
+      }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasInterest() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:12px;
+">
+Interests
+</h2>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+">
+
+${data.interests
+        .filter(i => i?.trim())
+        .map(i => `
+
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+padding:6px 10px;
+font-size:12px;
+border-radius:20px;
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+">
+
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2"
+stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 21s-6-4.35-9-8.5A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9 7.5C18 16.65 12 21 12 21z"/>
+</svg>
+
+${escapeHtml(i)}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
 ${hasReferences() ? `
-<section class="section_Template_2 overflow">
-          <div class="heading_Template_2" style="margin-top:30px">
-          <h2><span>References</span></h2>
-          </div>
-` : ``}
+<section class="overflow" style="margin-bottom:26px ; margin-top:28px;">
 
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:14px;
+">
+References
+</h2>
 
+<div style="
+display:grid;
+grid-template-columns:1fr;
+gap:16px;
+">
 
-          ${data.references.map(ref => `
-         <div class="ref-card-wrapper">
-          <div class="ref-card_Template_2">
+${data.references.map(ref => `
+<div style="
+border:1px solid #e5e7eb;
+border-radius:6px;
+padding:14px;
+background:#fafafa;
+">
 
-        ${ref.name ? `<h4>${escapeHtml(ref.name)}</h4>` : ''}
+<strong style="
+font-size:14px;
+color:#111827;
+display:block;
+margin-bottom:4px;
+">
+${escapeHtml(ref.name)}
+</strong>
 
-         ${(ref.campany || ref.position) ? `
-         <p class="ref-line">
-          ${ICONS.campany}
-          ${[
-            ref.campany
-              ? `<strong>${escapeHtml(ref.campany)}</strong>`
-              : '',
-            ref.position
-              ? escapeHtml(ref.position)
-              : ''
-          ].filter(Boolean).join(' / ')}
-        </p>
-      ` : ''}
+<div style="
+font-size:13px;
+color:#374151;
+margin-bottom:8px;
+">
+${escapeHtml(ref.campany || '')}
+</div>
 
-      ${ref.phone ? `
-        <p class="ref-line">
-          ${ICONS.phone}
-          ${escapeHtml(ref.phone)}
-        </p>
-      ` : ''}
+${ref.phone ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+margin-bottom:4px;
+">
 
-      ${ref.email ? `
-        <p class="ref-line">
-          ${ICONS.email}
-          ${escapeHtml(ref.email)}
-        </p>
-      ` : ''}
-          </div>
-        </div>
-        `).join('')}
-      </section>
-        </main>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M22 16.92v3a2 2 0 0 1-2.18 2 
+19.79 19.79 0 0 1-8.63-3.07 
+19.5 19.5 0 0 1-6-6 
+19.79 19.79 0 0 1-3.07-8.67 
+A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 
+12.84 12.84 0 0 0 .7 2.81 
+2 2 0 0 1-.45 2.11L8.09 9.91
+a16 16 0 0 0 6 6l1.27-1.27
+a2 2 0 0 1 2.11-.45
+12.84 12.84 0 0 0 2.81.7
+A2 2 0 0 1 22 16.92z"/>
+</svg>
+
+${escapeHtml(ref.phone)}
+
+</div>
+` : ''}
+
+${ref.email ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4 4h16v16H4z"/>
+<polyline points="22,6 12,13 2,6"/>
+</svg>
+
+${escapeHtml(ref.email)}
+
+</div>
+` : ''}
+
+</div>
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+</main>
   </div>
   `;
 }
 
 function renderGoldenExecutiveII() {
-  const p = photoHtml();
-  injectGoldSlateTemplateStylesII()
+   const p = photoHtml();
+    /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
   return `
-  <div class="resume_Template_1">
-    <aside class="sidebar_Template_2">
-      <div class="photo-wrap_Template_2">${p}</div>
+  <div class="resume_Template_1" style="display:flex;">
+    <aside class="sidebar_Template_1" style='background:${asideGradient}'>
+      <div class="photo-wrap_Template_1">${p}</div>
 
-      <div style="margin-top:35px;text-align:center">
-        <div class="name_Template_2">${escapeHtml(data.personal.fullName || '')}</div>
-        <div class="role_Template_2">${escapeHtml(data.personal.title || '')}</div>
+      <div style="margin-top:85px;text-align:center">
+        <div class="name_Template_1">${escapeHtml(data.personal.fullName || '')}</div>
+        <div class="role_Template_1">${escapeHtml(data.personal.title || '')}</div>
       </div>
 
       ${data.summary && data.summary.trim()
       ? `
-<section class="section_Template_2 summary">
-  <div  class="heading_Template_2">
-    <h2><span>Profile</span></h2>
+<section class="section_Template_1 summary">
+<div  class="heading_Template_1">
+<h2 style="color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;"><span>Profile</span></h2>
   </div>
-  <p class="about_Template_2">${escapeHtml(data.summary)}</p>
+  <p class="about_Template_1">${escapeHtml(data.summary)}</p>
 </section>
 `
       : ''}
@@ -2714,55 +3627,93 @@ ${(
       data.personal.website ||
       data.personal.linkedin
     ) ? `
-<div class="side-section_Template_2">
-  <div class="section-title_Template_2">
-    ${ICONS.contact} Contact
+<div class="side-section_Template_1">
+  <div class="section-title_Template_1" style="color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;"> Contact
   </div>
-  <ul class="contact-list_Template_2">
+  <ul class="contact-list_Template_1">
 
-    ${data.personal.phone
-      ? `<li>${icon(ICONS.phone)}${escapeHtml(data.personal.phone)}</li>`
-      : ''}
+   ${data.personal.phone
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.phone_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.email
-      ? `<li>${icon(ICONS.email)}${escapeHtml(data.personal.email)}</li>`
-      : ''}
+${data.personal.email
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.email_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.email)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.location
-      ? `<li>${icon(ICONS.location)}${escapeHtml(data.personal.location)}</li>`
-      : ''}
+${data.personal.location
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.location_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.location)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.website
-      ? `<li>${icon(ICONS.website)}${escapeHtml(data.personal.website)}</li>`
-      : ''}
+${data.personal.website
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.website_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.website)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.linkedin
-      ? `<li>${icon(ICONS.linkedin)}${escapeHtml(data.personal.linkedin)}</li>`
-      : ''}
+${data.personal.linkedin
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.dob
-      ? `<li>${icon(ICONS.calendar)}${escapeHtml(data.personal.dob)}</li>`
-      : ''}
-    ${data.personal.gender
-      ? `<li>${icon(ICONS.user)}${escapeHtml(data.personal.gender)}</li>`
-      : ''}
+${data.personal.dob
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
+     </li>`
+  : ''}
+
+${data.personal.gender
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.user_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.race
-      ? `<li>${icon(ICONS.group)}${escapeHtml(data.personal.race)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.group_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.race)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.religion
-      ? `<li>${icon(ICONS.faith)}${escapeHtml(data.personal.religion)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.faith_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.maritalStatus
-      ? `<li>${icon(ICONS.heart)}${escapeHtml(data.personal.maritalStatus)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.heart_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.driversLicence
-      ? `<li>${icon(ICONS.car)}${escapeHtml(data.personal.driversLicence)}</li>`
-      : ''}
-
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.car_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
+     </li>`
+  : ''}
   </ul>
 </div>
 ` : ''}
@@ -2770,213 +3721,476 @@ ${data.personal.driversLicence
 
     </aside>
 <main class="content_Template_1" style="
-  display:flex;
-  flex-direction:column;
-  flex-grow:1;
-  background:#fff;
-  color:#0f172a;
-  font-size:10.5pt;
-  line-height:17px;
+padding:36px 42px;
+background:white;
+box-sizing:border-box;
+overflow:visible;
 ">
 
+
 ${hasExperience() ? `
-<div class="heading_Template_2 overflow" style="margin-bottom: 5px; margin-top: 5px;">
-  <h2><span>Professional Experience</span></h2>
-</div>
-` : ``}
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:14px;
+">
+Experience
+</h2>
 
 ${data.experience.map(exp => `
-  <!-- EXPERIENCE ITEM -->
-  <div class="overflow" style="margin-top:1rem;font-weight:bold; display:flex; justify-content:space-between;">
-    <p style="font-weight:800">${escapeHtml(exp.campany)}</p>
-    ${[exp.start, exp.end].some(d => d && d.trim())
-          ? `<i style="font-weight:400;font-size:13px;">${[exp.start, exp.end]
-            .filter(d => d && d.trim())
-            .join(' – ')}</i>`
-          : ''
-        }
-  </div>
 
-  <p class="overflow" style="margin:0;font-weight:600;color:rgb(59,57,57); margin-bottom: 5px;">
-    ${escapeHtml(exp.role)}
-  </p>
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-  ${exp.bullets && exp.bullets.length
-          ? `
-    ${exp.bullets.map(b => `
-     <li class="overflow ${b?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-    ${escapeHtml(b)}
-        </li>
-          `).join('')}
-      `
-          : ''
-        }
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
+${escapeHtml(exp.campany)}
+</div>
+
+${exp.bullets?.length ? `
+
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
+${escapeHtml(b)}
+</li>
 `).join('')}
-                ${hasEducation() && `
-        <div class="heading_Template_2 overflow" id="h2-edu" style="margin-bottom:5px; margin-top:30px;">
-          <h2>
-            <span>EDUCATION</span>
-          </h2>
-        </div>
-`}
+` : ''}
 
-        <!-- EDUCATION ITEM -->
-        ${data.education.map(edu => `
-              <div class="overflow" style="margin-top:1rem;;font-weight:bold; display: flex; justify-content: space-between;">
-              <p style="font-weight: 800">${escapeHtml(edu.degree)}</p>
-              <i style="margin:0; float: right; font-weight:400; font-size: 13px; list-style-type: none;">${escapeHtml(edu.year || '')}</i>
-            </div>
-            <p class="overflow" style="margin:0; font-weight: 600; margin-bottom:5px; color: rgb(59, 57, 57);">${escapeHtml(edu.school)}</p>
-              <li class="overflow" style="display:flex;white-space:pre-wrap;">
-              </li>
+`).join('')}
 
-              <li class="overflow ${edu.discription?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-             ${escapeHtml(edu.discription)}
-             </li>
-              `).join('')}
+` : ''}
 
-              <section class="section_Template_1 overflow">
-        ${hasSkills() ? `
-       <div class="heading_Template_1">
-       <h2>
-        ${ICONS.skill}
-         <span>Skills</span>
-         </h2>
-         <div class="rule"></div>
-         </div>
-         ` : ""}
 
-        <ul class="skills-list_Template_1 overflow">
-         ${data.skills
-      .filter(skill => skill.name?.trim())
-      .map(skill => `
-        <li>
-          ${escapeHtml(skill.name)}
-          ${skill.level ? renderLanguageLevel(skill.level) : ""}
-        </li>
-        `).join('')}
-          </ul>
-        </section>
-                          <section class="section_Template_1 overflow">
-                ${hasLanguage() ? `
-            <div class="heading_Template_1">
-            <h2>
-            ${ICONS.language}
-            <span>Languages</span>
-           </h2>
-            <div class="rule"></div>
-           </div>
-            ` : ""}
+${hasEducation() ? `
 
-      <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
-        ${data.languages
-      .filter(lang => lang.name?.trim())
-      .map(lang => `
-        <li class="language-item_Template_1">
-         <span class="language-name_Template_1">
-          ${escapeHtml(lang.name)}
-         </span>
-       ${renderLanguageLevel(lang.level)}
-        </li>
-      `).join('')}
-      </ul>
-    </section>
-              
-              ${hasInterest() && `
-          <section class="section_Template_1 overflow">
-           <div class="heading_Template_1">
-            <h2>
-            ${ICONS.interests}
-           <span>Interests</span>
-           </h2>
-          <div class="rule"></div>
-          </div>
-        `}
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:14px;
+margin-top: 28px;
+">
+Education
+</h2>
 
-          <ul class="skills-list_Template_1 interests-list_Template_1">
-         ${data.interests
-      .filter(i => i && i.trim() !== '')
-      .map(i => `
-            <li class="interest-item_Template_2">
-              ${escapeHtml(i)}
-            </li>
-          `).join('')}
-         </ul>
-        </section>
+${data.education.map(edu => `
 
-          
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
+
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
+`).join('')}
+` : ''}
+
+
+${hasSkills() ? `
+<section style="margin-bottom: 26px;
+    margin-top: 28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:12px;
+">
+Skills
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px 16px;
+">
+
+${data.skills.map(skill => {
+
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[skill.level] || 3
+        const totalDots = 5
+
+        return `
+
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:13px;
+">
+
+<span>${escapeHtml(skill.name)}</span>
+
+<div style="display:flex;gap:4px">
+
+${Array.from({ length: totalDots }).map((_, i) => `
+<span style="
+width:8px;
+height:8px;
+border-radius:50%;
+display:inline-block;
+background:${i < level ? accentColor : '#e5e7eb'};
+"></span>
+`).join('')}
+
+</div>
+
+</div>
+
+`
+      }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasLanguage() ? `
+<section style="margin-bottom: 26px;
+    margin-top: 28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Languages
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px 16px;
+font-size:13px;
+">
+
+${data.languages.map(l => {
+
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[l.level?.toLowerCase()] || 3
+        const totalDots = 5
+
+        return `
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+
+<span>${escapeHtml(l.name)}</span>
+
+<div style="display:flex;gap:4px">
+
+${Array.from({ length: totalDots }).map((_, i) => `
+<span style="
+width:8px;
+height:8px;
+border-radius:50%;
+display:inline-block;
+background:${i < level ? accentColor : '#e5e7eb'};
+"></span>
+`).join('')}
+
+</div>
+
+</div>
+
+`
+      }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasInterest() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:12px;
+">
+Interests
+</h2>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+">
+
+${data.interests
+        .filter(i => i?.trim())
+        .map(i => `
+
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+padding:6px 10px;
+font-size:12px;
+border-radius:20px;
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+">
+
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2"
+stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 21s-6-4.35-9-8.5A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9 7.5C18 16.65 12 21 12 21z"/>
+</svg>
+
+${escapeHtml(i)}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
 ${hasReferences() ? `
-<section class="section_Template_2 overflow">
-          <div class="heading_Template_2" style="margin-top:30px">
-          <h2><span>References</span></h2>
-          </div>
-` : ``}
+<section class="overflow" style="margin-bottom:26px ; margin-top:28px;">
 
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:white;
+background: #c8a24d;
+border-radius: 50px;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 6px;
+margin-bottom:14px;
+">
+References
+</h2>
 
+<div style="
+display:grid;
+grid-template-columns:1fr;
+gap:16px;
+">
 
-          ${data.references.map(ref => `
-         <div class="ref-card-wrapper">
-          <div class="ref-card_Template_2">
+${data.references.map(ref => `
+<div style="
+border:1px solid #e5e7eb;
+border-radius:6px;
+padding:14px;
+background:#fafafa;
+">
 
-        ${ref.name ? `<h4>${escapeHtml(ref.name)}</h4>` : ''}
+<strong style="
+font-size:14px;
+color:#111827;
+display:block;
+margin-bottom:4px;
+">
+${escapeHtml(ref.name)}
+</strong>
 
-         ${(ref.campany || ref.position) ? `
-         <p class="ref-line">
-          ${ICONS.campany}
-          ${[
-            ref.campany
-              ? `<strong>${escapeHtml(ref.campany)}</strong>`
-              : '',
-            ref.position
-              ? escapeHtml(ref.position)
-              : ''
-          ].filter(Boolean).join(' / ')}
-        </p>
-      ` : ''}
+<div style="
+font-size:13px;
+color:#374151;
+margin-bottom:8px;
+">
+${escapeHtml(ref.campany || '')}
+</div>
 
-      ${ref.phone ? `
-        <p class="ref-line">
-          ${ICONS.phone}
-          ${escapeHtml(ref.phone)}
-        </p>
-      ` : ''}
+${ref.phone ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+margin-bottom:4px;
+">
 
-      ${ref.email ? `
-        <p class="ref-line">
-          ${ICONS.email}
-          ${escapeHtml(ref.email)}
-        </p>
-      ` : ''}
-          </div>
-        </div>
-        `).join('')}
-      </section>
-        </main>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M22 16.92v3a2 2 0 0 1-2.18 2 
+19.79 19.79 0 0 1-8.63-3.07 
+19.5 19.5 0 0 1-6-6 
+19.79 19.79 0 0 1-3.07-8.67 
+A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 
+12.84 12.84 0 0 0 .7 2.81 
+2 2 0 0 1-.45 2.11L8.09 9.91
+a16 16 0 0 0 6 6l1.27-1.27
+a2 2 0 0 1 2.11-.45
+12.84 12.84 0 0 0 2.81.7
+A2 2 0 0 1 22 16.92z"/>
+</svg>
+
+${escapeHtml(ref.phone)}
+
+</div>
+` : ''}
+
+${ref.email ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4 4h16v16H4z"/>
+<polyline points="22,6 12,13 2,6"/>
+</svg>
+
+${escapeHtml(ref.email)}
+
+</div>
+` : ''}
+
+</div>
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+</main>
   </div>
   `;
 }
 
 function renderPinkCorporate() {
-  const p = photoHtml();
-  injectPinkCorporateTemplateStyles()
+   const p = photoHtml();
+    /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
   return `
-  <div class="resume_Template_1">
-    <aside class="sidebar_Template_3">
-      <div class="photo-wrap_Template_3">${p}</div>
+  <div class="resume_Template_1" style="display:flex;">
+    <aside class="sidebar_Template_1" style='background:${asideGradient}'>
+      <div class="photo-wrap_Template_1">${p}</div>
 
-      <div style="margin-top:35px;text-align:center">
-        <div class="name_Template_3">${escapeHtml(data.personal.fullName || '')}</div>
-        <div class="role_Template_3">${escapeHtml(data.personal.title || '')}</div>
+      <div style="margin-top:85px;text-align:center">
+        <div class="name_Template_1">${escapeHtml(data.personal.fullName || '')}</div>
+        <div class="role_Template_1">${escapeHtml(data.personal.title || '')}</div>
       </div>
 
       ${data.summary && data.summary.trim()
       ? `
-<section class="section_Template_3 summary">
-  <div  class="heading_Template_3">
-    <h2><span>Profile</span></h2>
+<section class="section_Template_1 summary">
+  <div  class="heading_Template_1">
+    <h2>${ICONS.profile}<span>Profile</span></h2>
   </div>
-  <p class="about_Template_3">${escapeHtml(data.summary)}</p>
+  <p class="about_Template_1">${escapeHtml(data.summary)}</p>
 </section>
 `
       : ''}
@@ -2988,55 +4202,88 @@ ${(
       data.personal.website ||
       data.personal.linkedin
     ) ? `
-<div class="side-section_Template_3">
-  <div class="section-title_Template_3">
-    ${ICONS.contact_w} Contact
+<div class="side-section_Template_1">
+  <div class="section-title_Template_1">
+    ${ICONS.contact} Contact
   </div>
-  <ul class="contact-list_Template_3">
+  <ul class="contact-list_Template_1">
 
-    ${data.personal.phone
-      ? `<li>${icon(ICONS.phone_w)}${escapeHtml(data.personal.phone)}</li>`
-      : ''}
+  ${data.personal.phone
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.phone_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.email
-      ? `<li>${icon(ICONS.email_w)}${escapeHtml(data.personal.email)}</li>`
-      : ''}
+${data.personal.email
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.email_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.email)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.location
-      ? `<li>${icon(ICONS.location_w)}${escapeHtml(data.personal.location)}</li>`
-      : ''}
+${data.personal.location
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.location_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.location)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.website
-      ? `<li>${icon(ICONS.website_w)}${escapeHtml(data.personal.website)}</li>`
-      : ''}
+${data.personal.website
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.website_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.website)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.linkedin
-      ? `<li>${icon(ICONS.linkedin_w)}${escapeHtml(data.personal.linkedin)}</li>`
-      : ''}
+${data.personal.linkedin
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.dob
-      ? `<li>${icon(ICONS.calendar_w)}${escapeHtml(data.personal.dob)}</li>`
-      : ''}
-    ${data.personal.gender
-      ? `<li>${icon(ICONS.user_w)}${escapeHtml(data.personal.gender)}</li>`
-      : ''}
+${data.personal.dob
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
+     </li>`
+  : ''}
+
+${data.personal.gender
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.user_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.race
-      ? `<li>${icon(ICONS.group_w)}${escapeHtml(data.personal.race)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.group_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.race)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.religion
-      ? `<li>${icon(ICONS.faith_w)}${escapeHtml(data.personal.religion)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.faith_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.maritalStatus
-      ? `<li>${icon(ICONS.heart_w)}${escapeHtml(data.personal.maritalStatus)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.heart_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.driversLicence
-      ? `<li>${icon(ICONS.car_w)}${escapeHtml(data.personal.driversLicence)}</li>`
-      : ''}
-
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.car_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
+     </li>`
+  : ''}
   </ul>
 </div>
 ` : ''}
@@ -3044,215 +4291,447 @@ ${data.personal.driversLicence
 
     </aside>
 <main class="content_Template_1" style="
-  display:flex;
-  flex-direction:column;
-  flex-grow:1;
-  background:#fff;
-  color:#0f172a;
-  font-size:10.5pt;
-  line-height:17px;
+padding:36px 42px;
+background:white;
+box-sizing:border-box;
+overflow:visible;
 ">
 
+
 ${hasExperience() ? `
-<div class="heading_Template_3 overflow" style="margin-bottom: 5px; margin-top: 5px;">
-  <h2>${ICONS.experience}<span>Professional Experience</span></h2>
-</div>
-` : ``}
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+Experience
+</h2>
 
 ${data.experience.map(exp => `
-  <!-- EXPERIENCE ITEM -->
-  <div class="overflow" style="margin-top:1rem;font-weight:bold; display:flex; justify-content:space-between;">
-    <p style="font-weight:800">${escapeHtml(exp.campany)}</p>
-    ${[exp.start, exp.end].some(d => d && d.trim())
-          ? `<i style="font-weight:400;font-size:13px;">${[exp.start, exp.end]
-            .filter(d => d && d.trim())
-            .join(' – ')}</i>`
-          : ''
-        }
-  </div>
 
-  <p class="overflow" style="margin:0;font-weight:600;color:rgb(59,57,57); margin-bottom: 5px;">
-    ${escapeHtml(exp.role)}
-  </p>
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-  ${exp.bullets && exp.bullets.length
-          ? `
-    ${exp.bullets.map(b => `
-     <li class="overflow ${b?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-    ${escapeHtml(b)}
-        </li>
-          `).join('')}
-      `
-          : ''
-        }
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
+${escapeHtml(exp.campany)}
+</div>
+
+${exp.bullets?.length ? `
+
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
+${escapeHtml(b)}
+</li>
+`).join('')}
+` : ''}
+
 `).join('')}
 
-        ${hasEducation() && `
-<!-- EDUCATION HEADING -->
-<div class="heading_Template_3 overflow" id="h2-edu" style="margin-bottom:5px; margin-top:30px;">
-  <h2>
-    ${ICONS.education}<span>EDUCATION</span>
-  </h2>
+` : ''}
+
+
+${hasEducation() ? `
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+margin-top: 28px;
+">
+Education
+</h2>
+
+${data.education.map(edu => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
+</span>
+
 </div>
-`}
 
-        <!-- EDUCATION ITEM -->
-        ${data.education.map(edu => `
-              <div class="overflow" style="margin-top:1rem;;font-weight:bold; display: flex; justify-content: space-between;">
-              <p style="font-weight: 800">${escapeHtml(edu.degree)}</p>
-              <i style="margin:0; float: right; font-weight:400; font-size: 13px; list-style-type: none;">${escapeHtml(edu.year || '')}</i>
-            </div>
-            <p class="overflow" style="margin:0; font-weight: 600; margin-bottom:5px; color: rgb(59, 57, 57);">${escapeHtml(edu.school)}</p>
-              <li class="overflow" style="display:flex;white-space:pre-wrap;">
-              </li>
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
 
-              <li class="overflow ${edu.discription?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-             ${escapeHtml(edu.discription)}
-             </li>
-              `).join('')}
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
+`).join('')}
+` : ''}
 
-              <section class="section_Template_1 overflow">
-        ${hasSkills() ? `
-       <div class="heading_Template_1">
-       <h2>
-        ${ICONS.skill}
-         <span>Skills</span>
-         </h2>
-         <div class="rule"></div>
-         </div>
-         ` : ""}
+${hasSkills() ? `
+<section style="margin-bottom: 26px;
+    margin-top: 28px;">
 
-        <ul class="skills-list_Template_1 overflow">
-         ${data.skills
-      .filter(skill => skill.name?.trim())
-      .map(skill => `
-        <li>
-          ${escapeHtml(skill.name)}
-          ${skill.level ? renderLanguageLevel(skill.level) : ""}
-        </li>
-        `).join('')}
-          </ul>
-        </section>
-              
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Skills
+</h2>
 
-          
-            <section class="section_Template_1 overflow">
-            ${hasLanguage() ? `
-            <div class="heading_Template_1">
-            <h2>
-            ${ICONS.language}
-            <span>Languages</span>
-           </h2>
-            <div class="rule"></div>
-           </div>
-            ` : ""}
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px 16px;
+">
 
-           <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
-          ${data.languages
-      .filter(lang => lang.name?.trim())
-      .map(lang => `
-         <li class="language-item_Template_1">
-         <span class="language-name_Template_1">
-          ${escapeHtml(lang.name)}
-         </span>
-          ${renderLanguageLevel(lang.level)}
-         </li>
-        `).join('')}
-         </ul>
-       </section>
+${data.skills.map(skill => {
 
-              ${hasInterest() && `
-          <section class="section_Template_1 overflow">
-           <div class="heading_Template_1">
-            <h2>
-            ${ICONS.interests}
-           <span>Interests</span>
-           </h2>
-          <div class="rule"></div>
-          </div>
-        `}
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[skill.level] || 3
+        const totalDots = 5
 
-          <ul class="skills-list_Template_1 interests-list_Template_1">
-         ${data.interests
-      .filter(i => i && i.trim() !== '')
-      .map(i => `
-            <li class="interest-item_Template_2">
-              ${escapeHtml(i)}
-            </li>
-          `).join('')}
-         </ul>
-        </section>
+        return `
 
-            <section class="section_Template_3 overflow">
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:13px;
+">
+
+<span>${escapeHtml(skill.name)}</span>
+
+<div style="display:flex;gap:4px">
+
+${Array.from({ length: totalDots }).map((_, i) => `
+<span style="
+width:8px;
+height:8px;
+border-radius:50%;
+display:inline-block;
+background:${i < level ? accentColor : '#e5e7eb'};
+"></span>
+`).join('')}
+
+</div>
+
+</div>
+
+`
+      }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasLanguage() ? `
+<section style="margin-bottom: 26px;
+    margin-top: 28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Languages
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px 16px;
+font-size:13px;
+">
+
+${data.languages.map(l => {
+
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[l.level?.toLowerCase()] || 3
+        const totalDots = 5
+
+        return `
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+
+<span>${escapeHtml(l.name)}</span>
+
+<div style="display:flex;gap:4px">
+
+${Array.from({ length: totalDots }).map((_, i) => `
+<span style="
+width:8px;
+height:8px;
+border-radius:50%;
+display:inline-block;
+background:${i < level ? accentColor : '#e5e7eb'};
+"></span>
+`).join('')}
+</div>
+</div>
+`
+      }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasInterest() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Interests
+</h2>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+">
+
+${data.interests
+        .filter(i => i?.trim())
+        .map(i => `
+
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+padding:6px 10px;
+font-size:12px;
+border-radius:20px;
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+">
+
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2"
+stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 21s-6-4.35-9-8.5A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9 7.5C18 16.65 12 21 12 21z"/>
+</svg>
+
+${escapeHtml(i)}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
 
 ${hasReferences() ? `
-<div class="heading_Template_3" style="margin-top:30px">
-  <h2><span>References</span></h2>
+<section class="overflow" style="margin-bottom:26px ; margin-top:28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+References
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr;
+gap:16px;
+">
+
+${data.references.map(ref => `
+<div style="
+border:1px solid #e5e7eb;
+border-radius:6px;
+padding:14px;
+background:#fafafa;
+">
+
+<strong style="
+font-size:14px;
+color:#111827;
+display:block;
+margin-bottom:4px;
+">
+${escapeHtml(ref.name)}
+</strong>
+
+<div style="
+font-size:13px;
+color:#374151;
+margin-bottom:8px;
+">
+${escapeHtml(ref.campany || '')}
 </div>
-` : ``}
-          ${data.references.map(ref => `
-         <div class="ref-card-wrapper">
-          <div class="ref-card_Template_1">
 
-        ${ref.name ? `<h4>${escapeHtml(ref.name)}</h4>` : ''}
+${ref.phone ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+margin-bottom:4px;
+">
 
-         ${(ref.campany || ref.position) ? `
-         <p class="ref-line">
-          ${ICONS.campany}
-          ${[
-            ref.campany
-              ? `<strong>${escapeHtml(ref.campany)}</strong>`
-              : '',
-            ref.position
-              ? escapeHtml(ref.position)
-              : ''
-          ].filter(Boolean).join(' / ')}
-        </p>
-      ` : ''}
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M22 16.92v3a2 2 0 0 1-2.18 2 
+19.79 19.79 0 0 1-8.63-3.07 
+19.5 19.5 0 0 1-6-6 
+19.79 19.79 0 0 1-3.07-8.67 
+A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 
+12.84 12.84 0 0 0 .7 2.81 
+2 2 0 0 1-.45 2.11L8.09 9.91
+a16 16 0 0 0 6 6l1.27-1.27
+a2 2 0 0 1 2.11-.45
+12.84 12.84 0 0 0 2.81.7
+A2 2 0 0 1 22 16.92z"/>
+</svg>
 
-      ${ref.phone ? `
-        <p class="ref-line">
-          ${ICONS.phone}
-          ${escapeHtml(ref.phone)}
-        </p>
-      ` : ''}
+${escapeHtml(ref.phone)}
 
-      ${ref.email ? `
-        <p class="ref-line">
-          ${ICONS.email}
-          ${escapeHtml(ref.email)}
-        </p>
-      ` : ''}
-          </div>
-        </div>
-        `).join('')}
-      </section>
-        </main>
+</div>
+` : ''}
+
+${ref.email ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4 4h16v16H4z"/>
+<polyline points="22,6 12,13 2,6"/>
+</svg>
+
+${escapeHtml(ref.email)}
+
+</div>
+` : ''}
+
+</div>
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+</main>
   </div>
   `;
 }
 
 function renderPinkCorporateII() {
   const p = photoHtml();
-  injectPinkCorporateTemplateStylesII()
+    /* GET SAVED GRADIENT */
+  let asideGradient =
+    localStorage.getItem("resumeAsideGradient") ||
+    "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
 
+  /* EXTRACT ACCENT COLOR */
+  let accentColor = "#2563eb";
+  const colors = asideGradient.match(/#[0-9a-fA-F]{6}/g);
+
+  if (colors && colors.length) {
+    accentColor = colors[Math.floor(colors.length / 2)];
+  }
   return `
-  <div class="resume_Template_1">
-    <aside class="sidebar_Template_3">
-      <div class="photo-wrap_Template_3">${p}</div>
+  <div class="resume_Template_1" style="display:flex;">
+    <aside class="sidebar_Template_1" style='background:${asideGradient}'>
+      <div class="photo-wrap_Template_1">${p}</div>
 
-      <div style="margin-top:35px;text-align:center">
-        <div class="name_Template_3">${escapeHtml(data.personal.fullName || '')}</div>
-        <div class="role_Template_3">${escapeHtml(data.personal.title || '')}</div>
+      <div style="margin-top:85px;text-align:center">
+        <div class="name_Template_1">${escapeHtml(data.personal.fullName || '')}</div>
+        <div class="role_Template_1">${escapeHtml(data.personal.title || '')}</div>
       </div>
 
       ${data.summary && data.summary.trim()
       ? `
-<section class="section_Template_3 summary">
-  <div  class="heading_Template_3">
-    <h2><span>Profile</span></h2>
+<section class="section_Template_1 summary">
+  <div  class="heading_Template_1">
+    <h2>${ICONS.profile}<span>Profile</span></h2>
   </div>
-  <p class="about_Template_3">${escapeHtml(data.summary)}</p>
+  <p class="about_Template_1">${escapeHtml(data.summary)}</p>
 </section>
 `
       : ''}
@@ -3264,247 +4743,506 @@ ${(
       data.personal.website ||
       data.personal.linkedin
     ) ? `
-<div class="side-section_Template_3">
-  <div class="section-title_Template_3">
-    ${ICONS.contact_w} Contact
+<div class="side-section_Template_1">
+  <div class="section-title_Template_1">
+    ${ICONS.contact} Contact
   </div>
-  <ul class="contact-list_Template_3">
+  <ul class="contact-list_Template_1">
 
-    ${data.personal.phone
-      ? `<li>${icon(ICONS.phone_w)}${escapeHtml(data.personal.phone)}</li>`
-      : ''}
+  ${data.personal.phone
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.phone_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.email
-      ? `<li>${icon(ICONS.email_w)}${escapeHtml(data.personal.email)}</li>`
-      : ''}
+${data.personal.email
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.email_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.email)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.location
-      ? `<li>${icon(ICONS.location_w)}${escapeHtml(data.personal.location)}</li>`
-      : ''}
+${data.personal.location
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.location_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.location)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.website
-      ? `<li>${icon(ICONS.website_w)}${escapeHtml(data.personal.website)}</li>`
-      : ''}
+${data.personal.website
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.website_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.website)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.linkedin
-      ? `<li>${icon(ICONS.linkedin_w)}${escapeHtml(data.personal.linkedin)}</li>`
-      : ''}
+${data.personal.linkedin
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
+     </li>`
+  : ''}
 
-    ${data.personal.dob
-      ? `<li>${icon(ICONS.calendar_w)}${escapeHtml(data.personal.dob)}</li>`
-      : ''}
-    ${data.personal.gender
-      ? `<li>${icon(ICONS.user_w)}${escapeHtml(data.personal.gender)}</li>`
-      : ''}
+${data.personal.dob
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
+     </li>`
+  : ''}
+
+${data.personal.gender
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.user_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.race
-      ? `<li>${icon(ICONS.group_w)}${escapeHtml(data.personal.race)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.group_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.race)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.religion
-      ? `<li>${icon(ICONS.faith_w)}${escapeHtml(data.personal.religion)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.faith_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.maritalStatus
-      ? `<li>${icon(ICONS.heart_w)}${escapeHtml(data.personal.maritalStatus)}</li>`
-      : ''}
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.heart_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
+     </li>`
+  : ''}
 
 ${data.personal.driversLicence
-      ? `<li>${icon(ICONS.car_w)}${escapeHtml(data.personal.driversLicence)}</li>`
-      : ''}
-
+  ? `<li class="contact-item">
+        <span class="contact-icon">${icon(ICONS.car_w)}</span>
+        <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
+     </li>`
+  : ''}
   </ul>
+
 </div>
 ` : ''}
 
 
     </aside>
 <main class="content_Template_1" style="
-  display:flex;
-  flex-direction:column;
-  flex-grow:1;
-  background:#fff;
-  color:#0f172a;
-  font-size:10.5pt;
-  line-height:17px;
+padding:36px 42px;
+background:white;
+box-sizing:border-box;
+overflow:visible;
 ">
 
+
 ${hasExperience() ? `
-<div class="heading_Template_3 overflow" style="margin-bottom: 5px; margin-top: 5px;">
-  <h2>${ICONS.experience}<span>Professional Experience</span></h2>
-</div>
-` : ``}
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+Experience
+</h2>
 
 ${data.experience.map(exp => `
-  <!-- EXPERIENCE ITEM -->
-  <div class="overflow" style="margin-top:1rem;font-weight:bold; display:flex; justify-content:space-between;">
-    <p style="font-weight:800">${escapeHtml(exp.campany)}</p>
-    ${[exp.start, exp.end].some(d => d && d.trim())
-          ? `<i style="font-weight:400;font-size:13px;">${[exp.start, exp.end]
-            .filter(d => d && d.trim())
-            .join(' – ')}</i>`
-          : ''
-        }
-  </div>
 
-  <p class="overflow" style="margin:0;font-weight:600;color:rgb(59,57,57); margin-bottom: 5px;">
-    ${escapeHtml(exp.role)}
-  </p>
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-  ${exp.bullets && exp.bullets.length
-          ? `
-    ${exp.bullets.map(b => `
-     <li class="overflow ${b?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-    ${escapeHtml(b)}
-        </li>
-          `).join('')}
-      `
-          : ''
-        }
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(exp.role)}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
+</span>
+
+</div>
+
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
+${escapeHtml(exp.campany)}
+</div>
+
+${exp.bullets?.length ? `
+
+${exp.bullets.map(b => `
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
+${escapeHtml(b)}
+</li>
+`).join('')}
+` : ''}
+
 `).join('')}
 
-        ${hasEducation() && `
-<!-- EDUCATION HEADING -->
-<div class="heading_Template_3 overflow" id="h2-edu" style="margin-bottom:5px; margin-top:30px;">
-  <h2>
-    ${ICONS.education}<span>EDUCATION</span>
-  </h2>
+` : ''}
+
+
+${hasEducation() ? `
+
+<h2 class="overflow" style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+margin-top: 28px;
+">
+Education
+</h2>
+
+${data.education.map(edu => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
+</strong>
+
+<span style="font-size:12px;color:#6b7280">
+${[
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
+</span>
+
 </div>
-`}
 
-        <!-- EDUCATION ITEM -->
-        ${data.education.map(edu => `
-              <div class="overflow" style="margin-top:1rem;;font-weight:bold; display: flex; justify-content: space-between;">
-              <p style="font-weight: 800">${escapeHtml(edu.degree)}</p>
-              <i style="margin:0; float: right; font-weight:400; font-size: 13px; list-style-type: none;">${escapeHtml(edu.year || '')}</i>
-            </div>
-            <p class="overflow" style="margin:0; font-weight: 600; margin-bottom:5px; color: rgb(59, 57, 57);">${escapeHtml(edu.school)}</p>
-              <li class="overflow" style="display:flex;white-space:pre-wrap;">
-              </li>
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
 
-              <li class="overflow ${edu.discription?.trim() ? 'li' : ''}" style="color:#475569; line-height: 1.3">
-             ${escapeHtml(edu.discription)}
-             </li>
-              `).join('')}
-
-
-        <section class="section_Template_1 overflow">
-        ${hasSkills() ? `
-       <div class="heading_Template_1">
-       <h2>
-        ${ICONS.skill}
-         <span>Skills</span>
-         </h2>
-         <div class="rule"></div>
-         </div>
-         ` : ""}
-
-        <ul class="skills-list_Template_1 overflow">
-         ${data.skills
-      .filter(skill => skill.name?.trim())
-      .map(skill => `
-        <li>
-          ${escapeHtml(skill.name)}
-          ${skill.level ? renderLanguageLevel(skill.level) : ""}
-        </li>
-        `).join('')}
-          </ul>
-        </section>
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
+`).join('')}
+` : ''}
 
 
+${hasSkills() ? `
+<section style="margin-bottom: 26px;
+    margin-top: 28px;">
 
-            <section class="section_Template_1 overflow">
-            ${hasLanguage() ? `
-            <div class="heading_Template_1">
-            <h2>
-            ${ICONS.language}
-            <span>Languages</span>
-           </h2>
-            <div class="rule"></div>
-           </div>
-            ` : ""}
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:#292524;
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Skills
+</h2>
 
-      <ul class="skills-list_Template_1 languages-list_Template_1 overflow">
-        ${data.languages
-      .filter(lang => lang.name?.trim())
-      .map(lang => `
-        <li class="language-item_Template_1">
-         <span class="language-name_Template_1">
-          ${escapeHtml(lang.name)}
-         </span>
-       ${renderLanguageLevel(lang.level)}
-        </li>
-      `).join('')}
-      </ul>
-    </section>
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px 16px;
+">
 
-              ${hasInterest() && `
-          <section class="section_Template_1 overflow">
-           <div class="heading_Template_1">
-            <h2>
-            ${ICONS.interests}
-           <span>Interests</span>
-           </h2>
-          <div class="rule"></div>
-          </div>
-        `}
+${data.skills.map(skill => {
 
-          <ul class="skills-list_Template_1 interests-list_Template_1">
-         ${data.interests
-      .filter(i => i && i.trim() !== '')
-      .map(i => `
-            <li class="interest-item_Template_2">
-              ${escapeHtml(i)}
-            </li>
-          `).join('')}
-         </ul>
-        </section>
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[skill.level] || 3
+        const totalDots = 5
 
-            <section class="section_Template_3 overflow">
+        return `
+
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:13px;
+">
+
+<span>${escapeHtml(skill.name)}</span>
+
+<div style="display:flex;gap:4px">
+
+${Array.from({ length: totalDots }).map((_, i) => `
+<span style="
+width:8px;
+height:8px;
+border-radius:50%;
+display:inline-block;
+background:${i < level ? accentColor : '#e5e7eb'};
+"></span>
+`).join('')}
+
+</div>
+
+</div>
+
+`
+      }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasLanguage() ? `
+<section style="margin-bottom: 26px;
+    margin-top: 28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:#292524;
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Languages
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px 16px;
+font-size:13px;
+">
+
+${data.languages.map(l => {
+
+        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+        const level = levelMap[l.level?.toLowerCase()] || 3
+        const totalDots = 5
+
+        return `
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+
+<span>${escapeHtml(l.name)}</span>
+
+<div style="display:flex;gap:4px">
+
+${Array.from({ length: totalDots }).map((_, i) => `
+<span style="
+width:8px;
+height:8px;
+border-radius:50%;
+display:inline-block;
+background:${i < level ? accentColor : '#e5e7eb'};
+"></span>
+`).join('')}
+
+</div>
+
+</div>
+
+`
+      }).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+${hasInterest() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:28px">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Interests
+</h2>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+">
+
+${data.interests
+        .filter(i => i?.trim())
+        .map(i => `
+
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+padding:6px 10px;
+font-size:12px;
+border-radius:20px;
+background:#f1f5f9;
+border:1px solid #e5e7eb;
+">
+
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2"
+stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 21s-6-4.35-9-8.5A5.5 5.5 0 0 1 12 5a5.5 5.5 0 0 1 9 7.5C18 16.65 12 21 12 21z"/>
+</svg>
+
+${escapeHtml(i)}
+
+</div>
+
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
 
 ${hasReferences() ? `
-<div class="heading_Template_3" style="margin-top:30px">
-  <h2><span>References</span></h2>
+<section class="overflow" style="margin-bottom:26px ; margin-top:28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:14px;
+">
+References
+</h2>
+
+<div style="
+display:grid;
+grid-template-columns:1fr;
+gap:16px;
+">
+
+${data.references.map(ref => `
+<div style="
+border:1px solid #e5e7eb;
+border-radius:6px;
+padding:14px;
+background:#fafafa;
+">
+
+<strong style="
+font-size:14px;
+color:#111827;
+display:block;
+margin-bottom:4px;
+">
+${escapeHtml(ref.name)}
+</strong>
+
+<div style="
+font-size:13px;
+color:#374151;
+margin-bottom:8px;
+">
+${escapeHtml(ref.campany || '')}
 </div>
-` : ``}
-          ${data.references.map(ref => `
-         <div class="ref-card-wrapper">
-          <div class="ref-card_Template_1">
 
-        ${ref.name ? `<h4>${escapeHtml(ref.name)}</h4>` : ''}
+${ref.phone ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+margin-bottom:4px;
+">
 
-         ${(ref.campany || ref.position) ? `
-         <p class="ref-line">
-          ${ICONS.campany}
-          ${[
-            ref.campany
-              ? `<strong>${escapeHtml(ref.campany)}</strong>`
-              : '',
-            ref.position
-              ? escapeHtml(ref.position)
-              : ''
-          ].filter(Boolean).join(' / ')}
-        </p>
-      ` : ''}
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M22 16.92v3a2 2 0 0 1-2.18 2 
+19.79 19.79 0 0 1-8.63-3.07 
+19.5 19.5 0 0 1-6-6 
+19.79 19.79 0 0 1-3.07-8.67 
+A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 
+12.84 12.84 0 0 0 .7 2.81 
+2 2 0 0 1-.45 2.11L8.09 9.91
+a16 16 0 0 0 6 6l1.27-1.27
+a2 2 0 0 1 2.11-.45
+12.84 12.84 0 0 0 2.81.7
+A2 2 0 0 1 22 16.92z"/>
+</svg>
 
-      ${ref.phone ? `
-        <p class="ref-line">
-          ${ICONS.phone}
-          ${escapeHtml(ref.phone)}
-        </p>
-      ` : ''}
+${escapeHtml(ref.phone)}
 
-      ${ref.email ? `
-        <p class="ref-line">
-          ${ICONS.email}
-          ${escapeHtml(ref.email)}
-        </p>
-      ` : ''}
-          </div>
-        </div>
-        `).join('')}
-      </section>
-        </main>
+</div>
+` : ''}
+
+${ref.email ? `
+<div style="
+display:flex;
+align-items:center;
+gap:6px;
+font-size:12px;
+color:#6b7280;
+">
+
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+stroke="${accentColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M4 4h16v16H4z"/>
+<polyline points="22,6 12,13 2,6"/>
+</svg>
+
+${escapeHtml(ref.email)}
+
+</div>
+` : ''}
+
+</div>
+`).join('')}
+
+</div>
+
+</section>
+` : ''}
+
+</main>
   </div>
   `;
 }
@@ -3534,7 +5272,7 @@ function ModernAtsPhoto() {
             position: relative;">
             <div class="header-grid" 
             style="display: grid;
-            grid-template-columns:1fr 1fr;
+            grid-template-columns: 1fr 2fr;
             align-items: center;">
             <div>
                     <div class="name"
@@ -4729,14 +6467,16 @@ ${escapeHtml(data.personal[f.key])}
 </div>
 
 <div style="
-margin-left:16px;
-width:100px;
-height:100px;
-flex-shrink:0;
-border-radius:50%;
-overflow:hidden;
+  margin-left:16px;
+  width:100px;
+  height:100px;
+  flex-shrink:0;
+  border-radius:50%; /* modern rounded corners */
+  overflow:hidden;
+  border: 3px solid #e4e3f1; /* stylish modern border color */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* subtle shadow for depth */
 ">
-${p}
+  ${p}
 </div>
 </div>
 </aside>
@@ -4955,8 +6695,6 @@ background:${i < level ? accentColor : '#e5e7eb'};
 
 </section>
 ` : ''}
-
-
 
 ${hasLanguage() ? `
 <section style="margin-bottom: 26px;
@@ -5201,7 +6939,7 @@ function renderATS() {
 
   return `
 
-<div class="resume_ats" style="
+<div class="resume_Template_1" style="
 font-family:'Inter', Arial, Helvetica, sans-serif;
 font-size:15px;
 line-height:1.75;
@@ -5215,7 +6953,7 @@ overflow:hidden;
 
 <!-- HEADER -->
 
-<header style="
+<aside style="
 margin-bottom:36px;
 padding-bottom:18px;
 border-bottom:3px solid ${accentColor};
@@ -5247,22 +6985,24 @@ color:#475569;
 ">
 
 ${data.personal.phone ? `${escapeHtml(data.personal.phone)} • ` : ''}
-${data.personal.email ? `${escapeHtml(data.personal.email)} • ` : ''}
-${data.personal.location ? `${escapeHtml(data.personal.location)} • ` : ''}
-${data.personal.website ? `${escapeHtml(data.personal.website)} • ` : ''}
-${data.personal.linkedin ? `${escapeHtml(data.personal.linkedin)}` : ''}
+${data.personal.email ? ` ${escapeHtml(data.personal.email)} • ` : ''}
+${data.personal.location ? ` ${escapeHtml(data.personal.location)} • ` : ''}
+${data.personal.website ? ` ${escapeHtml(data.personal.website)} • ` : ''}
+${data.personal.linkedin ? ` ${escapeHtml(data.personal.linkedin)} • ` : ''}
+${data.personal.dob ? `Date of birth: ${escapeHtml(data.personal.dob)} • ` : ''}
+${data.personal.race ? `Race: ${escapeHtml(data.personal.race)} • ` : ''}
+${data.personal.driversLicence ? `Drivers Licence: ${escapeHtml(data.personal.driversLicence)} • ` : ''}
+${data.personal.maritalStatus ? `Marital Status: ${escapeHtml(data.personal.maritalStatus)} • ` : ''}
+${data.personal.religion ? `Religion: ${escapeHtml(data.personal.religion)}` : ''}
 
 </p>
 
-</header>
+</aside>
 
-
+<main>
 ${data.summary && data.summary.trim() ? `
-
-<section style="margin-bottom:32px">
-
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:800;
 text-transform:uppercase;
 letter-spacing:1.5px;
@@ -5273,22 +7013,14 @@ margin-bottom:14px;
 ">
 Professional Summary
 </h2>
-
 <p style="color:#334155">
 ${escapeHtml(data.summary)}
 </p>
-
-</section>
-
 ` : ''}
 
-
 ${hasExperience() ? `
-
-<section style="margin-bottom:32px">
-
-<h2 style="
-font-size:13px;
+<h2 class="overflow" style="
+font-size:14px;
 font-weight:800;
 text-transform:uppercase;
 letter-spacing:1.5px;
@@ -5296,61 +7028,39 @@ color:#0f172a;
 padding-left:10px;
 border-left:4px solid ${accentColor};
 margin-bottom:16px;
+margin-top:32px;
 ">
 Professional Experience
 </h2>
-
 ${data.experience.map(exp => `
-
-<div style="margin-bottom:22px">
-
 <strong style="font-size:16px;font-weight:700">
 ${escapeHtml(exp.role)}
 </strong>
-
-<div style="font-size:13px;color:#475569;margin-top:4px;line-height:1.6">
-
+<div class="overflow" style="font-size:13px;color:#475569;margin-top:4px;line-height:1.6">
 <div>
 ${escapeHtml(exp.campany)}
 </div>
-
 ${[exp.start, exp.end].some(d => d && d.trim()) ? `
 <div style="margin-top:2px">
 ${[exp.start, exp.end].filter(d => d && d.trim()).join(' - ')}
 </div>
 ` : ''}
-
 </div>
-
 ${exp.bullets && exp.bullets.length ? `
-
-<ul style="margin-top:10px;padding-left:18px;line-height:1.7">
-
 ${exp.bullets.map(b => `
-<li style="margin-bottom:6px">
+<li class="overflow" style="margin-bottom:6px; padding-left:18px;">
 ${escapeHtml(b)}
 </li>
 `).join('')}
-
-</ul>
-
 ` : ''}
-
-</div>
-
 `).join('')}
-
-</section>
-
 ` : ''}
 
 
 ${hasEducation() ? `
-
-<section style="margin-bottom:32px">
-
-<h2 style="
-font-size:13px;
+<h2 class="overflow" style="
+margin-top:32px;
+font-size:14px;
 font-weight:800;
 text-transform:uppercase;
 letter-spacing:1.5px;
@@ -5361,40 +7071,37 @@ margin-bottom:16px;
 ">
 Education
 </h2>
-
 ${data.education.map(edu => `
-
-<div style="margin-bottom:20px">
-
+<div class="overflow">
 <strong style="font-size:16px">
 ${escapeHtml(edu.degree)}
 </strong>
-
 <div style="font-size:13px;color:#475569;margin-top:4px">
 ${escapeHtml(edu.school)}
 </div>
-
 ${edu.year ? `
 <div style="font-size:13px;color:#64748b;margin-top:2px">
 ${escapeHtml(edu.year)}
 </div>
-` : ''}
-
 </div>
-
+` : ''}
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
 `).join('')}
-
-</section>
-
 ` : ''}
 
 
 ${hasSkills() ? `
-
-<section style="margin-bottom:32px">
-
+<section class="overflow" style="margin-bottom:32px; margin-top:32px">
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:800;
 text-transform:uppercase;
 letter-spacing:1.5px;
@@ -5405,9 +7112,7 @@ margin-bottom:16px;
 ">
 Skills
 </h2>
-
 <ul style="padding-left:18px;line-height:1.7">
-
 ${data.skills
         .filter(skill => skill.name?.trim())
         .map(skill => `
@@ -5415,20 +7120,16 @@ ${data.skills
 ${escapeHtml(skill.name)}
 </li>
 `).join('')}
-
 </ul>
-
 </section>
 
 ` : ''}
 
 
 ${hasLanguage() ? `
-
-<section style="margin-bottom:32px">
-
+<section class="overflow" style="margin-bottom:32px">
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:800;
 text-transform:uppercase;
 letter-spacing:1.5px;
@@ -5439,9 +7140,7 @@ margin-bottom:16px;
 ">
 Languages
 </h2>
-
 <ul style="padding-left:18px;line-height:1.7">
-
 ${data.languages
         .filter(lang => lang.name?.trim())
         .map(lang => `
@@ -5450,20 +7149,15 @@ ${escapeHtml(lang.name)}
 ${lang.level ? ` — ${escapeHtml(lang.level)}` : ''}
 </li>
 `).join('')}
-
 </ul>
-
 </section>
-
 ` : ''}
 
 
 ${hasReferences() ? `
-
-<section>
-
+<section class="overflow">
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:800;
 text-transform:uppercase;
 letter-spacing:1.5px;
@@ -5474,32 +7168,22 @@ margin-bottom:16px;
 ">
 References
 </h2>
-
 ${data.references.map(ref => `
-
 <div style="margin-bottom:18px">
-
 <strong style="font-size:16px">
 ${escapeHtml(ref.name)}
 </strong>
-
 <div style="color:#475569;margin-top:3px">
 ${escapeHtml(ref.campany || '')}
 </div>
-
 ${ref.phone ? `<div style="margin-top:2px">${escapeHtml(ref.phone)}</div>` : ''}
 ${ref.email ? `<div style="margin-top:2px">${escapeHtml(ref.email)}</div>` : ''}
-
 </div>
-
 `).join('')}
-
 </section>
-
 ` : ''}
-
+</main>
 </div>
-
 `;
 }
 
@@ -5520,8 +7204,7 @@ function renderApexATS() {
   }
 
   return `
-
-<div class="resume_ats" style="
+<div class="resume_Template_1" style="
 font-family:'Segoe UI', Arial, Helvetica, sans-serif;
 font-size:14px;
 line-height:1.75;
@@ -5534,7 +7217,7 @@ padding:48px 50px;
 
 <!-- HEADER -->
 
-<header style="
+<aside style="
 margin-bottom:36px;
 padding-bottom:22px;
 border-bottom:3px solid ${accentColor};
@@ -5566,22 +7249,28 @@ line-height:1.8;
 ">
 
 ${data.personal.phone ? `${escapeHtml(data.personal.phone)} • ` : ''}
-${data.personal.email ? `${escapeHtml(data.personal.email)} • ` : ''}
-${data.personal.location ? `${escapeHtml(data.personal.location)} • ` : ''}
-${data.personal.website ? `${escapeHtml(data.personal.website)} • ` : ''}
-${data.personal.linkedin ? `${escapeHtml(data.personal.linkedin)}` : ''}
+${data.personal.email ? ` ${escapeHtml(data.personal.email)} • ` : ''}
+${data.personal.location ? ` ${escapeHtml(data.personal.location)} • ` : ''}
+${data.personal.website ? ` ${escapeHtml(data.personal.website)} • ` : ''}
+${data.personal.linkedin ? ` ${escapeHtml(data.personal.linkedin)} • ` : ''}
+${data.personal.dob ? `Date of birth: ${escapeHtml(data.personal.dob)} • ` : ''}
+${data.personal.race ? `Race: ${escapeHtml(data.personal.race)} • ` : ''}
+${data.personal.driversLicence ? `Drivers Licence: ${escapeHtml(data.personal.driversLicence)} • ` : ''}
+${data.personal.maritalStatus ? `Marital Status: ${escapeHtml(data.personal.maritalStatus)} • ` : ''}
+${data.personal.religion ? `Religion: ${escapeHtml(data.personal.religion)}` : ''}
+
 
 </p>
 
-</header>
+</aside>
 
-
+<main style="padding-top:0">
 ${data.summary && data.summary.trim() ? `
 
-<section style="margin-bottom:34px">
+<section style="margin-bottom:34px;">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -5604,109 +7293,127 @@ ${escapeHtml(data.summary)}
 
 ${hasExperience() ? `
 
-<section style="margin-bottom:34px">
-
-<h2 style="
-font-size:13px;
+<h2 class="overflow" style="
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
-letter-spacing:1.4px;
+letter-spacing:1.2px;
 color:${accentColor};
 border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:16px;
+padding-bottom:6px;
+margin-bottom:14px;
 ">
-Professional Experience
+Experience
 </h2>
 
 ${data.experience.map(exp => `
 
-<div style="margin-bottom:24px">
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-<div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:4px">
-
-<strong style="font-size:15px;color:#0f172a;font-weight:700">
+<strong style="font-size:15px;color:#111827">
 ${escapeHtml(exp.role)}
 </strong>
 
-<span style="font-size:13px;color:#6b7280">
-${[exp.start, exp.end].filter(d => d && d.trim()).join(' - ')}
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
 </span>
 
 </div>
 
-<div style="font-size:13px;color:#374151;font-weight:600;margin-bottom:6px">
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
 ${escapeHtml(exp.campany)}
 </div>
 
-${exp.bullets && exp.bullets.length ? `
-
-<ul style="padding-left:18px;margin-top:6px;line-height:1.7">
+${exp.bullets?.length ? `
 
 ${exp.bullets.map(b => `
-<li style="margin-bottom:6px">
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
 ${escapeHtml(b)}
 </li>
 `).join('')}
-
-</ul>
-
 ` : ''}
-
-</div>
 
 `).join('')}
 
-</section>
-
 ` : ''}
-
 
 ${hasEducation() ? `
 
-<section style="margin-bottom:34px">
-
-<h2 style="
-font-size:13px;
+<h2 class="overflow" style="
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
-letter-spacing:1.4px;
+letter-spacing:1.2px;
 color:${accentColor};
 border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:16px;
+padding-bottom:6px;
+margin-bottom:14px;
+margin-top: 28px;
 ">
 Education
 </h2>
 
 ${data.education.map(edu => `
 
-<div style="margin-bottom:18px">
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-<strong style="font-size:15px;color:#0f172a">
-${escapeHtml(edu.degree)}
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
 </strong>
 
-<div style="font-size:13px;color:#374151;margin-top:4px">
-${escapeHtml(edu.school)}
-${edu.year ? ` • ${escapeHtml(edu.year)}` : ''}
-</div>
+<span style="font-size:12px;color:#6b7280">
+${[
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
+</span>
 
 </div>
 
-`).join('')}
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
 
-</section>
-
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
 ` : ''}
-
+`).join('')}
+` : ''}
 
 ${hasSkills() ? `
 
-<section style="margin-bottom:34px">
+<section class="overflow" style="margin-bottom:34px; margin-top:34px">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -5770,7 +7477,6 @@ ${escapeHtml(skill.name)}
 </span>
 
 <span style="color:#6b7280">
-${level}%
 </span>
 
 </div>
@@ -5806,10 +7512,10 @@ border-radius:4px;
 
 ${hasLanguage() ? `
 
-<section style="margin-bottom:34px">
+<section class="overflow" style="margin-bottom:34px">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -5877,7 +7583,6 @@ ${escapeHtml(lang.name)}
 </span>
 
 <span style="color:#6b7280">
-${escapeHtml(lang.level || '')}
 </span>
 
 </div>
@@ -5910,12 +7615,13 @@ border-radius:4px;
 
 ` : ''}
 
+
 ${hasInterest() ? `
 
-<section style="margin-bottom:34px">
+<section class="overflow" style="margin-bottom:34px">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -5948,25 +7654,17 @@ font-size:13px;
 ">
 
 ${escapeHtml(i)}
-
 </div>
-
 `).join('')}
-
 </div>
-
 </section>
-
 ` : ''}
 
-
-
 ${hasReferences() ? `
-
-<section>
+<section class="overflow">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -5994,13 +7692,11 @@ ${ref.phone ? `<div style="font-size:13px">${escapeHtml(ref.phone)}</div>` : ''}
 ${ref.email ? `<div style="font-size:13px">${escapeHtml(ref.email)}</div>` : ''}
 
 </div>
-
 `).join('')}
-
 </section>
-
 ` : ''}
 
+</main>
 </div>
 `;
 }
@@ -6022,8 +7718,7 @@ function renderVertexATS() {
   }
 
   return `
-
-<div class="resume_ats" style="
+<div class="resume_Template_1" style="
 font-family:'Segoe UI', Arial, Helvetica, sans-serif;
 font-size:14px;
 line-height:1.75;
@@ -6036,7 +7731,7 @@ padding:48px 50px;
 
 <!-- HEADER -->
 
-<header style="
+<aside style="
 margin-bottom:36px;
 padding-bottom:22px;
 border-bottom:3px solid ${accentColor};
@@ -6068,22 +7763,28 @@ line-height:1.8;
 ">
 
 ${data.personal.phone ? `${escapeHtml(data.personal.phone)} • ` : ''}
-${data.personal.email ? `${escapeHtml(data.personal.email)} • ` : ''}
-${data.personal.location ? `${escapeHtml(data.personal.location)} • ` : ''}
-${data.personal.website ? `${escapeHtml(data.personal.website)} • ` : ''}
-${data.personal.linkedin ? `${escapeHtml(data.personal.linkedin)}` : ''}
+${data.personal.email ? ` ${escapeHtml(data.personal.email)} • ` : ''}
+${data.personal.location ? ` ${escapeHtml(data.personal.location)} • ` : ''}
+${data.personal.website ? ` ${escapeHtml(data.personal.website)} • ` : ''}
+${data.personal.linkedin ? ` ${escapeHtml(data.personal.linkedin)} • ` : ''}
+${data.personal.dob ? `Date of birth: ${escapeHtml(data.personal.dob)} • ` : ''}
+${data.personal.race ? `Race: ${escapeHtml(data.personal.race)} • ` : ''}
+${data.personal.driversLicence ? `Drivers Licence: ${escapeHtml(data.personal.driversLicence)} • ` : ''}
+${data.personal.maritalStatus ? `Marital Status: ${escapeHtml(data.personal.maritalStatus)} • ` : ''}
+${data.personal.religion ? `Religion: ${escapeHtml(data.personal.religion)}` : ''}
+
 
 </p>
 
-</header>
+</aside>
 
-
+<main style="padding-top:0">
 ${data.summary && data.summary.trim() ? `
 
-<section style="margin-bottom:34px">
+<section style="margin-bottom:34px;">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -6106,108 +7807,127 @@ ${escapeHtml(data.summary)}
 
 ${hasExperience() ? `
 
-<section style="margin-bottom:34px">
-
-<h2 style="
-font-size:13px;
+<h2 class="overflow" style="
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
-letter-spacing:1.4px;
+letter-spacing:1.2px;
 color:${accentColor};
 border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:16px;
+padding-bottom:6px;
+margin-bottom:14px;
 ">
-Professional Experience
+Experience
 </h2>
 
 ${data.experience.map(exp => `
 
-<div style="margin-bottom:24px">
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-<div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:4px">
-
-<strong style="font-size:15px;color:#0f172a;font-weight:700">
+<strong style="font-size:15px;color:#111827">
 ${escapeHtml(exp.role)}
 </strong>
 
-<span style="font-size:13px;color:#6b7280">
-${[exp.start, exp.end].filter(d => d && d.trim()).join(' - ')}
+<span style="font-size:12px;color:#6b7280">
+${[exp.start, exp.end].filter(Boolean).join(' - ')}
 </span>
 
 </div>
 
-<div style="font-size:13px;color:#374151;font-weight:600;margin-bottom:6px">
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+margin-bottom: 8px;
+">
 ${escapeHtml(exp.campany)}
 </div>
 
-${exp.bullets && exp.bullets.length ? `
-
-<ul style="padding-left:18px;margin-top:6px;line-height:1.7">
+${exp.bullets?.length ? `
 
 ${exp.bullets.map(b => `
-<li style="margin-bottom:6px">
+<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
 ${escapeHtml(b)}
 </li>
 `).join('')}
-
-</ul>
-
 ` : ''}
-
-</div>
 
 `).join('')}
 
-</section>
-
 ` : ''}
-
 
 ${hasEducation() ? `
 
-<section style="margin-bottom:34px">
-
-<h2 style="
-font-size:13px;
+<h2 class="overflow" style="
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
-letter-spacing:1.4px;
+letter-spacing:1.2px;
 color:${accentColor};
 border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:16px;
+padding-bottom:6px;
+margin-bottom:14px;
+margin-top: 28px;
 ">
 Education
 </h2>
 
 ${data.education.map(edu => `
 
-<div style="margin-bottom:18px">
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
 
-<strong style="font-size:15px;color:#0f172a">
-${escapeHtml(edu.degree)}
+<strong style="font-size:15px;color:#111827">
+${escapeHtml(edu.degree || '')}
 </strong>
 
-<div style="font-size:13px;color:#374151;margin-top:4px">
-${escapeHtml(edu.school)}
-${edu.year ? ` • ${escapeHtml(edu.year)}` : ''}
-</div>
+<span style="font-size:12px;color:#6b7280">
+${[
+          edu.start,
+          edu.end,
+          edu.startYear,
+          edu.endYear,
+          edu.year
+        ].filter(Boolean).join(' - ')}
+</span>
 
 </div>
 
+<div class="overflow" style="
+font-size:13px;
+color:#374151;
+font-weight:600;
+margin-top:3px;
+">
+${escapeHtml(edu.school || '')}
+</div>
+
+${edu.discription?.trim() ? `
+<div class="overflow" style="
+color:#4b5563;
+margin-top:6px;
+line-height:1.5;margin-left: 18px;
+">
+${escapeHtml(edu.discription)}
+</div>
+` : ''}
 `).join('')}
-
-</section>
-
 ` : ''}
 
 ${hasSkills() ? `
 
-<section style="margin-bottom:34px">
+<section class="overflow" style="margin-bottom:34px; margin-top: 28px;">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -6240,9 +7960,7 @@ ${data.skills
           let level = skill.level;
 
           if (typeof level === "string") {
-
             const normalized = level.trim().toLowerCase();
-
             if (levelMap[normalized] !== undefined) {
               level = levelMap[normalized];
             }
@@ -6252,15 +7970,10 @@ ${data.skills
             else {
               level = 70;
             }
-
           }
-
           if (typeof level !== "number") level = 70;
-
           level = Math.max(0, Math.min(level, 100));
-
           const dots = Math.ceil(level / 20);
-
           return `
 
 <div style="
@@ -6303,10 +8016,10 @@ background:${i <= dots ? accentColor : '#e5e7eb'};
 
 ${hasLanguage() ? `
 
-<section style="margin-bottom:34px">
+<section class="overflow" style="margin-bottom:34px">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -6371,17 +8084,11 @@ background:${i <= dots ? accentColor : '#e5e7eb'};
 "></div>
 
 `).join('')}
-
 </div>
-
 </div>
-
 `;
-
         }).join('')}
-
 </div>
-
 </section>
 
 ` : ''}
@@ -6389,10 +8096,10 @@ background:${i <= dots ? accentColor : '#e5e7eb'};
 
 ${hasInterest() ? `
 
-<section style="margin-bottom:34px">
+<section class="overflow" style="margin-bottom:34px">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -6425,25 +8132,17 @@ font-size:13px;
 ">
 
 ${escapeHtml(i)}
-
 </div>
-
 `).join('')}
-
 </div>
-
 </section>
-
 ` : ''}
 
-
-
 ${hasReferences() ? `
-
-<section>
+<section class="overflow">
 
 <h2 style="
-font-size:13px;
+font-size:14px;
 font-weight:700;
 text-transform:uppercase;
 letter-spacing:1.4px;
@@ -6471,22 +8170,14 @@ ${ref.phone ? `<div style="font-size:13px">${escapeHtml(ref.phone)}</div>` : ''}
 ${ref.email ? `<div style="font-size:13px">${escapeHtml(ref.email)}</div>` : ''}
 
 </div>
-
 `).join('')}
-
 </section>
-
 ` : ''}
 
+</main>
 </div>
 `;
 }
-
-
-
-
-
-
 
 // --- Sanitizer ----------------------------------------------------------
 function escapeHtml(str) {
@@ -6578,6 +8269,7 @@ previewBtns.forEach(btn => {
     document.querySelector('.closeBtn').classList.add('open');
     setTimeout(() => {
       previewOverlay.classList.add('opacity');
+      syncPaletteButton()
     }, 450); // MUST match CSS transition
 
     // hide UI
@@ -6597,23 +8289,28 @@ editResumeBtn.addEventListener('click', () => {
     zoomControl = false;
     scalePreview()
   }, 450); // MUST match CSS transition
+  setTimeout(() => {
+    syncPaletteButton()
+  }, 500);
 });
 
 function closePreview() {
   previewOverlay.classList.remove("opacity");
   document.querySelector('.download-btn-premium').classList.remove('open');
+  
 
   setTimeout(() => {
     previewOverlay.classList.remove("open");
     document.querySelector(".closeBtn")?.classList.remove("open");
     zoomControl = false;
     scalePreview();
+    syncPaletteButton()
   }, 450); // must match CSS transition
 }
 
 // Close when clicking outside the resume content
 previewOverlay.addEventListener("click", (e) => {
-  if (!previewContent.contains(e.target)) {
+  if (e.target === previewOverlay) {
     closePreview();
   }
 });
@@ -6624,18 +8321,6 @@ document.addEventListener("keydown", (e) => {
     closePreview();
   }
 });
-
-
-// show overlay when no PDF
-function showpreviewOverlay() {
-  previewOverlay.classList.remove("hidden");
-  previewOverlay.classList.add('opacity')
-}
-
-function hidepreviewOverlay() {
-  previewOverlay.classList.add("hidden");
-  previewOverlay.classList.add('opacity')
-}
 
 
 profilePicPreview.forEach(profile => profile.addEventListener('click', () => {
@@ -6704,6 +8389,7 @@ function scalePreview() {
   scale = Math.max(scale, 0.4);
 
   preview.style.transform = `scale(${scale})`;
+  renderPreview()
 }
 
 window.addEventListener('resize', scalePreview);
@@ -7111,6 +8797,7 @@ if (match && match.length >= 2) {
 
 
 function applyAsideGradient() {
+  const selectedTemplate = data.template;
 
   const asides =
     document.querySelectorAll("#resumePreview aside");
@@ -7118,9 +8805,11 @@ function applyAsideGradient() {
   asides.forEach(a => {
 
     a.style.transition = "background 0.4s ease";
-
-    a.style.background = asideGradient;
-
+    if(selectedTemplate === "vertexats" || selectedTemplate === "apexats" || selectedTemplate === "ats" ) {
+      a.style.background = "white";
+    }else {
+      a.style.background = asideGradient;
+    }
   });
 
 }
@@ -7167,31 +8856,35 @@ toggleColor.addEventListener("click", () => {
 
 function syncPaletteButton(){
 
-  const palette = document.getElementById("paletteToggle");
-  const download = document.getElementById("pdfBtn");
+  const palette = document.getElementById("colorPalette");
+  const download = document.querySelector('.pdfBtn');
+
+  if(window.innerWidth <= 420){
+    download.style.width = "130px";
+    download.style.padding = "5px";
+    document.querySelector('.fa-pdfBtn').style.fontSize = '14px';
+  }
 
   if(window.innerWidth <= 900){
-    
+
     if(download.classList.contains("open")){
-      palette.style.display = "block";
+      palette.classList.add("show");
     }else{
-      palette.style.display = "none";
+      palette.classList.remove("show");
     }
 
   }else{
-    palette.style.display = "block";
+    palette.classList.add("show");
   }
 
+  setTimeout(() => {
+    renderPreview();
+  }, 50);
 }
-
-window.addEventListener("resize", syncPaletteButton);
-syncPaletteButton();
 
 /* APPLY AFTER TEMPLATE RENDER */
 
 setTimeout(applyAsideGradient, 200);
-
-
 document.addEventListener("DOMContentLoaded", updateCounter);
 renderPreview();
 save();

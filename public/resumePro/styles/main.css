@@ -29,7 +29,7 @@
       background-color: hsl(40 22% 94% / var(--tw-bg-opacity));
       color: var(--text);
       position: fixed;
-      font-family: Rubik, Arial, Helvetica, "Noto Sans Devanagari", "Noto Sans CJK SC Thin", "Noto Sans SC", "Noto Sans Hebrew", "Noto Sans Bengali", sans-serif;
+      font-family: 'Outfit', sans-serif;
       left: 0;
       right: 0;
       bottom: 0;
@@ -66,10 +66,6 @@
       font-size: 16px
     }
 
-    .edu-card:hover {
-      border-color: #22c55e;
-      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.15);
-    }
 
     .edu-sep {
       color: #22c55e;
@@ -203,22 +199,9 @@
       box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
     }
 
+
     body .download-btn-premium.open {
       display: block;
-    }
-
-    /* SMALL SCREENS */
-    @media (max-width:900px) {
-
-      /* hide palette button */
-      #paletteToggle {
-        display: none;
-      }
-
-      /* when download button is visible */
-      body .download-btn-premium.open + #paletteToggle {
-        display: block;
-      }
     }
 
 
@@ -275,8 +258,10 @@
       position: relative;
     }
 
-    .profile-section:hover {
-      box-shadow: 0 1px 10px rgba(0, 0, 0, 0.08);
+    .profile-section .right {
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     /* Title */
@@ -580,7 +565,7 @@
       width: 100%;
       overflow-y: auto;
       height: 100vh;
-      font-family: "Inter", sans-serif;
+      font-family: 'Outfit', sans-serif;
       scrollbar-width: none;
       background: inherit;
       box-shadow: none;
@@ -904,7 +889,7 @@
     .profilePhotoUpload {
       position: fixed;
       inset: 0;
-      z-index: 9998;
+      z-index: 99998;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1047,14 +1032,14 @@
     }
 
     .mainLogo {
-      width: 135px;
-      height: 45px;
+      width: 110px;
+      height: 35px;
     }
 
     @media (max-width:500px) {
       .mainLogo {
-        width: 115px;
-        height: 40px;
+        width: 100px;
+        height: 35px;
       }
     }
 
@@ -1500,11 +1485,6 @@
       transition: all 0.3s ease;
     }
 
-    .exp-card:hover {
-      border-color: #6366f1;
-      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
-    }
-
     .exp-sep {
       color: #6366f1;
       margin: 0 6px;
@@ -1544,10 +1524,6 @@
       transition: all 0.3s ease;
     }
 
-    .edu-card:hover {
-      border-color: #22c55e;
-      box-shadow: 0 8px 25px rgba(34, 197, 94, 0.15);
-    }
 
     /* HEADER */
     .edu-header {
@@ -1598,10 +1574,6 @@
       gap: 8px;
     }
 
-    .exp-card:hover {
-      border-color: #3b82f6;
-      box-shadow: 0 10px 30px rgba(59, 130, 246, 0.15);
-    }
 
     /* HEADER */
     .exp-header {
@@ -1736,11 +1708,6 @@
       margin-bottom: 22px;
       overflow: hidden;
       transition: 0.3s ease;
-    }
-
-    .ref-card:hover {
-      border-color: #a855f7;
-      box-shadow: 0 10px 30px rgba(168, 85, 247, 0.15);
     }
 
     /* HEADER */
@@ -1948,10 +1915,6 @@
       }
     }
 
-    .edu-card:hover {
-      border-color: #22c55e;
-      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.15);
-    }
 
     .edu-sep {
       color: #22c55e;
@@ -2033,7 +1996,7 @@
       background: white;
       backdrop-filter: blur(8px);
       display: none;
-      z-index: 9999;
+      z-index: 99999;
       overflow: auto;
     }
 
@@ -2488,134 +2451,186 @@
       transform: translateY(0);
     }
 
-    #pdfOverlay {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(15, 23, 42, .55);
-      backdrop-filter: blur(14px);
-      z-index: 9999;
+    #pdfOverlay{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(15,23,42,.55);
+  backdrop-filter:blur(14px);
+  z-index:9999;
 
-      opacity: 0;
-      pointer-events: none;
-      transition: .35s;
-    }
+  opacity:0;
+  pointer-events:none;
+  transition:.35s;
+}
 
-    #pdfOverlay.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
+#pdfOverlay.active{
+  opacity:1;
+  pointer-events:auto;
+}
 
-    .pdfCard {
-      width: 360px;
-      padding: 42px;
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 30px 90px rgba(0, 0, 0, .35);
-      text-align: center;
-      animation: cardIn .4s ease;
-    }
+.pdfCard{
+  width:360px;
+  padding:42px;
+  background:white;
+  border-radius:20px;
+  box-shadow:0 30px 90px rgba(0,0,0,.35);
+  text-align:center;
+  animation:cardIn .4s ease;
+}
 
-    /* gradient spinner */
+/* gradient spinner */
 
-    .spinnerGradient {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      margin: auto;
-      margin-bottom: 20px;
+.spinnerGradient{
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  margin:auto;
+  margin-bottom:20px;
 
-      background:
-        conic-gradient(#2563eb,
-          #4f46e5,
-          #7c3aed,
-          #2563eb);
+  background:
+  conic-gradient(
+  #2563eb,
+  #4f46e5,
+  #7c3aed,
+  #2563eb
+  );
 
-      -webkit-mask:
-        radial-gradient(farthest-side, transparent calc(100% - 6px), black 0);
+  -webkit-mask:
+  radial-gradient(farthest-side,transparent calc(100% - 6px),black 0);
 
-      animation: spin 1s linear infinite;
-    }
+  animation:spin 1s linear infinite;
+}
 
-    .progressBar {
-      width: 100%;
-      height: 6px;
-      background: #e5e7eb;
-      border-radius: 6px;
-      margin: 16px 0 18px;
-      overflow: hidden;
-    }
+.progressBar{
+  width:100%;
+  height:6px;
+  background:#e5e7eb;
+  border-radius:6px;
+  margin:16px 0 18px;
+  overflow:hidden;
+}
 
-    .progressFill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #2563eb, #7c3aed);
-      transition: width .4s ease;
-    }
+.progressFill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#2563eb,#7c3aed);
+  transition:width .4s ease;
+}
 
-    .pdfSteps {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      text-align: left;
-    }
+.pdfSteps{
+  list-style:none;
+  padding:0;
+  margin:0;
+  text-align:left;
+}
 
-    .pdfSteps li {
-      font-size: 14px;
-      padding: 7px 0;
-      color: #9ca3af;
-      transition: .3s;
-    }
+.pdfSteps li{
+  font-size:14px;
+  padding:7px 0;
+  color:#9ca3af;
+  transition:.3s;
+}
 
-    .pdfSteps li.active {
-      color: #2563eb;
-      font-weight: 600;
-    }
+.pdfSteps li.active{
+  color:#2563eb;
+  font-weight:600;
+}
 
-    .pdfSteps li.done {
-      color: #10b981;
-    }
+.pdfSteps li.done{
+  color:#10b981;
+}
 
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+@keyframes spin{
+  to{transform:rotate(360deg);}
+}
 
-    @keyframes cardIn {
-      from {
-        opacity: 0;
-        transform: scale(.9);
-      }
+@keyframes cardIn{
+  from{
+    opacity:0;
+    transform:scale(.9);
+  }
+  to{
+    opacity:1;
+    transform:scale(1);
+  }
+}
 
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
+.pdfSteps li{
+  font-size:14px;
+  padding:7px 0;
+  color:#9ca3af;
 
-    .pdfSteps li {
-      font-size: 14px;
-      padding: 7px 0;
-      color: #9ca3af;
+  opacity:0;
+  transform:translateY(6px);
+  transition:.35s;
+}
 
-      opacity: 0;
-      transform: translateY(6px);
-      transition: .35s;
-    }
+.pdfSteps li.show{
+  opacity:1;
+  transform:translateY(0);
+}
 
-    .pdfSteps li.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
+.pdfSteps li.active{
+  color:#2563eb;
+  font-weight:600;
+}
 
-    .pdfSteps li.active {
-      color: #2563eb;
-      font-weight: 600;
-    }
+.pdfSteps li.done{
+  color:#10b981;
+}
 
-    .pdfSteps li.done {
-      color: #10b981;
-    }
+@media (max-width:460px){
+
+  .section-block {
+    padding: 6px 8px;
+  }
+
+  .item {
+    padding: 8px;
+    margin-bottom: 5px;
+  }
+
+  .small-btn {
+    padding: 3px 8px;
+    font-size: 12px;
+  }
+
+  .section-header h4 {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .exp-header, .edu-header, .ref-header {
+    padding: 6px 8px;
+  }
+
+  .exp-title, .edu-title, .ref-title {
+    font-size: 12px;
+  }
+
+  .edu-grid, .exp-grid, .ref-grid {
+    gap: 10px;
+  }
+
+  .edu-card.active .edu-body, .exp-card.active .exp-body, .ref-card.active .ref-body {
+    padding: 10px;
+  }
+
+  input, textarea, .language-level {
+    font-size: 12px;
+    padding: 5px 6px;
+  }
+
+  .remove-btn {
+    padding: 8px 12px;
+    margin-top: -5px;
+    transform: scale(0.8);
+  }
+
+  .language-row {
+    grid-template-columns: 1fr 120px auto;
+  }
+}
