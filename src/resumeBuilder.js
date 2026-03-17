@@ -408,6 +408,8 @@ const refs = {
 
 };
 
+const pdfBtn = document.querySelectorAll('#pdfBtn');
+
 // --- Default data --------------------------------------------------------
 const DEFAULT = {
   personal: {
@@ -1480,6 +1482,13 @@ function bindButtons() {
     data.interests.unshift("");
     renderLists(); renderPreview(); save();
   });
+
+pdfBtn.forEach(btn => {
+  btn.addEventListener('click', () => {
+    downloadPDF(false);
+  });
+});
+
   refs.pdfBtn.addEventListener('click', () => downloadPDF(false));
   refs.pdfAtsBtn && refs.pdfAtsBtn.addEventListener('click', () => downloadPDF(true));
 }
@@ -2031,7 +2040,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -2089,7 +2098,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -2595,7 +2604,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -2653,7 +2662,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -3174,7 +3183,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -3236,7 +3245,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -3755,7 +3764,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -3817,7 +3826,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -4321,7 +4330,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -4379,7 +4388,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -4863,7 +4872,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -4921,7 +4930,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -5403,7 +5412,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -5461,7 +5470,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -5535,8 +5544,7 @@ ${data.skills
           const level = levelMap[skill.level] || 70;
 
           return `
-<div class="overflow">
-
+<div>
 <div style="
 display:flex;
 justify-content:space-between;
@@ -5965,7 +5973,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -6023,7 +6031,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -6097,7 +6105,7 @@ ${data.skills
           const level = levelMap[skill.level] || 70;
 
           return `
-<div class="overflow">
+<div>
 
 <div style="
 display:flex;
@@ -6536,7 +6544,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top: 10px;">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -6594,7 +6602,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top: 10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -6633,7 +6641,7 @@ ${escapeHtml(edu.discription)}
 
 
 ${hasSkills() ? `
-<section style="margin-bottom: 26px;
+<section class="overflow" style="margin-bottom: 26px;
     margin-top: 28px;">
 
 <h2 style="
@@ -6651,7 +6659,7 @@ Skills
 
 <div style="
 display:grid;
-grid-template-columns:1fr 1fr 1fr;
+grid-template-columns:1fr 1fr;
 gap:10px 16px;
 ">
 
@@ -7013,7 +7021,7 @@ margin-bottom:14px;
 ">
 Professional Summary
 </h2>
-<p style="color:#334155">
+<p style="color:#64748b;">
 ${escapeHtml(data.summary)}
 </p>
 ` : ''}
@@ -7033,7 +7041,7 @@ margin-top:32px;
 Professional Experience
 </h2>
 ${data.experience.map(exp => `
-<strong style="font-size:16px;font-weight:700">
+<strong style="font-size:16px;font-weight:700; margin-top:10px;">
 ${escapeHtml(exp.role)}
 </strong>
 <div class="overflow" style="font-size:13px;color:#475569;margin-top:4px;line-height:1.6">
@@ -7048,7 +7056,7 @@ ${[exp.start, exp.end].filter(d => d && d.trim()).join(' - ')}
 </div>
 ${exp.bullets && exp.bullets.length ? `
 ${exp.bullets.map(b => `
-<li class="overflow" style="margin-bottom:6px; padding-left:18px;">
+<li class="overflow" style="margin-bottom:6px; padding-left:18px; color:#64748b;">
 ${escapeHtml(b)}
 </li>
 `).join('')}
@@ -7073,7 +7081,7 @@ Education
 </h2>
 ${data.education.map(edu => `
 <div class="overflow">
-<strong style="font-size:16px">
+<strong style="font-size:16px; margin-top:10px">
 ${escapeHtml(edu.degree)}
 </strong>
 <div style="font-size:13px;color:#475569;margin-top:4px">
@@ -7087,7 +7095,7 @@ ${escapeHtml(edu.year)}
 ` : ''}
 ${edu.discription?.trim() ? `
 <div class="overflow" style="
-color:#4b5563;
+color:#64748b;
 margin-top:6px;
 line-height:1.5;margin-left: 18px;
 ">
@@ -7314,7 +7322,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -7371,7 +7379,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
@@ -7828,7 +7836,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(exp.role)}
 </strong>
 
@@ -7885,7 +7893,7 @@ justify-content:space-between;
 flex-wrap:wrap;
 ">
 
-<strong style="font-size:15px;color:#111827">
+<strong style="font-size:15px;color:#111827; margin-top:10px">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
