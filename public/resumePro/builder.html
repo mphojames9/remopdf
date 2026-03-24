@@ -22,7 +22,7 @@
   <header class="topbar">
     <div class="logo">
       <a href="./index.html"><img src="./assets/logo.png" alt="logo" class="mainLogo"></a>
-      
+
     </div>
 
     <div class="header-right">
@@ -303,13 +303,11 @@
 
 
   <main class="layout">
-
     <!-- LEFT PANEL -->
     <aside class="aside">
-
       <div class="section-block profile-section">
         <div class="editProfileBtn">
-          <i class="fa-solid fa-pen" id="editProfileBtn"></i>
+          <i class="fa-solid fa-pen-to-square" id="editProfileBtn"></i>
         </div>
         <div class="left">
           <h4 class="name" style="font-size: 1.2rem;"></h4>
@@ -389,181 +387,44 @@
       </div>
 
       <!-- SKILLS -->
-      <div class="section-block">
+      <div class="section-block" id="skillBlock">
         <div class="section-header">
           <h4><i class="fa-solid fa-toolbox"></i>Skills</h4>
           <button class="toggle-btn">
-            <i class="fa-solid fa-chevron-down"></i>
+            <i class="fa-solid fa-pen-to-square"></i>
           </button>
-        </div>
-
-        <div class="section-content" style="height:auto;">
-          <div class="section-inner">
-            <button class="small-btn" id="addSkillBtn">
-              <i class="fa-solid fa-plus"></i> Add Skill
-            </button>
-
-            <div id="skillsContainer"></div>
-          </div>
         </div>
       </div>
 
       <!-- Languages -->
-      <div class="section-block">
+      <div class="section-block" id="languagesBlock">
         <div class="section-header">
           <h4><i class="fa-solid fa-language"></i> Languages</h4>
           <button class="toggle-btn">
-            <i class="fa-solid fa-chevron-down"></i>
+            <i class="fa-solid fa-pen-to-square"></i>
           </button>
-        </div>
-
-        <div class="section-content" style="height:auto;">
-          <div class="section-inner">
-            <button class="small-btn" id="addLanguageBtn">
-              <i class="fa-solid fa-plus"></i> Add Language
-            </button>
-            <div id="languagesContainer"></div>
-          </div>
         </div>
       </div>
 
       <!-- INTERESTS -->
-      <div class="section-block">
+      <div class="section-block" id="interestBlock">
         <div class="section-header">
           <h4><i class="fa-solid fa-heart"></i> Interests</h4>
           <button class="toggle-btn">
-            <i class="fa-solid fa-chevron-down"></i>
+            <i class="fa-solid fa-pen-to-square"></i>
           </button>
-        </div>
-        <div class="section-content">
-          <div class="section-inner">
-            <button class="small-btn" id="addinterestBtn">
-              <i class="fa-solid fa-plus"></i> Add Entry
-            </button>
-            <div id="interestsContainer"></div>
-          </div>
         </div>
       </div>
 
       <!-- REFERENCES -->
-      <div class="section-block">
+      <div class="section-block" id="refSection">
         <div class="section-header">
           <h4><i class="fa-solid fa-user-check"></i> References</h4>
           <button class="toggle-btn">
-            <i class="fa-solid fa-chevron-down"></i>
+            <i class="fa-solid fa-pen-to-square"></i>
           </button>
         </div>
-        <div class="section-content">
-          <div class="section-inner">
-            <button class="small-btn" id="addrefBtn">
-              <i class="fa-solid fa-plus"></i> Add Entry
-            </button>
-            <div id="referencesContainer"></div>
-          </div>
-        </div>
       </div>
-
-      <div class="overlay-personalDetails hidden" id="editDetails-overay">
-        <div class="overlay-content">
-          <h2>Edit Personal Details</h2>
-          <div class="right">
-            <h4>Profile Picture</h4>
-            <div id="photoPreviewContainer" class="photo-preview">
-              <img src="./assets/profile.png" alt="" class="src">
-            </div>
-          </div>
-          <div class="section-block">
-            <h4>
-              <i class="fa-solid fa-user-pen"></i>
-              Summary
-            </h4>
-            <textarea id="summary" placeholder="Professional Summary" maxlength="250">
-</textarea>
-
-            <div id="summaryCounter">0 / 250</div>
-
-            <div class="section-header">
-              <h4><i class="fa-solid fa-id-card"></i>Personal Details</h4>
-            </div>
-            <div class="section-inner">
-              <div class="form-group">
-                <label>Full Name</label>
-                <input id="fullName" placeholder="Full Name">
-              </div>
-              <div class="form-group">
-                <label>Professional Title</label>
-                <input id="title" placeholder="Title">
-              </div>
-              <div class="form-group">
-                <label>Email</label>
-                <input id="email" placeholder="Email">
-              </div>
-              <div class="form-group">
-                <label>Phone</label>
-                <input id="phone" placeholder="Phone">
-              </div>
-              <div class="form-group">
-                <label>Location</label>
-                <input id="location" placeholder="Location">
-              </div>
-              <div class="form-group">
-                <label>Website</label>
-                <input id="website" placeholder="Website">
-              </div>
-              <div class="form-group">
-                <label>LinkedIn</label>
-                <input id="linkedin" placeholder="LinkedIn">
-              </div>
-              <div class="extra-section">
-
-                <button type="button" class="extra-toggle" aria-expanded="false">
-                  <span>Add more details</span>
-                  <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
-                    <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round" />
-                  </svg>
-                </button>
-
-                <div class="extra-content">
-                  <div class="extra-inner">
-
-                    <div class="form-group">
-                      <label>Date of Birth</label>
-                      <input id="dob" type="date">
-                    </div>
-
-                    <div class="form-group">
-                      <label>Gender</label>
-                      <input id="gender" placeholder="Gender">
-                    </div>
-
-                    <div class="form-group">
-                      <label>Race</label>
-                      <input id="race" placeholder="Race">
-                    </div>
-
-                    <div class="form-group">
-                      <label>Religion</label>
-                      <input id="religion" placeholder="Religion">
-                    </div>
-
-                    <div class="form-group">
-                      <label>Marital Status</label>
-                      <input id="maritalStatus" placeholder="Marital Status">
-                    </div>
-
-                    <div class="form-group">
-                      <label>Driver's Licence</label>
-                      <input id="driversLicence" placeholder="e.g. Code B">
-                    </div>
-
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        </div>
     </aside>
 
     <button class="savePersonalDetails hidden">
@@ -579,12 +440,9 @@
       <div id="resumePreview"></div>
     </section>
 
-    <button class="preview-btn" id="previewBtn">
-      <span class="fa-stack">
-        <i class="fa-regular fa-file fa-stack-2x file-icon"></i>
-        <i class="fa-solid fa-magnifying-glass fa-stack-1x glass-icon"></i>
-      </span>
-    </button>
+<button class="preview-btn" id="previewBtn">
+  <i class="fa-solid fa-eye"></i>
+</button>
   </main>
 
   <div class="profilePhotoUpload hidden" id="profilePhotoUpload">
@@ -644,41 +502,41 @@
 
       <h4>Resume Theme</h4>
 
-     <div class="palette-grid">
+      <div class="palette-grid">
 
-  <div class="color-card" data-color="linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#0f172a,#1e293b,#334155)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#0f172a,#1e293b,#334155)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#134e4a,#0f766e,#115e59)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#134e4a,#0f766e,#115e59)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#3f1d2e,#7c2d12,#9a3412)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#3f1d2e,#7c2d12,#9a3412)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#3b0764,#6b21a8,#581c87)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#3b0764,#6b21a8,#581c87)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#111827,#1f2937,#374151)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#111827,#1f2937,#374151)"></div>
 
-  <!-- NEW COLORS -->
+        <!-- NEW COLORS -->
 
-  <div class="color-card" data-color="linear-gradient(180deg,#020617,#0f172a,#1e293b)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#020617,#0f172a,#1e293b)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#1e1b4b,#312e81,#4338ca)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#1e1b4b,#312e81,#4338ca)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#052e16,#065f46,#047857)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#052e16,#065f46,#047857)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#2e1065,#4c1d95,#6d28d9)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#2e1065,#4c1d95,#6d28d9)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#3f3f46,#52525b,#71717a)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#3f3f46,#52525b,#71717a)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg,#1c1917,#292524,#44403c)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg,#1c1917,#292524,#44403c)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg, #5e0123, #4b0218, #330010)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg, #5e0123, #4b0218, #330010)"></div>
 
-    <div class="color-card" data-color="linear-gradient(180deg, #9e0d42, #a5103c, #ff0252)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg, #9e0d42, #a5103c, #ff0252)"></div>
 
-  <div class="color-card" data-color="linear-gradient(180deg, #1f4423, #1c4418, #144410)"></div>
+        <div class="color-card" data-color="linear-gradient(180deg, #1f4423, #1c4418, #144410)"></div>
 
-</div>
+      </div>
 
     </div>
 
@@ -686,26 +544,211 @@
   <div id="toast-container"></div>
   <div id="pdfOverlay">
 
-  <div class="pdfCard">
+    <div class="pdfCard">
 
-    <div class="spinnerGradient"></div>
+      <div class="spinnerGradient"></div>
 
-    <h3>Generating your resume</h3>
+      <h3>Generating your resume</h3>
 
-    <div class="progressBar">
-      <div class="progressFill" id="pdfProgress"></div>
+      <div class="progressBar">
+        <div class="progressFill" id="pdfProgress"></div>
+      </div>
+
+      <ul class="pdfSteps">
+        <li id="step1" class="active">Preparing layout</li>
+        <li id="step2">Rendering pages</li>
+        <li id="step3">Finalizing PDF</li>
+        <li id="step4">Starting download</li>
+      </ul>
     </div>
-
-    <ul class="pdfSteps">
-      <li id="step1" class="active">Preparing layout</li>
-      <li id="step2">Rendering pages</li>
-      <li id="step3">Finalizing PDF</li>
-      <li id="step4">Starting download</li>
-    </ul>
-
   </div>
 
-</div>
+  <div id="expOverlay" class="exp-overlay">
+    <button class="closeOverlay" id="closeExpOverlay">✕</button>
+    <div class="exp-overlay-content"></div>
+  </div>
+
+  <div id="eduOverlay" class="edu-overlay">
+    <div class="overlay-inner">
+      <button class="closeOverlay" id="closeEduOverlay">✕</button>
+      <div class="edu-overlay-content"></div>
+    </div>
+  </div>
+
+  <!-- SKILL OVERLAY -->
+  <div id="skillOverlay" class="skillOverlay">
+    <div class="overlay-content">
+      <!-- CLOSE BUTTON -->
+      <button id="closeSkillOverlay" class="overlay-close">
+        &times;
+      </button>
+      <!-- YOUR CONTENT -->
+      <div class="section-content" style="height:auto;">
+        <div class="section-inner">
+          <button class="small-btn" id="addSkillBtn">
+            <i class="fa-solid fa-plus"></i> Add Skill
+          </button>
+          <div id="skillsContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANGUAGES OVERLAY -->
+  <div id="languagesOverlay" class="languagesOverlay">
+    <div class="overlay-content">
+      <!-- CLOSE BUTTON -->
+      <button id="closeLanguagesOverlay" class="overlay-close">
+        &times;
+      </button>
+      <!-- YOUR CONTENT -->
+      <div class="section-content" style="height:auto;">
+        <div class="section-inner">
+          <button class="small-btn" id="addLanguageBtn">
+            <i class="fa-solid fa-plus"></i> Add Language
+          </button>
+          <div id="languagesContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERESTS OVERLAY -->
+  <div id="interestOverlay" class="interestOverlay">
+    <div class="overlay-content">
+      <!-- CLOSE BUTTON -->
+      <button id="closeInterestOverlay" class="overlay-close">
+        &times;
+      </button>
+
+      <!-- YOUR CONTENT -->
+      <div class="section-content" style="height:auto;">
+        <div class="section-inner">
+          <button class="small-btn" id="addinterestBtn">
+            <i class="fa-solid fa-plus"></i> Add Entry
+          </button>
+          <div id="interestsContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFERENCES OVERLAY -->
+  <div id="refOverlay" class="refOverlay">
+    <div class="overlay-content">
+      <!-- CLOSE BUTTON -->
+      <button id="closeRefOverlay" class="overlay-close">
+        &times;
+      </button>
+      <!-- YOUR CONTENT -->
+      <div class="section-content" style="height:auto;">
+        <div class="section-inner">
+          <button class="small-btn" id="addrefBtn">
+            <i class="fa-solid fa-plus"></i> Add Entry
+          </button>
+
+          <div id="referencesContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay-personalDetails" id="editDetails-overay">
+    <button id="closeEditOverlay" class="overlay-close">&times;</button>
+    <div class="overlay-content">
+      <div class="section-block">
+        <h4>
+          <i class="fa-solid fa-user-pen"></i>
+          Summary
+        </h4>
+        <textarea id="summary" placeholder="Professional Summary" maxlength="250">
+</textarea>
+
+        <div id="summaryCounter">0 / 250</div>
+
+        <div class="section-header">
+          <h4><i class="fa-solid fa-id-card"></i>Personal Details</h4>
+        </div>
+        <div class="section-inner">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input id="fullName" placeholder="Full Name">
+          </div>
+          <div class="form-group">
+            <label>Professional Title</label>
+            <input id="title" placeholder="Title">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input id="email" placeholder="Email">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input id="phone" placeholder="Phone">
+          </div>
+          <div class="form-group">
+            <label>Location</label>
+            <input id="location" placeholder="Location">
+          </div>
+          <div class="form-group">
+            <label>Website</label>
+            <input id="website" placeholder="Website">
+          </div>
+          <div class="form-group">
+            <label>LinkedIn</label>
+            <input id="linkedin" placeholder="LinkedIn">
+          </div>
+          <div class="extra-section">
+
+            <button type="button" class="extra-toggle" aria-expanded="false">
+              <span>Add more details</span>
+              <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
+                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </button>
+
+            <div class="extra-content">
+              <div class="extra-inner">
+
+                <div class="form-group">
+                  <label>Date of Birth</label>
+                  <input id="dob" type="date">
+                </div>
+
+                <div class="form-group">
+                  <label>Gender</label>
+                  <input id="gender" placeholder="Gender">
+                </div>
+
+                <div class="form-group">
+                  <label>Race</label>
+                  <input id="race" placeholder="Race">
+                </div>
+
+                <div class="form-group">
+                  <label>Religion</label>
+                  <input id="religion" placeholder="Religion">
+                </div>
+
+                <div class="form-group">
+                  <label>Marital Status</label>
+                  <input id="maritalStatus" placeholder="Marital Status">
+                </div>
+
+                <div class="form-group">
+                  <label>Driver's Licence</label>
+                  <input id="driversLicence" placeholder="e.g. Code B">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- html2pdf for PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="../../dist/resumeBuilder.bundle.js"></script>

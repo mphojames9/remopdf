@@ -6,9 +6,7 @@ const previewOverlay = document.querySelector('.preview-wrap');
 const previewBtns = document.querySelectorAll('#previewBtn');
 const editResumeBtn = document.querySelector('#editResume');
 const navbar = document.querySelector('.navbar');
-const overlayPersonalDetails = document.querySelector('.overlay-personalDetails');
-const editProfileBtn = document.querySelectorAll('#editProfileBtn, .profile-section .left');
-const savePersonalDetails = document.querySelector('.savePersonalDetails')
+const personalDetailsOverlay = document.querySelector('.overlay-personalDetails');
 const languagesContainer = document.getElementById('languagesContainer');
 const addLanguageBtn = document.getElementById('addLanguageBtn');
 const profilePicPreview = document.querySelectorAll('.backdropBtn');
@@ -19,6 +17,8 @@ const resumePreview = document.querySelector('#resumePreview');
 const overlay = document.getElementById('layoutOverlay');
 const track = document.getElementById('carouselTrack');
 const nameEl = document.getElementById('templateName');
+let activeExpId = null;
+let activeEduId = null;
 let asideGradient =
   localStorage.getItem("resumeAsideGradient")
   ||
@@ -479,52 +479,63 @@ function init() {
   });
 
   refs.educationContainer.addEventListener('click', function (e) {
+
     const header = e.target.closest('.edu-header');
     if (!header) return;
 
+    // 🔥 STEP 1: restore previous
+    restoreEduBody();
+
+    const eduOverlay = document.getElementById('eduOverlay');
+    const eduOverlayContent = eduOverlay.querySelector('.edu-overlay-content');
+
     const card = header.closest('.edu-card');
+    const body = card.querySelector('.edu-body');
+
+    if (!body) {
+      console.error("❌ body not found");
+      return;
+    }
+
     const eduId = card.dataset.edu;
 
-    const isActive = card.classList.contains('active');
+    // 🔥 TAG IT so we know where to return it
+    body.dataset.eduParent = eduId;
 
-    // Close all
-    refs.educationContainer
-      .querySelectorAll('.edu-card')
-      .forEach(c => c.classList.remove('active'));
+    activeEduId = eduId;
 
-    if (!isActive) {
-      card.classList.add('active');
-      localStorage.setItem('lastOpenEdu', eduId);
-    } else {
-      localStorage.removeItem('lastOpenEdu');
-    }
+    eduOverlayContent.innerHTML = '';
+    eduOverlayContent.appendChild(body);
+
+    eduOverlay.classList.add('active');
   });
 
   refs.experienceContainer.addEventListener('click', function (e) {
+
+    // ✅ THIS LINE WAS MISSING
     const header = e.target.closest('.exp-header');
     if (!header) return;
 
+    const expOverlay = document.getElementById('expOverlay');
+    const expOverlayContent = expOverlay.querySelector('.exp-overlay-content');
+
     const card = header.closest('.exp-card');
+    const body = card.querySelector('.exp-body');
     const expId = card.dataset.exp;
 
-    const isActive = card.classList.contains('active');
+    activeExpId = expId;
 
-    // Close all
-    refs.experienceContainer
-      .querySelectorAll('.exp-card')
-      .forEach(c => c.classList.remove('active'));
+    openOverlay(expId);
 
-    if (!isActive) {
-      card.classList.add('active');
+    if (!body) return;
 
-      // 🔥 remember last opened
-      localStorage.setItem('lastOpenExp', expId);
-    } else {
-      // 🔥 if clicking same header → close it and clear memory
-      localStorage.removeItem('lastOpenExp');
-    }
+    // 🔥 MOVE body into overlay
+    expOverlayContent.innerHTML = '';
+    expOverlayContent.appendChild(body);
+
+    // 🔥 SHOW overlay
+    expOverlay.classList.add('active');
   });
-
 
   refs.referencesContainer.addEventListener('click', function (e) {
     const header = e.target.closest('.ref-header');
@@ -791,22 +802,28 @@ function renderLists() {
   <div class="edu-card" data-edu="${edu.id}">
 
     <!-- HEADER -->
-    <div class="edu-header">
+    <div class="edu-header drag-handle" draggable="true">
       <div class="edu-title">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 20" class="w-3"><path fill="currentColor" d="M9.482 0c1.104 0 2 .897 2 2 0 1.101-.896 2-2 2S7.48 3.101 7.48 2c0-1.103.897-2 2-2zM2 0c1.105
+        0 2.002.897 2.002 2C4.002 3.1 3.105 4 2 4 .897 4 0 3.101 0 2 0 .896.897 0 2 0zM9.482 8c1.104 0
+         2 .897 2 2 0 1.101-.896 2-2 2s-2.001-.899-2.001-2c0-1.103.897-2 2-2zM2 8c1.105 0 2.002.897 2.002 2
+          0 1.101-.897 2-2.001 2C.897 12 0 11.101 0 10c0-1.103.897-2 2-2zM9.482 16c1.104 0 2 .897 2 2
+           0 1.102-.896 2-2 2s-2.001-.898-2.001-2c0-1.103.897-2 2-2zM2 16c1.105 0 2.002.897 2.002 2 0
+            1.102-.897 2-2.001 2C.897 20 0 19.102 0 18c0-1.103.897-2 2-2z"></path></svg>
         ${escapeHtml(edu.degree || 'New Degree')}
         <span class="edu-sep">|</span>
         ${escapeHtml(edu.school || 'Institution')}
       </div>
-      <div class="edu-actions">
-        <i class="fa-solid fa-chevron-down edu-chevron"></i>
-      </div>
+      <button class="btn-danger">
+          <i class="fa-solid fa-trash"
+            data-action="removeedu"
+            data-id="${edu.id}"></i>
+        </button>
     </div>
 
     <!-- BODY -->
     <div class="edu-body">
-
       <div class="edu-grid">
-
         <div class="field">
           <label>Degree</label>
           <input class="input_data"
@@ -857,12 +874,6 @@ function renderLists() {
             data-action="downedu"
             data-id="${edu.id}"></i>
         </button>
-
-        <button class="btn-danger">
-          <i class="fa-solid fa-trash"
-            data-action="removeedu"
-            data-id="${edu.id}"></i>
-        </button>
       </div>
 
     </div>
@@ -891,15 +902,24 @@ function renderLists() {
   <div class="exp-card" data-exp="${exp.id}">
     
     <!-- HEADER -->
-    <div class="exp-header">
+    <div class="exp-header drag-handle" draggable="true">
       <div class="exp-title">
+      <svg  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 20" class="w-3"><path fill="currentColor"
+       d="M9.482 0c1.104 0 2 .897 2 2 0 1.101-.896 2-2 2S7.48 3.101 7.48 2c0-1.103.897-2 2-2zM2 0c1.105
+        0 2.002.897 2.002 2C4.002 3.1 3.105 4 2 4 .897 4 0 3.101 0 2 0 .896.897 0 2 0zM9.482 8c1.104 0
+         2 .897 2 2 0 1.101-.896 2-2 2s-2.001-.899-2.001-2c0-1.103.897-2 2-2zM2 8c1.105 0 2.002.897 2.002 2
+          0 1.101-.897 2-2.001 2C.897 12 0 11.101 0 10c0-1.103.897-2 2-2zM9.482 16c1.104 0 2 .897 2 2
+           0 1.102-.896 2-2 2s-2.001-.898-2.001-2c0-1.103.897-2 2-2zM2 16c1.105 0 2.002.897 2.002 2 0
+            1.102-.897 2-2.001 2C.897 20 0 19.102 0 18c0-1.103.897-2 2-2z"></path></svg>
         ${escapeHtml(exp.role || 'New Role')}
         <span class="exp-sep">|</span>
         ${escapeHtml(exp.campany || 'campany')}
       </div>
-      <div class="exp-actions">
-        <i class="fa-solid fa-chevron-down exp-chevron"></i>
-      </div>
+      <button class="btn-danger">
+          <i class="fa-solid fa-trash"
+             data-action="remove"
+             data-id="${exp.id}"></i>
+        </button>
     </div>
 
     <!-- BODY -->
@@ -942,7 +962,6 @@ function renderLists() {
             value="${escapeHtml(exp.end || '')}"
             placeholder="e.g. Present" />
         </div>
-
       </div>
 
       <!-- RESPONSIBILITIES -->
@@ -991,12 +1010,6 @@ function renderLists() {
         <button class="btn-midnight">
           <i class="fa-solid fa-arrow-down"
              data-action="down"
-             data-id="${exp.id}"></i>
-        </button>
-
-        <button class="btn-danger">
-          <i class="fa-solid fa-trash"
-             data-action="remove"
              data-id="${exp.id}"></i>
         </button>
       </div>
@@ -1247,6 +1260,9 @@ function expButtonHandler(e) {
   renderLists();
   renderPreview();
   save();
+  if (activeExpId) {
+    openOverlay(activeExpId);
+  }
 }
 
 function eduInputHandler(e) {
@@ -1450,19 +1466,30 @@ function moveItem(arr, idVal, delta) {
 function bindButtons() {
   refs.addExpBtn.addEventListener('click', () => {
 
-    data.experience.unshift({
-      id: id(),
+    // 🔥 create new experience
+    const newExp = {
+      id: Math.random().toString(36).slice(2, 9),
       role: "",
       campany: "",
       start: "",
       end: "",
       bullets: [""]
+    };
 
-    });
+    // add to data (top)
+    data.experience.unshift(newExp);
+
+    // 🔥 set active BEFORE render
+    activeExpId = newExp.id;
+
+    // render everything
     renderLists();
     renderPreview();
     save();
+    validateExperienceAdd();
 
+    // 🔥 OPEN overlay for the new item
+    openOverlay(activeExpId);
   });
 
   refs.addEduBtn.addEventListener('click', () => {
@@ -1483,11 +1510,11 @@ function bindButtons() {
     renderLists(); renderPreview(); save();
   });
 
-pdfBtn.forEach(btn => {
-  btn.addEventListener('click', () => {
-    downloadPDF(false);
+  pdfBtn.forEach(btn => {
+    btn.addEventListener('click', () => {
+      downloadPDF(false);
+    });
   });
-});
 
   refs.pdfBtn.addEventListener('click', () => downloadPDF(false));
   refs.pdfAtsBtn && refs.pdfAtsBtn.addEventListener('click', () => downloadPDF(true));
@@ -1508,20 +1535,20 @@ document.querySelectorAll('.input_data').forEach(input => {
   input.addEventListener('input', updateHoverState);
 });
 
-function setPdfStep(step){
+function setPdfStep(step) {
 
   const steps = document.querySelectorAll(".pdfSteps li");
 
-  steps.forEach((li,i)=>{
+  steps.forEach((li, i) => {
 
-    if(i < step){
+    if (i < step) {
 
       li.classList.add("show");
 
-      if(i < step-1){
+      if (i < step - 1) {
         li.classList.remove("active");
         li.classList.add("done");
-      }else{
+      } else {
         li.classList.add("active");
       }
 
@@ -1530,14 +1557,14 @@ function setPdfStep(step){
   });
 
   const progress = document.getElementById("pdfProgress");
-  progress.style.width = (step-1)*33 + "%";
+  progress.style.width = (step - 1) * 33 + "%";
 }
 
 
 function downloadPDF(atsMode) {
-  document.querySelectorAll(".pdfSteps li").forEach(li=>{
-  li.classList.remove("show","active","done");
-});
+  document.querySelectorAll(".pdfSteps li").forEach(li => {
+    li.classList.remove("show", "active", "done");
+  });
 
   const preview = refs.resumePreview;
   const templateClass = atsMode ? 'ats' : (data.template || 'goldenexecutive');
@@ -1880,7 +1907,7 @@ function hasReferences() {
 
 function rendermidnight() {
   const p = photoHtml();
-    /* GET SAVED GRADIENT */
+  /* GET SAVED GRADIENT */
   let asideGradient =
     localStorage.getItem("resumeAsideGradient") ||
     "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
@@ -1927,81 +1954,81 @@ ${(
   <ul class="contact-list_Template_1">
 
    ${data.personal.phone
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.phone_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.email
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.email_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.email)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.location
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.location_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.location)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.website
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.website_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.website)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.linkedin
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.dob
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.gender
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.user_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.race
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.group_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.race)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.religion
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.faith_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.maritalStatus
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.heart_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.driversLicence
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.car_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
      </li>`
-  : ''}
+      : ''}
 
   </ul>
 </div>
@@ -2444,8 +2471,8 @@ ${escapeHtml(ref.email)}
 }
 
 function renderpromidnight() {
- const p = photoHtml();
-    /* GET SAVED GRADIENT */
+  const p = photoHtml();
+  /* GET SAVED GRADIENT */
   let asideGradient =
     localStorage.getItem("resumeAsideGradient") ||
     "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
@@ -2492,81 +2519,81 @@ ${(
   <ul class="contact-list_Template_1">
 
     ${data.personal.phone
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.phone_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.email
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.email_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.email)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.location
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.location_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.location)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.website
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.website_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.website)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.linkedin
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.dob
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.gender
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.user_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.race
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.group_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.race)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.religion
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.faith_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.maritalStatus
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.heart_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.driversLicence
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.car_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
      </li>`
-  : ''}
+      : ''}
   </ul>
 </div>
 ` : ''}
@@ -3008,8 +3035,8 @@ ${escapeHtml(ref.email)}
 }
 
 function renderGoldenExecutive() {
-      const p = photoHtml();
-    /* GET SAVED GRADIENT */
+  const p = photoHtml();
+  /* GET SAVED GRADIENT */
   let asideGradient =
     localStorage.getItem("resumeAsideGradient") ||
     "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
@@ -3067,81 +3094,81 @@ padding: 6px;"> Contact
   <ul class="contact-list_Template_1">
 
     ${data.personal.phone
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.phone_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.email
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.email_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.email)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.location
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.location_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.location)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.website
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.website_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.website)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.linkedin
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.dob
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.gender
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.user_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.race
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.group_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.race)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.religion
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.faith_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.maritalStatus
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.heart_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.driversLicence
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.car_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
      </li>`
-  : ''}
+      : ''}
   </ul>
 </div>
 ` : ''}
@@ -3312,11 +3339,11 @@ gap:10px 16px;
 
 ${data.skills.map(skill => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[skill.level] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[skill.level] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="
 display:flex;
@@ -3344,7 +3371,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -3382,11 +3409,11 @@ font-size:13px;
 
 ${data.languages.map(l => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[l.level?.toLowerCase()] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[l.level?.toLowerCase()] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="display:flex;justify-content:space-between;align-items:center;">
 
@@ -3409,7 +3436,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -3589,8 +3616,8 @@ ${escapeHtml(ref.email)}
 }
 
 function renderGoldenExecutiveII() {
-   const p = photoHtml();
-    /* GET SAVED GRADIENT */
+  const p = photoHtml();
+  /* GET SAVED GRADIENT */
   let asideGradient =
     localStorage.getItem("resumeAsideGradient") ||
     "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
@@ -3648,81 +3675,81 @@ padding: 6px;"> Contact
   <ul class="contact-list_Template_1">
 
    ${data.personal.phone
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.phone_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.email
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.email_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.email)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.location
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.location_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.location)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.website
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.website_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.website)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.linkedin
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.dob
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.gender
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.user_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.race
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.group_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.race)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.religion
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.faith_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.maritalStatus
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.heart_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.driversLicence
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.car_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
      </li>`
-  : ''}
+      : ''}
   </ul>
 </div>
 ` : ''}
@@ -3893,11 +3920,11 @@ gap:10px 16px;
 
 ${data.skills.map(skill => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[skill.level] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[skill.level] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="
 display:flex;
@@ -3925,7 +3952,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -3963,11 +3990,11 @@ font-size:13px;
 
 ${data.languages.map(l => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[l.level?.toLowerCase()] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[l.level?.toLowerCase()] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="display:flex;justify-content:space-between;align-items:center;">
 
@@ -3990,7 +4017,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -4170,8 +4197,8 @@ ${escapeHtml(ref.email)}
 }
 
 function renderPinkCorporate() {
-   const p = photoHtml();
-    /* GET SAVED GRADIENT */
+  const p = photoHtml();
+  /* GET SAVED GRADIENT */
   let asideGradient =
     localStorage.getItem("resumeAsideGradient") ||
     "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
@@ -4218,81 +4245,81 @@ ${(
   <ul class="contact-list_Template_1">
 
   ${data.personal.phone
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.phone_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.email
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.email_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.email)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.location
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.location_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.location)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.website
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.website_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.website)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.linkedin
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.dob
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.gender
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.user_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.race
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.group_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.race)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.religion
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.faith_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.maritalStatus
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.heart_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.driversLicence
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.car_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
      </li>`
-  : ''}
+      : ''}
   </ul>
 </div>
 ` : ''}
@@ -4450,11 +4477,11 @@ gap:10px 16px;
 
 ${data.skills.map(skill => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[skill.level] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[skill.level] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="
 display:flex;
@@ -4482,7 +4509,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -4515,11 +4542,11 @@ font-size:13px;
 
 ${data.languages.map(l => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[l.level?.toLowerCase()] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[l.level?.toLowerCase()] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="display:flex;justify-content:space-between;align-items:center;">
 
@@ -4539,7 +4566,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 </div>
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -4712,7 +4739,7 @@ ${escapeHtml(ref.email)}
 
 function renderPinkCorporateII() {
   const p = photoHtml();
-    /* GET SAVED GRADIENT */
+  /* GET SAVED GRADIENT */
   let asideGradient =
     localStorage.getItem("resumeAsideGradient") ||
     "linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8)";
@@ -4759,81 +4786,81 @@ ${(
   <ul class="contact-list_Template_1">
 
   ${data.personal.phone
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.phone_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.phone)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.email
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.email_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.email)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.location
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.location_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.location)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.website
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.website_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.website)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.linkedin
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.linkedin_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.linkedin)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.dob
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.calendar_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.dob)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.gender
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.user_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.gender)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.race
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.group_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.race)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.religion
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.faith_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.religion)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.maritalStatus
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.heart_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.maritalStatus)}</span>
      </li>`
-  : ''}
+      : ''}
 
 ${data.personal.driversLicence
-  ? `<li class="contact-item">
+      ? `<li class="contact-item">
         <span class="contact-icon">${icon(ICONS.car_w)}</span>
         <span class="contact-text">${escapeHtml(data.personal.driversLicence)}</span>
      </li>`
-  : ''}
+      : ''}
   </ul>
 
 </div>
@@ -4993,11 +5020,11 @@ gap:10px 16px;
 
 ${data.skills.map(skill => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[skill.level] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[skill.level] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="
 display:flex;
@@ -5025,7 +5052,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -5058,11 +5085,11 @@ font-size:13px;
 
 ${data.languages.map(l => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[l.level?.toLowerCase()] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[l.level?.toLowerCase()] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="display:flex;justify-content:space-between;align-items:center;">
 
@@ -5085,7 +5112,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -6665,11 +6692,11 @@ gap:10px 16px;
 
 ${data.skills.map(skill => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[skill.level] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[skill.level] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="
 display:flex;
@@ -6697,7 +6724,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -6730,11 +6757,11 @@ font-size:13px;
 
 ${data.languages.map(l => {
 
-        const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
-        const level = levelMap[l.level?.toLowerCase()] || 3
-        const totalDots = 5
+          const levelMap = { basic: 2, intermediate: 3, advanced: 4, native: 5 }
+          const level = levelMap[l.level?.toLowerCase()] || 3
+          const totalDots = 5
 
-        return `
+          return `
 
 <div style="display:flex;justify-content:space-between;align-items:center;">
 
@@ -6757,7 +6784,7 @@ background:${i < level ? accentColor : '#e5e7eb'};
 </div>
 
 `
-      }).join('')}
+        }).join('')}
 
 </div>
 
@@ -7385,12 +7412,12 @@ ${escapeHtml(edu.degree || '')}
 
 <span style="font-size:12px;color:#6b7280">
 ${[
-          edu.start,
-          edu.end,
-          edu.startYear,
-          edu.endYear,
-          edu.year
-        ].filter(Boolean).join(' - ')}
+      edu.start,
+      edu.end,
+      edu.startYear,
+      edu.endYear,
+      edu.year
+    ].filter(Boolean).join(' - ')}
 </span>
 
 </div>
@@ -7441,40 +7468,40 @@ gap:14px 28px;
 
 ${data.skills.map(skill => {
 
-    const levelMap = {
-      basic: 40,
-      intermediate: 65,
-      advanced: 85,
-      expert: 90,
-      native: 100
-    };
+      const levelMap = {
+        basic: 40,
+        intermediate: 65,
+        advanced: 85,
+        expert: 90,
+        native: 100
+      };
 
-    let level = skill.level;
+      let level = skill.level;
 
-    // convert string levels
-    if (typeof level === "string") {
+      // convert string levels
+      if (typeof level === "string") {
 
-      const normalized = level.trim().toLowerCase();
+        const normalized = level.trim().toLowerCase();
 
-      if (levelMap[normalized] !== undefined) {
-        level = levelMap[normalized];
+        if (levelMap[normalized] !== undefined) {
+          level = levelMap[normalized];
+        }
+        else if (!isNaN(level)) {
+          level = Number(level);
+        }
+        else {
+          level = 70; // default
+        }
+
       }
-      else if (!isNaN(level)) {
-        level = Number(level);
-      }
-      else {
-        level = 70; // default
-      }
 
-    }
+      // ensure number
+      if (typeof level !== "number") level = 70;
 
-    // ensure number
-    if (typeof level !== "number") level = 70;
+      // clamp between 0-100
+      level = Math.max(0, Math.min(level, 100));
 
-    // clamp between 0-100
-    level = Math.max(0, Math.min(level, 100));
-
-    return `
+      return `
 
 <div>
 
@@ -7509,7 +7536,7 @@ border-radius:4px;
 
 `;
 
-  }).join('')}
+    }).join('')}
 
 </div>
 
@@ -7899,12 +7926,12 @@ ${escapeHtml(edu.degree || '')}
 
 <span style="font-size:12px;color:#6b7280">
 ${[
-          edu.start,
-          edu.end,
-          edu.startYear,
-          edu.endYear,
-          edu.year
-        ].filter(Boolean).join(' - ')}
+      edu.start,
+      edu.end,
+      edu.startYear,
+      edu.endYear,
+      edu.year
+    ].filter(Boolean).join(' - ')}
 </span>
 
 </div>
@@ -8248,26 +8275,6 @@ function load() { try { const raw = localStorage.getItem('resume:data'); return 
 // --- Start ----------------------------------------------------------------
 init();
 
-editProfileBtn.forEach(btn => btn.addEventListener('click', () => {
-  overlayPersonalDetails.classList.remove('hidden');
-  savePersonalDetails.classList.remove('hidden');
-  setTimeout(() => {
-    overlayPersonalDetails.classList.add('opacity');
-    savePersonalDetails.classList.add('opacity');
-  }, 100);
-}));
-
-savePersonalDetails.addEventListener('click', () => {
-  overlayPersonalDetails.classList.remove('opacity');
-  savePersonalDetails.classList.remove('opacity');
-  setTimeout(() => {
-    overlayPersonalDetails.classList.add('hidden');
-    savePersonalDetails.classList.add('hidden');
-  }, 450);
-
-
-});
-
 /* OPEN PREVIEW */
 previewBtns.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -8305,7 +8312,7 @@ editResumeBtn.addEventListener('click', () => {
 function closePreview() {
   previewOverlay.classList.remove("opacity");
   document.querySelector('.download-btn-premium').classList.remove('open');
-  
+
 
   setTimeout(() => {
     previewOverlay.classList.remove("open");
@@ -8813,9 +8820,9 @@ function applyAsideGradient() {
   asides.forEach(a => {
 
     a.style.transition = "background 0.4s ease";
-    if(selectedTemplate === "vertexats" || selectedTemplate === "apexats" || selectedTemplate === "ats" ) {
+    if (selectedTemplate === "vertexats" || selectedTemplate === "apexats" || selectedTemplate === "ats") {
       a.style.background = "white";
-    }else {
+    } else {
       a.style.background = asideGradient;
     }
   });
@@ -8862,26 +8869,26 @@ toggleColor.addEventListener("click", () => {
 });
 
 
-function syncPaletteButton(){
+function syncPaletteButton() {
 
   const palette = document.getElementById("colorPalette");
   const download = document.querySelector('.pdfBtn');
 
-  if(window.innerWidth <= 420){
+  if (window.innerWidth <= 420) {
     download.style.width = "130px";
     download.style.padding = "5px";
     document.querySelector('.fa-pdfBtn').style.fontSize = '14px';
   }
 
-  if(window.innerWidth <= 900){
+  if (window.innerWidth <= 900) {
 
-    if(download.classList.contains("open")){
+    if (download.classList.contains("open")) {
       palette.classList.add("show");
-    }else{
+    } else {
       palette.classList.remove("show");
     }
 
-  }else{
+  } else {
     palette.classList.add("show");
   }
 
@@ -8890,11 +8897,342 @@ function syncPaletteButton(){
   }, 50);
 }
 
+const expOverlay = document.getElementById('expOverlay');
+
+expOverlay.addEventListener('click', (e) => {
+  if (e.target === expOverlay) {
+    expOverlay.classList.remove('active');
+    activeExpId = null;
+
+    renderLists();
+  }
+});
+const closeExpOverlay = document.getElementById("closeExpOverlay");
+
+// CLOSE BUTTON
+closeExpOverlay.addEventListener("click", () => {
+  expOverlay.classList.remove("active");
+});
 /* APPLY AFTER TEMPLATE RENDER */
 
 setTimeout(applyAsideGradient, 200);
 document.addEventListener("DOMContentLoaded", updateCounter);
 renderPreview();
 save();
+const eduOverlay = document.getElementById('eduOverlay');
+const closeEduOverlay = document.getElementById('closeEduOverlay');
+closeEduOverlay.addEventListener('click', () => {
+  restoreEduBody();
 
+  const card = document.querySelector(`.edu-card[data-edu="${activeEduId}"]`);
+  const body = eduOverlay.querySelector('.edu-body');
+
+  if (card && body) {
+    card.appendChild(body); // 🔥 RETURN BACK
+  }
+  eduOverlay.classList.remove('active');
+});
+
+eduOverlay.addEventListener('click', (e)=>{
+  if(e.target === eduOverlay){
+eduOverlay.classList.remove('active');
+  }
+})
+
+
+function openOverlay(expId) {
+  const expOverlay = document.getElementById('expOverlay');
+  const expOverlayContent = expOverlay.querySelector('.exp-overlay-content');
+
+  // 🔥 find fresh element from DOM
+  const freshCard = document.querySelector(`.exp-card[data-exp="${expId}"]`);
+  const body = freshCard.querySelector('.exp-body');
+
+  expOverlayContent.innerHTML = '';
+  expOverlayContent.appendChild(body);
+
+  expOverlay.classList.add('active');
+}
+
+function restoreEduBody() {
+  const currentBody = document.querySelector('#eduOverlay .edu-body');
+
+  if (!currentBody) return;
+
+  const parentId = currentBody.dataset.eduParent;
+  const originalCard = document.querySelector(`.edu-card[data-edu="${parentId}"]`);
+
+  if (originalCard) {
+    originalCard.appendChild(currentBody);
+  }
+}
+
+function toggleBodyScroll(lock) {
+  document.body.style.overflow = lock ? 'hidden' : '';
+}
+
+/* Update your reusable function */
+function createOverlay(triggerId, overlayId, closeBtnId) {
+  const trigger = document.getElementById(triggerId);
+  const overlay = document.getElementById(overlayId);
+  const closeBtn = document.getElementById(closeBtnId);
+
+  if (!trigger || !overlay || !closeBtn) return;
+
+  trigger.addEventListener('click', () => {
+    overlay.classList.add('active');
+    toggleBodyScroll(true);
+  });
+
+  closeBtn.addEventListener('click', () => {
+    overlay.classList.remove('active');
+    toggleBodyScroll(false);
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.remove('active');
+      toggleBodyScroll(false);
+    }
+  });
+}
+
+/* INITIALIZE ALL OVERLAYS */
+createOverlay('skillBlock', 'skillOverlay', 'closeSkillOverlay');
+createOverlay('languagesBlock', 'languagesOverlay', 'closeLanguagesOverlay');
+createOverlay('interestBlock', 'interestOverlay', 'closeInterestOverlay');
+createOverlay('refSection', 'refOverlay', 'closeRefOverlay');
+
+const editProfileBtn = document.querySelectorAll('#editProfileBtn, .profile-section .left')
+
+editProfileBtn.forEach(btn => btn.addEventListener('click', () => {
+  personalDetailsOverlay.classList.add('active');
+  toggleBodyScroll(true)
+}))
+
+const closeEditOverlay = document.querySelector('#closeEditOverlay');
+closeEditOverlay.addEventListener('click', () => {
+  personalDetailsOverlay.classList.remove('active');
+  toggleBodyScroll(false);
+})
+
+personalDetailsOverlay.addEventListener('click', (e) => {
+  if (e.target === personalDetailsOverlay) {
+    personalDetailsOverlay.classList.remove('active');
+    toggleBodyScroll(false);
+  }
+})
+
+const container = document.getElementById("experienceContainer");
+
+let draggedEl = null;
+let placeholder = document.createElement("div");
+placeholder.className = "item placeholder";
+
+// 🔥 ensure draggable always
+document.querySelectorAll(".drag-handle").forEach(el => {
+  el.setAttribute("draggable", "true");
+});
+
+// =========================
+// DRAG START
+// =========================
+container.addEventListener("dragstart", (e) => {
+  if (!e.target.closest(".drag-handle")) return;
+
+  draggedEl = e.target.closest(".item");
+  if (!draggedEl) return;
+
+  // 🔥 CRITICAL (fix random failure)
+  e.dataTransfer.setData("text/plain", "drag");
+  e.dataTransfer.effectAllowed = "move";
+
+  draggedEl.classList.add("dragging");
+
+  placeholder.style.height = draggedEl.offsetHeight + "px";
+
+  draggedEl.after(placeholder);
+
+  requestAnimationFrame(() => {
+    draggedEl.style.display = "none";
+  });
+});
+
+// =========================
+// DRAG OVER
+// =========================
+container.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  if (!draggedEl) return;
+
+  const afterElement = getDragAfterElement(container, e.clientY);
+
+  if (!afterElement || afterElement.parentNode !== container) {
+    container.appendChild(placeholder);
+  } else {
+    container.insertBefore(placeholder, afterElement);
+  }
+});
+
+// =========================
+// DRAG END
+// =========================
+container.addEventListener("dragend", () => {
+  if (!draggedEl) return;
+
+  draggedEl.style.display = "";
+  draggedEl.classList.remove("dragging");
+
+  if (placeholder.parentNode === container) {
+    container.insertBefore(draggedEl, placeholder);
+  }
+  placeholder.remove();
+  // update order
+  const newOrderIds = [
+    ...container.querySelectorAll(".item")
+  ].map(item =>
+    item.querySelector(".exp-card")?.dataset.exp
+  ).filter(Boolean);
+
+  data.experience = newOrderIds.map(id =>
+    data.experience.find(x => x.id === id)
+  );
+
+  save();
+  renderLists();
+  renderPreview();
+
+  draggedEl = null;
+});
+
+// =========================
+// POSITION LOGIC
+// =========================
+function getDragAfterElement(container, y) {
+  const elements = [...container.children].filter(
+    el => !el.classList.contains("dragging") && el !== placeholder
+  );
+
+  let closest = null;
+  let closestOffset = Number.NEGATIVE_INFINITY;
+
+  elements.forEach(child => {
+    const box = child.getBoundingClientRect();
+    const offset = y - (box.top + box.height / 2);
+
+    if (offset < 0 && offset > closestOffset) {
+      closestOffset = offset;
+      closest = child;
+    }
+  });
+
+  return closest;
+}
+
+const eduContainer = document.getElementById("educationContainer");
+
+let draggedEdu = null;
+let eduPlaceholder = document.createElement("div");
+eduPlaceholder.className = "item placeholder";
+
+// 🔥 ensure draggable
+document.querySelectorAll("#educationContainer .drag-handle").forEach(el => {
+  el.setAttribute("draggable", "true");
+});
+
+// =========================
+// DRAG START
+// =========================
+eduContainer.addEventListener("dragstart", (e) => {
+  if (!e.target.closest(".drag-handle")) return;
+
+  draggedEdu = e.target.closest(".item");
+  if (!draggedEdu) return;
+
+  e.dataTransfer.setData("text/plain", "drag");
+  e.dataTransfer.effectAllowed = "move";
+
+  draggedEdu.classList.add("dragging");
+
+  eduPlaceholder.style.height = draggedEdu.offsetHeight + "px";
+
+  draggedEdu.after(eduPlaceholder);
+
+  requestAnimationFrame(() => {
+    draggedEdu.style.display = "none";
+  });
+});
+
+// =========================
+// DRAG OVER
+// =========================
+eduContainer.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  if (!draggedEdu) return;
+
+  const afterElement = getEduAfterElement(eduContainer, e.clientY);
+
+  if (!afterElement || afterElement.parentNode !== eduContainer) {
+    eduContainer.appendChild(eduPlaceholder);
+  } else {
+    eduContainer.insertBefore(eduPlaceholder, afterElement);
+  }
+});
+
+// =========================
+// DRAG END
+// =========================
+eduContainer.addEventListener("dragend", () => {
+  if (!draggedEdu) return;
+
+  draggedEdu.style.display = "";
+  draggedEdu.classList.remove("dragging");
+
+  if (eduPlaceholder.parentNode === eduContainer) {
+    eduContainer.insertBefore(draggedEdu, eduPlaceholder);
+  }
+
+  eduPlaceholder.remove();
+
+  // 🔥 UPDATE EDUCATION ORDER
+  const newOrderIds = [
+    ...eduContainer.querySelectorAll(".item")
+  ].map(item =>
+    item.querySelector(".edu-card")?.dataset.edu
+  ).filter(Boolean);
+
+  data.education = newOrderIds.map(id =>
+    data.education.find(x => x.id === id)
+  );
+
+  save();
+  renderLists();
+  renderPreview();
+
+  draggedEdu = null;
+});
+
+// =========================
+// POSITION LOGIC
+// =========================
+function getEduAfterElement(container, y) {
+  const elements = [...container.children].filter(
+    el => !el.classList.contains("dragging") && el !== eduPlaceholder
+  );
+
+  let closest = null;
+  let closestOffset = Number.NEGATIVE_INFINITY;
+
+  elements.forEach(child => {
+    const box = child.getBoundingClientRect();
+    const offset = y - (box.top + box.height / 2);
+
+    if (offset < 0 && offset > closestOffset) {
+      closestOffset = offset;
+      closest = child;
+    }
+  });
+
+  return closest;
+}
 

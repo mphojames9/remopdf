@@ -129,15 +129,6 @@
   break-after: avoid;
 }
 
-
-
-.language-row {
-  display: grid;
-  grid-template-columns: 1fr 140px auto;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
 .language-list li {
   display: flex;
   justify-content: space-between;
@@ -153,5 +144,7 @@
   flex-direction: column-reverse;
   position: absolute;
 }
+
+
 
 
