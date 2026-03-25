@@ -1,4 +1,5 @@
 import updateCounter from "./resume/components";
+import cvDatasetCollection from "./resume/cvdataset"
 /* =========================
    DOM ELEMENTS
 ========================= */
@@ -16,9 +17,13 @@ const previewContent = previewOverlay.querySelector("#resumePreview");
 const resumePreview = document.querySelector('#resumePreview');
 const overlay = document.getElementById('layoutOverlay');
 const track = document.getElementById('carouselTrack');
+const layout = document.querySelector('.layout');
 const nameEl = document.getElementById('templateName');
 let activeExpId = null;
 let activeEduId = null;
+let activeTitleInput = null;
+let activeBulletInput = null;
+let activeSuggestionIndex = -1;
 let asideGradient =
   localStorage.getItem("resumeAsideGradient")
   ||
@@ -331,6 +336,15 @@ function updateEduHeader(eduId) {
   if (!edu) return;
 
   titleEl.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 20" class="w-3">
+      <path fill="currentColor" d="M9.482 0c1.104 0 2 .897 2 2 0 1.101-.896 2-2 2S7.48 3.101 7.48 2c0-1.103.897-2 2-2zM2 0c1.105
+      0 2.002.897 2.002 2C4.002 3.1 3.105 4 2 4 .897 4 0 3.101 0 2 0 .896.897 0 2 0zM9.482 8c1.104 0
+      2 .897 2 2 0 1.101-.896 2-2 2s-2.001-.899-2.001-2c0-1.103.897-2 2-2zM2 8c1.105 0 2.002.897 2.002 2
+      0 1.101-.897 2-2.001 2C.897 12 0 11.101 0 10c0-1.103.897-2 2-2zM9.482 16c1.104 0 2 .897 2 2
+      0 1.102-.896 2-2 2s-2.001-.898-2.001-2c0-1.103.897-2 2-2zM2 16c1.105 0 2.002.897 2.002 2 0
+      1.102-.897 2-2.001 2C.897 20 0 19.102 0 18c0-1.103.897-2 2-2z"></path>
+    </svg>
+
     ${escapeHtml(edu.degree || 'New Degree')}
     <span class="edu-sep">|</span>
     ${escapeHtml(edu.school || 'Institution')}
@@ -479,63 +493,58 @@ function init() {
   });
 
   refs.educationContainer.addEventListener('click', function (e) {
+restoreExpBody(); // 🔥 VERY IMPORTANT
+  const header = e.target.closest('.edu-header');
+  if (!header) return;
 
-    const header = e.target.closest('.edu-header');
-    if (!header) return;
+  // 🔥 only trigger if clicking title
+  if (!e.target.closest('.edu-title')) return;
 
-    // 🔥 STEP 1: restore previous
-    restoreEduBody();
+  // 🔥 restore previous
+  restoreEduBody();
 
-    const eduOverlay = document.getElementById('eduOverlay');
-    const eduOverlayContent = eduOverlay.querySelector('.edu-overlay-content');
+  const eduOverlay = document.getElementById('eduOverlay');
+  const eduOverlayContent = eduOverlay.querySelector('.edu-overlay-content');
 
-    const card = header.closest('.edu-card');
-    const body = card.querySelector('.edu-body');
+  const card = header.closest('.edu-card');
+  const body = card.querySelector('.edu-body');
 
-    if (!body) {
-      console.error("❌ body not found");
-      return;
-    }
+  if (!body) return;
 
-    const eduId = card.dataset.edu;
+  const eduId = card.dataset.edu;
 
-    // 🔥 TAG IT so we know where to return it
-    body.dataset.eduParent = eduId;
+  body.dataset.eduParent = eduId;
+  activeEduId = eduId;
 
-    activeEduId = eduId;
+  eduOverlayContent.innerHTML = '';
+  eduOverlayContent.appendChild(body);
 
-    eduOverlayContent.innerHTML = '';
-    eduOverlayContent.appendChild(body);
-
-    eduOverlay.classList.add('active');
-  });
+  eduOverlay.classList.add('active');
+});
 
   refs.experienceContainer.addEventListener('click', function (e) {
+    restoreExpBody(); // 🔥 VERY IMPORTANT
 
-    // ✅ THIS LINE WAS MISSING
-    const header = e.target.closest('.exp-header');
-    if (!header) return;
+  const header = e.target.closest('.exp-header');
+  if (!header) return;
 
-    const expOverlay = document.getElementById('expOverlay');
-    const expOverlayContent = expOverlay.querySelector('.exp-overlay-content');
+  // 🔥 only trigger if clicking title
+  if (!e.target.closest('.exp-title')) return;
 
-    const card = header.closest('.exp-card');
-    const body = card.querySelector('.exp-body');
-    const expId = card.dataset.exp;
+  const expOverlay = document.getElementById('expOverlay');
+  const expOverlayContent = expOverlay.querySelector('.exp-overlay-content');
+  const card = header.closest('.exp-card');
+  const body = card.querySelector('.exp-body');
+  const expId = card.dataset.exp;
+  activeExpId = expId;
+  openOverlay(expId);
+  if (!body) return;
+  expOverlayContent.innerHTML = '';
+  expOverlayContent.appendChild(body);
 
-    activeExpId = expId;
+  expOverlay.classList.add('active');
+});
 
-    openOverlay(expId);
-
-    if (!body) return;
-
-    // 🔥 MOVE body into overlay
-    expOverlayContent.innerHTML = '';
-    expOverlayContent.appendChild(body);
-
-    // 🔥 SHOW overlay
-    expOverlay.classList.add('active');
-  });
 
   refs.referencesContainer.addEventListener('click', function (e) {
     const header = e.target.closest('.ref-header');
@@ -859,23 +868,7 @@ function renderLists() {
             value="${escapeHtml(edu.discription || '')}"
             placeholder="Achievements, distinctions, major subjects..." />
         </div>
-
       </div>
-
-      <div class="edu-actions-row">
-        <button class="move btn-midnight">
-          <i class="fa-solid fa-arrow-up"
-            data-action="upedu"
-            data-id="${edu.id}"></i>
-        </button>
-
-        <button class="move btn-midnight">
-          <i class="fa-solid fa-arrow-down"
-            data-action="downedu"
-            data-id="${edu.id}"></i>
-        </button>
-      </div>
-
     </div>
   </div>
 `;
@@ -929,11 +922,12 @@ function renderLists() {
 
         <div class="field">
           <label>Job Title</label>
-          <input class="input_data"
+          <input class="input_data job-title"
             data-id="${exp.id}"
             data-field="role"
             value="${escapeHtml(exp.role)}"
             placeholder="e.g. Frontend Developer" />
+             <ul class="title-suggestions" data-title-suggest="${exp.id}"></ul>
         </div>
 
         <div class="field">
@@ -977,6 +971,7 @@ function renderLists() {
                 data-idx="${i}"
                 placeholder="Describe your achievement..."
                 value="${escapeHtml(b)}" />
+                 <ul class="bullet-suggestions" data-bullet-suggest="${exp.id}"></ul>
               
                 <button class="remove-btn bullet-delete"
         data-action="delbullet"
@@ -1231,12 +1226,14 @@ function expInputHandler(e) {
     if (field === 'role' || field === 'campany') {
       updateExpHeader(idVal);
       validateExperienceAdd();
+      updateExpHeader(idVal);
     }
   }
   // 🔥 check button state
   updatePreviewLive();
   save();
 }
+
 
 function expButtonHandler(e) {
   const action = e.target.dataset.action;
@@ -1309,10 +1306,6 @@ function eduButtonHandler(e) {
   const idVal = e.target.dataset.id;
   if (action === 'removeedu') {
     data.education = data.education.filter(x => x.id !== idVal);
-  } else if (action === 'upedu') {
-    moveItem(data.education, idVal, -1);
-  } else if (action === 'downedu') {
-    moveItem(data.education, idVal, 1);
   }
   renderLists(); renderPreview(); save();
 }
@@ -1367,12 +1360,12 @@ function renderSkillRow(skill, index) {
   return `
     <div class="language-row" data-index="${index}">
       <input
-        class="input_data"
+        class="input_data skill-input"
         placeholder="Skill"
         value="${escapeHtml(skill.name || '')}"
         data-field="name"
       />
-
+      <ul class="skill-suggestions"></ul>
       <select class="language-level" data-field="level">
         <option value="basic" ${skill.level === 'basic' ? 'selected' : ''}>Basic</option>
         <option value="conversational" ${skill.level === 'conversational' ? 'selected' : ''}>Conversational</option>
@@ -1492,10 +1485,34 @@ function bindButtons() {
     openOverlay(activeExpId);
   });
 
-  refs.addEduBtn.addEventListener('click', () => {
-    data.education.unshift({ id: id(), school: "", degree: "", year: "", discription: "" });
-    renderLists(); renderPreview(); save(); validateEducationAdd();
-  });
+refs.addEduBtn.addEventListener('click', () => {
+  const newEdu = {
+    id: id(),
+    school: "",
+    degree: "",
+    year: "",
+    discription: ""
+  };
+
+  // add to data
+  data.education.unshift(newEdu);
+
+  // 🔥 set active ID
+  activeEduId = newEdu.id;
+
+  renderLists();
+  renderPreview();
+  save();
+  validateEducationAdd();
+
+  // 🔥 OPEN overlay like a click
+  setTimeout(() => {
+    const card = document.querySelector(`.edu-card[data-edu="${newEdu.id}"]`);
+    const header = card?.querySelector('.edu-header');
+
+    if (header) header.click(); // 👈 triggers your existing overlay logic
+  }, 0);
+});
 
   //References
   refs.addRefBtn.addEventListener('click', () => {
@@ -1708,11 +1725,19 @@ function renderPreview(highlightKeywords) {
 }
 
 function renderPersonalDetails() {
-  document.querySelector('.name').textContent = data.personal.fullName || '';
-  document.querySelector('.tittle').textContent = data.personal.title || '';
-  document.querySelector('.emailAd').textContent = data.personal.email || '';
-  document.querySelector('.phoneNo').textContent = data.personal.phone || '';
-  document.querySelector('.locationAd').textContent = data.personal.location || '';
+  document.querySelector('.name').textContent =
+    data.personal.fullName || 'Your Name';
+
+  document.querySelector('.tittle').textContent =
+    data.personal.title || 'Your Title';
+
+  document.querySelector('.emailAd').textContent =
+    data.personal.email || 'your@email.com';
+
+  document.querySelector('.phoneNo').textContent =
+    data.personal.phone || 'Your Phone number';
+  document.querySelector('.locationAd').textContent =
+    data.personal.location || 'Your Location';
 }
 
 renderPersonalDetails()
@@ -9129,6 +9154,127 @@ function getDragAfterElement(container, y) {
   return closest;
 }
 
+let touchEduItem = null;
+let touchEduStartY = 0;
+
+refs.educationContainer.addEventListener("touchstart", (e) => {
+  const item = e.target.closest(".item");
+  if (!item) return;
+
+  if (!e.target.closest(".drag-handle")) return;
+
+  touchEduItem = item;
+  touchEduStartY = e.touches[0].clientY;
+
+  item.classList.add("dragging");
+});
+
+refs.educationContainer.addEventListener("touchmove", (e) => {
+  if (!touchEduItem) return;
+
+  const touchY = e.touches[0].clientY;
+
+  const items = [...refs.educationContainer.querySelectorAll(".item")];
+  const currentIndex = items.indexOf(touchEduItem);
+
+  const target = items.find(el => {
+    const rect = el.getBoundingClientRect();
+    return touchY < rect.top + rect.height / 2;
+  });
+
+  if (!target) return;
+
+  const targetIndex = items.indexOf(target);
+
+  if (targetIndex !== currentIndex) {
+    refs.educationContainer.insertBefore(
+      touchEduItem,
+      targetIndex > currentIndex ? target.nextSibling : target
+    );
+  }
+});
+
+refs.educationContainer.addEventListener("touchend", () => {
+  if (!touchEduItem) return;
+
+  touchEduItem.classList.remove("dragging");
+
+  // 🔥 update data order
+  const newOrder = [...refs.educationContainer.querySelectorAll(".item")]
+    .map(el => el.querySelector(".edu-card").dataset.edu);
+
+  data.education = newOrder.map(id =>
+    data.education.find(x => x.id === id)
+  );
+
+  save();
+  renderPreview();
+
+  touchEduItem = null;
+});
+
+let touchItem = null;
+let touchStartY = 0;
+
+refs.experienceContainer.addEventListener("touchstart", (e) => {
+  const item = e.target.closest(".item");
+  if (!item) return;
+
+  // 🔥 only drag when touching the handle
+  if (!e.target.closest(".drag-handle")) return;
+
+  touchItem = item;
+  touchStartY = e.touches[0].clientY;
+
+  item.classList.add("dragging");
+});
+
+refs.experienceContainer.addEventListener("touchmove", (e) => {
+  if (!touchItem) return;
+
+  const touchY = e.touches[0].clientY;
+  const delta = touchY - touchStartY;
+
+  const items = [...refs.experienceContainer.querySelectorAll(".item")];
+
+  const currentIndex = items.indexOf(touchItem);
+
+  const target = items.find((el, index) => {
+    const rect = el.getBoundingClientRect();
+    return touchY < rect.top + rect.height / 2;
+  });
+
+  if (!target) return;
+
+  const targetIndex = items.indexOf(target);
+
+  if (targetIndex !== currentIndex) {
+    refs.experienceContainer.insertBefore(
+      touchItem,
+      targetIndex > currentIndex ? target.nextSibling : target
+    );
+  }
+});
+
+refs.experienceContainer.addEventListener("touchend", () => {
+  if (!touchItem) return;
+
+  touchItem.classList.remove("dragging");
+
+  // 🔥 update data order
+  const newOrder = [...refs.experienceContainer.querySelectorAll(".item")]
+    .map(el => el.querySelector(".exp-card").dataset.exp);
+
+  data.experience = newOrder.map(id =>
+    data.experience.find(x => x.id === id)
+  );
+
+  save();
+  renderPreview();
+
+  touchItem = null;
+});
+
 const eduContainer = document.getElementById("educationContainer");
 
 let draggedEdu = null;
@@ -9236,3 +9382,420 @@ function getEduAfterElement(container, y) {
   return closest;
 }
 
+/* =========================
+   DRAG SCROLL FIX
+========================= */
+
+// DESKTOP DRAG
+document.addEventListener('dragstart', (e) => {
+  if (e.target.closest('.drag-handle')) {
+    layout.classList.add('dragging');
+  }
+});
+
+document.addEventListener('dragend', () => {
+  layout.classList.remove('dragging');
+});
+
+// TOUCH START
+document.addEventListener('touchstart', (e) => {
+  if (e.target.closest('.drag-handle')) {
+    layout.classList.add('dragging');
+  }
+}, { passive: false });
+
+// TOUCH END
+document.addEventListener('touchend', () => {
+  layout.classList.remove('dragging');
+});
+
+document.addEventListener('touchcancel', () => {
+  layout.classList.remove('dragging');
+});
+
+// 🔥 THIS IS THE KEY FIX FOR MOBILE
+document.addEventListener('touchmove', (e) => {
+  if (layout.classList.contains('dragging')) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+function restoreExpBody() {
+  if (!activeExpId) return;
+
+  const overlay = document.getElementById('expOverlay');
+  const content = overlay.querySelector('.exp-overlay-content');
+
+  const body = content.querySelector('.exp-body');
+  if (!body) return;
+
+  const parentCard = document.querySelector(`.exp-card[data-exp="${activeExpId}"]`);
+  if (!parentCard) return;
+
+  parentCard.appendChild(body);
+}
+
+// =========================
+// DATASET
+// =========================
+
+const cvDataset = cvDatasetCollection()
+// =========================
+// FIND ROLE KEY
+// =========================
+function findRoleKey(title) {
+  if (!title) return null;
+
+  const input = title.toLowerCase();
+
+  for (let key in cvDataset) {
+    if (input.includes(key)) {
+      console.log("✅ Matched role:", key);
+      return key;
+    }
+  }
+
+  console.log("❌ No role match for:", title);
+  return null;
+}
+
+document.addEventListener("input", (e) => {
+activeSuggestionIndex = -1;
+  if (!e.target.classList.contains("job-title")) return;
+
+  activeTitleInput = e.target; // 🔥 track active input
+
+  console.log("🔥 Typing title:", e.target.value);
+
+  const id = e.target.dataset.id;
+  const value = e.target.value.toLowerCase();
+
+  const list = document.querySelector(
+    `.title-suggestions[data-title-suggest="${id}"]`
+  );
+
+  if (!list) {
+    console.log("❌ No title suggestion box found");
+    return;
+  }
+
+  if (!value) {
+    list.innerHTML = "";
+    return;
+  }
+
+const matches = Object.keys(cvDataset).filter(key => {
+  const k = key.toLowerCase();
+  return k.startsWith(value) || k.includes(value);
+});
+
+  console.log("✅ Matches:", matches);
+
+  list.innerHTML = matches.map(key => `
+    <li class="title-item" data-id="${id}" data-role="${key}">
+      ${key}
+    </li>
+  `).join("");
+});
+
+document.addEventListener("click", (e) => {
+
+  if (!e.target.classList.contains("title-item")) return;
+
+  const id = e.target.dataset.id;
+  const role = e.target.dataset.role;
+
+  console.log("✅ Selected role:", role);
+
+  if (!activeTitleInput) return;
+
+  // 🔥 update input directly
+  activeTitleInput.value = role;
+
+  const exp = data.experience.find(x => x.id === id);
+  if (!exp) return;
+
+  // 🔥 update data
+  exp.role = role;
+
+  // 🔥 update header
+  updateExpHeader(id);
+
+  // 🔥 render + save
+  renderPreview();
+  save();
+
+  // 🔥 close suggestions
+  const list = document.querySelector(
+    `.title-suggestions[data-title-suggest="${id}"]`
+  );
+  if (list) list.innerHTML = "";
+
+  // 🔥 reset
+  activeTitleInput = null;
+});
+
+document.addEventListener("focusin", (e) => {
+activeSuggestionIndex = -1;
+  if (!e.target.classList.contains("bullet-input")) return;
+
+  activeBulletInput = e.target; // 🔥 track current input
+
+  console.log("🔥 Bullet input focused");
+
+  const id = e.target.dataset.id;
+
+  const exp = data.experience.find(x => x.id === id);
+  if (!exp) return;
+
+  const roleKey = findRoleKey(exp.role);
+  if (!roleKey) return;
+
+  const list = document.querySelector(
+    `.bullet-suggestions[data-bullet-suggest="${id}"]`
+  );
+  if (!list) return;
+
+  const achievements = cvDataset[roleKey].achievements
+  .filter(item =>
+    !exp.bullets.some(b => b.trim().toLowerCase() === item.trim().toLowerCase())
+  );
+
+  list.innerHTML = achievements.map(item => `
+    <li class="bullet-item" data-id="${id}">
+      ${item}
+    </li>
+  `).join("");
+});
+
+// =========================
+// CLICK BULLET
+// =========================
+document.addEventListener("click", (e) => {
+
+  if (!e.target.classList.contains("bullet-item")) return;
+
+  const id = e.target.dataset.id;
+  const text = e.target.textContent.trim();
+
+  console.log("✅ Selecting bullet:", text);
+
+  if (!activeBulletInput) return;
+
+  const idx = activeBulletInput.dataset.idx;
+
+  const exp = data.experience.find(x => x.id === id);
+  if (!exp) return;
+
+  // 🔥 UPDATE EXISTING INPUT (not push)
+  exp.bullets[idx] = text;
+  activeBulletInput.value = text;
+
+  // 🔥 update UI + save
+  renderPreview();
+  save();
+
+  // 🔥 CLOSE suggestions
+  const list = document.querySelector(
+    `.bullet-suggestions[data-bullet-suggest="${id}"]`
+  );
+  if (list) list.innerHTML = "";
+
+  // 🔥 reset active input
+  activeBulletInput = null;
+});
+
+// =========================
+// CLOSE SUGGESTIONS WHEN NOT FOCUSED
+// =========================
+document.addEventListener("click", (e) => {
+
+  // ❌ if clicking a suggestion → ignore (your existing handlers will handle)
+  if (e.target.closest(".title-item") || e.target.closest(".bullet-item")) {
+    return;
+  }
+
+  // ❌ if clicking inside inputs → do nothing
+  if (
+    e.target.closest(".job-title") ||
+    e.target.closest(".bullet-input")
+  ) {
+    return;
+  }
+
+  // 🔥 OTHERWISE → CLOSE EVERYTHING
+  document.querySelectorAll(".title-suggestions").forEach(el => {
+    el.innerHTML = "";
+  });
+
+  document.querySelectorAll(".bullet-suggestions").forEach(el => {
+    el.innerHTML = "";
+  });
+
+  // 🔥 reset active inputs
+  activeTitleInput = null;
+  activeBulletInput = null;
+});
+
+document.addEventListener("input", (e) => {
+
+  if (!e.target.classList.contains("bullet-input")) return;
+
+  activeBulletInput = e.target;
+
+  const id = e.target.dataset.id;
+  const value = e.target.value.toLowerCase();
+
+  const exp = data.experience.find(x => x.id === id);
+  if (!exp) return;
+
+  const roleKey = findRoleKey(exp.role);
+  if (!roleKey) return;
+
+  const list = document.querySelector(
+    `.bullet-suggestions[data-bullet-suggest="${id}"]`
+  );
+  if (!list) return;
+
+  // 🔥 filter out already used bullets
+  let achievements = cvDataset[roleKey].achievements.filter(item =>
+    !exp.bullets.some(b =>
+      b.trim().toLowerCase() === item.trim().toLowerCase()
+    )
+  );
+
+  // 🔥 FILTER BY INPUT TEXT (THIS IS THE NEW PART)
+  if (value) {
+    achievements = achievements.filter(item =>
+      item.toLowerCase().includes(value)
+    );
+  }
+
+  // 🔥 render results
+  list.innerHTML = achievements.map(item => `
+    <li class="bullet-item" data-id="${id}">
+      ${item}
+    </li>
+  `).join("");
+});
+
+function updateActiveItem(items) {
+  items.forEach(el => el.classList.remove("active"));
+
+  if (items[activeSuggestionIndex]) {
+    items[activeSuggestionIndex].classList.add("active");
+  }
+}
+
+document.addEventListener("keydown", (e) => {
+
+  const activeList =
+    document.querySelector(".title-suggestions:not(:empty)") ||
+    document.querySelector(".bullet-suggestions:not(:empty)");
+
+  if (!activeList) return;
+
+  const items = activeList.querySelectorAll("li");
+  if (!items.length) return;
+
+  // ⬇️ DOWN
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    activeSuggestionIndex++;
+
+    if (activeSuggestionIndex >= items.length) {
+      activeSuggestionIndex = 0;
+    }
+
+    updateActiveItem(items);
+  }
+
+  // ⬆️ UP
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    activeSuggestionIndex--;
+
+    if (activeSuggestionIndex < 0) {
+      activeSuggestionIndex = items.length - 1;
+    }
+
+    updateActiveItem(items);
+  }
+
+  // ⏎ ENTER
+  if (e.key === "Enter") {
+    if (activeSuggestionIndex >= 0) {
+      e.preventDefault();
+      items[activeSuggestionIndex].click();
+      activeSuggestionIndex = -1;
+    }
+  }
+});
+
+function getSavedTitles() {
+  const titles = data.experience
+    .map(exp => (exp.role || "").toLowerCase())
+    .filter(Boolean);
+
+  console.log("📌 titles:", titles); // ADD THIS
+  return titles;
+}
+
+function getSkillsFromTitles() {
+  const titles = getSavedTitles();
+  let skills = [];
+
+  titles.forEach(title => {
+    const roleKey = findRoleKey(title);
+
+    console.log("🎯 match:", title, "→", roleKey); // ADD THIS
+
+    if (roleKey && cvDataset[roleKey]) {
+      console.log("✅ dataset found:", cvDataset[roleKey]); // ADD THIS
+
+      // TRY BOTH (we don't know your structure yet)
+      if (Array.isArray(cvDataset[roleKey])) {
+        skills.push(...cvDataset[roleKey]);
+      } else if (cvDataset[roleKey].skills) {
+        skills.push(...cvDataset[roleKey].skills);
+      }
+    }
+  });
+
+  console.log("🧠 final skills:", skills); // ADD THIS
+  return [...new Set(skills)];
+}
+
+refs.skillsContainer.addEventListener("input", (e) => {
+  if (!e.target.classList.contains("skill-input")) return;
+
+  const input = e.target;
+  const value = input.value.toLowerCase();
+  const row = input.closest(".language-row");
+  const box = row.querySelector(".skill-suggestions");
+
+  if (!box) return;
+
+  const skills = getSkillsFromTitles();
+
+  const filtered = skills.filter(skill =>
+    skill.toLowerCase().includes(value)
+  );
+
+  box.innerHTML = filtered
+  .map(s => `<li>${s}</li>`)
+  .join("");
+
+  box.querySelectorAll("li").forEach(li => {
+    li.addEventListener("click", () => {
+      input.value = li.textContent;
+      box.innerHTML = "";
+
+      const index = Number(row.dataset.index);
+      data.skills[index].name = li.textContent;
+
+      save();
+      renderPreview();
+    });
+  });
+});

@@ -147,4 +147,274 @@
 
 
 
+/* EXTRA SECTION (animated) */
+.extra-content {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: 
+    max-height 0.35s ease,
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
 
+/* OPEN STATE */
+.extra-section.open .extra-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+.extra-toggle {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: #f3f3f3;
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.extra-toggle:hover {
+  background: #eaeaea;
+}
+
+/* CHEVRON */
+.extra-toggle .chevron {
+  transition: transform 0.3s ease;
+}
+
+.extra-toggle.active .chevron {
+  transform: rotate(180deg);
+}
+
+/* ========================= */
+/* EXTRA CONTENT (ANIMATION) */
+/* ========================= */
+
+.extra-content {
+  max-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    max-height 0.35s ease,
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+/* OPEN */
+.extra-section.open .extra-content {
+  opacity: 1;
+  transform: translateY(0);
+  margin-top: 10px;
+}
+
+/* ========================= */
+/* MAIN DETAILS (ANIMATION) */
+/* ========================= */
+
+.mainDetails {
+  max-height: 500px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  opacity: 1;
+  transition:
+    max-height 0.35s ease,
+    opacity 0.25s ease;
+}
+
+/* HIDDEN WHEN EXTRA IS OPEN */
+.mainDetails.closed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.extra-inner {
+    display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ========================= */
+/* FIELD WRAPPER (IMPORTANT) */
+/* ========================= */
+.field {
+  position: relative;
+  overflow: visible; /* 🔥 REQUIRED */
+}
+
+/* ========================= */
+/* TITLE SUGGESTIONS */
+/* ========================= */
+.title-suggestions, .skill-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+
+  margin-top: 6px;
+  padding: 6px;
+
+  list-style: none;
+
+  max-height: 180px;
+  overflow-y: auto;
+
+  z-index: 9999; /* 🔥 VERY IMPORTANT */
+
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+/* ========================= */
+/* BULLET SUGGESTIONS */
+/* ========================= */
+.exp-bullets-section {
+  position: relative; /* 🔥 REQUIRED */
+}
+
+.bullet-suggestions {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 100%;
+
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+
+  margin-top: 6px;
+  padding: 6px;
+
+  list-style: none;
+
+  max-height: 180px;
+  overflow-y: auto;
+
+  z-index: 9999;
+
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+/* ========================= */
+/* ITEMS */
+/* ========================= */
+.title-item,
+.bullet-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s;
+}
+
+.title-item:hover,
+.bullet-item:hover {
+  background: #f2f2f2;
+}
+
+/* active (keyboard nav) */
+.title-item.active {
+  background: #e6f0ff;
+}
+
+.title-suggestions,
+.bullet-suggestions, .skill-suggestions {
+  margin-top: 8px;
+  padding: 0;
+  list-style: none;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.title-item,
+.bullet-item {
+  padding: 10px;
+  border-radius: 8px;
+  background: #f5f5f5;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s;
+}
+
+.title-item:hover,
+.bullet-item:hover {
+  background: #eaeaea;
+}
+
+.language-row {
+  position: absolute;
+  overflow: visible;
+}
+
+/* ========================= */
+/* DROPDOWN BASE */
+/* ========================= */
+.title-suggestions,
+.skill-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+
+  margin-top: 6px;
+  padding: 6px;
+
+  list-style: none;
+
+  max-height: 180px;
+  overflow-y: auto;
+
+  z-index: 9999;
+
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+/* ========================= */
+/* ITEMS */
+/* ========================= */
+.title-item,
+.skill-suggestions li {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s;
+}
+
+/* hover */
+.title-item:hover,
+.skill-suggestions li:hover {
+  background: #f2f2f2;
+}
+
+/* ========================= */
+/* SCROLLBAR (optional 🔥) */
+/* ========================= */
+.skill-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.skill-suggestions::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}

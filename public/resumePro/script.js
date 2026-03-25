@@ -101,15 +101,6 @@ toggle.addEventListener("click", () => {
   backdrop.classList.toggle("opacity");
 });
 
-document.addEventListener('click', e => {
-  const toggle = e.target.closest('.extra-toggle');
-  if (!toggle) return;
-
-  const section = toggle.closest('.extra-section');
-  const isOpen = section.classList.toggle('open');
-
-  toggle.setAttribute('aria-expanded', isOpen);
-});
 
 backdrop.addEventListener("click", () => {
   toggle.classList.remove("active");
@@ -117,3 +108,44 @@ backdrop.addEventListener("click", () => {
   backdrop.classList.remove("open");
   backdrop.classList.remove("opacity");
 });
+
+const extraSection = document.querySelector('.extra-section');
+const extraToggle = document.querySelector('.extra-toggle');
+const mainDetails = document.querySelector('.mainDetails');
+
+// 👉 DEFAULT STATE (main open)
+mainDetails.classList.remove('closed');
+extraSection.classList.remove('open');
+
+extraToggle.addEventListener('click', () => {
+  const isOpen = extraSection.classList.contains('open');
+
+  if (!isOpen) {
+    // 🔥 OPEN EXTRA → CLOSE MAIN
+    extraSection.classList.add('open');
+    mainDetails.classList.add('closed');
+
+    extraToggle.classList.add('active');
+    extraToggle.setAttribute('aria-expanded', true);
+  } else {
+    // 🔥 CLOSE EXTRA → OPEN MAIN (never both closed)
+    extraSection.classList.remove('open');
+    mainDetails.classList.remove('closed');
+
+    extraToggle.classList.remove('active');
+    extraToggle.setAttribute('aria-expanded', false);
+  }
+});
+
+document.querySelectorAll('.mainDetails input').forEach(input => {
+  input.addEventListener('focus', () => {
+    // 🔥 FORCE MAIN OPEN
+    mainDetails.classList.remove('closed');
+
+    // 🔥 CLOSE EXTRA
+    extraSection.classList.remove('open');
+    extraToggle.classList.remove('active');
+    extraToggle.setAttribute('aria-expanded', false);
+  });
+});
+
