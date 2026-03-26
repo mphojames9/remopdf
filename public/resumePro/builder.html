@@ -406,6 +406,15 @@
         </div>
       </div>
 
+      <div class="section-block" id="certificateBlock">
+  <div class="section-header">
+    <h4><i class="fa-solid fa-certificate"></i> Certificates</h4>
+    <button class="toggle-btn" id="addCertificateBtn">
+      <i class="fa-solid fa-pen-to-square"></i>
+    </button>
+  </div>
+</div>
+
       <!-- INTERESTS -->
       <div class="section-block" id="interestBlock">
         <div class="section-header">
@@ -613,6 +622,24 @@
     </div>
   </div>
 
+    <div id="certificateBlockOverlay" class="certificateBlockOverlay">
+    <div class="overlay-content">
+      <!-- CLOSE BUTTON -->
+      <button id="closecertificateBlockOverlay" class="overlay-close">
+        &times;
+      </button>
+      <!-- YOUR CONTENT -->
+      <div class="section-content" style="height:auto;">
+        <div class="section-inner">
+          <button class="small-btn" id="addCertificateBtn">
+            <i class="fa-solid fa-plus"></i> Add Certificate
+          </button>
+          <div id="certificatesContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- INTERESTS OVERLAY -->
   <div id="interestOverlay" class="interestOverlay">
     <div class="overlay-content">
@@ -654,9 +681,8 @@
   </div>
 
   <div class="overlay-personalDetails" id="editDetails-overay">
-    
+          <button id="closeEditOverlay" class="overlay-close">&times;</button>
     <div class="overlay-content">
-      <button id="closeEditOverlay" class="overlay-close">&times;</button>
       <div class="section-block">
         <h4>
           <i class="fa-solid fa-user-pen"></i>

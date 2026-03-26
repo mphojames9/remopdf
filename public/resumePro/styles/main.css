@@ -223,19 +223,6 @@
       box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
     }
 
-    /* Remove Button */
-    .remove-btn {
-      background: #f3f4f6;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: 0.3s ease;
-      color: #444;
-    }
-
     .remove-btn:hover {
       background: #fee2e2;
       color: #dc2626;
@@ -353,7 +340,6 @@
     select {
       width: 100%;
       padding: 8px 10px;
-      margin-bottom: 8px;
       border-radius: 8px;
       border: 1px solid var(--border);
       font-size: 13px;
@@ -501,7 +487,7 @@
 
     /* CONTENT */
     .section-content {
-      overflow: hidden;
+      overflow: visible;
       height: 0;
       transition: height 300ms cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -516,7 +502,9 @@
 
     /* INNER CONTENT SPACING */
     .section-inner {
-      padding-top: 3px;
+      padding-top: 5px;
+      overflow-y: visible;
+      position: relative;
     }
 
 
@@ -558,8 +546,7 @@
       width: 100%;
       border: var(--border);
       border-radius: 12px;
-      padding: 10px 14px;
-      margin-bottom: 10px;
+      padding: 0 14px;
       color: var(--primary);
       font-size: 14px;
       transition: all 0.25s ease;
@@ -1151,14 +1138,6 @@
     .exp-card.active .exp-body {
       max-height: 1200px;
       padding: 22px;
-    }
-
-    /* GRID */
-    .exp-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 18px;
-      margin-bottom: 24px;
     }
 
     /* RESPONSIBILITIES */
@@ -2063,6 +2042,7 @@
     .languagesOverlay,
     .interestOverlay,
     .refOverlay,
+    .certificateBlockOverlay,
     .overlay-personalDetails {
       position: fixed;
       top: 0;
@@ -2086,6 +2066,7 @@
     .edu-overlay.active,
     .skillOverlay.active,
     .languagesOverlay.active,
+    .certificateBlockOverlay.active,
     .interestOverlay.active,
     .refOverlay.active,
     .overlay-personalDetails.active {
@@ -2230,7 +2211,7 @@
 
     /* CARD */
     .overlay-content {
-      max-width: 720px;
+      max-width: 780px;
       width: 100%;
       padding: 28px;
       border-radius: 22px;
@@ -2241,22 +2222,31 @@
       position: relative;
       animation: fadeScale 0.3s ease;
       padding-top: 50px;
+      overflow-y: auto;
+    }
+
+    #languagesContainer {
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
     }
 
     /* CLOSE BUTTON */
-    .overlay-close {
+    .overlay-close,
+    #closeEditOverlay {
       position: absolute;
       top: 8px;
       right: 16px;
-      font-size: 18px;
-      background: #f2f2f2;
-      border: none;
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      color: #555;
       cursor: pointer;
       transition: all 0.3s ease;
+      background: linear-gradient(145deg, #111, #2a2a2a);
+      color: #fff;
+      border: none;
+      font-weight: 600;
+      font-size: 18px;
     }
 
     .overlay-close:hover {
@@ -2276,15 +2266,19 @@
 
     /* ROW */
     .language-row {
+      margin: 0 auto;
+      width: 100%;
+      max-width: 700px;
       display: grid;
       grid-template-columns: 1fr 140px auto;
       gap: 8px;
       margin-bottom: 8px;
-      padding: 12px;
+      padding: 5px;
       background: #ffffff;
       border: 1px solid #eee;
       box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
       transition: all 0.25s ease;
+      overflow: visible;
     }
 
     .language-row:hover {
@@ -2295,7 +2289,6 @@
     /* INPUT */
     .input_data {
       flex: 1;
-      padding: 11px;
       border-radius: 10px;
       border: 1px solid #e5e5e5;
       background: #fafafa;
@@ -2312,7 +2305,6 @@
 
     /* SELECT */
     .language-level {
-      padding: 10px;
       border-radius: 10px;
       border: 1px solid #e5e5e5;
       background: #fafafa;
@@ -2322,18 +2314,6 @@
 
     .language-level:focus {
       background: #fff;
-    }
-
-    /* REMOVE BUTTON */
-    .remove-btn {
-      background: #fafafa;
-      border: 1px solid #eee;
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      color: #777;
-      cursor: pointer;
-      transition: 0.25s;
     }
 
     .remove-btn:hover {
@@ -2415,19 +2395,18 @@
     /* REMOVE BUTTON (SMALL ICON STYLE) */
     .remove-btn {
       width: 24px;
-      height: 24px;
+      height: 30px;
       border-radius: 50%;
-
       border: none;
-      background: #f1f1f1;
-      color: #888;
-
+      background: #ffeaea;
+    color: #e53935;
       display: flex;
       align-items: center;
       justify-content: center;
-
       cursor: pointer;
       transition: all 0.25s ease;
+      margin: 0 auto;
+      margin-top: 2px;
     }
 
     /* HOVER DELETE */
@@ -2493,18 +2472,17 @@
       position: absolute;
       top: 10px;
       right: 14px;
-
       width: 34px;
       height: 34px;
       border-radius: 50%;
-
+      background: linear-gradient(145deg, #111, #2a2a2a);
+      color: #fff;
       border: none;
-      background: #f2f2f2;
-      color: #555;
+      font-weight: 600;
       font-size: 16px;
-
       cursor: pointer;
       transition: all 0.3s ease;
+      z-index: 999;
     }
 
     .closeOverlay:hover {
@@ -2639,7 +2617,7 @@
       border: 1px solid rgba(0, 0, 0, 0.05);
       animation: fadeScale 0.3s ease;
       max-height: 100vh;
-      overflow-y:auto ;
+      overflow-y: auto;
     }
 
     /* GRID */
@@ -2701,7 +2679,6 @@
     .exp-bullets {
       display: flex;
       flex-direction: column;
-      gap: 10px;
     }
 
     /* EACH BULLET ROW */
@@ -2710,15 +2687,12 @@
       align-items: center;
       gap: 10px;
       position: relative;
-      padding: 10px 12px;
+      padding: 0 12px;
       border-radius: 14px;
-
       background: linear-gradient(145deg, #ffffff, #f4f4f4);
       border: 1px solid #eee;
-
       box-shadow:
         0 4px 10px rgba(0, 0, 0, 0.05);
-
       transition: all 0.25s ease;
     }
 
@@ -2753,7 +2727,7 @@
       border-radius: 50%;
       border: none;
 
-      background: #f1f1f1;
+      background: #f7e9e9;
       color: #888;
 
       display: flex;
@@ -2974,16 +2948,12 @@
     .overlay-personalDetails {
       position: fixed;
       inset: 0;
-
       background: rgba(255, 255, 255, 0.65);
       backdrop-filter: blur(12px);
-
       display: flex;
       align-items: center;
       justify-content: center;
-
-      z-index: 999;
-
+      z-index: 9999;
       opacity: 0;
       pointer-events: none;
       transition: all 0.3s ease;
@@ -2997,7 +2967,7 @@
     /* CARD */
     .overlay-personalDetails .overlay-content {
       width: 100%;
-      max-width: 760px;
+      max-width: 780px;
 
       padding: 0;
       padding-top: 50px;
@@ -3013,33 +2983,6 @@
 
       animation: fadeScale 0.3s ease;
       position: relative;
-    }
-
-    /* CLOSE BUTTON */
-    #closeEditOverlay {
-      position: absolute;
-      top: 10px;
-      right: 14px;
-
-      width: 34px;
-      height: 34px;
-
-      border-radius: 50%;
-      border: none;
-
-      background: #f2f2f2;
-      color: #555;
-
-      font-size: 18px;
-      cursor: pointer;
-
-      transition: all 0.3s ease;
-    }
-
-    #closeEditOverlay:hover {
-      background: #e6e6e6;
-      color: #000;
-      transform: rotate(90deg);
     }
 
     /* HEADINGS */
@@ -3867,24 +3810,15 @@
       textarea,
       .language-level {
         font-size: 12px;
-        padding: 5px 6px;
       }
 
       .remove-btn {
         padding: 8px 12px;
-        margin-top: -5px;
         transform: scale(0.8);
       }
 
       .language-row {
         grid-template-columns: 1fr 120px auto;
-      }
-    }
-
-    @media (max-width:780px){
-      .exp-overlay-content {
-        height: 100%;
-        border-radius: 0;
       }
     }
 
@@ -3911,4 +3845,55 @@
       background: #506d9b;
       color: #fff;
       cursor: pointer;
+    }
+
+    #addCertificateBtn.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    #closeEditOverlay {
+      z-index: 999;
+    }
+
+    @media (max-width:780px) {
+
+      .exp-overlay-content,
+      .overlay-personalDetails .overlay-content,
+      .overlay-content {
+        height: 100%;
+        width: 100%;
+        border-radius: 0;
+      }
+    }
+
+    @media (max-height: 780px) {
+
+      .exp-overlay-content,
+      .overlay-personalDetails .overlay-content,
+      .overlay-content {
+        height: 100%;
+        border-radius: 0;
+      }
+    }
+
+    #skillsContainer {
+      overflow-y: visible;
+      position: relative;
+    }
+
+    .skillOverlay .overlay-content {
+      overflow-y: visible;
+    }
+
+    @media (max-width:450px){
+      .overlay-content {
+        padding: 58px 10px;
+      }
+    }
+
+    @media (max-width: 560px) {
+    .exp-overlay .exp-grid {
+      grid-template-columns: 1fr;
+    }
     }

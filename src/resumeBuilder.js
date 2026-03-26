@@ -419,6 +419,8 @@ const refs = {
   religion: $id('religion'),
   maritalStatus: $id('maritalStatus'),
   driversLicence: $id('driversLicence'),
+  certificatesContainer: document.getElementById('certificatesContainer'),
+  addCertificateBtn: document.getElementById('addCertificateBtn'),
 
 };
 
@@ -459,12 +461,24 @@ const DEFAULT = {
     { name: "", level: "" },
     { name: "", level: "" }
   ],
+  certificates: [
+    {
+      id: id(),
+      name: "",
+      issuer: "",
+      date: "",
+      url: "",
+      description: ""
+    }
+  ],
   interests: ["", "", "", ""],
   languages: [],
   template: "midnight"
 };
 // --- State ---------------------------------------------------------------
 let data = load() || JSON.parse(JSON.stringify(DEFAULT));
+// 🔥 Ensure certificates always exist
+data.certificates = data.certificates || [];
 let lastJDKeywords = [];
 
 // --- Init ----------------------------------------------------------------
@@ -493,57 +507,57 @@ function init() {
   });
 
   refs.educationContainer.addEventListener('click', function (e) {
-restoreExpBody(); // 🔥 VERY IMPORTANT
-  const header = e.target.closest('.edu-header');
-  if (!header) return;
+    restoreExpBody(); // 🔥 VERY IMPORTANT
+    const header = e.target.closest('.edu-header');
+    if (!header) return;
 
-  // 🔥 only trigger if clicking title
-  if (!e.target.closest('.edu-title')) return;
+    // 🔥 only trigger if clicking title
+    if (!e.target.closest('.edu-title')) return;
 
-  // 🔥 restore previous
-  restoreEduBody();
+    // 🔥 restore previous
+    restoreEduBody();
 
-  const eduOverlay = document.getElementById('eduOverlay');
-  const eduOverlayContent = eduOverlay.querySelector('.edu-overlay-content');
+    const eduOverlay = document.getElementById('eduOverlay');
+    const eduOverlayContent = eduOverlay.querySelector('.edu-overlay-content');
 
-  const card = header.closest('.edu-card');
-  const body = card.querySelector('.edu-body');
+    const card = header.closest('.edu-card');
+    const body = card.querySelector('.edu-body');
 
-  if (!body) return;
+    if (!body) return;
 
-  const eduId = card.dataset.edu;
+    const eduId = card.dataset.edu;
 
-  body.dataset.eduParent = eduId;
-  activeEduId = eduId;
+    body.dataset.eduParent = eduId;
+    activeEduId = eduId;
 
-  eduOverlayContent.innerHTML = '';
-  eduOverlayContent.appendChild(body);
+    eduOverlayContent.innerHTML = '';
+    eduOverlayContent.appendChild(body);
 
-  eduOverlay.classList.add('active');
-});
+    eduOverlay.classList.add('active');
+  });
 
   refs.experienceContainer.addEventListener('click', function (e) {
     restoreExpBody(); // 🔥 VERY IMPORTANT
 
-  const header = e.target.closest('.exp-header');
-  if (!header) return;
+    const header = e.target.closest('.exp-header');
+    if (!header) return;
 
-  // 🔥 only trigger if clicking title
-  if (!e.target.closest('.exp-title')) return;
+    // 🔥 only trigger if clicking title
+    if (!e.target.closest('.exp-title')) return;
 
-  const expOverlay = document.getElementById('expOverlay');
-  const expOverlayContent = expOverlay.querySelector('.exp-overlay-content');
-  const card = header.closest('.exp-card');
-  const body = card.querySelector('.exp-body');
-  const expId = card.dataset.exp;
-  activeExpId = expId;
-  openOverlay(expId);
-  if (!body) return;
-  expOverlayContent.innerHTML = '';
-  expOverlayContent.appendChild(body);
+    const expOverlay = document.getElementById('expOverlay');
+    const expOverlayContent = expOverlay.querySelector('.exp-overlay-content');
+    const card = header.closest('.exp-card');
+    const body = card.querySelector('.exp-body');
+    const expId = card.dataset.exp;
+    activeExpId = expId;
+    openOverlay(expId);
+    if (!body) return;
+    expOverlayContent.innerHTML = '';
+    expOverlayContent.appendChild(body);
 
-  expOverlay.classList.add('active');
-});
+    expOverlay.classList.add('active');
+  });
 
 
   refs.referencesContainer.addEventListener('click', function (e) {
@@ -797,11 +811,14 @@ function bindProfileInputs() {
   }
 }
 
+refs.certificatesContainer.addEventListener('click', certButtonHandler);
+
 // --- Render lists (experience, education, skills, references) -----------------------
 function renderLists() {
   validateReferenceAdd();
   validateSkillAdd();
   validateLanguageAdd();
+  validateCertificateAdd();
   // Education
   refs.educationContainer.innerHTML = '';
   data.education.forEach((edu) => {
@@ -993,22 +1010,6 @@ function renderLists() {
         Add Responsibility
         </button>
       </div>
-
-      <!-- ACTIONS -->
-      <div class="exp-actions-row">
-        <button class="btn-midnight">
-          <i class="fa-solid fa-arrow-up"
-             data-action="up"
-             data-id="${exp.id}"></i>
-        </button>
-
-        <button class="btn-midnight">
-          <i class="fa-solid fa-arrow-down"
-             data-action="down"
-             data-id="${exp.id}"></i>
-        </button>
-      </div>
-
     </div>
   </div>
 `;
@@ -1094,9 +1095,7 @@ function renderLists() {
             value="${escapeHtml(ref.email || '')}"
             placeholder="e.g. john@email.com" />
         </div>
-
       </div>
-
       <!-- ACTION BUTTONS -->
       <div class="ref-actions-row">
         <button class="btn-midnight">
@@ -1163,8 +1162,89 @@ function renderLists() {
   refs.skillsContainer.querySelectorAll('button').forEach(btn => btn.addEventListener('click', skillButtonHandler));
   refs.interestsContainer.querySelectorAll('input').forEach(inp => inp.addEventListener('input', interestInputHandler));
   refs.interestsContainer.querySelectorAll('button').forEach(btn => btn.addEventListener('click', interestButtonHandler));
+  refs.certificatesContainer.querySelectorAll('input')
+  .forEach(inp => inp.addEventListener('input', certInputHandler));
 
+refs.certificatesContainer.querySelectorAll('button')
+  .forEach(btn => btn.addEventListener('click', certButtonHandler));
 
+// =========================
+// CERTIFICATES
+// =========================
+refs.certificatesContainer.innerHTML = '';
+
+(data.certificates || []).forEach((cert) => {
+  const node = document.createElement('div');
+  node.className = 'item';
+
+  node.innerHTML = `
+    <div class="cert-card" data-cert="${cert.id}">
+
+      <div class="cert-header">
+        <div class="cert-title">
+          ${escapeHtml(cert.name || 'New Certificate')}
+        </div>
+
+        <button class="btn-danger">
+          <i class="fa-solid fa-trash"
+             data-action="removecert"
+             data-id="${cert.id}"></i>
+        </button>
+      </div>
+
+      <div class="cert-body">
+
+        <div class="field">
+          <label>Certificate Name</label>
+          <input class="input_data"
+            data-id="${cert.id}"
+            data-field="name"
+            value="${escapeHtml(cert.name)}"
+            placeholder="e.g. AWS Certified Developer" />
+        </div>
+
+        <div class="field">
+          <label>Issuer</label>
+          <input class="input_data"
+            data-id="${cert.id}"
+            data-field="issuer"
+            value="${escapeHtml(cert.issuer || '')}"
+            placeholder="e.g. Amazon, Google, Microsoft" />
+        </div>
+
+        <div class="field">
+          <label>Date</label>
+          <input class="input_data"
+            data-id="${cert.id}"
+            data-field="date"
+            value="${escapeHtml(cert.date || '')}"
+            placeholder="e.g. 2024" />
+        </div>
+
+        <div class="field">
+          <label>Credential URL</label>
+          <input class="input_data"
+            data-id="${cert.id}"
+            data-field="url"
+            value="${escapeHtml(cert.url || '')}"
+            placeholder="https://..." />
+        </div>
+
+        <div class="field">
+          <label>Description</label>
+          <input class="input_data"
+            data-id="${cert.id}"
+            data-field="description"
+            value="${escapeHtml(cert.description || '')}"
+            placeholder="What did you achieve?" />
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  refs.certificatesContainer.appendChild(node);
+});
 }
 
 /* ADD SKILL */
@@ -1178,7 +1258,6 @@ refs.addSkillBtn.addEventListener("click", () => {
   renderLists();
   renderPreview();
   save();
-
   validateSkillAdd();
 });
 
@@ -1301,6 +1380,18 @@ function refInputHandler(e) {
   save();
 }
 
+function certInputHandler(e) {
+  const certId = e.target.dataset.id;
+  const field = e.target.dataset.field;
+
+  const cert = data.certificates.find(c => c.id === certId);
+  if (!cert) return;
+
+  cert[field] = e.target.value;
+  renderPreview();
+  save();
+}
+
 function eduButtonHandler(e) {
   const action = e.target.dataset.action;
   const idVal = e.target.dataset.id;
@@ -1339,6 +1430,20 @@ function skillButtonHandler(e) {
   renderLists(); renderPreview(); save();
 }
 
+function certButtonHandler(e) {
+  const action = e.target.dataset.action;
+  const idVal = e.target.dataset.id;
+
+  if (action === 'removecert') {
+    data.certificates = data.certificates.filter(c => c.id !== idVal);
+  }
+
+validateCertificateAdd();
+  renderLists();
+  renderPreview();
+  save();
+}
+
 function interestInputHandler(e) {
   const idx = Number(e.target.dataset.idx);
   data.interests[idx] = e.target.value;
@@ -1365,13 +1470,13 @@ function renderSkillRow(skill, index) {
         value="${escapeHtml(skill.name || '')}"
         data-field="name"
       />
-      <ul class="skill-suggestions"></ul>
       <select class="language-level" data-field="level">
         <option value="basic" ${skill.level === 'basic' ? 'selected' : ''}>Basic</option>
         <option value="conversational" ${skill.level === 'conversational' ? 'selected' : ''}>Conversational</option>
         <option value="fluent" ${skill.level === 'fluent' ? 'selected' : ''}>Fluent</option>
         <option value="native" ${skill.level === 'native' ? 'selected' : ''}>Expert</option>
       </select>
+      <ul class="skill-suggestions"></ul>
 
       <button class="remove-btn">✕</button>
     </div>
@@ -1485,34 +1590,34 @@ function bindButtons() {
     openOverlay(activeExpId);
   });
 
-refs.addEduBtn.addEventListener('click', () => {
-  const newEdu = {
-    id: id(),
-    school: "",
-    degree: "",
-    year: "",
-    discription: ""
-  };
+  refs.addEduBtn.addEventListener('click', () => {
+    const newEdu = {
+      id: id(),
+      school: "",
+      degree: "",
+      year: "",
+      discription: ""
+    };
 
-  // add to data
-  data.education.unshift(newEdu);
+    // add to data
+    data.education.unshift(newEdu);
 
-  // 🔥 set active ID
-  activeEduId = newEdu.id;
+    // 🔥 set active ID
+    activeEduId = newEdu.id;
 
-  renderLists();
-  renderPreview();
-  save();
-  validateEducationAdd();
+    renderLists();
+    renderPreview();
+    save();
+    validateEducationAdd();
 
-  // 🔥 OPEN overlay like a click
-  setTimeout(() => {
-    const card = document.querySelector(`.edu-card[data-edu="${newEdu.id}"]`);
-    const header = card?.querySelector('.edu-header');
+    // 🔥 OPEN overlay like a click
+    setTimeout(() => {
+      const card = document.querySelector(`.edu-card[data-edu="${newEdu.id}"]`);
+      const header = card?.querySelector('.edu-header');
 
-    if (header) header.click(); // 👈 triggers your existing overlay logic
-  }, 0);
-});
+      if (header) header.click(); // 👈 triggers your existing overlay logic
+    }, 0);
+  });
 
   //References
   refs.addRefBtn.addEventListener('click', () => {
@@ -1535,6 +1640,22 @@ refs.addEduBtn.addEventListener('click', () => {
 
   refs.pdfBtn.addEventListener('click', () => downloadPDF(false));
   refs.pdfAtsBtn && refs.pdfAtsBtn.addEventListener('click', () => downloadPDF(true));
+
+  refs.addCertificateBtn.addEventListener('click', () => {
+  data.certificates.unshift({
+    id: id(),
+    name: "",
+    issuer: "",
+    date: "",
+    url: "",
+    description: ""
+  });
+
+  renderLists();
+  validateCertificateAdd(); // 🔥 ADD THIS
+  renderPreview();
+  save();
+});
 }
 
 document.querySelectorAll('.input_data').forEach(input => {
@@ -8611,6 +8732,19 @@ function validateSkillAdd() {
   refs.addSkillBtn.disabled = nameEmpty;
 }
 
+function validateCertificateAdd() {
+  if (!refs.addCertificateBtn) return;
+
+  const hasEmpty = (data.certificates || []).some(cert =>
+    !cert.name || cert.name.trim() === ""
+  );
+
+  refs.addCertificateBtn.disabled = hasEmpty;
+
+  // optional styling (premium feel)
+  refs.addCertificateBtn.classList.toggle('disabled', hasEmpty);
+}
+
 function validateEducationAdd() {
   const eduLength = data.education.length;
 
@@ -8958,9 +9092,9 @@ closeEduOverlay.addEventListener('click', () => {
   eduOverlay.classList.remove('active');
 });
 
-eduOverlay.addEventListener('click', (e)=>{
-  if(e.target === eduOverlay){
-eduOverlay.classList.remove('active');
+eduOverlay.addEventListener('click', (e) => {
+  if (e.target === eduOverlay) {
+    eduOverlay.classList.remove('active');
   }
 })
 
@@ -9027,6 +9161,7 @@ createOverlay('skillBlock', 'skillOverlay', 'closeSkillOverlay');
 createOverlay('languagesBlock', 'languagesOverlay', 'closeLanguagesOverlay');
 createOverlay('interestBlock', 'interestOverlay', 'closeInterestOverlay');
 createOverlay('refSection', 'refOverlay', 'closeRefOverlay');
+createOverlay('certificateBlock', 'certificateBlockOverlay', 'closecertificateBlockOverlay');
 
 const editProfileBtn = document.querySelectorAll('#editProfileBtn, .profile-section .left')
 
@@ -9460,7 +9595,7 @@ function findRoleKey(title) {
 }
 
 document.addEventListener("input", (e) => {
-activeSuggestionIndex = -1;
+  activeSuggestionIndex = -1;
   if (!e.target.classList.contains("job-title")) return;
 
   activeTitleInput = e.target; // 🔥 track active input
@@ -9484,10 +9619,10 @@ activeSuggestionIndex = -1;
     return;
   }
 
-const matches = Object.keys(cvDataset).filter(key => {
-  const k = key.toLowerCase();
-  return k.startsWith(value) || k.includes(value);
-});
+  const matches = Object.keys(cvDataset).filter(key => {
+    const k = key.toLowerCase();
+    return k.startsWith(value) || k.includes(value);
+  });
 
   console.log("✅ Matches:", matches);
 
@@ -9536,7 +9671,7 @@ document.addEventListener("click", (e) => {
 });
 
 document.addEventListener("focusin", (e) => {
-activeSuggestionIndex = -1;
+  activeSuggestionIndex = -1;
   if (!e.target.classList.contains("bullet-input")) return;
 
   activeBulletInput = e.target; // 🔥 track current input
@@ -9557,9 +9692,9 @@ activeSuggestionIndex = -1;
   if (!list) return;
 
   const achievements = cvDataset[roleKey].achievements
-  .filter(item =>
-    !exp.bullets.some(b => b.trim().toLowerCase() === item.trim().toLowerCase())
-  );
+    .filter(item =>
+      !exp.bullets.some(b => b.trim().toLowerCase() === item.trim().toLowerCase())
+    );
 
   list.innerHTML = achievements.map(item => `
     <li class="bullet-item" data-id="${id}">
@@ -9783,8 +9918,8 @@ refs.skillsContainer.addEventListener("input", (e) => {
   );
 
   box.innerHTML = filtered
-  .map(s => `<li>${s}</li>`)
-  .join("");
+    .map(s => `<li>${s}</li>`)
+    .join("");
 
   box.querySelectorAll("li").forEach(li => {
     li.addEventListener("click", () => {
