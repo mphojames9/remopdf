@@ -537,28 +537,24 @@ function init() {
   });
 
   refs.experienceContainer.addEventListener('click', function (e) {
-    restoreExpBody(); // 🔥 VERY IMPORTANT
+  const header = e.target.closest('.exp-header');
+  if (!header) return;
 
-    const header = e.target.closest('.exp-header');
-    if (!header) return;
+  const card = header.closest('.exp-card');
+  const body = card.querySelector('.exp-body');
+  const expOverlay = document.getElementById('expOverlay');
+  const expOverlayContent = expOverlay.querySelector('.exp-overlay-content');
 
-    // 🔥 only trigger if clicking title
-    if (!e.target.closest('.exp-title')) return;
+  if (!body) return;
 
-    const expOverlay = document.getElementById('expOverlay');
-    const expOverlayContent = expOverlay.querySelector('.exp-overlay-content');
-    const card = header.closest('.exp-card');
-    const body = card.querySelector('.exp-body');
-    const expId = card.dataset.exp;
-    activeExpId = expId;
-    openOverlay(expId);
-    if (!body) return;
-    expOverlayContent.innerHTML = '';
-    expOverlayContent.appendChild(body);
+  // move content into overlay
+  expOverlayContent.innerHTML = '';
+  expOverlayContent.appendChild(body);
 
-    expOverlay.classList.add('active');
-  });
-
+  // open overlay
+  expOverlay.classList.add('active');
+  toggleBodyScroll(true);
+});
 
   refs.referencesContainer.addEventListener('click', function (e) {
     const header = e.target.closest('.ref-header');
