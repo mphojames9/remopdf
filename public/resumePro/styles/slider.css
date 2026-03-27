@@ -356,3 +356,282 @@
   background: #ccc;
   border-radius: 10px;
 }
+
+/* SECTION WRAPPER */
+.section-inner {
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* ADD BUTTON */
+#addCertificateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3);
+  transition: all 0.25s ease;
+  margin-bottom: 16px;
+}
+
+#addCertificateBtn:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+}
+
+#addCertificateBtn.disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* CARD */
+.cert-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 14px;
+  border: 1px solid #eef2f7;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+}
+
+.cert-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+/* HEADER */
+.cert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.cert-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #0f172a;
+  letter-spacing: 0.2px;
+}
+
+/* DELETE BUTTON */
+.btn-danger {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #fef2f2;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* BODY GRID */
+.cert-body {
+  display: grid;
+  gap: 14px;
+}
+
+/* FIELD */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* LABEL */
+.field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* INPUT */
+.input_data {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.input_data::placeholder {
+  color: #9ca3af;
+}
+
+/* FOCUS EFFECT */
+.input_data:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* PREMIUM GRID (2 columns on desktop) */
+@media (min-width: 600px) {
+  .cert-body {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cert-body .field:last-child {
+    grid-column: span 2;
+  }
+}
+
+
+
+
+
+/* BODY CONTAINER */
+.ref-body {
+  margin-top: 12px;
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  border: 1px solid #eef2f7;
+  box-shadow:
+    0 8px 25px rgba(0,0,0,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  transition: all 0.25s ease;
+}
+
+/* GRID */
+.ref-grid {
+  display: grid;
+  gap: 14px;
+}
+
+/* 2 COLUMN LAYOUT */
+@media (min-width: 600px) {
+  .ref-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ref-grid .field:last-child {
+    grid-column: span 2;
+  }
+}
+
+/* FIELD */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* LABEL */
+.field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.2px;
+}
+
+/* INPUT */
+.input_data {
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+/* PLACEHOLDER */
+.input_data::placeholder {
+  color: #9ca3af;
+}
+
+/* FOCUS PREMIUM EFFECT */
+.input_data:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* ACTION BUTTON ROW */
+.ref-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* MIDNIGHT BUTTON */
+.btn-midnight {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+}
+
+/* HOVER */
+.btn-midnight:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+}
+
+/* ACTIVE PRESS */
+.btn-midnight:active {
+  transform: scale(0.95);
+}
+
+/* DELETE BUTTON */
+.btn-danger {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: none;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+/* DELETE HOVER */
+.btn-danger:hover {
+  background: #dc2626;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(220, 38, 38, 0.35);
+}
+
+/* ICON SIZE FIX */
+.ref-actions-row i {
+  font-size: 14px;
+}

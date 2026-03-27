@@ -1388,7 +1388,7 @@ function certInputHandler(e) {
   if (!cert) return;
 
   cert[field] = e.target.value;
-  renderPreview();
+  updatePreviewLive();
   save();
 }
 
@@ -1433,14 +1433,14 @@ function skillButtonHandler(e) {
 function certButtonHandler(e) {
   const action = e.target.dataset.action;
   const idVal = e.target.dataset.id;
+  console.log('certButtonHandler')
 
   if (action === 'removecert') {
     data.certificates = data.certificates.filter(c => c.id !== idVal);
+      renderLists();
   }
-
-validateCertificateAdd();
-  renderLists();
   renderPreview();
+  validateCertificateAdd();
   save();
 }
 
@@ -1523,6 +1523,27 @@ addLanguageBtn.addEventListener('click', () => {
   validateLanguageAdd()
 });
 
+document.addEventListener('input', (e) => {
+  const input = e.target.closest('.input_data');
+  if (!input) return;
+
+  const certId = input.dataset.id;
+  const field = input.dataset.field;
+
+  const cert = data.certificates.find(c => c.id === certId);
+  if (!cert) return; // ❌ THIS IS THE PROBLEM
+
+  cert[field] = input.value;
+    // 🔥 LIVE TITLE UPDATE
+  if (field === 'name') {
+    updateCertHeader(certId);
+  }
+
+  validateCertificateAdd();
+  save();
+});
+
+
 /* UPDATE */
 languagesContainer.addEventListener('input', e => {
   const row = e.target.closest('.language-row');
@@ -1536,6 +1557,8 @@ languagesContainer.addEventListener('input', e => {
   renderPreview();
   validateLanguageAdd();
 });
+
+
 
 /* REMOVE */
 languagesContainer.addEventListener('click', e => {
@@ -1610,13 +1633,22 @@ function bindButtons() {
     save();
     validateEducationAdd();
 
-    // 🔥 OPEN overlay like a click
-    setTimeout(() => {
-      const card = document.querySelector(`.edu-card[data-edu="${newEdu.id}"]`);
-      const header = card?.querySelector('.edu-header');
+  // 🔥 OPEN OVERLAY DIRECTLY (no fake click)
+  const eduOverlay = document.getElementById('eduOverlay');
+  const eduOverlayContent = eduOverlay.querySelector('.edu-overlay-content');
 
-      if (header) header.click(); // 👈 triggers your existing overlay logic
-    }, 0);
+  const card = document.querySelector(`.edu-card[data-edu="${newEdu.id}"]`);
+  const body = card?.querySelector('.edu-body');
+
+  if (!body) return;
+
+  body.dataset.eduParent = newEdu.id;
+
+  eduOverlayContent.innerHTML = '';
+  eduOverlayContent.appendChild(body);
+
+  eduOverlay.classList.add('active');
+    
   });
 
   //References
@@ -8735,14 +8767,24 @@ function validateSkillAdd() {
 function validateCertificateAdd() {
   if (!refs.addCertificateBtn) return;
 
-  const hasEmpty = (data.certificates || []).some(cert =>
-    !cert.name || cert.name.trim() === ""
-  );
+  const list = data.certificates || [];
 
-  refs.addCertificateBtn.disabled = hasEmpty;
+  // ✅ allow if empty
+  if (list.length === 0) {
+    refs.addCertificateBtn.disabled = false;
+    refs.addCertificateBtn.classList.remove('disabled');
+    return;
+  }
 
-  // optional styling (premium feel)
-  refs.addCertificateBtn.classList.toggle('disabled', hasEmpty);
+  // ❌ check only FIRST item
+  const first = list[0];
+  const isEmpty = !first.name || first.name.trim() === "";
+
+  refs.addCertificateBtn.disabled = isEmpty;
+
+  // styling
+  refs.addCertificateBtn.classList.toggle('disabled', isEmpty);
+  console.log(list.length)
 }
 
 function validateEducationAdd() {
@@ -9934,3 +9976,16 @@ refs.skillsContainer.addEventListener("input", (e) => {
     });
   });
 });
+
+function updateCertHeader(certId) {
+  const card = document.querySelector(`.cert-card[data-cert="${certId}"]`);
+  if (!card) return;
+
+  const titleEl = card.querySelector('.cert-title');
+  if (!titleEl) return;
+
+  const cert = data.certificates.find(c => c.id === certId);
+  if (!cert) return;
+
+  titleEl.textContent = cert.name?.trim() || 'New Certificate';
+}
