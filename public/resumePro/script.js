@@ -149,3 +149,56 @@ document.querySelectorAll('.mainDetails input').forEach(input => {
   });
 });
 
+document.addEventListener('click', (e) => {
+  const header = e.target.closest('.cert-header');
+  if (!header) return;
+
+  // ❌ ignore delete click
+  if (e.target.closest('[data-action="removecert"]')) return;
+
+  const currentCard = header.closest('.cert-card');
+  if (!currentCard) return;
+
+  const isOpen = currentCard.classList.contains('active');
+
+  // 🔥 CLOSE ALL CARDS
+  document.querySelectorAll('.cert-card').forEach(card => {
+    card.classList.remove('active');
+  });
+
+  // 🔥 OPEN ONLY IF IT WAS CLOSED
+  if (!isOpen) {
+    currentCard.classList.add('active');
+  }
+});
+
+let activeScrollContainer = null;
+
+// Track hover
+document.querySelectorAll('.aside, .preview-wrap').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    activeScrollContainer = el;
+  });
+
+  el.addEventListener('mouseleave', () => {
+    activeScrollContainer = null;
+  });
+});
+
+// Handle keyboard scrolling
+document.addEventListener('keydown', (e) => {
+  if (!activeScrollContainer) return;
+
+  const scrollAmount = 40; // adjust speed
+
+  if (e.key === 'ArrowDown') {
+    activeScrollContainer.scrollTop += scrollAmount;
+    e.preventDefault();
+  }
+
+  if (e.key === 'ArrowUp') {
+    activeScrollContainer.scrollTop -= scrollAmount;
+    e.preventDefault();
+  }
+});
+

@@ -1042,7 +1042,12 @@ function renderLists() {
         ${escapeHtml(ref.campany || 'campany')}
       </div>
       <div class="ref-actions">
-        <i class="fa-solid fa-chevron-down ref-chevron"></i>
+       <i class="fa-solid fa-chevron-down ref-chevron"></i>
+              <button class="btn-danger">
+          <i class="fa-solid fa-trash"
+             data-action="removeref"
+             data-id="${ref.id}"></i>
+        </button>
       </div>
     </div>
 
@@ -1096,27 +1101,6 @@ function renderLists() {
             placeholder="e.g. john@email.com" />
         </div>
       </div>
-      <!-- ACTION BUTTONS -->
-      <div class="ref-actions-row">
-        <button class="btn-midnight">
-          <i class="fa-solid fa-arrow-up"
-             data-action="upref"
-             data-id="${ref.id}"></i>
-        </button>
-
-        <button class="btn-midnight">
-          <i class="fa-solid fa-arrow-down"
-             data-action="downref"
-             data-id="${ref.id}"></i>
-        </button>
-
-        <button class="btn-danger">
-          <i class="fa-solid fa-trash"
-             data-action="removeref"
-             data-id="${ref.id}"></i>
-        </button>
-      </div>
-
     </div>
   </div>
 `;
@@ -1178,19 +1162,27 @@ refs.certificatesContainer.innerHTML = '';
   node.className = 'item';
 
   node.innerHTML = `
-    <div class="cert-card" data-cert="${cert.id}">
+<div class="cert-card" data-cert="${cert.id}">
 
-      <div class="cert-header">
-        <div class="cert-title">
-          ${escapeHtml(cert.name || 'New Certificate')}
-        </div>
+  <div class="cert-header">
 
-        <button class="btn-danger">
-          <i class="fa-solid fa-trash"
-             data-action="removecert"
-             data-id="${cert.id}"></i>
-        </button>
+    <div class="cert-left">
+      <i class="fa-solid fa-certificate cert-icon"></i>
+
+      <div class="cert-title">
+        ${escapeHtml(cert.name || 'New Certificate')}
       </div>
+    </div>
+
+    <div class="cert-actions">
+      <i class="fa-solid fa-chevron-down toggle-icon"></i>
+
+      <button class="btn-danger">
+        <i class="fa-solid fa-trash" data-action="removecert" data-id="${cert.id}"></i>
+      </button>
+    </div>
+
+  </div>
 
       <div class="cert-body">
 
@@ -2067,6 +2059,12 @@ function hasLanguage() {
   );
 }
 
+
+function hasCertificate() {
+  return data.certificates && data.certificates.some(cert =>
+    cert.name?.trim()
+  );
+}
 function hasInterest() {
   return data.interests && data.interests.some(i =>
     i?.trim()
@@ -8304,6 +8302,94 @@ background:${i <= dots ? accentColor : '#e5e7eb'};
 </div>
 </section>
 
+` : ''}
+
+${hasCertificate() ? `
+<section class="overflow" style="margin-bottom:28px; margin-top:28px;">
+
+<h2 style="
+font-size:14px;
+font-weight:700;
+text-transform:uppercase;
+letter-spacing:1.2px;
+color:${accentColor};
+border-bottom:2px solid #e5e7eb;
+padding-bottom:6px;
+margin-bottom:12px;
+">
+Certificates
+</h2>
+
+<div style="
+display:flex;
+flex-direction:column;
+gap:12px;
+">
+
+${data.certificates
+  .filter(c => c.name?.trim())
+  .map(c => {
+
+    return `
+<div class="overflow">
+  
+  <div style="
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+  margin-bottom:4px;
+  ">
+
+    <span style="font-weight:600;">
+      ${escapeHtml(c.name)}
+    </span>
+
+    ${c.date ? `
+    <span style="opacity:0.7;">
+      ${escapeHtml(c.date)}
+    </span>
+    ` : ''}
+
+  </div>
+
+  ${c.issuer ? `
+  <div style="
+  font-size:11px;
+  opacity:0.8;
+  margin-bottom:4px;
+  ">
+    ${escapeHtml(c.issuer)}
+  </div>
+  ` : ''}
+
+  ${c.description ? `
+  <div style="
+  font-size:11px;
+  opacity:0.75;
+  margin-bottom:4px;
+  ">
+    ${escapeHtml(c.description)}
+  </div>
+  ` : ''}
+
+  ${c.url ? `
+  <a href="${escapeHtml(c.url)}" target="_blank" style="
+  font-size:11px;
+  color:${accentColor};
+  text-decoration:none;
+  word-break:break-all;
+  ">
+    ${escapeHtml(c.url)}
+  </a>
+  ` : ''}
+
+</div>
+`;
+  }).join('')}
+
+</div>
+
+</section>
 ` : ''}
 
 

@@ -625,3 +625,23 @@ ${escapeHtml(cert.description)}
 </section>
 
 ` : ''}
+
+// ✅ CERTIFICATE INPUT HANDLER (ADD THIS HERE)
+document.addEventListener('input', (e) => {
+  const input = e.target.closest('.input_data');
+  if (!input) return;
+
+  const certId = input.dataset.id;
+  const field = input.dataset.field;
+
+  const cert = data.certificates.find(c => c.id === certId);
+  if (!cert) return;
+
+  cert[field] = input.value;
+
+  // 🚫 DO NOT re-render the list here
+  // renderLists(); ❌ REMOVE if you have it anywhere
+
+  validateCertificateAdd();
+  save();
+});
