@@ -406,17 +406,37 @@
         </div>
       </div>
 
-      <div class="section-block" id="certificateBlock">
+      <div class="section-block section-hidden" id="certificateBlock">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-certificate"></i> Certificates</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="section-block section-hidden" id="addPortfolio">
+        <div class="section-header">
+          <h4><i class="fa-solid fa-link"></i> Portfolio Projects</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="section-block section-hidden" id="achievementBlock">
   <div class="section-header">
-    <h4><i class="fa-solid fa-certificate"></i> Certificates</h4>
+    <h4><i class="fa-solid fa-trophy"></i> Achievements</h4>
     <button class="toggle-btn">
       <i class="fa-solid fa-pen-to-square"></i>
     </button>
   </div>
 </div>
 
+
+
       <!-- INTERESTS -->
-      <div class="section-block" id="interestBlock">
+      <div class="section-block section-hidden" id="interestBlock">
         <div class="section-header">
           <h4><i class="fa-solid fa-heart"></i> Interests</h4>
           <button class="toggle-btn">
@@ -426,7 +446,7 @@
       </div>
 
       <!-- REFERENCES -->
-      <div class="section-block" id="refSection">
+      <div class="section-block section-hidden" id="refSection">
         <div class="section-header">
           <h4><i class="fa-solid fa-user-check"></i> References</h4>
           <button class="toggle-btn">
@@ -434,6 +454,10 @@
           </button>
         </div>
       </div>
+
+      <button id="openDrawerBtn" class="add-section-btn">
+  <i class="fa-solid fa-plus"></i> Add Section
+</button>
     </aside>
 
     <button class="savePersonalDetails hidden">
@@ -449,9 +473,9 @@
       <div id="resumePreview"></div>
     </section>
 
-<button class="preview-btn" id="previewBtn">
-  <i class="fa-solid fa-eye"></i>
-</button>
+    <button class="preview-btn" id="previewBtn">
+      <i class="fa-solid fa-eye"></i>
+    </button>
   </main>
 
   <div class="profilePhotoUpload hidden" id="profilePhotoUpload">
@@ -498,6 +522,66 @@
       </div>
     </div>
   </div>
+
+<div id="drawer" class="drawer">
+  <div class="drawer-header">
+    <h3>Add Sections</h3>
+    <button id="closeDrawerBtn">
+      <i class="fa-solid fa-plus"></i>
+    </button>
+  </div>
+
+  <div class="drawer-content">
+
+    <!-- ✅ Certificates -->
+    <button class="drawer-item"
+      data-target="certificateBlock"
+      data-key="certificates"
+      data-label="Certificates">
+      <i class="fa-solid fa-plus"></i>
+      <span>Certificates</span>
+    </button>
+
+    <!-- ✅ Portfolio -->
+    <button class="drawer-item"
+      data-target="addPortfolio"
+      data-key="portfolio"
+      data-label="Portfolio">
+      <i class="fa-solid fa-plus"></i>
+      <span>Portfolio</span>
+    </button>
+
+    <!-- ✅ Achievements -->
+    <button class="drawer-item"
+      data-target="achievementBlock"
+      data-key="achievements"
+      data-label="Achievements">
+      <i class="fa-solid fa-plus"></i>
+      <span>Honors & Awards</span>
+    </button>
+
+    <!-- ✅ Interests -->
+    <button class="drawer-item"
+      data-target="interestBlock"
+      data-key="interests"
+      data-label="Interests">
+      <i class="fa-solid fa-plus"></i>
+      <span>Interests</span>
+    </button>
+
+    <!-- ✅ References -->
+    <button class="drawer-item"
+      data-target="refSection"
+      data-key="references"
+      data-label="References">
+      <i class="fa-solid fa-plus"></i>
+      <span>References</span>
+    </button>
+
+  </div>
+</div>
+
+<div id="overlay-add" class="overlay-add"></div>
 
 
   <!-- PREMIUM COLOR PALETTE -->
@@ -622,7 +706,7 @@
     </div>
   </div>
 
-    <div id="certificateBlockOverlay" class="certificateBlockOverlay">
+  <div id="certificateBlockOverlay" class="certificateBlockOverlay">
     <div class="overlay-content">
       <!-- CLOSE BUTTON -->
       <button id="closecertificateBlockOverlay" class="overlay-close">
@@ -635,6 +719,25 @@
             <i class="fa-solid fa-plus"></i> Add Certificate
           </button>
           <div id="certificatesContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="portfolioOverlay" class="portfolioOverlay">
+    <div class="overlay-content">
+      <!-- CLOSE BUTTON -->
+      <button id="closeportfolioOverlay" class="overlay-close">
+        &times;
+      </button>
+      <!-- YOUR CONTENT -->
+      <div class="section-content" style="height:auto;">
+        <div class="section-inner">
+          <button class="small-btn" id="addPortfolioBtn">
+            <i class="fa-solid fa-plus"></i> Add Link
+          </button>
+          <div id="portfolioContainer"></div>
         </div>
       </div>
     </div>
@@ -660,6 +763,29 @@
     </div>
   </div>
 
+  <!-- ACHIEVEMENTS OVERLAY -->
+<div id="achievementOverlay" class="achievementOverlay">
+  <div class="overlay-content">
+    
+    <button id="closeAchievementOverlay" class="overlay-close">
+      &times;
+    </button>
+
+    <div class="section-content" style="height:auto;">
+      <div class="section-inner">
+
+        <button class="small-btn" id="addAchievementBtn">
+          <i class="fa-solid fa-plus"></i> Add Achievement
+        </button>
+
+        <div id="achievementsContainer"></div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
   <!-- REFERENCES OVERLAY -->
   <div id="refOverlay" class="refOverlay">
     <div class="overlay-content">
@@ -681,7 +807,7 @@
   </div>
 
   <div class="overlay-personalDetails" id="editDetails-overay">
-          <button id="closeEditOverlay" class="overlay-close">&times;</button>
+    <button id="closeEditOverlay" class="overlay-close">&times;</button>
     <div class="overlay-content">
       <div class="section-block">
         <h4>
@@ -689,85 +815,86 @@
           Summary
         </h4>
         <div>
-        <textarea id="summary" placeholder="Professional Summary" maxlength="250">
+          <textarea id="summary" placeholder="Professional Summary" maxlength="250">
 </textarea>
 
-        <div id="summaryCounter">0 / 250</div>
-        <div class="section-header">
-          <h4><i class="fa-solid fa-id-card"></i>Personal Details</h4>
-        </div>
-        <div class="section-inner">
-          <div class="mainDetails">
-          <div class="form-group">
-            <label>Full Name</label>
-            <input id="fullName" placeholder="Full Name">
+          <div id="summaryCounter">0 / 250</div>
+          <div class="section-header">
+            <h4><i class="fa-solid fa-id-card"></i>Personal Details</h4>
           </div>
-          <div class="form-group">
-            <label>Professional Title</label>
-            <input id="title" placeholder="Title">
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input id="email" placeholder="Email">
-          </div>
-          <div class="form-group">
-            <label>Phone</label>
-            <input id="phone" placeholder="Phone">
-          </div>
-          <div class="form-group">
-            <label>Location</label>
-            <input id="location" placeholder="Location">
-          </div>
-          <div class="form-group">
-            <label>Website</label>
-            <input id="website" placeholder="Website">
-          </div>
-          <div class="form-group">
-            <label>LinkedIn</label>
-            <input id="linkedin" placeholder="LinkedIn">
-          </div>
-          </div>
-          <div class="extra-section">
+          <div class="section-inner">
+            <div class="mainDetails">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input id="fullName" placeholder="Full Name">
+              </div>
+              <div class="form-group">
+                <label>Professional Title</label>
+                <input id="title" placeholder="Title">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input id="email" placeholder="Email">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input id="phone" placeholder="Phone">
+              </div>
+              <div class="form-group">
+                <label>Location</label>
+                <input id="location" placeholder="Location">
+              </div>
+              <div class="form-group">
+                <label>Website</label>
+                <input id="website" placeholder="Website">
+              </div>
+              <div class="form-group">
+                <label>LinkedIn</label>
+                <input id="linkedin" placeholder="LinkedIn">
+              </div>
+            </div>
+            <div class="extra-section">
 
-            <button type="button" class="extra-toggle" aria-expanded="false">
-              <span>Add more details</span>
-              <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-            </button>
+              <button type="button" class="extra-toggle" aria-expanded="false">
+                <span>Add more details</span>
+                <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
+                  <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </button>
 
-            <div class="extra-content">
-              <div class="extra-inner">
+              <div class="extra-content">
+                <div class="extra-inner">
 
-                <div class="form-group">
-                  <label>Date of Birth</label>
-                  <input id="dob" type="date">
-                </div>
+                  <div class="form-group">
+                    <label>Date of Birth</label>
+                    <input id="dob" type="date">
+                  </div>
 
-                <div class="form-group">
-                  <label>Gender</label>
-                  <input id="gender" placeholder="Gender">
-                </div>
+                  <div class="form-group">
+                    <label>Gender</label>
+                    <input id="gender" placeholder="Gender">
+                  </div>
 
-                <div class="form-group">
-                  <label>Race</label>
-                  <input id="race" placeholder="Race">
-                </div>
+                  <div class="form-group">
+                    <label>Race</label>
+                    <input id="race" placeholder="Race">
+                  </div>
 
-                <div class="form-group">
-                  <label>Religion</label>
-                  <input id="religion" placeholder="Religion">
-                </div>
+                  <div class="form-group">
+                    <label>Religion</label>
+                    <input id="religion" placeholder="Religion">
+                  </div>
 
-                <div class="form-group">
-                  <label>Marital Status</label>
-                  <input id="maritalStatus" placeholder="Marital Status">
-                </div>
+                  <div class="form-group">
+                    <label>Marital Status</label>
+                    <input id="maritalStatus" placeholder="Marital Status">
+                  </div>
 
-                <div class="form-group">
-                  <label>Driver's Licence</label>
-                  <input id="driversLicence" placeholder="e.g. Code B">
+                  <div class="form-group">
+                    <label>Driver's Licence</label>
+                    <input id="driversLicence" placeholder="e.g. Code B">
+                  </div>
                 </div>
               </div>
             </div>
@@ -776,7 +903,8 @@
       </div>
     </div>
   </div>
-  </div>
+
+  <div class="updater" style="display: none;"></div>
 
 
   <!-- html2pdf for PDF export -->

@@ -28,35 +28,19 @@
   position: relative;
 }
 
-
-.promidnight, .goldenexecutiveII, .pinkcorporateII {
-  flex-direction: row-reverse;
-  width: 100%;
-  width: 794px;
-  min-width: 794px;
-  min-height: 1122px;
-  position: relative;
-}
-
-.Modernats {
+.promidnight, .pinkcorporate, .Modernats, .midnight, .goldenexecutive, .pinkcorporate {
   flex-direction: column;
 }
 
-.midnight, .goldenexecutive, .pinkcorporate {
-  flex-direction: row;
-}
-
-#Modernats {
+#Modernats, #midnight, #promidnight, #goldenexecutive, #pinkcorporate {
   width:100%;
 }
 
-
-
-.ats, .ModernatsClean, .ModernEdgeATS, .vertexats, .apexats {
+.ats, .ModernatsClean, .ModernEdgeATS, .vertexats, .apexats, .midnight {
   flex-direction: column;
 }
 
-#ats, #ModernatsClean, #ModernEdgeATS, #vertexats, #apexats {
+#ats, #ModernatsClean, #ModernEdgeATS, #vertexats, #apexats, .midnight {
   width: 100%;
 }
 
@@ -68,19 +52,6 @@
   width: 694px;
   margin: 0 auto;
   padding-top: 48px;
-}
-
-/* ================================
-   SIDEBAR – GLASS + GRADIENT
-================================ */
-.sidebar_Template_1 {
-  width: 34%;
-  padding: 50px 30px;
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-  color: #e2e8f0;
-  position: relative;
-  max-height: 1122px;
-  overflow-y: hidden;
 }
 
 .photo-wrap_Template_1 {
@@ -179,7 +150,7 @@
   color: #e2e8f0;
 }
 
-.pinkcorporateII li, .goldenexecutiveII li, .promidnight li, .pinkcorporate li, .goldenexecutive li, .midnight li {
+.pinkcorporateII li, .goldenexecutiveII li, .promidnight li, .pinkcorporate li, .goldenexecutive li {
   display: flex;
   flex-direction: row;
   margin-bottom: 8px;

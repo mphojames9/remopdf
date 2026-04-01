@@ -245,9 +245,9 @@
     }
 
     .aside,
-.preview-wrap {
-  scroll-behavior: smooth;
-}
+    .preview-wrap {
+      scroll-behavior: smooth;
+    }
 
     /* ============================
    PREMIUM LEVEL SELECT
@@ -2053,7 +2053,9 @@
     .languagesOverlay,
     .interestOverlay,
     .refOverlay,
+    .achievementOverlay,
     .certificateBlockOverlay,
+    .portfolioOverlay,
     .overlay-personalDetails {
       position: fixed;
       top: 0;
@@ -2078,6 +2080,8 @@
     .skillOverlay.active,
     .languagesOverlay.active,
     .certificateBlockOverlay.active,
+    .portfolioOverlay.active,
+    .achievementOverlay.active,
     .interestOverlay.active,
     .refOverlay.active,
     .overlay-personalDetails.active {
@@ -2190,29 +2194,33 @@
       /* required for absolute child */
     }
 
-    .btn-danger .fa-solid {
+    .btn-danger .fa-solid, .bullet-delete-btn {
       position: absolute;
       right: 12px;
       top: 50%;
       transform: translateY(-50%);
       z-index: 10;
       cursor: pointer;
+      font-size: 22px;
+      width: 24px;
+      height: 30px;
+      border-radius: 50%;
+      border: none;
+      color: #e53935;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      margin: 0 auto;
+      margin-top: 2px;
 
-      font-size: 14px;
 
-      /* Premium modern black gradient */
-      background: linear-gradient(135deg, #000000, #2b2b2b, #6b6b6b, #ffffff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-
-      /* Smooth interaction */
-      transition: all 0.3s ease;
     }
 
     /* Hover effect */
     .btn-danger .fa-solid:hover {
       transform: translateY(-50%) scale(1.15);
-      filter: brightness(1.3);
     }
 
     .skillOverlay.active {
@@ -2244,7 +2252,8 @@
 
     /* CLOSE BUTTON */
     .overlay-close,
-    #closeEditOverlay, body .closeBtn {
+    #closeEditOverlay,
+    body .closeBtn {
       position: absolute;
       top: 8px;
       right: 16px;
@@ -2414,7 +2423,6 @@
       height: 30px;
       border-radius: 50%;
       border: none;
-      background: #ffeaea;
       color: #e53935;
       display: flex;
       align-items: center;
@@ -2422,12 +2430,12 @@
       cursor: pointer;
       transition: all 0.25s ease;
       margin: 0 auto;
-      margin-top: 2px;
+      margin-top: 5px;
+
     }
 
     /* HOVER DELETE */
     .remove-btn:hover {
-      background: #ffeaea;
       color: #e53935;
       transform: scale(1.15);
     }
@@ -3841,7 +3849,9 @@
       .remove-btn {
         padding: 8px 12px;
         transform: scale(0.8);
+     
       }
+
 
       .language-row {
         grid-template-columns: 1fr 120px auto;

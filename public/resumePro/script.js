@@ -148,12 +148,27 @@ document.querySelectorAll('.mainDetails input').forEach(input => {
     extraToggle.setAttribute('aria-expanded', false);
   });
 });
+// ======================
+// 🔥 FORCE UPDATE CLICK
+// ======================
+function triggerUpdaterClick() {
+  const updater = document.querySelector('.updater');
+  if (updater) {
+    updater.click();
+    console.log("✅ updater clicked");
+  } else {
+    console.warn("⚠️ .updater not found");
+  }
+}
 
+
+// ======================
+// CERT CARD TOGGLE
+// ======================
 document.addEventListener('click', (e) => {
   const header = e.target.closest('.cert-header');
   if (!header) return;
 
-  // ❌ ignore delete click
   if (e.target.closest('[data-action="removecert"]')) return;
 
   const currentCard = header.closest('.cert-card');
@@ -161,20 +176,21 @@ document.addEventListener('click', (e) => {
 
   const isOpen = currentCard.classList.contains('active');
 
-  // 🔥 CLOSE ALL CARDS
   document.querySelectorAll('.cert-card').forEach(card => {
     card.classList.remove('active');
   });
 
-  // 🔥 OPEN ONLY IF IT WAS CLOSED
   if (!isOpen) {
     currentCard.classList.add('active');
   }
 });
 
+
+// ======================
+// SCROLL CONTROL
+// ======================
 let activeScrollContainer = null;
 
-// Track hover
 document.querySelectorAll('.aside, .preview-wrap').forEach(el => {
   el.addEventListener('mouseenter', () => {
     activeScrollContainer = el;
@@ -185,11 +201,10 @@ document.querySelectorAll('.aside, .preview-wrap').forEach(el => {
   });
 });
 
-// Handle keyboard scrolling
 document.addEventListener('keydown', (e) => {
   if (!activeScrollContainer) return;
 
-  const scrollAmount = 40; // adjust speed
+  const scrollAmount = 40;
 
   if (e.key === 'ArrowDown') {
     activeScrollContainer.scrollTop += scrollAmount;
@@ -202,3 +217,252 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+
+// ======================
+// PORTFOLIO TOGGLE
+// ======================
+document.addEventListener('click', (e) => {
+  const header = e.target.closest('.portfolio-header');
+  if (!header) return;
+
+  if (e.target.closest('[data-action="removeportfolio"]')) return;
+
+  const current = header.closest('.portfolio-card');
+  if (!current) return;
+
+  const isOpen = current.classList.contains('active');
+
+  document.querySelectorAll('.portfolio-card').forEach(card => {
+    card.classList.remove('active');
+  });
+
+  if (!isOpen) {
+    current.classList.add('active');
+  }
+});
+
+
+// ======================
+// DRAWER
+// ======================
+const drawer = document.getElementById('drawer');
+const overlay = document.getElementById('overlay-add');
+const openBtn = document.getElementById('openDrawerBtn');
+const closeBtn = document.getElementById('closeDrawerBtn');
+
+// ======================
+// DRAWER CONTROL
+// ======================
+openBtn.addEventListener('click', () => {
+  drawer.classList.add('open');
+  overlay.classList.add('show');
+});
+
+function closeDrawer() {
+  drawer.classList.remove('open');
+  overlay.classList.remove('show');
+}
+
+closeBtn.addEventListener('click', closeDrawer);
+overlay.addEventListener('click', closeDrawer);
+
+
+// ======================
+// DEFAULT STRUCTURE (🔥 IMPORTANT)
+// ======================
+const DEFAULT_RESUME = {
+  personal: {},
+  summary: "",
+  experience: [],
+  education: [],
+  references: [],
+  skills: [],
+  interests: [],
+  languages: [],
+  template: "goldenexecutiveII",
+  certificates: [],
+  portfolio: [],
+  achievements: [],
+  sections: {}
+};
+
+
+// ======================
+// STORAGE HELPERS (🔥 SAFE)
+// ======================
+function getResumeData() {
+  let stored;
+
+  try {
+    stored = JSON.parse(localStorage.getItem("resume:data"));
+  } catch {
+    stored = null;
+  }
+
+  // 🔥 ALWAYS return safe object
+  const data = { ...DEFAULT_RESUME, ...(stored || {}) };
+
+  // 🔥 ENSURE ALL KEYS EXIST (fix your crash)
+  Object.keys(DEFAULT_RESUME).forEach(key => {
+    if (data[key] === undefined) {
+      data[key] = DEFAULT_RESUME[key];
+    }
+  });
+
+  return data;
+}
+
+function saveResumeData(data) {
+  localStorage.setItem("resume:data", JSON.stringify(data));
+}
+
+
+// ======================
+// RESET VALUE
+// ======================
+function resetSectionValue(key, data) {
+  if (!key || !data) return;
+
+  if (key === "personal") {
+    data[key] = {};
+  } else {
+    data[key] = [];
+  }
+}
+
+
+// ======================
+// RESTORE UI ON LOAD
+// ======================
+function restoreSectionsUI() {
+  const data = getResumeData();
+
+  document.querySelectorAll('.drawer-item').forEach(btn => {
+    const key = btn.dataset.key;
+    const targetId = btn.dataset.target;
+    const section = document.getElementById(targetId);
+
+    if (!section || !key) return;
+
+    const isActive = data.sections && data.sections[key];
+
+    if (isActive) {
+      section.style.display = 'block';
+      section.classList.remove('section-hidden');
+
+      btn.classList.add('active');
+      btn.style.opacity = "0.7";
+      btn.innerHTML = `
+        <i class="fa-solid fa-trash"></i>
+        <span>Remove ${btn.dataset.label}</span>
+      `;
+    } else {
+      section.style.display = 'none';
+      section.classList.add('section-hidden');
+
+      btn.classList.remove('active');
+      btn.style.opacity = "1";
+      btn.innerHTML = `
+        <i class="fa-solid fa-plus"></i>
+        <span>${btn.dataset.label}</span>
+      `;
+    }
+  });
+}
+
+
+// ======================
+// BUTTON LOGIC (🔥 FIXED)
+// ======================
+document.querySelectorAll('.drawer-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const targetId = btn.dataset.target;
+    const key = btn.dataset.key;
+    const section = document.getElementById(targetId);
+
+    if (!section || !key) return;
+
+    let data = getResumeData(); // 🔥 always safe
+    const isActive = btn.classList.contains('active');
+
+    // =====================
+    // REMOVE SECTION
+    // =====================
+    if (isActive) {
+
+      section.classList.remove('section-show');
+      section.classList.add('section-anim-start');
+
+      setTimeout(() => {
+        section.style.display = 'none';
+        section.classList.add('section-hidden');
+      }, 250);
+
+      // 🔥 SAFE RESET
+      resetSectionValue(key, data);
+
+      // 🔥 SAFE SECTIONS OBJECT
+      data.sections = data.sections || {};
+      data.sections[key] = false;
+
+      saveResumeData(data);
+
+      triggerUpdaterClick();
+
+      btn.classList.remove('active');
+      btn.style.opacity = "1";
+      btn.innerHTML = `
+        <i class="fa-solid fa-plus"></i>
+        <span>${btn.dataset.label}</span>
+      `;
+
+      return;
+    }
+
+    // =====================
+    // ADD SECTION
+    // =====================
+    section.classList.remove('section-hidden');
+    section.style.display = 'block';
+
+    section.classList.add('section-anim-start');
+    void section.offsetHeight;
+
+    section.classList.add('section-show');
+    section.classList.remove('section-anim-start');
+
+    setTimeout(() => {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+
+    // 🔥 ENSURE KEY EXISTS (FIXES YOUR ERROR)
+    if (!data[key]) {
+      data[key] = key === "personal" ? {} : [];
+    }
+
+    // 🔥 SAFE SECTIONS OBJECT
+    data.sections = data.sections || {};
+    data.sections[key] = true;
+
+    saveResumeData(data);
+
+    triggerUpdaterClick();
+
+    btn.classList.add('active');
+    btn.style.opacity = "0.7";
+    btn.innerHTML = `
+      <i class="fa-solid fa-trash"></i>
+      <span>Remove ${btn.dataset.label}</span>
+    `;
+
+    closeDrawer?.();
+  });
+});
+
+
+// ======================
+// INIT
+// ======================
+document.addEventListener("DOMContentLoaded", () => {
+  restoreSectionsUI();
+});

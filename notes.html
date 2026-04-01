@@ -1,0 +1,70 @@
+function renderClassicMinimalATS() {
+
+  const p = photoHtml();
+
+  let accentColor = "#111"; // this design is mostly monochrome
+
+  return `
+<div class="resume_Template_1" style="
+font-family: Georgia, 'Times New Roman', serif;
+font-size:14px;
+line-height:1.7;
+color:#111;
+max-width:820px;
+margin:auto;
+background:#fff;
+padding:50px 55px;
+">
+
+<!-- HEADER -->
+<section class="overflow" style="margin-bottom:30px;">
+
+<h1 style="
+font-size:32px;
+font-weight:700;
+margin:0;
+letter-spacing:.3px;
+">
+${escapeHtml(data.personal.fullName || '')}
+</h1>
+
+<p style="
+font-size:16px;
+font-style:italic;
+margin:4px 0 14px 0;
+color:#444;
+">
+${escapeHtml(data.personal.title || '')}
+</p>
+
+<div style="
+display:flex;
+flex-wrap:wrap;
+gap:14px 30px;
+font-size:13px;
+color:#333;
+">
+
+${data.personal.location ? `<span>${escapeHtml(data.personal.location)}</span>` : ''}
+${data.personal.phone ? `<span>${escapeHtml(data.personal.phone)}</span>` : ''}
+${data.personal.email ? `<span>${escapeHtml(data.personal.email)}</span>` : ''}
+${data.personal.linkedin ? `<span>${escapeHtml(data.personal.linkedin)}</span>` : ''}
+
+</div>
+
+</section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

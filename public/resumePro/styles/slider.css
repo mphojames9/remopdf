@@ -570,3 +570,467 @@
 
   transition: all 0.25s ease;
 }
+
+/* CARD */
+.portfolio-card {
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  border-radius: 18px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+/* HOVER */
+.portfolio-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+}
+
+/* HEADER */
+.portfolio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+/* LEFT SIDE */
+.portfolio-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 🔗 ICON BEFORE TITLE */
+.portfolio-title::before {
+  content: "\f0c1"; /* fa-link */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  font-size: 13px;
+
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* BODY */
+.portfolio-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+
+
+  transition:
+    max-height 0.35s ease,
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    padding 0.25s ease;
+}
+
+/* OPEN STATE (reuse your active class) */
+.portfolio-card.active .portfolio-body {
+  max-height: 500px;
+  opacity: 1;
+  transform: translateY(0);
+  padding: 16px;
+}
+
+/* INPUTS */
+.portfolio-card .input_data {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+/* INPUT FOCUS */
+.portfolio-card .input_data:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+  outline: none;
+}
+
+
+/* DISABLED */
+#addPortfolioBtn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none
+}
+
+.portfolio-arrow {
+  transition: transform 0.3s ease;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* 🔥 rotate when open */
+.portfolio-card.active .portfolio-arrow {
+  transform: rotate(180deg);
+}
+
+.portfolio-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* =========================
+   ACHIEVEMENTS SECTION
+========================= */
+
+.achievements-section {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+  transition: all 0.25s ease;
+}
+
+.small-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* LIST */
+#achievementsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* ITEM CARD */
+#achievementsContainer .item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  padding: 10px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+
+/* INPUT */
+#achievementsContainer .input_data {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #111827;
+  outline: none;
+}
+
+#achievementsContainer .input_data::placeholder {
+  color: #9ca3af;
+}
+
+/* Fully hidden (no space at all) */
+.section-hidden {
+  display: none;
+}
+
+/* Initial animation state */
+.section-anim-start {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+/* Final visible state */
+.section-show {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.45s ease;
+}
+
+/* Bottom button */
+.add-section-btn {
+  display: block;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #000000, #0d0c0e);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  width: 150px;
+  margin: 0 auto;
+}
+
+/* Drawer */
+.drawer {
+  position: fixed;
+  top: 0;
+  left: -340px;
+  width: 320px;
+  height: 100%;
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.75);
+  transition: 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 999999;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 20px;
+
+}
+
+/* Open */
+.drawer.open {
+  left: 0;
+}
+
+/* HEADER */
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px;
+  font-weight: 600;
+  font-size: 15px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.drawer-header button {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  transition: 0.25s;
+  font-weight: 700;
+}
+
+.drawer-header button:hover {
+  transform: rotate(90deg);
+  color: #14532d;
+}
+
+/* CONTENT */
+.drawer-content {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ITEMS */
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(20, 28, 24, 0.7);
+  border: 1px solid rgba(0,0,0,0.05);
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* GREEN GRADIENT HOVER */
+.drawer-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, #10b981, #059669);
+  opacity: 0;
+  transition: 0.35s ease;
+  z-index: 0;
+}
+
+.drawer-item i,
+.drawer-item span {
+  z-index: 1;
+}
+
+/* Hover */
+.drawer-item:hover::before {
+  opacity: 1;
+}
+
+.drawer-item:hover {
+  color: white;
+  transform: translateX(6px) scale(1.02);
+}
+
+/* Active click */
+.drawer-item:active {
+  transform: scale(0.96);
+}
+
+/* Overlay */
+.overlay-add {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 20, 15, 0.45);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.35s ease;
+  z-index: 99999;
+}
+
+.overlay-add.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.drawer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(120deg, #10b981, #059669);
+}
+
+/* Active (section added) */
+.drawer-item.active {
+  background: linear-gradient(135deg, #450a0a, #7f1d1d, #991b1b);
+  color: white;
+}
+
+/* 🔥 Premium remove hover */
+.drawer-item.active:hover {
+  background: linear-gradient(135deg, #450a0a, #7f1d1d);
+  opacity: 0.9;
+}
+
+/* Smooth icon transition */
+.drawer-item i {
+  transition: transform 0.3s ease;
+}
+
+.drawer-item:hover i {
+  transform: scale(1.2);
+}
+
+.drawer .fa-solid {
+  font-size: 14px;
+}
+
+@media (min-width: 1024px) {
+  .drawer {
+    width: 360px;
+    left: -380px;
+  }
+
+  .drawer.open {
+    left: 0;
+  }
+
+  .drawer-item {
+    padding: 16px;
+    font-size: 14px;
+  }
+
+  .drawer-header {
+    font-size: 16px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .drawer {
+    width: 300px;
+    left: -320px;
+  }
+
+  .drawer-item {
+    padding: 14px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 767px) {
+  .drawer {
+    width: 85%;
+    left: -90%;
+    border-radius: 0;
+  }
+
+  .drawer.open {
+    left: 0;
+  }
+
+  .drawer-content {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .drawer-item {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .add-section-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 300px) {
+  .drawer {
+    width: 100%;
+    left: -100%;
+  }
+
+  .drawer-header {
+    padding: 12px;
+    font-size: 12px;
+  }
+
+  .drawer-content {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .drawer-item {
+    padding: 10px;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .drawer-item i {
+    font-size: 13px;
+  }
+
+  .drawer-item span {
+    font-size: 11px;
+  }
+
+  .achievements-section {
+    padding: 10px;
+  }
+
+  #achievementsContainer .item {
+    padding: 6px;
+  }
+
+  .add-section-btn {
+    padding: 9px;
+    font-size: 11px;
+  }
+}
+
+#closeDrawerBtn {
+  transform: rotate(-45deg);
+}
