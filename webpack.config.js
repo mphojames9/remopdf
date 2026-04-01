@@ -10,7 +10,7 @@ module.exports = {
 
   output: {
     filename: '[name].bundle.js',
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'docs'),
     publicPath: '/remopdf/',   // ✅ correct for GitHub Pages
     clean: true
   },
