@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   entry: {
@@ -11,7 +12,7 @@ module.exports = {
   output: {
     filename: '[name].bundle.js',
     path: path.resolve(__dirname, 'docs'),
-    publicPath: '/remopdf/',   // ✅ correct for GitHub Pages
+    publicPath: '/remopdf/',
     clean: true
   },
 
@@ -19,6 +20,13 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./public/index.html",
       inject: "body"
+    }),
+
+    new CopyPlugin({
+      patterns: [
+        { from: "public/about", to: "about" },
+        { from: "public/resumePro", to: "resumePro" }
+      ]
     })
   ]
 };
