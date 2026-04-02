@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="../images/tittleIcon.png" type="image/x-icon" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="./styles/home.css">
+  <title>resumePro</title>
+</head>
+
+<body>
+
+  <header>
+
+    <div class="logo">
+      <a href="../index.html">
+        <img src="/remopdf/assets/logo.png" alt="ResumePro logo" class="mainLogo">
+      </a>
+    </div>
+
+    <nav class="desktop-nav">
+      <a href="#" class="nav-contact" id="openContact">
+        <i class="fa-solid fa-envelope"></i>
+        Contact
+      </a>
+
+      <button class="btn btn-primary">
+        <a href="./builder.html" style="color: white; text-decoration: none;"><i
+            class="fa-solid fa-file-circle-plus"></i>
+          Build Resume</a>
+      </button>
+    </nav>
+
+    <!-- MOBILE MENU BUTTON -->
+
+    <button class="menu-btn" id="menuBtn">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+  </header>
+
+  <!-- BACKDROP -->
+
+  <div class="menu-backdrop" id="menuBackdrop"></div>
+
+  <!-- MOBILE MENU PANEL -->
+
+  <div class="mobile-menu" id="mobileMenu">
+
+    <a href="#" class="nav-contact" id="openContact">
+      <i class="fa-solid fa-envelope"></i>
+      Contact
+    </a>
+
+    <button class="btn btn-primary">
+      <a href="./builder.html" style="color: white; text-decoration: none;">
+        <i class="fa-solid fa-file-circle-plus"></i>
+        Build Resume
+      </a>
+    </button>
+
+  </div>
+
+  <section class="hero">
+    <div class="hero-text">
+      <div class="hero-badge">
+        <i class="fa-solid fa-circle-check"></i>
+        Free • No login required
+      </div>
+
+      <h1>
+        Create a professional resume that gets you hired
+      </h1>
+
+      <p>
+        Build a modern ATS-friendly resume in minutes using ResumePro.
+        Choose a professional template, fill in your details, and download your resume instantly.
+      </p>
+
+      <div class="hero-buttons">
+        <button class="btn btn-primary">
+          <a href="./builder.html" style="color: white; text-decoration: none;"><i class="fa-solid fa-file-circle-plus"></i>
+          Create Resume</a>
+        </button>
+
+        <button class="btn btn-outline">
+          <a href="../index.html" style="color: #111; text-decoration: none;"><i class="fa-solid fa-file-pdf"></i>
+            PDF Tool
+          </a>
+        </button>
+      </div>
+
+      <div class="hero-trust">
+        <i class="fa-solid fa-shield-check"></i>
+        100% Free • No login required • Instant PDF download
+      </div>
+
+    </div>
+
+    <div class="cards-wrapper">
+
+      <div class="resume-card card-front" style="background-image: url('./assets/goldenexecutive.png'); background-size: 100%;">
+      </div>
+
+      <div class="resume-card card-right" style="background-image: url('./assets/vertex-ats.png'); background-size: 100%;">
+      </div>
+
+      <div class="resume-card card-left" style="background-image: url('./assets/Modernats.png'); background-size: 100%;">
+      </div>
+
+    </div>
+
+  </section>
+
+  <section class="section features-premium">
+
+    <h2>Why choose ResumePro</h2>
+
+    <p class="section-sub">
+      ResumePro is a new modern resume builder that helps you create a professional resume in minutes.
+      No login required and completely free to use.
+    </p>
+
+    <div class="grid">
+
+      <div class="feature-card">
+        <i class="fa-solid fa-bolt icon-green"></i>
+        <h3>Fast Resume Builder</h3>
+        <p>Create a professional resume in minutes using our simple and fast builder.</p>
+      </div>
+
+      <div class="feature-card">
+        <i class="fa-solid fa-file-circle-check icon-blue"></i>
+        <h3>ATS Friendly</h3>
+        <p>Our templates are designed to pass applicant tracking systems used by recruiters.</p>
+      </div>
+
+      <div class="feature-card">
+        <i class="fa-solid fa-palette icon-red"></i>
+        <h3>Modern Templates</h3>
+        <p>Choose from clean, modern resume templates designed for today's job market.</p>
+      </div>
+
+      <div class="feature-card">
+        <i class="fa-solid fa-file-arrow-down icon-green"></i>
+        <h3>Download Instantly</h3>
+        <p>Download your resume as a professional PDF instantly when you're done.</p>
+      </div>
+
+      <div class="feature-card">
+        <i class="fa-solid fa-user-check icon-blue"></i>
+        <h3>No Login Required</h3>
+        <p>Start building your resume immediately without creating an account.</p>
+      </div>
+
+      <div class="feature-card">
+        <i class="fa-solid fa-gift icon-red"></i>
+        <h3>Free to Use</h3>
+        <p>ResumePro is new and currently free for everyone to use.</p>
+      </div>
+
+    </div>
+
+  </section>
+
+  <section class="slider-section">
+
+    <div class="slider-header">
+
+      <h2 class="slider-title">
+        Resume templates that get you <span>noticed</span> and hired
+      </h2>
+
+      <p class="slider-sub">
+        Professional, ATS-friendly resume templates designed to help you stand out to recruiters.
+      </p>
+
+    </div>
+
+    <div class="template-slider">
+
+      <button class="slider-arrow left" onclick="prev()">❮</button>
+
+      <div class="template-track" id="track">
+
+        <div class="template-card" style="background-image: url('./assets/goldenexecutive.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="goldenexecutive">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/goldenexecutiveII.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="goldenexecutiveII">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/modern-edge-ats.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="ModernEdgeATS">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/pinkcorporate.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="pinkcorporate">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/pinkcorporateII.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="pinkcorporateII">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/Modernats.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="Modernats">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/Midnight-II.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="promidnight">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/modern-ats-clean.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="ModernatsClean">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/ats.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="ats">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/vertex-ats.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="vertexats">Use Template</button>
+          </div>
+        </div>
+
+        <div class="template-card" style="background-image: url('./assets/apex-ats.png'); background-size: 100%;">
+          <div class="template-preview"></div>
+          <div class="template-overlay">
+            <button class="use-template-btn" id="apexats">Use Template</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="slider-arrow right" onclick="next()">❯</button>
+    </div>
+  </section>
+  <footer class="footer-pro">
+
+    <div class="footer-glow"></div>
+
+    <div class="footer-inner">
+
+      <!-- BRAND -->
+
+      <div class="footer-brand">
+
+        <img src="/remopdf/assets/logo.png" class="footer-logo" alt="ResumePro logo">
+
+        <p>
+          Build modern ATS-friendly resumes in minutes with ResumePro.
+          Choose a template, fill your details and download instantly.
+        </p>
+
+        <div class="footer-social">
+
+          <a href="#"><i class="fa-brands fa-twitter"></i></a>
+          <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+          <a href="#"><i class="fa-brands fa-facebook"></i></a>
+          <a href="#"><i class="fa-brands fa-github"></i></a>
+
+        </div>
+
+      </div>
+
+      <!-- LINKS -->
+
+      <div class="footer-links">
+
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a href="#">Create Resume</a>
+          <a href="#">Templates</a>
+          <a href="#">Resume Checker</a>
+          <a href="#">Download PDF</a>
+        </div>
+
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="#">Career Tips</a>
+          <a href="#">Interview Guide</a>
+          <a href="#">Job Search</a>
+          <a href="#">Help Center</a>
+        </div>
+
+      </div>
+
+      <!-- NEWSLETTER -->
+
+      <div class="footer-news">
+
+        <h4>Stay updated</h4>
+
+        <p>Get resume tips and career advice.</p>
+
+        <div class="news-form">
+
+          <input type="email" placeholder="Your email">
+
+          <button>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-bottom">
+
+      <p>© 2026 <strong>ResumePro</strong> Built for modern job seekers</p>
+    </div>
+
+  </footer>
+
+  <!-- PREMIUM CONTACT MODAL -->
+
+  <div id="contactOverlay">
+
+    <div class="contact-modal">
+
+      <button id="closeContact" class="close-contact">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="contact-header">
+
+        <div class="contact-icon">
+          <i class="fa-solid fa-paper-plane"></i>
+        </div>
+
+        <h2>Contact ResumePro</h2>
+
+        <p class="contact-sub">
+          Have a question or feedback? We'd love to hear from you.
+        </p>
+
+      </div>
+
+      <form id="contactForm">
+
+        <!-- Honeypot -->
+        <input type="text" name="company" class="honeypot">
+
+        <div class="form-group">
+
+          <i class="fa-regular fa-user input-icon"></i>
+
+          <input type="text" name="from_name" placeholder=" " required>
+
+          <label>Your name</label>
+
+        </div>
+
+        <div class="form-group">
+
+          <i class="fa-regular fa-envelope input-icon"></i>
+
+          <input type="email" name="from_email" placeholder=" " required>
+
+          <label>Your email</label>
+
+        </div>
+
+        <div class="form-group textarea-group">
+
+          <i class="fa-regular fa-comment input-icon"></i>
+
+          <textarea name="message" placeholder=" " required></textarea>
+
+          <label>Your message</label>
+
+        </div>
+
+        <button type="submit" class="send-btn">
+
+          <span class="btn-text">
+            <i class="fa-solid fa-paper-plane"></i>
+            Send Message
+          </span>
+
+          <span class="btn-loader"></span>
+
+        </button>
+
+      </form>
+
+      <div id="formStatus"></div>
+
+      <div class="success-animation">
+
+        <i class="fa-solid fa-circle-check"></i>
+
+        <p>Message sent successfully!</p>
+
+      </div>
+
+      <p class="contact-note">
+        We respect your privacy. Your email will never be shared.
+      </p>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+
+    /* 3D CARD TILT */
+
+    const heroCards = document.querySelectorAll(".resume-card");
+
+    const track = document.getElementById("track")
+    const cards = document.querySelectorAll(".resume-card")
+
+    let cardWidth = 290
+
+    function next() {
+
+      track.style.transition = "transform .6s ease"
+      track.style.transform = `translateX(-${cardWidth}px)`
+
+      setTimeout(() => {
+
+        track.appendChild(track.firstElementChild)
+
+        track.style.transition = "none"
+        track.style.transform = `translateX(0px)`
+
+      }, 600)
+
+    }
+
+    function prev() {
+
+      track.insertBefore(track.lastElementChild, track.firstElementChild)
+
+      track.style.transition = "none"
+      track.style.transform = `translateX(-${cardWidth}px)`
+
+      setTimeout(() => {
+        track.style.transition = "transform .6s ease"
+        track.style.transform = `translateX(0px)`
+      }, 10)
+
+    }
+
+    const slider = document.querySelector(".template-slider")
+
+    slider.addEventListener("mouseenter", () => {
+      clearInterval(sliderInterval)
+    })
+
+    slider.addEventListener("mouseleave", () => {
+      sliderInterval = setInterval(next, 3000)
+    })
+    let sliderInterval = setInterval(next, 3000)
+
+    function rotateCards() {
+
+      heroCards.forEach(card => {
+
+        if (card.classList.contains("card-front")) {
+          card.classList.remove("card-front")
+          card.classList.add("card-right")
+        }
+
+        else if (card.classList.contains("card-right")) {
+          card.classList.remove("card-right")
+          card.classList.add("card-left")
+        }
+
+        else if (card.classList.contains("card-left")) {
+          card.classList.remove("card-left")
+          card.classList.add("card-front")
+        }
+      })
+    }
+
+    const menuBtn = document.getElementById("menuBtn")
+    const menu = document.getElementById("mobileMenu")
+    const backdrop = document.getElementById("menuBackdrop")
+
+    function toggleMenu() {
+
+      menuBtn.classList.toggle("active")
+      menu.classList.toggle("active")
+      backdrop.classList.toggle("active")
+
+    }
+
+    menuBtn.addEventListener("click", toggleMenu)
+    backdrop.addEventListener("click", toggleMenu)
+
+    /* ======================
+    HEADER SHOW / HIDE ON SCROLL
+    ====================== */
+
+    let lastScroll = 0
+    const header = document.querySelector("header")
+
+    window.addEventListener("scroll", () => {
+
+      const currentScroll = window.pageYOffset
+
+      if (currentScroll > lastScroll && currentScroll > 80) {
+
+        // scrolling down
+        header.classList.add("hide")
+
+      } else {
+
+        // scrolling up
+        header.classList.remove("hide")
+
+      }
+
+      lastScroll = currentScroll
+
+    })
+
+    setInterval(rotateCards, 6000)
+
+    const EMAILJS_SERVICE_ID = 'service_a7c5ag9';
+    const EMAILJS_TEMPLATE_ID = 'template_5bc1mt5';
+    const EMAILJS_PUBLIC_KEY = 'drD2CBWiRuBzQGBEO';
+
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+
+
+    /* OPEN MODAL */
+
+    const overlay = document.getElementById("contactOverlay");
+    const openBtns = document.querySelectorAll(".nav-contact");
+    const closeBtn = document.getElementById("closeContact");
+
+    openBtns.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        overlay.classList.add("active");
+      });
+    });
+
+    closeBtn.addEventListener("click", () => {
+      overlay.classList.remove("active");
+    });
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        overlay.classList.remove("active");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        overlay.classList.remove("active");
+      }
+    });
+
+
+    /* FORM */
+
+    const form = document.getElementById("contactForm");
+    const status = document.getElementById("formStatus");
+
+    const loader = document.querySelector(".btn-loader");
+    const btnText = document.querySelector(".btn-text");
+
+
+    form.addEventListener("submit", (e) => {
+
+      e.preventDefault();
+
+      /* honeypot spam protection */
+
+      if (form.company.value !== "") {
+        return;
+      }
+
+      loader.style.display = "inline-block";
+      btnText.textContent = "Sending...";
+
+      const data = {
+
+        from_name: form.from_name.value,
+        from_email: form.from_email.value,
+        message: form.message.value
+
+      };
+
+      emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        data
+      )
+
+        .then(() => {
+
+          document.querySelector(".success-animation").style.display = "block";
+          document.getElementById("contactForm").style.display = "none";
+
+          setTimeout(() => {
+
+            overlay.classList.remove("active");
+            document.querySelector('.btn-text').innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Message'
+            loader.style.display = "none";
+
+            document.querySelector(".success-animation").style.display = "none";
+            document.getElementById("contactForm").style.display = "block";
+            form.reset();
+          }, 2500);
+        })
+    });
+
+     document.querySelectorAll(".use-template-btn").forEach(btn => {
+
+  btn.addEventListener("click", () => {
+
+    const template = btn.id
+
+    // get current resume data
+    const resumeData = JSON.parse(localStorage.getItem("resume:data")) || {}
+
+    // update template directly
+    resumeData.template = template
+
+    // save back to localStorage
+    localStorage.setItem("resume:data", JSON.stringify(resumeData))
+
+    // go to builder
+    window.location.href = "./builder.html"
+
+  })
+
+})
+
+  </script>
+
+</body>
+
+</html>
