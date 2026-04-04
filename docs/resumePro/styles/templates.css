@@ -26,21 +26,26 @@
   min-width: 794px;
   min-height: 1122px;
   position: relative;
+
 }
 
-.promidnight, .pinkcorporate, .Modernats, .midnight, .goldenexecutive, .pinkcorporate {
+.promidnight, .pinkcorporate, .Modernats, .midnight, .goldenexecutive, .pinkcorporate, .pinkcorporateII {
   flex-direction: column;
 }
 
-#Modernats, #midnight, #promidnight, #goldenexecutive, #pinkcorporate {
+#Modernats, #midnight, #promidnight, #goldenexecutive, #pinkcorporate, #goldenexecutiveII, #pinkcorporateII {
   width:100%;
 }
 
-.ats, .ModernatsClean, .ModernEdgeATS, .vertexats, .apexats, .midnight {
+#pinkcorporate, #goldenexecutive, #midnight {
+  padding-top: 10px;
+}
+
+.ats, .ModernatsClean, .ModernEdgeATS, .vertexats, .apexats, .midnight, .pinkcorporateII {
   flex-direction: column;
 }
 
-#ats, #ModernatsClean, #ModernEdgeATS, #vertexats, #apexats, .midnight {
+#ats, #ModernatsClean, #ModernEdgeATS, #vertexats, #apexats, .midnight, #pinkcorporateII {
   width: 100%;
 }
 
