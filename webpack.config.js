@@ -27,7 +27,8 @@ module.exports = {
         { from: "public/about", to: "about" },
         { from: "public/resumePro", to: "resumePro" },
         { from: "public/privacy", to: "privacy" },
-        { from: "public/editor", to: "editor" }
+        { from: "public/editor", to: "editor" },
+        { from: "public/images", to: "images" }
       ]
     })
   ]

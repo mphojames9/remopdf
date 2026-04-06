@@ -445,7 +445,7 @@
       scrollbar-width: none;
       background: inherit;
       box-shadow: none;
-      padding: 10px 10px 100px 10px;
+      padding: 10px 10px 200px 10px;
       position: relative;
       transition: 450ms ease-in-out;
     }
@@ -2214,7 +2214,7 @@
       transition: all 0.25s ease;
       margin: 0 auto;
       margin-top: 2px;
-
+      background-color: transparent;
 
     }
 
@@ -3932,4 +3932,16 @@
       .exp-overlay .exp-grid {
         grid-template-columns: 1fr;
       }
+    }
+
+    aside .section-block {
+      overflow: hidden;
+    }
+
+    aside .section-content {
+      overflow: hidden;
+    }
+
+    aside .section-inner {
+      overflow: hidden;
     }

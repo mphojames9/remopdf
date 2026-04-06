@@ -9837,7 +9837,7 @@ function syncPaletteButton() {
 
   if (window.innerWidth <= 420) {
     download.style.width = "130px";
-    download.style.padding = "5px";
+    download.style.padding = "12px";
     document.querySelector('.fa-pdfBtn').style.fontSize = '14px';
   }
 
@@ -9858,6 +9858,16 @@ function syncPaletteButton() {
   }, 50);
 }
 
+const closeExpOverlay = document.getElementById("closeExpOverlay");
+
+// CLOSE BUTTON
+closeExpOverlay.addEventListener("click", () => {
+      expOverlay.classList.remove('active');
+    activeExpId = null;
+
+    renderLists();
+});
+
 const expOverlay = document.getElementById('expOverlay');
 
 expOverlay.addEventListener('click', (e) => {
@@ -9868,12 +9878,7 @@ expOverlay.addEventListener('click', (e) => {
     renderLists();
   }
 });
-const closeExpOverlay = document.getElementById("closeExpOverlay");
 
-// CLOSE BUTTON
-closeExpOverlay.addEventListener("click", () => {
-  expOverlay.classList.remove("active");
-});
 /* APPLY AFTER TEMPLATE RENDER */
 
 setTimeout(applyAsideGradient, 200);
@@ -10264,6 +10269,7 @@ eduContainer.addEventListener("dragover", (e) => {
   }
 });
 
+
 // =========================
 // DRAG END
 // =========================
@@ -10438,14 +10444,10 @@ document.addEventListener("input", (e) => {
 });
 
 document.addEventListener("click", (e) => {
-
   if (!e.target.classList.contains("title-item")) return;
-
   const id = e.target.dataset.id;
   const role = e.target.dataset.role;
-
   console.log("✅ Selected role:", role);
-
   if (!activeTitleInput) return;
 
   // 🔥 update input directly
@@ -10583,10 +10585,24 @@ document.addEventListener("input", (e) => {
   activeBulletInput = e.target;
 
   const id = e.target.dataset.id;
-  const value = e.target.value.toLowerCase();
+  const idx = Number(e.target.dataset.idx); // ✅ ADD THIS
+  const value = e.target.value;
 
   const exp = data.experience.find(x => x.id === id);
   if (!exp) return;
+
+  // ✅ 🔥 SAVE THE VALUE PROPERLY
+  if (!Array.isArray(exp.bullets)) {
+    exp.bullets = [];
+  }
+
+  exp.bullets[idx] = value;
+
+  localStorage.setItem("resumeData", JSON.stringify(data));
+
+  // =============================
+  // YOUR EXISTING SUGGESTION LOGIC
+  // =============================
 
   const roleKey = findRoleKey(exp.role);
   if (!roleKey) return;
@@ -10596,21 +10612,18 @@ document.addEventListener("input", (e) => {
   );
   if (!list) return;
 
-  // 🔥 filter out already used bullets
   let achievements = cvDataset[roleKey].achievements.filter(item =>
     !exp.bullets.some(b =>
       b.trim().toLowerCase() === item.trim().toLowerCase()
     )
   );
 
-  // 🔥 FILTER BY INPUT TEXT (THIS IS THE NEW PART)
   if (value) {
     achievements = achievements.filter(item =>
-      item.toLowerCase().includes(value)
+      item.toLowerCase().includes(value.toLowerCase())
     );
   }
 
-  // 🔥 render results
   list.innerHTML = achievements.map(item => `
     <li class="bullet-item" data-id="${id}">
       ${item}
