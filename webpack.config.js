@@ -12,7 +12,7 @@ module.exports = {
   output: {
     filename: '[name].bundle.js',
     path: path.resolve(__dirname, 'docs'),
-    publicPath: '/remopdf/',
+    publicPath: '/',
     clean: true
   },
 
@@ -28,7 +28,8 @@ module.exports = {
         { from: "public/resumePro", to: "resumePro" },
         { from: "public/privacy", to: "privacy" },
         { from: "public/editor", to: "editor" },
-        { from: "public/images", to: "images" } 
+        { from: "public/images", to: "images" },
+        { from: "public/assets", to: "assets" }
       ]
     })
   ]
