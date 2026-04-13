@@ -2178,9 +2178,13 @@
       opacity: 0.8;
     }
 
-    .placeholder {
+    .section-block .placeholder {
       background: rgba(37, 99, 235, 0.1);
-      border: 2px dashed #2563eb;
+      border: 1px dashed #22c55e;
+      border-radius: 8px;
+      margin: 6px 0;
+    }
+    .placeholder {
       border-radius: 8px;
       margin: 6px 0;
     }
@@ -2299,9 +2303,7 @@
       gap: 8px;
       margin-bottom: 8px;
       padding: 5px;
-      background: #ffffff;
       border: 1px solid #eee;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
       transition: all 0.25s ease;
       overflow: visible;
     }
@@ -2431,7 +2433,7 @@
       transition: all 0.25s ease;
       margin: 0 auto;
       margin-top: 5px;
-
+      background: transparent;
     }
 
     /* HOVER DELETE */
@@ -2523,7 +2525,7 @@
     }
 
     /* FULL WIDTH FIELD (FOR DESCRIPTION) */
-    .edu-grid .field:nth-child(4) {
+    .edu-grid .field:nth-child(5) {
       grid-column: span 2;
     }
 

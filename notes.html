@@ -1,0 +1,49 @@
+<div class="edu-body">
+      <div class="edu-grid">
+        <div class="field">
+          <label>Degree</label>
+          <input class="input_data"
+            data-id="${edu.id}"
+            data-field="degree"
+            value="${escapeHtml(edu.degree)}"
+            placeholder="e.g. BSc Computer Science" />
+        </div>
+
+        <div class="field">
+          <label>Institution</label>
+          <input class="input_data"
+            data-id="${edu.id}"
+            data-field="school"
+            value="${escapeHtml(edu.school)}"
+            placeholder="e.g. University of Cape Town" />
+        </div>
+
+            <!-- ✅ NEW LOCATION FIELD -->
+    <div class="field">
+      <label>Location</label>
+      <input class="input_data"
+        data-id="${edu.id}"
+        data-field="location"
+        value="${escapeHtml(edu.location || '')}"
+        placeholder="e.g. Cape Town, South Africa" />
+    </div>
+
+        <div class="field">
+          <label>Year Obtained</label>
+          <input class="input_data"
+            data-id="${edu.id}"
+            data-field="year"
+            value="${escapeHtml(edu.year || '')}"
+            placeholder="e.g. 2024" />
+        </div>
+
+        <div class="field">
+          <label>discription</label>
+          <input class="input_data"
+            data-id="${edu.id}"
+            data-field="discription"
+            value="${escapeHtml(edu.discription || '')}"
+            placeholder="Achievements, distinctions, major subjects..." />
+        </div>
+      </div>
+    </div>
