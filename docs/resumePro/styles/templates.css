@@ -476,7 +476,7 @@ aside li {
   word-break:break-word;
 }
 
-#ats {
+.resume-page {
   background: url('./background/creative.png');
-  background-size: 100%;
+  background-size: 100% 100%;
 }
