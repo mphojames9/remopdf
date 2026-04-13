@@ -475,3 +475,8 @@ aside li {
   overflow-wrap:anywhere;
   word-break:break-word;
 }
+
+.resume-page {
+  background: url('./background/creative.png');
+  background-size: 100% 100%;
+}
