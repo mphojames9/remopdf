@@ -2446,20 +2446,6 @@ ${data.personal.driversLicence ? `
 ${escapeHtml(data.personal.driversLicence)}
 </span>
 ` : ''}
-
-${data.personal.maritalStatus ? `
-<span style="display:flex;align-items:center;gap:6px;">
-<i class="fa-solid fa-user" style="font-size:11px;opacity:.7;"></i>
-${escapeHtml(data.personal.maritalStatus)}
-</span>
-` : ''}
-
-${data.personal.religion ? `
-<span style="display:flex;align-items:center;gap:6px;">
-<i class="fa-solid fa-place-of-worship" style="font-size:11px;opacity:.7;"></i>
-${escapeHtml(data.personal.religion)}
-</span>
-` : ''}
 </div>
 
     </aside>
@@ -3739,20 +3725,6 @@ ${escapeHtml(data.personal.driversLicence)}
 </span>
 ` : ''}
 
-${data.personal.maritalStatus ? `
-<span style="display:flex;align-items:center;gap:6px;">
-<i class="fa-solid fa-user" style="font-size:11px;opacity:.7;"></i>
-${escapeHtml(data.personal.maritalStatus)}
-</span>
-` : ''}
-
-${data.personal.religion ? `
-<span style="display:flex;align-items:center;gap:6px;">
-<i class="fa-solid fa-place-of-worship" style="font-size:11px;opacity:.7;"></i>
-${escapeHtml(data.personal.religion)}
-</span>
-` : ''}
-
 </div>
 
 </aside>
@@ -5026,20 +4998,6 @@ ${escapeHtml(data.personal.driversLicence)}
 </span>
 ` : ''}
 
-${data.personal.maritalStatus ? `
-<span style="display:flex;align-items:center;gap:6px;">
-<i class="fa-solid fa-user" style="font-size:11px;opacity:.7;"></i>
-${escapeHtml(data.personal.maritalStatus)}
-</span>
-` : ''}
-
-${data.personal.religion ? `
-<span style="display:flex;align-items:center;gap:6px;">
-<i class="fa-solid fa-place-of-worship" style="font-size:11px;opacity:.7;"></i>
-${escapeHtml(data.personal.religion)}
-</span>
-` : ''}
-
 </div>
 
 </aside>
@@ -5701,20 +5659,6 @@ ${escapeHtml(data.personal.driversLicence)}
 </span>
 ` : ''}
 
-${data.personal.maritalStatus ? `
-<span style="display:flex;align-items:center;gap:6px;">
-<i class="fa-solid fa-user" style="font-size:11px;opacity:.7;"></i>
-${escapeHtml(data.personal.maritalStatus)}
-</span>
-` : ''}
-
-${data.personal.religion ? `
-<span style="display:flex;align-items:center;gap:6px;">
-<i class="fa-solid fa-place-of-worship" style="font-size:11px;opacity:.7;"></i>
-${escapeHtml(data.personal.religion)}
-</span>
-` : ''}
-
 </div>
 
 </aside>
@@ -6286,13 +6230,6 @@ ${data.personal.race
       : ''}
 ${data.personal.religion
       ? `<li style="font-size:14px">${icon(ICONS.faith_w)}${escapeHtml(data.personal.religion)}</li>`
-      : ''}
-${data.personal.maritalStatus
-      ? `<li style="font-size:14px">${icon(ICONS.heart_w)}${escapeHtml(data.personal.maritalStatus)}</li>`
-      : ''}
-
-${data.personal.driversLicence
-      ? `<li style="font-size:14px">${icon(ICONS.car_w)}${escapeHtml(data.personal.driversLicence)}</li>`
       : ''}
   </ul>
             </div>
@@ -8115,134 +8052,160 @@ padding:48px 50px;
 ">
 
 <!-- HEADER -->
+<aside class="header" 
+        style="background: ${asideGradient};
+            padding: 40px 40px 80px 40px;
+            color: white;
+            position: relative;">
+            <div class="header-grid" 
+            style="display: grid;
+            grid-template-columns: 1fr 2fr;
+            align-items: center;">
+            <div>
+                    <div class="name"
+                     style="font-size: 36px;
+                    font-family: Space Grotesk;
+                    font-weight: 700;
+                    letter-spacing: 2px;">${escapeHtml(data.personal.fullName || '')}</div>
+                    <div class="title" 
+                    style="opacity: .85;
+                    margin-top: 6px;
+                    letter-spacing: 2px;
+                    font-size: 15px;">${escapeHtml(data.personal.title || '')}</div>
+                    </div>
 
-<aside style="
-margin-bottom:36px;
-padding-bottom:22px;
-border-bottom:3px solid ${accentColor};
-">
+                <ul class="contact-list_Template_1" style="display: grid;grid-template-columns: 1fr 1fr;">
 
-<h1 style="
-font-size:34px;
-font-weight:800;
-letter-spacing:.4px;
-color:#0f172a;
-margin:0 0 6px 0;
-">
-${escapeHtml(data.personal.fullName || '')}
-</h1>
+    ${data.personal.phone
+      ? `<li style="font-size:14px">${icon(ICONS.phone_w)}${escapeHtml(data.personal.phone)}</li>`
+      : ''}
 
-<p style="
-font-size:18px;
-color:${accentColor};
-font-weight:600;
-margin-bottom:10px;
-">
-${escapeHtml(data.personal.title || '')}
-</p>
+    ${data.personal.email
+      ? `<li style="font-size:14px">${icon(ICONS.email_w)}${escapeHtml(data.personal.email)}</li>`
+      : ''}
 
-<p style="
-font-size:14px;
-color:#4b5563;
-line-height:1.8;
-">
+    ${data.personal.location
+      ? `<li style="font-size:14px">${icon(ICONS.location_w)}${escapeHtml(data.personal.location)}</li>`
+      : ''}
 
-${data.personal.phone ? `${escapeHtml(data.personal.phone)} • ` : ''}
-${data.personal.email ? ` ${escapeHtml(data.personal.email)} • ` : ''}
-${data.personal.location ? ` ${escapeHtml(data.personal.location)} • ` : ''}
-${data.personal.website ? ` ${escapeHtml(data.personal.website)} • ` : ''}
-${data.personal.linkedin ? ` ${escapeHtml(data.personal.linkedin)} • ` : ''}
-${data.personal.dob ? `Date of birth: ${escapeHtml(data.personal.dob)} • ` : ''}
-${data.personal.race ? `Race: ${escapeHtml(data.personal.race)} • ` : ''}
-${data.personal.driversLicence ? `Drivers Licence: ${escapeHtml(data.personal.driversLicence)} • ` : ''}
-${data.personal.maritalStatus ? `Marital Status: ${escapeHtml(data.personal.maritalStatus)} • ` : ''}
-${data.personal.religion ? `Religion: ${escapeHtml(data.personal.religion)}` : ''}
+    ${data.personal.website
+      ? `<li style="font-size:14px">${icon(ICONS.website_w)}${escapeHtml(data.personal.website)}</li>`
+      : ''}
 
-</p>
+    ${data.personal.linkedin
+      ? `<li style="font-size:14px">${icon(ICONS.linkedin_w)}${escapeHtml(data.personal.linkedin)}</li>`
+      : ''}
 
-</aside>
+    ${data.personal.dob
+      ? `<li style="font-size:14px">${icon(ICONS.calendar_w)}${escapeHtml(data.personal.dob)}</li>`
+      : ''}
+    ${data.personal.gender
+      ? `<li style="font-size:14px">${icon(ICONS.user_w)}${escapeHtml(data.personal.gender)}</li>`
+      : ''}
 
-<main style="padding-top:0">
+${data.personal.race
+      ? `<li style="font-size:14px">${icon(ICONS.group_w)}${escapeHtml(data.personal.race)}</li>`
+      : ''}
+${data.personal.religion
+      ? `<li style="font-size:14px">${icon(ICONS.faith_w)}${escapeHtml(data.personal.religion)}</li>`
+      : ''}
+  </ul>
+            </div>
 
-${data.summary && data.summary.trim() ? `
+            <div class="profile" 
+            style="position: absolute;
+            display: flex;
+            justify-content: center;
+            bottom: -65px;
+            left: 60px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 6px solid white;
+            background: ${asideGradient};
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .25);">
+            <div>${p}</div>
+            </div>
+        </aside>
+<main class="content_Template_1">
 
-<section style="margin-bottom:34px;">
+${data.summary?.trim() ? `
+<section class="overflow" style="margin-bottom:26px; margin-top:75px;">
 
 <h2 style="
-font-size:14px;
+color:#fff;
+font-size:15px;
 font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.4px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:14px;
+margin-bottom:8px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
 ">
 Professional Summary
 </h2>
 
-<p style="color:#374151;">
+<p style="font-size:14px; color:#222;">
 ${escapeHtml(data.summary)}
 </p>
 
 </section>
-
 ` : ''}
 
 ${hasExperience() ? `
-
 <h2 class="overflow" style="
 font-size:14px;
+color:#fff;
 font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.2px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:6px;
-margin-bottom:14px;
+margin-top:22px;
+margin-bottom:10px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
 ">
-Experience
+Professional Experience
 </h2>
 
 ${data.experience.map(exp => `
 
-<div class="overflow" style="
+<div style="
 display:flex;
-justify-content:space-between;
 flex-wrap:wrap;
+margin-top:20px;
+width:100%:
 ">
-
-<strong style="font-size:15px;color:#111827; margin-top:10px">
-${escapeHtml(exp.role)}
-</strong>
-
-<span style="font-size:12px;color:#6b7280; margin-top:10px">
-${[exp.start, exp.end].filter(Boolean).join(' - ')}
+<span style="font-size:13px; color:#444; width:200px">
+${[exp.start, exp.end].filter(Boolean).join(' – ')}
 </span>
 
+<strong style="font-size:15px;">
+${escapeHtml(exp.role || '')}
+</strong>
 </div>
 
-<div class="overflow" style="
-font-size:13px;
-color:#374151;
-font-weight:600;
-margin-top:3px;
-margin-bottom: 8px;
+<div style="
+font-size:14px;
+font-style:italic;
+margin-bottom:6px;
 display:flex;
-justify-content:space-between;
 flex-wrap:wrap;
+color:#333;
 ">
-<span>${escapeHtml(exp.campany || '')} </span>
-<span style="font-size: 12px; color: #6b7280; font-weight:500;">${escapeHtml(exp.location || '')}</span>
+<span style="width:200px">${escapeHtml(exp.location || '')}</span>
+<span>${escapeHtml(exp.campany || '')}</span>
 </div>
 
-${exp.bullets?.length ? `
-${exp.bullets.map(b => `
-<li class="overflow" style="margin-bottom:5px;color: #374151; margin-left: 18px">
-${escapeHtml(b)}
+${exp.bullets?.filter(b => b?.trim()).map(b => `
+<li class="overflow" style="
+margin-left:200px;
+margin-bottom:4px;
+font-size:14px;
+color:#222;
+list-style:none;
+">
+<span style="margin-right:6px;">•</span>${escapeHtml(b)}
 </li>
 `).join('')}
-` : ''}
 
 `).join('')}
 
@@ -8252,408 +8215,409 @@ ${hasEducation() ? `
 
 <h2 class="overflow" style="
 font-size:14px;
+color:#fff;
 font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.2px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:6px;
-margin-bottom:14px;
-margin-top: 28px;
+margin-top:22px;
+margin-bottom:10px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
 ">
 Education
 </h2>
 
 ${data.education.map(edu => `
-<div class="overflow" style="
-display:flex;
-justify-content:space-between;
-flex-wrap:wrap;
-">
 
-<strong style="font-size:15px;color:#111827; margin-top:10px">
+<div style="
+display:flex;
+width:100%;
+flex-wrap:wrap;
+margin-top:20px;
+">
+<span style="font-size:13px; color:#444; width:200px;">
+${[edu.start, edu.end, edu.year].filter(Boolean).join(' – ')}
+</span>
+
+<strong style="font-size:15px;">
 ${escapeHtml(edu.degree || '')}
 </strong>
 
-<span style="font-size:12px;color:#6b7280">
-${[
-      edu.start,
-      edu.end,
-      edu.startYear,
-      edu.endYear,
-      edu.year
-    ].filter(Boolean).join(' - ')}
-</span>
-
 </div>
 
-<div class="overflow" style="
-font-size:13px;
-color:#374151;
-font-weight:600;
+<div style="
+font-size:14px;
 display:flex;
-justify-content:space-between;
+width:100%;
 flex-wrap:wrap;
+font-style:italic;
+margin-bottom:6px;
+color:#333;
 ">
-<span>$${escapeHtml(edu.school || '')} </span>
-<span style="font-size:13px; color:#6b7280;">${escapeHtml(edu.location || '')}</span>
+<span style="width:200px">${escapeHtml(edu.location || '')}</span>
+<span>${escapeHtml(edu.school || '')}</span>
 </div>
 
-${edu.discription?.trim() ? `
+${edu.discription ? `
 <div class="overflow" style="
-color:#4b5563;
-margin-top:6px;
-line-height:1.5;margin-left: 18px;
+margin-left:200px;
+margin-bottom:4px;
+font-size:14px;
+color:#222;
+line-height:1.5;
 ">
-${escapeHtml(edu.discription)}
+<span style="margin-right:6px;">•</span>${escapeHtml(edu.discription)}
 </div>
 ` : ''}
+
 `).join('')}
+
 ` : ''}
 
 ${hasSkills() ? `
 
-<section class="overflow" style="margin-bottom:34px; margin-top: 28px;">
-
-<h2 style="
-font-size:14px;
+<h2 class="overflow" style="
+font-size:15px;
+color:#fff;
 font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.4px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:16px;
+margin-top:22px;
+margin-bottom:10px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
 ">
 Skills
 </h2>
 
-<div style="
+<div class="overflow" style="
 display:grid;
 grid-template-columns:1fr 1fr;
-gap:14px 28px;
+gap:10px 30px;
 ">
 
-${data.skills
-        .filter(skill => skill.name?.trim())
-        .map(skill => {
+${data.skills.filter(s => s.name?.trim()).map(skill => {
 
-          const levelMap = {
-            basic: 40,
-            intermediate: 65,
-            advanced: 85,
-            expert: 90,
-            native: 100
-          };
+let dots = 3;
+if (typeof skill.level === "number") {
+dots = Math.ceil(skill.level / 20);
+}
 
-          let level = skill.level;
-
-          if (typeof level === "string") {
-            const normalized = level.trim().toLowerCase();
-            if (levelMap[normalized] !== undefined) {
-              level = levelMap[normalized];
-            }
-            else if (!isNaN(level)) {
-              level = Number(level);
-            }
-            else {
-              level = 70;
-            }
-          }
-          if (typeof level !== "number") level = 70;
-          level = Math.max(0, Math.min(level, 100));
-          const dots = Math.ceil(level / 20);
-          return `
-
+return `
 <div style="
 display:flex;
 justify-content:space-between;
-align-items:center;
-font-size:13px;
+font-size:14px;
 ">
 
-<span style="font-weight:600;color:#1f2937">
-${escapeHtml(skill.name)}
-</span>
+<span>${escapeHtml(skill.name)}</span>
 
-<div style="display:flex;gap:6px">
-
-${[1, 2, 3, 4, 5].map(i => `
-
+<div style="display:flex; gap:5px;">
+${[1,2,3,4,5].map(i => `
 <div style="
-width:8px;
-height:8px;
+width:6px;
+height:6px;
 border-radius:50%;
-background:${i <= dots ? accentColor : '#e5e7eb'};
+background:${i <= dots ? '#111' : '#ddd'};
 "></div>
 `).join('')}
 </div>
+
 </div>
 `;
 }).join('')}
+
 </div>
-</section>
 
 ` : ''}
 
 ${hasCertificate() ? `
 
-<section class="overflow" style="margin-bottom:34px">
-
-<h2 style="
+<h2 class="overflow" style="
 font-size:14px;
+color:#fff;
+margin-top:22px;
 font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.4px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:14px;
+margin-bottom:10px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
 ">
 Certificates
 </h2>
 
-${data.certificates.map(cert => `
-<div style="margin-bottom:12px">
-<span style="display: flex; justify-content: space-between;">
-<strong style="font-size:14px;color:#111827">
+${data.certificates.filter(cert => cert.name?.trim() || cert.issuer?.trim()).map(cert => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+margin-top:10px;
+">
+
+<strong style="font-size:15px;">
 ${escapeHtml(cert.name || '')}
 </strong>
-${cert.date ? `<div style="font-size:12px;color:#6b7280">${escapeHtml(cert.date)}</div>` : ''}
+
+<span style="font-size:13px; color:#444;">
+${cert.date ? escapeHtml(cert.date) : ''}
 </span>
 
-${cert.issuer ? `<div style="font-size:13px;color:#374151; margin:3px 0; font-weight: 600;">${escapeHtml(cert.issuer)}</div>` : ''}
-${cert.description ? `<div style="color:#4b5563">${escapeHtml(cert.description)}</div>` : ''}
 </div>
+
+<div class="overflow" style="
+font-size:14px;
+font-style:italic;
+margin-bottom:6px;
+color:#333;
+">
+${escapeHtml(cert.issuer || '')}
+</div>
+
+${cert.description ? `
+<div class="overflow" style="
+margin-left:16px;
+margin-bottom:4px;
+font-size:14px;
+color:#222;
+line-height:1.5;
+">
+<span style="margin-right:6px;">•</span>${escapeHtml(cert.description)}
+</div>
+` : ''}
+
 `).join('')}
-</section>
+
 ` : ''}
 
 ${hasPortfolio() ? `
 
-<section class="overflow" style="margin-bottom:34px">
-
-<h2 style="
+<h2 class="overflow" style="
 font-size:14px;
+color:#fff;
+margin-top:22px;
 font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.4px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:14px;
+margin-bottom:10px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
 ">
 Projects
 </h2>
 
-${data.portfolio.map(link => `
-<div style="margin-top:12px;">
-<strong style="font-size:14px;color:#111827;">
+${data.portfolio.filter(link => link.name?.trim() || link.url?.trim()).map(link => `
+
+<div class="overflow" style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+margin-top:10px;
+">
+
+<strong style="font-size:15px;">
 ${escapeHtml(link.name || '')}
 </strong>
-${link.url ? `<div style="font-size:13px;color:${accentColor}"; font-weight: 600; margin:3px 0;>${escapeHtml(link.url)}</div>` : ''}
-${link.description ? `<div style="color:#4b5563">${escapeHtml(link.description)}</div>` : ''}
+
+<span style="font-size:13px; color:#444; font-style:italic;">
+${link.url ? escapeHtml(link.url) : ''}
+</span>
+
 </div>
+
+${link.description ? `
+<div class="overflow" style="
+font-size:14px;
+margin-bottom:6px;
+color:#333;
+">
+${escapeHtml(link.description)}
+</div>
+` : ''}
+
 `).join('')}
 
-</section>
+` : ''}
+
+${hasLanguage() ? `
+
+<h2 class="overflow" style="
+font-size:15px;
+font-weight:700;
+margin-top:22px;
+color:#fff;
+margin-bottom:10px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
+">
+Languages
+</h2>
+
+<div class="overflow" style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px 30px;
+">
+
+${data.languages.filter(l => l.name?.trim()).map(lang => {
+
+let dots = 3;
+if (typeof lang.level === "number") {
+dots = Math.ceil(lang.level / 20);
+}
+
+return `
+<div style="
+display:flex;
+justify-content:space-between;
+font-size:14px;
+">
+
+<span>${escapeHtml(lang.name)}</span>
+
+<div style="display:flex; gap:5px;">
+${[1,2,3,4,5].map(i => `
+<div style="
+width:6px;
+height:6px;
+border-radius:50%;
+background:${i <= dots ? '#111' : '#ddd'};
+"></div>
+`).join('')}
+</div>
+
+</div>
+`;
+}).join('')}
+
+</div>
 
 ` : ''}
 
 ${hasAchievements() ? `
 
-<section class="overflow" style="margin-bottom:34px">
-
-<h2 style="
-font-size:14px;
+<h2 class="overflow" style="
+font-size:15px;
+color:#fff;
+margin-top:22px;
 font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.4px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:14px;
+margin-bottom:10px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
 ">
 Honors & Awards
 </h2>
 
-<div style="
-display:flex;
-flex-wrap:wrap;
-gap:10px 16px;
+${data.achievements.map(a => `
+<div class="overflow" style="
 font-size:14px;
-color:#374151;
+margin-bottom:6px;
 ">
-
-${data.achievements
-        .filter(i => i?.trim())
-        .map(i => `
-<div style="
-background:#f1f5f9;
-border:1px solid #e5e7eb;
-padding:6px 12px;
-border-radius:16px;
-font-size:13px;
-">
-${escapeHtml(i)}
+• ${escapeHtml(a)}
 </div>
 `).join('')}
-</div>
-</section>
-` : ''}
 
-${hasLanguage() ? `
-
-<section class="overflow" style="margin-bottom:34px">
-
-<h2 style="
-font-size:14px;
-font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.4px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:16px;
-">
-Languages
-</h2>
-
-<div style="
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:14px 28px;
-">
-
-${data.languages
-        .filter(lang => lang.name?.trim())
-        .map(lang => {
-
-          const levelMap = {
-            basic: 1,
-            intermediate: 2,
-            advanced: 3,
-            fluent: 4,
-            native: 5
-          };
-
-          let dots = 3;
-
-          if (typeof lang.level === "string") {
-            const normalized = lang.level.trim().toLowerCase();
-
-            if (levelMap[normalized] !== undefined) {
-              dots = levelMap[normalized];
-            }
-          }
-
-          return `
-
-<div style="
-display:flex;
-justify-content:space-between;
-align-items:center;
-font-size:13px;
-">
-
-<span style="font-weight:600;color:#1f2937">
-${escapeHtml(lang.name)}
-</span>
-
-<div style="display:flex;gap:6px">
-
-${[1, 2, 3, 4, 5].map(i => `
-
-<div style="
-width:8px;
-height:8px;
-border-radius:50%;
-background:${i <= dots ? accentColor : '#e5e7eb'};
-"></div>
-
-`).join('')}
-</div>
-</div>
-`;
-        }).join('')}
-</div>
-</section>
 ` : ''}
 
 ${hasInterest() ? `
 
-<section class="overflow" style="margin-bottom:34px">
-
-<h2 style="
-font-size:14px;
+<h2 class="overflow" style="
+font-size:15px;
 font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.4px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:14px;
+margin-top:22px;
+color:#fff;
+margin-bottom:10px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
 ">
 Interests
 </h2>
 
-<div style="
-display:flex;
-flex-wrap:wrap;
-gap:10px 16px;
+<div class="overflow" style="
 font-size:14px;
-color:#374151;
+display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
 ">
+${data.interests.map(i => `<span>• ${escapeHtml(i)}</span>`).join('')}
+</div>
 
-${data.interests
-        .filter(i => i?.trim())
-        .map(i => `
-<div style="
-background:#f1f5f9;
-border:1px solid #e5e7eb;
-padding:6px 12px;
-border-radius:16px;
-font-size:13px;
-">
-${escapeHtml(i)}
-</div>
-`).join('')}
-</div>
-</section>
 ` : ''}
 
-${hasReferences() ? `
-<section class="overflow">
+${(() => {
+const validRefs = data.references.filter(
+ref => ref.name?.trim() || ref.campany?.trim()
+);
 
-<h2 style="
-font-size:14px;
+if (!validRefs.length) return '';
+
+return `
+<h2 class="overflow" style="
+font-size:15px;
+color:#fff;
+margin-top:22px;
 font-weight:700;
-text-transform:uppercase;
-letter-spacing:1.4px;
-color:${accentColor};
-border-bottom:2px solid #e5e7eb;
-padding-bottom:8px;
-margin-bottom:14px;
+margin-bottom:10px;
+background:${asideGradient};
+text-align:center;
+padding:6px 0;
 ">
 References
 </h2>
 
-${data.references.map(ref => `
-<div style="margin-bottom:18px">
-<strong style="font-size:15px;color:#0f172a">
-${escapeHtml(ref.name)}
+${validRefs.map(ref => `
+
+<div style="
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+">
+
+<strong style="font-size:15px;">
+<span style="margin-right:6px;">•</span>
+${escapeHtml(ref.name || '')}
 </strong>
-<div style="color:#374151">
+
+</div>
+
+<div style="
+font-size:14px;
+font-style:italic;
+margin-bottom:6px;
+margin-left:16px;
+color:#333;
+">
+${escapeHtml(ref.position || '')}
+</div>
+
+<div style="
+font-size:14px;
+font-style:italic;
+margin-left:16px;
+margin-bottom:6px;
+color:#333;
+">
 ${escapeHtml(ref.campany || '')}
 </div>
-${ref.phone ? `<div>${escapeHtml(ref.phone)}</div>` : ''}
-${ref.email ? `<div>${escapeHtml(ref.email)}</div>` : ''}
+
+${ref.phone || ref.email ? `
+<div class="overflow" style="
+margin-left:16px;
+margin-bottom:4px;
+font-size:14px;
+color:#222;
+line-height:1.5;
+">
+${[ref.phone, ref.email].filter(Boolean).map(escapeHtml).join(' | ')}
 </div>
-`).join('')}
-</section>
 ` : ''}
 
+`).join('')}
+`;
+})()}
+
 </main>
+
 </div>
 `;
 }
@@ -8727,8 +8691,6 @@ ${data.personal.linkedin ? ` ${escapeHtml(data.personal.linkedin)} • ` : ''}
 ${data.personal.dob ? `Date of birth: ${escapeHtml(data.personal.dob)} • ` : ''}
 ${data.personal.race ? `Race: ${escapeHtml(data.personal.race)} • ` : ''}
 ${data.personal.driversLicence ? `Drivers Licence: ${escapeHtml(data.personal.driversLicence)} • ` : ''}
-${data.personal.maritalStatus ? `Marital Status: ${escapeHtml(data.personal.maritalStatus)} • ` : ''}
-${data.personal.religion ? `Religion: ${escapeHtml(data.personal.religion)}` : ''}
 
 </p>
 
@@ -9292,8 +9254,6 @@ ${data.personal.linkedin ? ` ${escapeHtml(data.personal.linkedin)} • ` : ''}
 ${data.personal.dob ? `Date of birth: ${escapeHtml(data.personal.dob)} • ` : ''}
 ${data.personal.race ? `Race: ${escapeHtml(data.personal.race)} • ` : ''}
 ${data.personal.driversLicence ? `Drivers Licence: ${escapeHtml(data.personal.driversLicence)} • ` : ''}
-${data.personal.maritalStatus ? `Marital Status: ${escapeHtml(data.personal.maritalStatus)} • ` : ''}
-${data.personal.religion ? `Religion: ${escapeHtml(data.personal.religion)}` : ''}
 
 </p>
 
@@ -10462,7 +10422,7 @@ function applyAsideGradient() {
   asides.forEach(a => {
 
     a.style.transition = "background 0.4s ease";
-    if (selectedTemplate === "vertexats" || selectedTemplate === "apexats" || selectedTemplate === "ats" || selectedTemplate === "midnight"  || selectedTemplate === "goldenexecutive" || selectedTemplate === "pinkcorporate" || selectedTemplate === "pinkcorporateII" ) {
+    if (selectedTemplate === "vertexats" || selectedTemplate === "apexats" || selectedTemplate === "midnight"  || selectedTemplate === "goldenexecutive" || selectedTemplate === "pinkcorporate" || selectedTemplate === "pinkcorporateII" ) {
       a.style.background = "white";
     } else {
       a.style.background = asideGradient;

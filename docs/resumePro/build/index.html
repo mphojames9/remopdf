@@ -5,10 +5,10 @@
   <meta charset="UTF-8" />
   <title>Resume Builder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/png" href="/public/assets/icon.png">
-  <link rel="stylesheet" href="./styles/templates.css">
-  <link rel="stylesheet" href="./styles/slider.css">
-  <link rel="stylesheet" href="./styles/main.css">
+  <link rel="icon" type="image/png" href="/assets/icon.png">
+  <link rel="stylesheet" href="../styles/templates.css">
+  <link rel="stylesheet" href="../styles/slider.css">
+  <link rel="stylesheet" href="../styles/main.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -880,12 +880,12 @@
                     <input id="race" placeholder="Race">
                   </div>
 
-                  <div class="form-group">
+                  <div class="form-group" style="display: none;">
                     <label>Religion</label>
                     <input id="religion" placeholder="Religion">
                   </div>
 
-                  <div class="form-group">
+                  <div class="form-group" style="display: none;">
                     <label>Marital Status</label>
                     <input id="maritalStatus" placeholder="Marital Status">
                   </div>
@@ -903,9 +903,9 @@
     </div>
   </div>
   <div class="updater" style="display: none;"></div>
-  <!-- html2pdf for PDF export /docs/resumeBuilder.bundle.js -->
+  <!-- html2pdf for PDF export resumeBuilder.bundle.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="/resumeBuilder.bundle.js"></script>
+  <script src="/docs/resumeBuilder.bundle.js"></script>
   <script src="script.js" defer></script>
 
 

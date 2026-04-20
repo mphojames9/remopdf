@@ -54,7 +54,7 @@
   padding-top: 0;
 }
 
-.vertexats aside, .apexats aside, .ats aside {
+.vertexats aside, .apexats aside {
   width: 694px;
   margin: 0 auto;
   padding-top: 48px;
@@ -375,7 +375,7 @@ transform:scale(1.1);
 
 /* GRADIENTS */
 .color-card:nth-child(1){
-background:linear-gradient(180deg,#1e3a8a,#2563eb,#1d4ed8);
+background:linear-gradient(180deg,#04184e,#2563eb,#1d4ed8);
 }
 
 .color-card:nth-child(2){
@@ -474,9 +474,4 @@ aside li {
   align-items:flex-start;
   overflow-wrap:anywhere;
   word-break:break-word;
-}
-
-.resume-page {
-  background: url('./background/creative.png');
-  background-size: 100% 100%;
 }
