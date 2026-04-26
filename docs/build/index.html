@@ -15,6 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
 
   <header class="topbar">
@@ -97,9 +98,9 @@
         <div class="template-filters" id="templateFilters">
 
           <button class="filter active" data-filter="all">All</button>
-          <button class="filter" data-filter="midnight">Modern</button>
-          <button class="filter" data-filter="Modern-ATS">Modern-ATS</button>
-          <button class="filter" data-filter="ats">ATS</button>
+          <button class="filter" data-filter="midnight">Recruiter-friendly</button>
+          <button class="filter" data-filter="Modern-ATS">Modern-ATS-photo</button>
+          <button class="filter" data-filter="ats">Modern-ATS-No photo</button>
 
         </div>
 
@@ -107,14 +108,10 @@
 
       <!-- TEMPLATE CONTAINER -->
       <div class="template-container">
-
         <!-- midnight GROUP -->
         <div class="template-group" data-group="midnight">
-
-          <h3 class="group-title">Modern Two-Column</h3>
-
+          <h3 class="group-title">Recruiter-friendly-ATS</h3>
           <div class="template-grid">
-
             <!-- midnight -->
             <div class="template-card" data-template="midnight">
               <div class="template-image">
@@ -125,7 +122,7 @@
                   </button>
                 </div>
               </div>
-              <span class="template-name">Midnight Professional</span>
+              <span class="template-name">Basic ATS</span>
             </div>
 
             <!-- Golden Executive -->
@@ -151,48 +148,7 @@
                   </button>
                 </div>
               </div>
-              <span class="template-name">Pink Corporate</span>
-            </div>
-
-
-
-            <!-- midnight -->
-            <div class="template-card" data-template="promidnight">
-              <div class="template-image">
-                <img src="/public/assets/Midnight-II.png" alt="promidnight Resume">
-                <div class="template-overlay">
-                  <button class="use-template-btn" style="width: 130px; padding: 10px;" id="promidnight">
-                    Use Template
-                  </button>
-                </div>
-              </div>
-              <span class="template-name">Midnight Professional II</span>
-            </div>
-
-            <!-- Golden Executive -->
-            <div class="template-card" data-template="goldenexecutiveII">
-              <div class="template-image">
-                <img src="/public/assets/goldenexecutiveII.png" alt="Golden ExecutiveII">
-                <div class="template-overlay">
-                  <button class="use-template-btn" style="width: 130px; padding: 10px;" id="goldenexecutiveII">
-                    Use Template
-                  </button>
-                </div>
-              </div>
-              <span class="template-name">Golden ExecutiveII</span>
-            </div>
-
-            <!-- pinkcorporate -->
-            <div class="template-card" data-template="pinkcorporateII">
-              <div class="template-image">
-                <img src="/public/assets/pinkcorporateII.png" alt="Pink Corporate Resume II">
-                <div class="template-overlay">
-                  <button class="use-template-btn" style="width: 130px; padding: 10px;" id="pinkcorporateII">
-                    Use Template
-                  </button>
-                </div>
-              </div>
-              <span class="template-name">Pink CorporateII</span>
+              <span class="template-name">Standard ATS</span>
             </div>
           </div>
         </div>
@@ -241,6 +197,43 @@
               </div>
               <span class="template-name">Modern-Edge-ATS</span>
             </div>
+            <!-- midnight -->
+            <div class="template-card" data-template="promidnight">
+              <div class="template-image">
+                <img src="/public/assets/Midnight-II.png" alt="promidnight Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" style="width: 130px; padding: 10px;" id="promidnight">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">Midnight Professional ATS</span>
+            </div>
+
+            <!-- Golden Executive -->
+            <div class="template-card" data-template="goldenexecutiveII">
+              <div class="template-image">
+                <img src="/public/assets/goldenexecutiveII.png" alt="Golden ExecutiveII">
+                <div class="template-overlay">
+                  <button class="use-template-btn" style="width: 130px; padding: 10px;" id="goldenexecutiveII">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">ExecutiveATS</span>
+            </div>
+
+            <div class="template-card" data-template="ats">
+              <div class="template-image">
+                <img src="/public/assets/ats.png" alt="ATS Resume">
+                <div class="template-overlay">
+                  <button class="use-template-btn" style="width: 130px; padding: 10px;" id="ats">
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <span class="template-name">NeoATS</span>
+            </div>
           </div>
         </div>
       </div>
@@ -249,21 +242,10 @@
       <!-- ATS GROUP -->
       <div class="template-group" data-group="ats">
 
-        <h3 class="group-title">ATS Friendly</h3>
+        <h3 class="group-title">Modern-ATS-No photo</h3>
 
         <div class="template-grid">
 
-          <div class="template-card" data-template="ats">
-            <div class="template-image">
-              <img src="/public/assets/ats.png" alt="ATS Resume">
-              <div class="template-overlay">
-                <button class="use-template-btn" style="width: 130px; padding: 10px;" id="ats">
-                  Use Template
-                </button>
-              </div>
-            </div>
-            <span class="template-name">NeoATS</span>
-          </div>
 
           <div class="template-card" data-template="apexats">
             <div class="template-image">
@@ -275,6 +257,19 @@
               </div>
             </div>
             <span class="template-name">ApexATS</span>
+          </div>
+
+          <!-- pinkcorporate -->
+          <div class="template-card" data-template="pinkcorporateII">
+            <div class="template-image">
+              <img src="/public/assets/pinkcorporateII.png" alt="Pink Corporate Resume II">
+              <div class="template-overlay">
+                <button class="use-template-btn" style="width: 130px; padding: 10px;" id="pinkcorporateII">
+                  Use Template
+                </button>
+              </div>
+            </div>
+            <span class="template-name">ColoredATS</span>
           </div>
 
           <div class="template-card" data-template="vertexats">
@@ -420,13 +415,13 @@
       </div>
 
       <div class="section-block section-hidden" id="achievementBlock">
-  <div class="section-header">
-    <h4><i class="fa-solid fa-trophy"></i> Achievements</h4>
-    <button class="toggle-btn">
-      <i class="fa-solid fa-pen-to-square"></i>
-    </button>
-  </div>
-</div>
+        <div class="section-header">
+          <h4><i class="fa-solid fa-trophy"></i> Achievements</h4>
+          <button class="toggle-btn">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+        </div>
+      </div>
 
 
 
@@ -451,8 +446,8 @@
       </div>
 
       <button id="openDrawerBtn" class="add-section-btn">
-  <i class="fa-solid fa-plus"></i> Add Section
-</button>
+        <i class="fa-solid fa-plus"></i> Add Section
+      </button>
     </aside>
 
     <button class="savePersonalDetails hidden">
@@ -518,65 +513,50 @@
     </div>
   </div>
 
-<div id="drawer" class="drawer">
-  <div class="drawer-header">
-    <h3>Add Sections</h3>
-    <button id="closeDrawerBtn">
-      <i class="fa-solid fa-plus"></i>
-    </button>
+  <div id="drawer" class="drawer">
+    <div class="drawer-header">
+      <h3>Add Sections</h3>
+      <button id="closeDrawerBtn">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+
+    <div class="drawer-content">
+
+      <!-- ✅ Certificates -->
+      <button class="drawer-item" data-target="certificateBlock" data-key="certificates" data-label="Certificates">
+        <i class="fa-solid fa-plus"></i>
+        <span>Certificates</span>
+      </button>
+
+      <!-- ✅ Portfolio -->
+      <button class="drawer-item" data-target="addPortfolio" data-key="portfolio" data-label="Portfolio">
+        <i class="fa-solid fa-plus"></i>
+        <span>Portfolio</span>
+      </button>
+
+      <!-- ✅ Achievements -->
+      <button class="drawer-item" data-target="achievementBlock" data-key="achievements" data-label="Achievements">
+        <i class="fa-solid fa-plus"></i>
+        <span>Honors & Awards</span>
+      </button>
+
+      <!-- ✅ Interests -->
+      <button class="drawer-item" data-target="interestBlock" data-key="interests" data-label="Interests">
+        <i class="fa-solid fa-plus"></i>
+        <span>Interests</span>
+      </button>
+
+      <!-- ✅ References -->
+      <button class="drawer-item" data-target="refSection" data-key="references" data-label="References">
+        <i class="fa-solid fa-plus"></i>
+        <span>References</span>
+      </button>
+
+    </div>
   </div>
 
-  <div class="drawer-content">
-
-    <!-- ✅ Certificates -->
-    <button class="drawer-item"
-      data-target="certificateBlock"
-      data-key="certificates"
-      data-label="Certificates">
-      <i class="fa-solid fa-plus"></i>
-      <span>Certificates</span>
-    </button>
-
-    <!-- ✅ Portfolio -->
-    <button class="drawer-item"
-      data-target="addPortfolio"
-      data-key="portfolio"
-      data-label="Portfolio">
-      <i class="fa-solid fa-plus"></i>
-      <span>Portfolio</span>
-    </button>
-
-    <!-- ✅ Achievements -->
-    <button class="drawer-item"
-      data-target="achievementBlock"
-      data-key="achievements"
-      data-label="Achievements">
-      <i class="fa-solid fa-plus"></i>
-      <span>Honors & Awards</span>
-    </button>
-
-    <!-- ✅ Interests -->
-    <button class="drawer-item"
-      data-target="interestBlock"
-      data-key="interests"
-      data-label="Interests">
-      <i class="fa-solid fa-plus"></i>
-      <span>Interests</span>
-    </button>
-
-    <!-- ✅ References -->
-    <button class="drawer-item"
-      data-target="refSection"
-      data-key="references"
-      data-label="References">
-      <i class="fa-solid fa-plus"></i>
-      <span>References</span>
-    </button>
-
-  </div>
-</div>
-
-<div id="overlay-add" class="overlay-add"></div>
+  <div id="overlay-add" class="overlay-add"></div>
 
 
   <!-- PREMIUM COLOR PALETTE -->
@@ -759,27 +739,27 @@
   </div>
 
   <!-- ACHIEVEMENTS OVERLAY -->
-<div id="achievementOverlay" class="achievementOverlay">
-  <div class="overlay-content">
-    
-    <button id="closeAchievementOverlay" class="overlay-close">
-      &times;
-    </button>
+  <div id="achievementOverlay" class="achievementOverlay">
+    <div class="overlay-content">
 
-    <div class="section-content" style="height:auto;">
-      <div class="section-inner">
+      <button id="closeAchievementOverlay" class="overlay-close">
+        &times;
+      </button>
 
-        <button class="small-btn" id="addAchievementBtn">
-          <i class="fa-solid fa-plus"></i> Add Achievement
-        </button>
+      <div class="section-content" style="height:auto;">
+        <div class="section-inner">
 
-        <div id="achievementsContainer"></div>
+          <button class="small-btn" id="addAchievementBtn">
+            <i class="fa-solid fa-plus"></i> Add Achievement
+          </button>
 
+          <div id="achievementsContainer"></div>
+
+        </div>
       </div>
-    </div>
 
+    </div>
   </div>
-</div>
 
   <!-- REFERENCES OVERLAY -->
   <div id="refOverlay" class="refOverlay">

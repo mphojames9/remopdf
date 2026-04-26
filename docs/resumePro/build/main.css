@@ -2315,11 +2315,6 @@
       overflow: visible;
     }
 
-    .language-row:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
-    }
-
     /* INPUT */
     .input_data {
       flex: 1;
@@ -3954,3 +3949,8 @@
     aside .section-inner {
       overflow: hidden;
     }
+
+    .skill-input {
+  position: relative;
+  z-index: 1;
+}

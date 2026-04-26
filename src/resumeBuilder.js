@@ -131,7 +131,7 @@ const ICONS = {
         stroke="rgb(117, 125, 129)" stroke-width="1.5"/>
     </svg>`,
 
-  campany: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+  company: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none">
     <rect x="3" y="7" width="18" height="13" rx="2"
       stroke="#6f93c1" stroke-width="1.5"/>
     <path d="M9 7V5h6v2"
@@ -322,7 +322,7 @@ function updateExpHeader(expId) {
   titleEl.innerHTML = `
     ${escapeHtml(exp.role || 'New Role')}
     <span class="exp-sep">|</span>
-    ${escapeHtml(exp.campany || 'campany')}
+    ${escapeHtml(exp.company || 'company')}
   `;
 }
 
@@ -365,7 +365,7 @@ function updateRefHeader(refId) {
   titleEl.innerHTML = `
     ${escapeHtml(ref.name || 'Contact Person')}
     <span class="ref-sep">|</span>
-    ${escapeHtml(ref.campany || 'campany')}
+    ${escapeHtml(ref.company || 'company')}
   `;
 }
 // --- Utilities ------------------------------------------------------------
@@ -404,7 +404,7 @@ const refs = {
   importJsonInput: $id('importJsonInput'),
   jobDesc: $id('jobDesc'),
   keywordPanel: $id('keywordPanel'),
-  covercampany: $id('covercampany'),
+  covercompany: $id('covercompany'),
   coverRole: $id('coverRole'),
   generateCoverBtn: $id('generateCoverBtn'),
   coverPreview: $id('coverPreview'),
@@ -450,14 +450,14 @@ const DEFAULT = {
   },
   summary: "",
   experience: [
-    { id: id(), role: "", campany: "", start: "", end: "", bullets: [""] },
-    { id: id(), role: "", campany: "", start: "", end: "", bullets: [""] }
+    { id: id(), role: "", company: "", start: "", end: "", bullets: [""] },
+    { id: id(), role: "", company: "", start: "", end: "", bullets: [""] }
   ],
   education: [
     { id: id(), school: "", degree: "", discription: "", year: "" }
   ],
   references: [
-    { id: id(), name: "", campany: "", position: "", phone: "", email: "" }
+    { id: id(), name: "", company: "", position: "", phone: "", email: "" }
   ],
   skills: [
     { name: "", level: "" },
@@ -950,7 +950,7 @@ refs.certificatesContainer.addEventListener('click', certButtonHandler);
             1.102-.897 2-2.001 2C.897 20 0 19.102 0 18c0-1.103.897-2 2-2z"></path></svg>
         ${escapeHtml(exp.role || 'New Role')}
         <span class="exp-sep">|</span>
-        ${escapeHtml(exp.campany || 'campany')}
+        ${escapeHtml(exp.company || 'company')}
       </div>
       <button class="btn-danger">
           <i class="fa-solid fa-trash"
@@ -973,11 +973,11 @@ refs.certificatesContainer.addEventListener('click', certButtonHandler);
         </div>
 
         <div class="field">
-          <label>campany</label>
+          <label>Company</label>
           <input class="input_data"
             data-id="${exp.id}"
-            data-field="Campany"
-            value="${escapeHtml(exp.campany)}"
+            data-field="company"
+            value="${escapeHtml(exp.company)}"
             placeholder="e.g. Google" />
         </div>
 
@@ -1069,7 +1069,7 @@ refs.certificatesContainer.addEventListener('click', certButtonHandler);
       <div class="ref-title">
         ${escapeHtml(ref.name || 'Contact Person')}
         <span class="ref-sep">|</span>
-        ${escapeHtml(ref.campany || 'campany')}
+        ${escapeHtml(ref.company || 'company')}
       </div>
       <div class="ref-actions">
        <i class="fa-solid fa-chevron-down ref-chevron"></i>
@@ -1096,11 +1096,11 @@ refs.certificatesContainer.addEventListener('click', certButtonHandler);
         </div>
 
         <div class="field">
-          <label>campany</label>
+          <label>company</label>
           <input class="input_data"
             data-id="${ref.id}"
-            data-field="campany"
-            value="${escapeHtml(ref.campany)}"
+            data-field="company"
+            value="${escapeHtml(ref.company)}"
             placeholder="e.g. ABC Corporation" />
         </div>
 
@@ -1364,7 +1364,6 @@ refs.addSkillBtn.addEventListener("click", () => {
   validateSkillAdd();
 });
 
-/* UPDATE SKILL */
 refs.skillsContainer.addEventListener('input', e => {
   const row = e.target.closest('.language-row');
   if (!row) return;
@@ -1372,10 +1371,59 @@ refs.skillsContainer.addEventListener('input', e => {
   const index = Number(row.dataset.index);
   const field = e.target.dataset.field;
 
+  // ===== NORMAL DATA UPDATE =====
   data.skills[index][field] = e.target.value;
   save();
   renderPreview();
   validateSkillAdd();
+
+  // ===== SKILL SUGGESTIONS (merged here) =====
+  if (!e.target.classList.contains("skill-input")) return;
+const input = row.querySelector(".skill-input");
+  input.addEventListener("blur", () => {
+  setTimeout(() => {
+    box.innerHTML = "";
+  }, 150);
+});
+  const value = input.value.toLowerCase();
+
+  const box = row.querySelector(".skill-suggestions");
+  if (!box) return;
+
+  box.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+});
+
+  // clear when empty
+  if (!value) {
+    box.innerHTML = "";
+    return;
+  }
+
+  // remove duplicates from source
+  const skills = [...new Set(getSkillsFromTitles())];
+
+  const filtered = skills.filter(skill =>
+    skill.toLowerCase().includes(value)
+  );
+
+  box.innerHTML = filtered
+    .map(s => `<li>${formatTitle(s)}</li>`)
+    .join("");
+
+  box.querySelectorAll("li").forEach(li => {
+    li.addEventListener("click", () => {
+      const formatted = formatTitle(li.textContent);
+
+      input.value = formatted;
+      box.innerHTML = "";
+
+      data.skills[index].name = formatted;
+
+      save();
+      renderPreview();
+    });
+  });
 });
 
 /* REMOVE SKILL */
@@ -1405,7 +1453,7 @@ function expInputHandler(e) {
     exp[field] = e.target.value;
 
     // 🔥 LIVE update editor header
-    if (field === 'role' || field === 'campany') {
+    if (field === 'role' || field === 'company') {
       updateExpHeader(idVal);
       validateExperienceAdd();
       updateExpHeader(idVal);
@@ -1532,7 +1580,7 @@ function refInputHandler(e) {
   ref[field] = e.target.value;
 
   // 🔥 LIVE editor header update
-  if (field === 'name' || field === 'campany') {
+  if (field === 'name' || field === 'company') {
     updateRefHeader(refId);
     validateReferenceAdd();
   }
@@ -1816,7 +1864,7 @@ function bindButtons() {
     const newExp = {
       id: Math.random().toString(36).slice(2, 9),
       role: "",
-      campany: "",
+      company: "",
       location: "",
       start: "",
       end: "",
@@ -1880,7 +1928,7 @@ function bindButtons() {
 
   //References
   refs.addRefBtn.addEventListener('click', () => {
-    data.references.unshift({ id: id(), name: "", campany: "", position: "", phone: "", email: "" });
+    data.references.unshift({ id: id(), name: "", company: "", position: "", phone: "", email: "" });
     renderLists(); renderPreview(); save(); validateReferenceAdd();
   });
 
@@ -2293,7 +2341,7 @@ function photoHtml() {
 function hasExperience() {
   return data.experience && data.experience.some(exp =>
     exp.role?.trim() ||
-    exp.campany?.trim() ||
+    exp.company?.trim() ||
     exp.start?.trim() ||
     exp.end?.trim() ||
     (exp.bullets && exp.bullets.some(b => b?.trim()))
@@ -2347,7 +2395,7 @@ function hasInterest() {
 function hasReferences() {
   return data.references && data.references.some(ref =>
     ref.name?.trim() ||
-    ref.campany?.trim() ||
+    ref.company?.trim() ||
     ref.phone?.trim() ||
     ref.email?.trim()
   );
@@ -2514,7 +2562,7 @@ display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
 ">
-<span>${escapeHtml(exp.campany || '')} </span>
+<span>${escapeHtml(exp.company || '')} </span>
 <span>${escapeHtml(exp.location || '')}</span>
 </div>
 
@@ -2869,7 +2917,7 @@ ${data.interests.map(i => `<span>• ${escapeHtml(i)}</span>`).join('')}
 
 ${(() => {
   const validRefs = data.references.filter(
-    ref => ref.name?.trim() || ref.campany?.trim()
+    ref => ref.name?.trim() || ref.company?.trim()
   );
 
   if (!validRefs.length) return '';
@@ -2919,7 +2967,7 @@ margin-left:16px;
 margin-bottom:6px;
 color:#333;
 ">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 
 ${ref.phone || ref.email ? `
@@ -3186,7 +3234,7 @@ flex-wrap:wrap;
 color:#333;
 ">
 <span style="width: 200px">${escapeHtml(exp.location || '')}</span>
-<span>${escapeHtml(exp.campany || '')}</span>
+<span>${escapeHtml(exp.company || '')}</span>
 </div>
 
 ${exp.bullets
@@ -3547,7 +3595,7 @@ ${data.interests.map(i => `<span>• ${escapeHtml(i)}</span>`).join('')}
 
 ${(() => {
   const validRefs = data.references.filter(
-    ref => ref.name?.trim() || ref.campany?.trim()
+    ref => ref.name?.trim() || ref.company?.trim()
   );
 
   if (!validRefs.length) return '';
@@ -3597,7 +3645,7 @@ margin-left:16px;
 margin-bottom:6px;
 color:#333;
 ">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 
 ${ref.phone || ref.email ? `
@@ -3790,7 +3838,7 @@ flex-wrap:wrap;
 color:#333;
 ">
 <span style="width: 200px">${escapeHtml(exp.location || '')}</span>
-<span>${escapeHtml(exp.campany || '')}</span>
+<span>${escapeHtml(exp.company || '')}</span>
 </div>
 
 ${exp.bullets
@@ -4165,7 +4213,7 @@ References
 </h2>
 
 ${data.references
-  .filter(ref => ref.name?.trim() || ref.campany?.trim())
+  .filter(ref => ref.name?.trim() || ref.company?.trim())
   .map(ref => `
 
 <div style="
@@ -4198,7 +4246,7 @@ margin-left:16px;
 margin-bottom:6px;
 color:#333;
 ">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 
 ${ref.phone || ref.email ? `
@@ -4466,7 +4514,7 @@ flex-wrap:wrap;
 color:#333;
 ">
 <span style="width:200px">${escapeHtml(exp.location || '')}</span>
-<span>${escapeHtml(exp.campany || '')}</span>
+<span>${escapeHtml(exp.company || '')}</span>
 </div>
 
 ${exp.bullets?.filter(b => b?.trim()).map(b => `
@@ -4820,7 +4868,7 @@ ${data.interests.map(i => `<span>• ${escapeHtml(i)}</span>`).join('')}
 
 ${(() => {
 const validRefs = data.references.filter(
-ref => ref.name?.trim() || ref.campany?.trim()
+ref => ref.name?.trim() || ref.company?.trim()
 );
 
 if (!validRefs.length) return '';
@@ -4871,7 +4919,7 @@ margin-left:16px;
 margin-bottom:6px;
 color:#333;
 ">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 
 ${ref.phone || ref.email ? `
@@ -5063,7 +5111,7 @@ flex-wrap:wrap;
 color:#333;
 ">
 <span style="width: 200px">${escapeHtml(exp.location || '')}</span>
-<span>${escapeHtml(exp.campany || '')}</span>
+<span>${escapeHtml(exp.company || '')}</span>
 </div>
 
 ${exp.bullets
@@ -5467,7 +5515,7 @@ ${data.interests.map(i => `<span>• ${escapeHtml(i)}</span>`).join('')}
 
 ${(() => {
   const validRefs = data.references.filter(
-    ref => ref.name?.trim() || ref.campany?.trim()
+    ref => ref.name?.trim() || ref.company?.trim()
   );
 
   if (!validRefs.length) return '';
@@ -5517,7 +5565,7 @@ margin-left:16px;
 margin-bottom:6px;
 color:#333;
 ">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 
 ${ref.phone || ref.email ? `
@@ -5726,7 +5774,7 @@ flex-wrap:wrap;
 color:#333;
 ">
 <span style="width:200px">${escapeHtml(exp.location || '')}</span>
-<span>${escapeHtml(exp.campany || '')}</span>
+<span>${escapeHtml(exp.company || '')}</span>
 </div>
 
 ${exp.bullets?.filter(b => b?.trim()).map(b => `
@@ -6080,7 +6128,7 @@ ${data.interests.map(i => `<span>• ${escapeHtml(i)}</span>`).join('')}
 
 ${(() => {
 const validRefs = data.references.filter(
-ref => ref.name?.trim() || ref.campany?.trim()
+ref => ref.name?.trim() || ref.company?.trim()
 );
 
 if (!validRefs.length) return '';
@@ -6131,7 +6179,7 @@ margin-left:16px;
 margin-bottom:6px;
 color:#333;
 ">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 
 ${ref.phone || ref.email ? `
@@ -6322,7 +6370,7 @@ display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
 ">
-<span>${escapeHtml(exp.campany || '')} </span>
+<span>${escapeHtml(exp.company || '')} </span>
 <span style="font-size: 12px; color: #6b7280; font-weight:500;">${escapeHtml(exp.location || '')}</span>
 </div>
 
@@ -6757,7 +6805,7 @@ font-size:13px;
 color:#374151;
 margin-bottom:8px;
 ">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 
 ${ref.phone ? `
@@ -6997,7 +7045,7 @@ display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
 ">
-<span>${escapeHtml(exp.campany || '')} </span>
+<span>${escapeHtml(exp.company || '')} </span>
 <span style="font-size: 12px; color: #6b7280; font-weight:500;">${escapeHtml(exp.location || '')}</span>
 </div>
 
@@ -7403,7 +7451,7 @@ ${data.references.map(ref => `
 ${escapeHtml(ref.name)}
 </strong>
 <div style="color:#374151">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 ${ref.phone ? `<div>${escapeHtml(ref.phone)}</div>` : ''}
 ${ref.email ? `<div>${escapeHtml(ref.email)}</div>` : ''}
@@ -7597,7 +7645,7 @@ display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
 ">
-<span>${escapeHtml(exp.campany || '')} </span>
+<span>${escapeHtml(exp.company || '')} </span>
 <span style="font-size: 12px; color: #6b7280; font-weight:500;">${escapeHtml(exp.location || '')}</span>
 </div>
 
@@ -8010,7 +8058,7 @@ ${data.references.map(ref => `
 ${escapeHtml(ref.name)}
 </strong>
 <div style="color:#374151">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 ${ref.phone ? `<div>${escapeHtml(ref.phone)}</div>` : ''}
 ${ref.email ? `<div>${escapeHtml(ref.email)}</div>` : ''}
@@ -8192,7 +8240,7 @@ flex-wrap:wrap;
 color:#333;
 ">
 <span style="width:200px">${escapeHtml(exp.location || '')}</span>
-<span>${escapeHtml(exp.campany || '')}</span>
+<span>${escapeHtml(exp.company || '')}</span>
 </div>
 
 ${exp.bullets?.filter(b => b?.trim()).map(b => `
@@ -8546,7 +8594,7 @@ ${data.interests.map(i => `<span>• ${escapeHtml(i)}</span>`).join('')}
 
 ${(() => {
 const validRefs = data.references.filter(
-ref => ref.name?.trim() || ref.campany?.trim()
+ref => ref.name?.trim() || ref.company?.trim()
 );
 
 if (!validRefs.length) return '';
@@ -8597,7 +8645,7 @@ margin-left:16px;
 margin-bottom:6px;
 color:#333;
 ">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 
 ${ref.phone || ref.email ? `
@@ -8766,7 +8814,7 @@ display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
 ">
-<span>${escapeHtml(exp.campany || '')} </span>
+<span>${escapeHtml(exp.company || '')} </span>
 <span style="font-size: 12px; color: #6b7280; font-weight:500;">${escapeHtml(exp.location || '')}</span>
 </div>
 
@@ -9172,7 +9220,7 @@ ${data.references.map(ref => `
 ${escapeHtml(ref.name)}
 </strong>
 <div style="color:#374151">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 ${ref.phone ? `<div>${escapeHtml(ref.phone)}</div>` : ''}
 ${ref.email ? `<div>${escapeHtml(ref.email)}</div>` : ''}
@@ -9329,7 +9377,7 @@ display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
 ">
-<span>${escapeHtml(exp.campany || '')} </span>
+<span>${escapeHtml(exp.company || '')} </span>
 <span style="font-size: 12px; color: #6b7280; font-weight:500;">${escapeHtml(exp.location || '')}</span>
 </div>
 
@@ -9741,7 +9789,7 @@ ${data.references.map(ref => `
 ${escapeHtml(ref.name)}
 </strong>
 <div style="color:#374151">
-${escapeHtml(ref.campany || '')}
+${escapeHtml(ref.company || '')}
 </div>
 ${ref.phone ? `<div>${escapeHtml(ref.phone)}</div>` : ''}
 ${ref.email ? `<div>${escapeHtml(ref.email)}</div>` : ''}
@@ -10219,9 +10267,9 @@ function validateReferenceAdd() {
   const firstRef = data.references[0];
 
   const nameEmpty = !firstRef.name || firstRef.name.trim() === "";
-  const campanyEmpty = !firstRef.campany || firstRef.campany.trim() === "";
+  const companyEmpty = !firstRef.company || firstRef.company.trim() === "";
 
-  refs.addRefBtn.disabled = nameEmpty || campanyEmpty;
+  refs.addRefBtn.disabled = nameEmpty || companyEmpty;
 }
 
 function validateExperienceAdd() {
@@ -10237,9 +10285,9 @@ function validateExperienceAdd() {
   const firstExp = data.experience[0];
 
   const roleEmpty = !firstExp.role || firstExp.role.trim() === "";
-  const campanyEmpty = !firstExp.campany || firstExp.campany.trim() === "";
+  const companyEmpty = !firstExp.company || firstExp.company.trim() === "";
 
-  refs.addExpBtn.disabled = roleEmpty || campanyEmpty;
+  refs.addExpBtn.disabled = roleEmpty || companyEmpty;
 }
 
 function showToast(message, type = 'info', duration = 5500) {
@@ -11026,16 +11074,30 @@ function restoreExpBody() {
 // =========================
 
 const cvDataset = cvDatasetCollection()
+
+function formatTitle(str) {
+  return str
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim();
+}
+
 // =========================
 // FIND ROLE KEY
 // =========================
+function normalize(str) {
+  return str.toLowerCase().replace(/\s+/g, '');
+}
+
 function findRoleKey(title) {
   if (!title) return null;
 
-  const input = title.toLowerCase();
+  const input = normalize(title);
 
   for (let key in cvDataset) {
-    if (input.includes(key)) {
+    const normalizedKey = normalize(key);
+
+    if (input.includes(normalizedKey)) {
       console.log("✅ Matched role:", key);
       return key;
     }
@@ -11078,10 +11140,10 @@ document.addEventListener("input", (e) => {
   console.log("✅ Matches:", matches);
 
   list.innerHTML = matches.map(key => `
-    <li class="title-item" data-id="${id}" data-role="${key}">
-      ${key}
-    </li>
-  `).join("");
+  <li class="title-item" data-id="${id}" data-role="${key}">
+    ${formatTitle(key)}
+  </li>
+`).join("");
 });
 
 document.addEventListener("click", (e) => {
@@ -11092,13 +11154,15 @@ document.addEventListener("click", (e) => {
   if (!activeTitleInput) return;
 
   // 🔥 update input directly
-  activeTitleInput.value = role;
+const formatted = formatTitle(role);
+
+activeTitleInput.value = formatted;
 
   const exp = data.experience.find(x => x.id === id);
   if (!exp) return;
 
   // 🔥 update data
-  exp.role = role;
+exp.role = formatted;
 
   // 🔥 update header
   updateExpHeader(id);
@@ -11145,7 +11209,7 @@ document.addEventListener("focusin", (e) => {
 
   list.innerHTML = achievements.map(item => `
     <li class="bullet-item" data-id="${id}">
-      ${item}
+      ${formatTitle(item)}
     </li>
   `).join("");
 });
@@ -11267,7 +11331,7 @@ document.addEventListener("input", (e) => {
 
   list.innerHTML = achievements.map(item => `
     <li class="bullet-item" data-id="${id}">
-      ${item}
+      ${formatTitle(item)}
     </li>
   `).join("");
 });
@@ -11362,10 +11426,14 @@ function getSkillsFromTitles() {
 refs.skillsContainer.addEventListener("input", (e) => {
   if (!e.target.classList.contains("skill-input")) return;
 
-  const input = e.target;
-  const value = input.value.toLowerCase();
-  const row = input.closest(".language-row");
-  const box = row.querySelector(".skill-suggestions");
+  const row = e.target.closest(".language-row");
+const firstInput = row.querySelector(".skill-input");
+
+if (e.target !== firstInput) return; // ignore other inputs
+
+const input = row.querySelector(".skill-input"); // ALWAYS first input
+const value = input.value.toLowerCase();
+const box = row.querySelector(".skill-suggestions");
 
   if (!box) return;
 
@@ -11376,16 +11444,17 @@ refs.skillsContainer.addEventListener("input", (e) => {
   );
 
   box.innerHTML = filtered
-    .map(s => `<li>${s}</li>`)
+    .map(s => `<li>${formatTitle(s)}</li>`)
     .join("");
 
   box.querySelectorAll("li").forEach(li => {
     li.addEventListener("click", () => {
-      input.value = li.textContent;
+      const formatted = formatTitle(li.textContent);
       box.innerHTML = "";
 
       const index = Number(row.dataset.index);
-      data.skills[index].name = li.textContent;
+      input.value = formatted;
+      data.skills[index].name = formatted;
 
       save();
       renderPreview();
