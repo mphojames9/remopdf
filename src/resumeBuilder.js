@@ -450,7 +450,6 @@ const DEFAULT = {
   },
   summary: "",
   experience: [
-    { id: id(), role: "", company: "", start: "", end: "", bullets: [""] },
     { id: id(), role: "", company: "", start: "", end: "", bullets: [""] }
   ],
   education: [
@@ -460,9 +459,6 @@ const DEFAULT = {
     { id: id(), name: "", company: "", position: "", phone: "", email: "" }
   ],
   skills: [
-    { name: "", level: "" },
-    { name: "", level: "" },
-    { name: "", level: "" },
     { name: "", level: "" }
   ],
   certificates: [
