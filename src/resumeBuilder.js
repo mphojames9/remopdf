@@ -6,7 +6,7 @@ import cvDatasetCollection from "./resume/cvdataset"
 ========================= */
 const previewOverlay = document.querySelector('.preview-wrap');
 const previewBtns = document.querySelectorAll('#previewBtn');
-const editResumeBtn = document.querySelector('#editResume');
+const editResumeBtn = document.querySelectorAll('#editResume');
 const navbar = document.querySelector('.navbar');
 const personalDetailsOverlay = document.querySelector('.overlay-personalDetails');
 const languagesContainer = document.getElementById('languagesContainer');
@@ -1949,7 +1949,7 @@ function bindButtons() {
     });
   });
 
-  refs.pdfBtn.addEventListener('click', () => downloadPDF(false));
+  //refs.pdfBtn.addEventListener('click', () => downloadPDF(false));
   refs.pdfAtsBtn && refs.pdfAtsBtn.addEventListener('click', () => downloadPDF(true));
 
   refs.addCertificateBtn.addEventListener('click', () => {
@@ -9878,8 +9878,9 @@ previewBtns.forEach(btn => {
   });
 });
 
+editResumeBtn.forEach(btn => {
 /* CLOSE PREVIEW (EDIT MODE) */
-editResumeBtn.addEventListener('click', () => {
+btn.addEventListener('click', () => {
   // start overlay exit animation
   previewOverlay.classList.remove('opacity');
   setTimeout(() => {
@@ -9893,6 +9894,8 @@ editResumeBtn.addEventListener('click', () => {
     syncPaletteButton()
   }, 500);
 });
+})
+
 
 function closePreview() {
   previewOverlay.classList.remove("opacity");
