@@ -113,18 +113,6 @@ background:
     background-repeat: no-repeat;
 }
 
-@media (max-width: 1011px) {
-    .hero {
-        background:
-            linear-gradient(
-                180deg,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.80) 100%
-            ),
-            url('/assets/hero.png');
-    }
-}
-
 .hero-text{
 max-width:520px;
 }
@@ -701,6 +689,18 @@ font-size:18px;
 color:#666;
 margin-bottom:28px;
 max-width:520px;
+}
+
+@media (max-width: 1011px) {
+    .hero {
+        background:
+            transparent,
+            url('/assets/hero.png');
+    }
+
+    .hero-text p {
+      color: #1d1616
+    }
 }
 
 /* badge */
