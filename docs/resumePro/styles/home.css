@@ -3,7 +3,7 @@
 margin:0;
 padding:0;
 box-sizing:border-box;
-font-family: 'Plus Jakarta Sans', sans-serif;
+font-family: "Outfit", sans-serif, Metropolis;
 }
 
 body{
@@ -52,14 +52,41 @@ cursor:pointer;
 border:none;
 }
 
-.btn-outline{
-background:white;
-border:1px solid #ddd;
-}
+.btn-primary {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+    vertical-align: middle;
+    appearance: none;
+    text-decoration: none;
+    letter-spacing: 0.02857em;
+    min-width: 64px;
 
-.btn-primary{
-background:#2563eb;
-color:white;
+    text-transform: none;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+
+    border-radius: 12px;
+
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 24px;
+    font-family: Metropolis, sans-serif;
+
+    transition: all 0.3s ease;
+    touch-action: manipulation;
+
+    background: rgb(31, 93, 226);
+    color: rgb(255, 255, 255);
+    border: 1px solid rgb(31, 93, 226);
+
+    box-shadow: 0 12px 32px rgba(31, 93, 226, 0.4);
 }
 
 /* HERO */
@@ -71,6 +98,32 @@ justify-content:space-between;
 padding:100px 8%;
 gap:50px;
 flex-wrap:wrap;
+        /* White blend + image */
+background:
+    linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 1) 0%,
+        rgb(255, 255, 255) 25%,
+        rgba(255, 255, 255, 0.589) 60%,
+        rgba(255, 255, 255, 0) 100%
+    ),
+        url('/public/assets/hero.png');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
+@media (max-width: 1011px) {
+    .hero {
+        background:
+            linear-gradient(
+                180deg,
+
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.80) 100%
+            ),
+            url('/public/assets/hero.png');
+    }
 }
 
 .hero-text{
@@ -678,10 +731,45 @@ gap:14px;
 flex-wrap:wrap;
 }
 
-.hero-buttons .btn{
-display:flex;
-align-items:center;
-gap:8px;
+.hero-buttons .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    padding: 10px 18px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.2s ease,
+        box-shadow 0.25s ease;
+
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+
+    will-change: transform;
+}
+
+.hero-buttons .btn-outline {
+    background: white;
+    border: 1px solid #ddd;
+    color: #222;
+
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.03),
+        0 8px 18px rgba(0, 0, 0, 0.04);
 }
 
 /* trust line */
@@ -714,11 +802,13 @@ font-size:16px;
 .hero-buttons{
 flex-direction:column;
 width:100%;
+padding: 13px 18px;
 }
 
 .hero-buttons .btn{
 width:100%;
 justify-content:center;
+padding: 13px 18px;
 }
 }
 
@@ -894,7 +984,7 @@ transition:all .25s ease;
 }
 
 .nav-contact i{
-font-size:14px;
+font-size:12px;
 color:#2563eb;
 }
 
@@ -906,9 +996,42 @@ color:#2563eb;
 transform:translateY(-1px);
 }
 
-.nav-contact{
-background:#f8fafc;
-border:1px solid #e5e7eb;
+.nav-contact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size:12px;
+    padding: 12px 16px;
+
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+
+    color: #444;
+    text-decoration: none;
+
+    font-weight: 500;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.2s ease,
+        box-shadow 0.25s ease;
+
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.03),
+        0 8px 20px rgba(0, 0, 0, 0.04);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    will-change: transform;
 }
 
 /* SLIDER HEADER */

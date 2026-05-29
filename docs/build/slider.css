@@ -325,6 +325,13 @@
   overflow-y: auto;
   z-index: 9999;
   box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+
+  /* Prevent parent/background scrolling */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+
+  /* Smooth scrolling on Android/iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ========================= */
