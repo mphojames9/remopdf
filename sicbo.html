@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sic Bo Casino Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -56,21 +58,21 @@
 
         .dice-area {
             display: flex;
-            gap: 15px;
+            gap: 20px; /* Increased gap for larger dice */
         }
 
+        /* INCREASED DICE SIZE */
         .die {
-            width: 60px;
-            height: 60px;
+            width: 80px;  /* Increased from 60px */
+            height: 80px; /* Increased from 60px */
             background-color: white;
             color: #cc0000;
-            border-radius: 10px;
+            border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 2.5rem;
-            font-weight: bold;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.2), 3px 3px 5px rgba(0,0,0,0.5);
+            font-size: 3.8rem; /* Increased icon size */
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2), 4px 4px 6px rgba(0,0,0,0.5);
             transition: transform 0.1s ease;
         }
 
@@ -202,6 +204,12 @@
             color: #ffdf00;
             margin-bottom: 4px;
         }
+        
+        .bet-title i {
+            margin: 0 1px;
+            font-size: 1.1rem; /* Adjust FA icon size on the board */
+        }
+
         .bet-payout {
             font-size: 0.75rem;
             color: #a3cfb2;
@@ -210,6 +218,8 @@
         .cell-big { grid-column: span 3; font-size: 1.1rem; }
         .cell-small { grid-column: span 3; font-size: 1.1rem; }
         .cell-triple { grid-column: span 1; }
+        .cell-double { grid-column: span 1; }
+        .cell-combo { grid-column: span 2; }
         .cell-single { grid-column: span 1; }
 
         .totals-section-title {
@@ -249,6 +259,7 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
         }
 
         /* Controls Area */
@@ -371,163 +382,163 @@
             to { transform: scale(1.05); text-shadow: 0 0 20px rgba(255,223,0,0.6); }
         }
 
-        /* --- FIXED DASHBOARD (Fits exactly in 360px width) --- */
-.dashboard {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #0f301b;
-    padding: 6px 8px;           /* Reduced padding to save horizontal space */
-    border-radius: 8px;
-    margin-bottom: 8px;
-    border: 1px solid #ffdf00;
-    box-sizing: border-box;
-    width: 100%;
-    height: 48px;               /* Fixed compact height */
-}
+        /* --- FIXED DASHBOARD FOR MOBILE --- */
+        .dashboard {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f301b;
+            padding: 8px 10px;           
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #ffdf00;
+            box-sizing: border-box;
+            width: 100%;
+            height: 70px; /* Increased to fit larger mobile dice */               
+        }
 
-.balance-box {
-    font-size: 0.75rem;         /* Scaled down text */
-    font-weight: bold;
-    color: #fff;
-    line-height: 1.2;
-}
-.balance-box span {
-    color: #ffdf00;
-    display: block;             /* Stacks balance amount under label */
-    font-size: 0.9rem;
-}
+        .balance-box {
+            font-size: 0.75rem;         
+            font-weight: bold;
+            color: #fff;
+            line-height: 1.2;
+        }
+        .balance-box span {
+            color: #ffdf00;
+            display: block;             
+            font-size: 0.9rem;
+        }
 
-.dice-area {
-    display: flex;
-    gap: 4px;                   /* Tight gap for mobile */
-}
+        .dice-area {
+            display: flex;
+            gap: 6px;                   
+        }
 
-.die {
-    width: 30px;                /* Compact mobile die size */
-    height: 30px;
-    background-color: white;
-    color: #cc0000;
-    border-radius: 5px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.3rem;          /* Adjusted unicode size */
-    font-weight: bold;
-    box-shadow: inset 0 0 4px rgba(0,0,0,0.2), 1px 1px 3px rgba(0,0,0,0.4);
-}
+        /* BIGGER MOBILE DICE */
+        .die {
+            width: 48px;                /* Scaled up */
+            height: 48px;               /* Scaled up */
+            background-color: white;
+            color: #cc0000;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.4rem;          /* Scaled up FA Icon */
+            font-weight: bold;
+            box-shadow: inset 0 0 4px rgba(0,0,0,0.2), 2px 2px 4px rgba(0,0,0,0.4);
+        }
 
-.btn-roll {
-    background: linear-gradient(#ffdf00, #c59b00);
-    border: none;
-    color: #1a472a;
-    padding: 0 12px;
-    height: 32px;               /* Matches system scale */
-    font-size: 0.85rem;
-    font-weight: bold;
-    border-radius: 16px;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
+        .btn-roll {
+            background: linear-gradient(#ffdf00, #c59b00);
+            border: none;
+            color: #1a472a;
+            padding: 0 16px;
+            height: 40px;               
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
 
 
-/* --- FIXED CONTROLS PANEL (Stacked to prevent spill) --- */
-.controls {
-    display: flex;
-    flex-direction: column;     /* Stacks chips tray on top of action buttons */
-    gap: 6px;
-    background: rgba(0,0,0,0.25);
-    padding: 6px;
-    border-radius: 8px;
-    box-sizing: border-box;
-    width: 100%;
-}
+        /* --- FIXED CONTROLS PANEL --- */
+        .controls {
+            display: flex;
+            flex-direction: column;     
+            gap: 6px;
+            background: rgba(0,0,0,0.25);
+            padding: 6px;
+            border-radius: 8px;
+            box-sizing: border-box;
+            width: 100%;
+        }
 
-.chip-selector {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    padding: 0 2px;
-}
-.chip-selector span {
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: #a3cfb2;
-}
+        .chip-selector {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 2px;
+        }
+        .chip-selector span {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #a3cfb2;
+        }
 
-.chip-btn {
-    width: 32px;                /* Tailored thumb-tap sizing */
-    height: 32px;
-    border-radius: 50%;
-    border: 2px solid white;
-    font-size: 0.7rem;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-    cursor: pointer;
-}
-.chip-btn.active { 
-    border-color: #ffdf00; 
-    transform: scale(1.08); 
-    box-shadow: 0 0 6px #ffdf00; 
-}
+        .chip-btn {
+            width: 32px;                
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            cursor: pointer;
+        }
+        .chip-btn.active { 
+            border-color: #ffdf00; 
+            transform: scale(1.08); 
+            box-shadow: 0 0 6px #ffdf00; 
+        }
 
-/* 4-Column Grid alignment so buttons never stretch past bounds */
-.action-btns {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr); 
-    gap: 4px;
-    width: 100%;
-}
+        .action-btns {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 4px;
+            width: 100%;
+        }
 
-.btn-alt {
-    background: #2a2a2a;
-    border: 1px solid #444;
-    color: white;
-    padding: 6px 0;             /* Removed horizontal padding completely */
-    border-radius: 4px;
-    font-size: 0.68rem;         /* Shrinks text so "Reset Hist" fits perfectly */
-    font-weight: bold;
-    cursor: pointer;
-    text-align: center;
-    white-space: nowrap;
-}
+        .btn-alt {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            padding: 6px 0;             
+            border-radius: 4px;
+            font-size: 0.68rem;         
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            white-space: nowrap;
+        }
 
-.totals-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr); /* Automatically makes a perfect 4x4 layout */
-    gap: 4px;                              /* Tight spacing to maximize cell area */
-    width: 100%;
-    box-sizing: border-box;
-}
+        .totals-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 4px;                              
+            width: 100%;
+            box-sizing: border-box;
+        }
 
-.totals-row .bet-cell {
-    background-color: #133a22;
-    border: 1px solid #27633c;
-    border-radius: 4px;
-    height: 42px;                          /* Tall enough for easy finger-tapping */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-}
+        .totals-row .bet-cell {
+            background-color: #133a22;
+            border: 1px solid #27633c;
+            border-radius: 4px;
+            height: 42px;                          
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
 
-.totals-row .bet-title {
-    font-size: 0.85rem;
-    font-weight: bold;
-    color: #ffdf00;
-    line-height: 1.1;
-}
+        .totals-row .bet-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #ffdf00;
+            line-height: 1.1;
+        }
 
-.totals-row .bet-payout {
-    font-size: 0.58rem;
-    color: #a3cfb2;
-    margin-top: 1px;
-}
+        .totals-row .bet-payout {
+            font-size: 0.58rem;
+            color: #a3cfb2;
+            margin-top: 1px;
+        }
     </style>
 </head>
 <body>
@@ -536,30 +547,30 @@
     
     <div class="game-container">
         <div class="dashboard">
-    <div class="balance-box">Balance <span id="balance">$1000</span></div>
-    <div class="dice-area">
-        <div class="die" id="die1">⚀</div>
-        <div class="die" id="die2">⚀</div>
-        <div class="die" id="die3">⚀</div>
-    </div>
-    <button class="btn-roll" id="btnRoll" onclick="rollDice()">ROLL</button>
-</div>
+            <div class="balance-box">Balance <span id="balance">$1000</span></div>
+            <div class="dice-area">
+                <div class="die" id="die1"><i class="fa-solid fa-dice-one"></i></div>
+                <div class="die" id="die2"><i class="fa-solid fa-dice-one"></i></div>
+                <div class="die" id="die3"><i class="fa-solid fa-dice-one"></i></div>
+            </div>
+            <button class="btn-roll" id="btnRoll" onclick="rollDice()">ROLL</button>
+        </div>
 
-<div class="controls">
-    <div class="chip-selector">
-        <span>Chip:</span>
-        <div class="chip-btn c5 active" onclick="selectChip(5)">5</div>
-        <div class="chip-btn c10" onclick="selectChip(10)">10</div>
-        <div class="chip-btn c50" onclick="selectChip(50)">50</div>
-        <div class="chip-btn c100" onclick="selectChip(100)">100</div>
-    </div>
-    <div class="action-btns">
-        <button class="btn-alt" onclick="clearBets()">Clear</button>
-        <button class="btn-alt" onclick="rebet()">Rebet</button>
-        <button class="btn-alt" onclick="doubleBets()">Double</button>
-        <button class="btn-alt" style="border-color:#721c24; color:#ff4d4d;" onclick="clearHistory()">Reset Hist</button>
-    </div>
-</div>
+        <div class="controls">
+            <div class="chip-selector">
+                <span>Chip:</span>
+                <div class="chip-btn c5 active" onclick="selectChip(5)">5</div>
+                <div class="chip-btn c10" onclick="selectChip(10)">10</div>
+                <div class="chip-btn c50" onclick="selectChip(50)">50</div>
+                <div class="chip-btn c100" onclick="selectChip(100)">100</div>
+            </div>
+            <div class="action-btns">
+                <button class="btn-alt" onclick="clearBets()">Clear</button>
+                <button class="btn-alt" onclick="rebet()">Rebet</button>
+                <button class="btn-alt" onclick="doubleBets()">Double</button>
+                <button class="btn-alt" style="border-color:#721c24; color:#ff4d4d;" onclick="clearHistory()">Reset Hist</button>
+            </div>
+        </div>
 
         <div class="history-section">
             <div class="history-label">History (Last 1000):</div>
@@ -580,28 +591,54 @@
 
             <div class="totals-section-title">Specific Triples</div>
             <div class="bet-cell cell-triple" data-bet-type="triple" data-val="1">
-                <div class="bet-title">1-1-1</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-one"></i><i class="fa-solid fa-dice-one"></i><i class="fa-solid fa-dice-one"></i></div>
                 <div class="bet-payout">180:1</div>
             </div>
             <div class="bet-cell cell-triple" data-bet-type="triple" data-val="2">
-                <div class="bet-title">2-2-2</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-two"></i><i class="fa-solid fa-dice-two"></i><i class="fa-solid fa-dice-two"></i></div>
                 <div class="bet-payout">180:1</div>
             </div>
             <div class="bet-cell cell-triple" data-bet-type="triple" data-val="3">
-                <div class="bet-title">3-3-3</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-three"></i><i class="fa-solid fa-dice-three"></i><i class="fa-solid fa-dice-three"></i></div>
                 <div class="bet-payout">180:1</div>
             </div>
             <div class="bet-cell cell-triple" data-bet-type="triple" data-val="4">
-                <div class="bet-title">4-4-4</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-four"></i><i class="fa-solid fa-dice-four"></i><i class="fa-solid fa-dice-four"></i></div>
                 <div class="bet-payout">180:1</div>
             </div>
             <div class="bet-cell cell-triple" data-bet-type="triple" data-val="5">
-                <div class="bet-title">5-5-5</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-five"></i><i class="fa-solid fa-dice-five"></i><i class="fa-solid fa-dice-five"></i></div>
                 <div class="bet-payout">180:1</div>
             </div>
             <div class="bet-cell cell-triple" data-bet-type="triple" data-val="6">
-                <div class="bet-title">6-6-6</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-six"></i><i class="fa-solid fa-dice-six"></i><i class="fa-solid fa-dice-six"></i></div>
                 <div class="bet-payout">180:1</div>
+            </div>
+
+            <div class="totals-section-title">Specific Doubles</div>
+            <div class="bet-cell cell-double" data-bet-type="double" data-val="1">
+                <div class="bet-title"><i class="fa-solid fa-dice-one"></i><i class="fa-solid fa-dice-one"></i></div>
+                <div class="bet-payout">10:1</div>
+            </div>
+            <div class="bet-cell cell-double" data-bet-type="double" data-val="2">
+                <div class="bet-title"><i class="fa-solid fa-dice-two"></i><i class="fa-solid fa-dice-two"></i></div>
+                <div class="bet-payout">10:1</div>
+            </div>
+            <div class="bet-cell cell-double" data-bet-type="double" data-val="3">
+                <div class="bet-title"><i class="fa-solid fa-dice-three"></i><i class="fa-solid fa-dice-three"></i></div>
+                <div class="bet-payout">10:1</div>
+            </div>
+            <div class="bet-cell cell-double" data-bet-type="double" data-val="4">
+                <div class="bet-title"><i class="fa-solid fa-dice-four"></i><i class="fa-solid fa-dice-four"></i></div>
+                <div class="bet-payout">10:1</div>
+            </div>
+            <div class="bet-cell cell-double" data-bet-type="double" data-val="5">
+                <div class="bet-title"><i class="fa-solid fa-dice-five"></i><i class="fa-solid fa-dice-five"></i></div>
+                <div class="bet-payout">10:1</div>
+            </div>
+            <div class="bet-cell cell-double" data-bet-type="double" data-val="6">
+                <div class="bet-title"><i class="fa-solid fa-dice-six"></i><i class="fa-solid fa-dice-six"></i></div>
+                <div class="bet-payout">10:1</div>
             </div>
 
             <div class="totals-section-title">Dice Total Sum Options</div>
@@ -625,46 +662,47 @@
                 <div class="bet-cell" data-bet-type="total" data-val="18"><div class="bet-title">18</div><div class="bet-payout">180:1</div></div>
             </div>
 
+            <div class="totals-section-title">Two-Dice Combinations</div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="1,2"><div class="bet-title"><i class="fa-solid fa-dice-one"></i> <i class="fa-solid fa-dice-two"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="1,3"><div class="bet-title"><i class="fa-solid fa-dice-one"></i> <i class="fa-solid fa-dice-three"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="1,4"><div class="bet-title"><i class="fa-solid fa-dice-one"></i> <i class="fa-solid fa-dice-four"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="1,5"><div class="bet-title"><i class="fa-solid fa-dice-one"></i> <i class="fa-solid fa-dice-five"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="1,6"><div class="bet-title"><i class="fa-solid fa-dice-one"></i> <i class="fa-solid fa-dice-six"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="2,3"><div class="bet-title"><i class="fa-solid fa-dice-two"></i> <i class="fa-solid fa-dice-three"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="2,4"><div class="bet-title"><i class="fa-solid fa-dice-two"></i> <i class="fa-solid fa-dice-four"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="2,5"><div class="bet-title"><i class="fa-solid fa-dice-two"></i> <i class="fa-solid fa-dice-five"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="2,6"><div class="bet-title"><i class="fa-solid fa-dice-two"></i> <i class="fa-solid fa-dice-six"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="3,4"><div class="bet-title"><i class="fa-solid fa-dice-three"></i> <i class="fa-solid fa-dice-four"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="3,5"><div class="bet-title"><i class="fa-solid fa-dice-three"></i> <i class="fa-solid fa-dice-five"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="3,6"><div class="bet-title"><i class="fa-solid fa-dice-three"></i> <i class="fa-solid fa-dice-six"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="4,5"><div class="bet-title"><i class="fa-solid fa-dice-four"></i> <i class="fa-solid fa-dice-five"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="4,6"><div class="bet-title"><i class="fa-solid fa-dice-four"></i> <i class="fa-solid fa-dice-six"></i></div><div class="bet-payout">5:1</div></div>
+            <div class="bet-cell cell-combo" data-bet-type="combo" data-val="5,6"><div class="bet-title"><i class="fa-solid fa-dice-five"></i> <i class="fa-solid fa-dice-six"></i></div><div class="bet-payout">5:1</div></div>
+
             <div class="totals-section-title">Single Die Bets</div>
             <div class="bet-cell cell-single" data-bet-type="single" data-val="1">
-                <div class="bet-title">⚀ 1</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-one"></i></div>
                 <div class="bet-payout">1:1</div>
             </div>
             <div class="bet-cell cell-single" data-bet-type="single" data-val="2">
-                <div class="bet-title">⚁ 2</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-two"></i></div>
                 <div class="bet-payout">1:1</div>
             </div>
             <div class="bet-cell cell-single" data-bet-type="single" data-val="3">
-                <div class="bet-title">⚂ 3</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-three"></i></div>
                 <div class="bet-payout">1:1</div>
             </div>
             <div class="bet-cell cell-single" data-bet-type="single" data-val="4">
-                <div class="bet-title">⚃ 4</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-four"></i></div>
                 <div class="bet-payout">1:1</div>
             </div>
             <div class="bet-cell cell-single" data-bet-type="single" data-val="5">
-                <div class="bet-title">⚄ 5</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-five"></i></div>
                 <div class="bet-payout">1:1</div>
             </div>
             <div class="bet-cell cell-single" data-bet-type="single" data-val="6">
-                <div class="bet-title">⚅ 6</div>
+                <div class="bet-title"><i class="fa-solid fa-dice-six"></i></div>
                 <div class="bet-payout">1:1</div>
-            </div>
-        </div>
-
-        <div class="controls">
-            <div class="chip-selector">
-                <span>Chip:</span>
-                <div class="chip-btn c5 active" onclick="selectChip(5)">5</div>
-                <div class="chip-btn c10" onclick="selectChip(10)">10</div>
-                <div class="chip-btn c50" onclick="selectChip(50)">50</div>
-                <div class="chip-btn c100" onclick="selectChip(100)">100</div>
-            </div>
-            <div class="action-btns">
-                <button class="btn-alt" onclick="clearBets()">Clear</button>
-                <button class="btn-alt" onclick="rebet()">Rebet</button>
-                <button class="btn-alt" onclick="doubleBets()">Double</button>
-                <button class="btn-alt" style="border-color:#721c24;" onclick="clearHistory()">Reset Hist</button>
             </div>
         </div>
 
@@ -687,8 +725,14 @@
         
         let historyLog = JSON.parse(localStorage.getItem('sicbo_history')) || [];
 
-        const diceUnicode = {
-            1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅'
+        // Updated dictionary to use FontAwesome Icons
+        const diceFA = {
+            1: '<i class="fa-solid fa-dice-one"></i>', 
+            2: '<i class="fa-solid fa-dice-two"></i>', 
+            3: '<i class="fa-solid fa-dice-three"></i>', 
+            4: '<i class="fa-solid fa-dice-four"></i>', 
+            5: '<i class="fa-solid fa-dice-five"></i>', 
+            6: '<i class="fa-solid fa-dice-six"></i>'
         };
 
         const totalPayoutMapping = {
@@ -895,9 +939,10 @@
 
                 diceElements.forEach(die => die.classList.remove('shaking'));
                 
-                document.getElementById('die1').innerText = diceUnicode[d1];
-                document.getElementById('die2').innerText = diceUnicode[d2];
-                document.getElementById('die3').innerText = diceUnicode[d3];
+                // Set HTML using the FontAwesome mapped elements
+                document.getElementById('die1').innerHTML = diceFA[d1];
+                document.getElementById('die2').innerHTML = diceFA[d2];
+                document.getElementById('die3').innerHTML = diceFA[d3];
 
                 evaluateResults(d1, d2, d3);
                 isRolling = false;
@@ -950,6 +995,34 @@
                         payoutRatio = 180;
                     }
                 } 
+                else if (betKey.startsWith('double-')) {
+                    const targetVal = parseInt(betKey.split('-')[1]);
+                    let matchCount = 0;
+                    if (d1 === targetVal) matchCount++;
+                    if (d2 === targetVal) matchCount++;
+                    if (d3 === targetVal) matchCount++;
+                    
+                    if (matchCount >= 2) {
+                        won = true;
+                        payoutRatio = 10;
+                    }
+                }
+                else if (betKey.startsWith('combo-')) {
+                    const targets = betKey.split('-')[1].split(',');
+                    const t1 = parseInt(targets[0]);
+                    const t2 = parseInt(targets[1]);
+                    
+                    const rolled = [d1, d2, d3];
+                    const idx1 = rolled.indexOf(t1);
+                    
+                    if (idx1 !== -1) {
+                        rolled.splice(idx1, 1);
+                        if (rolled.includes(t2)) {
+                            won = true;
+                            payoutRatio = 5;
+                        }
+                    }
+                }
                 else if (betKey.startsWith('total-')) {
                     const targetTotal = parseInt(betKey.split('-')[1]);
                     if (total === targetTotal) {
@@ -1000,12 +1073,10 @@
         }
 
         function triggerWinCelebration(amount) {
-            // Display Amount on Overlay Screen
             document.getElementById('winSplashAmount').innerText = `+$${amount}`;
             const splash = document.getElementById('winSplash');
             splash.classList.add('show');
 
-            // Setup and start Canvas Confetti Rain
             resizeConfettiCanvas();
             canvas.style.display = 'block';
             confettiParticles = [];
@@ -1029,7 +1100,6 @@
             if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
             animateConfetti();
 
-            // Clear visual screens automatically after 3 seconds
             setTimeout(() => {
                 splash.classList.remove('show');
                 confettiActive = false;
@@ -1050,7 +1120,6 @@
                 p.x += p.speedX;
                 p.rotation += p.rotationSpeed;
 
-                // Render single particle tile
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate((p.rotation * Math.PI) / 180);
@@ -1058,10 +1127,8 @@
                 ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
                 ctx.restore();
 
-                // Delete particle if it passes bottom boundary layout
                 if (p.y > canvas.height + 20) {
                     if (confettiActive) {
-                        // Respawn at top if system timeline is active
                         p.y = -20;
                         p.x = Math.random() * canvas.width;
                     } else {
