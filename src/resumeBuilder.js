@@ -2053,38 +2053,57 @@ function downloadPDF(atsMode) {
     }
   });
 
+  // --- CRITICAL ANDROID FIX: Lock the Viewport ---
+  // Forces the mobile browser to render the page at exactly 794px wide, preventing reflow.
+  let viewportMeta = document.querySelector('meta[name="viewport"]');
+  let originalViewportContent = '';
+  if (viewportMeta) {
+    originalViewportContent = viewportMeta.content;
+    viewportMeta.content = 'width=794, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+  } else {
+    viewportMeta = document.createElement('meta');
+    viewportMeta.name = 'viewport';
+    viewportMeta.content = 'width=794, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    viewportMeta.id = 'temp-viewport';
+    document.head.appendChild(viewportMeta);
+  }
+
   // 4. Create a dedicated, clean print wrapper
   const printWrapper = document.createElement('div');
   printWrapper.id = "real-pdf-print-wrapper";
   
-  // 5. CRITICAL FIX: Create a Mock Wrapper with the exact ID and Classes
-  // This guarantees your CSS styling applies to the printed pages perfectly.
+  // 5. Create a Mock Wrapper with the exact ID and Classes
   const mockPreview = document.createElement('div');
   mockPreview.id = "resumePreview"; 
   mockPreview.className = `resume ${templateClass}`; 
-  mockPreview.style.transform = "none"; // Strip the scale lock for the printer
+  mockPreview.style.transform = "none"; 
   mockPreview.style.margin = "0";
   mockPreview.style.padding = "0";
+  mockPreview.style.width = "794px"; // Lock wrapper width
 
   // 6. Inject Hyper-Strict Print CSS
   const printStyles = document.createElement('style');
   printStyles.innerHTML = `
     @media print {
-      @page { size: A4 portrait; margin: 0; }
+      /* Force physical A4 size exactly in mm so Android cannot alter or guess it */
+      @page { size: 210mm 297mm; margin: 0; }
       
-      /* Overrides global height locks/overflows that cause 1-page cutoff */
       html, body { 
-        height: auto !important; 
-        min-height: auto !important;
+        height: 100% !important; 
+        min-height: 100% !important;
+        width: 794px !important;
+        max-width: 794px !important;
         overflow: visible !important; 
         margin: 0 !important; 
         padding: 0 !important;
         background: white !important; 
         position: static !important;
+        /* Stop Android Chrome from inflating text sizes */
+        -webkit-text-size-adjust: 100% !important; 
       }
       
       #real-pdf-print-wrapper { 
-        width: 100% !important; 
+        width: 794px !important; 
         height: auto !important;
         display: block !important; 
         overflow: visible !important;
@@ -2093,7 +2112,7 @@ function downloadPDF(atsMode) {
 
       #real-pdf-print-wrapper #resumePreview {
         transform: none !important;
-        width: 100% !important;
+        width: 794px !important;
         height: auto !important;
         overflow: visible !important;
         position: static !important;
@@ -2101,16 +2120,18 @@ function downloadPDF(atsMode) {
       
       .resume-page { 
         display: block !important;
-        width: 794px !important;    /* Force physical A4 width */
-        height: 1122px !important;   /* Force physical A4 height */
+        width: 794px !important;    
+        height: 1122px !important;   
+        max-width: 794px !important;
+        max-height: 1122px !important;
         page-break-after: always !important; 
         break-after: page !important; 
         page-break-inside: avoid !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
         padding: 0 !important;
         overflow: hidden !important; 
         box-shadow: none !important;
-        transform: none !important; /* Transforms break pagination */
+        transform: none !important; 
         position: relative !important;
       }
       
@@ -2128,7 +2149,9 @@ function downloadPDF(atsMode) {
   pages.forEach(page => {
     const clone = page.cloneNode(true);
     clone.style.display = "block";
-    clone.style.transform = "none"; // Critical: prevent scaling from affecting print bounds
+    clone.style.transform = "none"; 
+    clone.style.width = "794px"; // Strict width injection
+    clone.style.height = "1122px"; // Strict height injection
     mockPreview.appendChild(clone);
   });
 
@@ -2138,10 +2161,10 @@ function downloadPDF(atsMode) {
   // 8. Temporarily change document title to set the default PDF filename
   const originalTitle = document.title;
   const fullName = data.personal && data.personal.fullName ? data.personal.fullName : 'Resume';
-  const filename = fullName.replace(/\\s+/g, '_') + (atsMode ? '_ATS' : '');
+  const filename = fullName.replace(/\s+/g, '_') + (atsMode ? '_ATS' : '');
   document.title = filename;
 
-  // 9. Trigger Print (with slight delay for DOM painting)
+  // 9. Trigger Print (Slightly longer delay to allow mobile DOM to repaint)
   setTimeout(() => {
     window.print();
     
@@ -2152,6 +2175,13 @@ function downloadPDF(atsMode) {
       }
       document.title = originalTitle;
 
+      // Restore original Viewport
+      if (originalViewportContent) {
+        viewportMeta.content = originalViewportContent;
+      } else if (viewportMeta && viewportMeta.id === 'temp-viewport') {
+        document.head.removeChild(viewportMeta);
+      }
+
       // Restore the UI
       originalBodyVisibility.forEach(item => {
         if (document.body.contains(item.el)) {
@@ -2159,7 +2189,7 @@ function downloadPDF(atsMode) {
         }
       });
     }, 500);
-  }, 150);
+  }, 250); // 250ms ensures Android captures the forced viewport changes before spooling
 }
 
 function renderPreview(highlightKeywords) {
