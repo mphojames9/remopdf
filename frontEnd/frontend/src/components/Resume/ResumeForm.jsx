@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PersonalInfo from './Sections/PersonalInfo';
 import ExperienceField from './Sections/ExperienceField';
 import EducationField from './Sections/EducationField';
@@ -8,6 +8,7 @@ import ProjectsField from './Sections/ProjectsField';
 import LanguagesField from './Sections/LanguagesField';
 import HobbiesField from './Sections/HobbiesField';
 import ReferencesField from './Sections/ReferencesField';
+import { createPortal } from 'react-dom';
 
 const SECTIONS_LIST = [
   { id: 1, title: 'Personal Information' },
@@ -22,9 +23,19 @@ const SECTIONS_LIST = [
 ];
 
 export default function ResumeForm({ data, setData, onExport, onPreview }) {
-  const [currentStep, setCurrentStep] = useState(1);
+  // 1. Initialize from local storage, defaulting to step 1
+  const [currentStep, setCurrentStep] = useState(() => {
+    const savedStep = localStorage.getItem('remo_premium_current_step');
+    return savedStep ? parseInt(savedStep, 10) : 1;
+  });
+
   const [hasCompleted, setHasCompleted] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  // 2. Save to local storage whenever currentStep changes
+  useEffect(() => {
+    localStorage.setItem('remo_premium_current_step', currentStep.toString());
+  }, [currentStep]);
 
   // Magic Router: If they finished the whole form, any "Next" button returns them to the modal.
   const handleNext = () => {
@@ -47,7 +58,7 @@ export default function ResumeForm({ data, setData, onExport, onPreview }) {
     <div className="p-4 sm:p-8 lg:p-12 h-full flex flex-col relative">
       
       {/* PROGRESS INDICATOR */}
-      <div className="flex items-center gap-2 mb-6 sm:mb-10 sticky top-0 bg-white z-10 py-2">
+      <div className="flex items-center gap-2 mb-2 sm:mb-1 sticky top-0 bg-white z-10 py-6">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
           <div 
             key={step} 
@@ -69,56 +80,86 @@ export default function ResumeForm({ data, setData, onExport, onPreview }) {
         {currentStep === 9 && <ReferencesField data={data} setData={setData} onNext={handleNext} onPrev={() => setCurrentStep(8)} nextLabel={hasCompleted ? "Finish Editing" : "Finish Resume"} />}
       </div>
 
-      {/* =========================================================
-          PREMIUM SUCCESS & EDITING MODAL
-          ========================================================= */}
-      {showModal && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-            
-            {/* Header */}
-            <div className="bg-slate-900 p-8 text-center relative shrink-0">
-              <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/30">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-              </div>
-              <h2 className="text-2xl font-extrabold text-white mb-2 tracking-tight">Your Resume is Ready!</h2>
-              <p className="text-slate-400 text-sm font-medium">You've unlocked all sections. What's your next move?</p>
-            </div>
-            
-            {/* Primary Actions */}
-            <div className="p-6 flex flex-col sm:flex-row gap-4 shrink-0 border-b border-slate-100">
-               <button onClick={onPreview} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors">
-                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                 Review Full A4
-               </button>
-               <button onClick={onExport} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-orange-500/30">
-                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                 Download PDF
-               </button>
-            </div>
+{/* =========================================================
+    PREMIUM SUCCESS MODAL (PORTAL OVERLAY & PADDING FIXED)
+    ========================================================= */}
+{showModal && createPortal(
+  <div className="fixed inset-0 z-[99999] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-fade-in">
+    
+    {/* MODAL CONTAINER */}
+    <div className="bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-3xl flex flex-col sm:shadow-2xl overflow-hidden relative border-0 sm:border sm:border-slate-100">
+      
+      {/* Subtle Top Accent Line */}
+      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-orange-400 to-orange-500" />
 
-            {/* Quick Section Jump List */}
-            <div className="p-6 overflow-y-auto custom-scrollbar bg-slate-50">
-              <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4">Edit a Specific Section</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {SECTIONS_LIST.map(sec => (
-                  <button 
-                    key={sec.id}
-                    onClick={() => jumpToSection(sec.id)}
-                    className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200 hover:border-orange-400 hover:bg-orange-50 hover:shadow-md text-left transition-all group"
-                  >
-                    <span className="text-sm font-bold text-slate-700 group-hover:text-orange-600">{sec.title}</span>
-                    <svg className="w-4 h-4 text-slate-300 group-hover:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+      {/* Close Button */}
+      <button 
+        onClick={() => setShowModal(false)} 
+        className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-full bg-slate-50 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all z-10"
+        aria-label="Close modal"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+
+      {/* Header Section (Padding Fixed & Margins Removed) */}
+      <div className="pt-14 sm:pt-16 pb-6 px-6 sm:px-10 text-center relative shrink-0">
+        
+        {/* Compact Success Icon */}
+        <div className="w-14 h-14 mx-auto mb-5 relative flex items-center justify-center rounded-full bg-orange-50 text-orange-500 ring-4 ring-white shadow-sm">
+          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
         </div>
-      )}
+
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-2 tracking-tight">
+          Resume Masterpiece Ready
+        </h2>
+        <p className="text-slate-500 text-sm font-medium max-w-sm mx-auto">
+          Your profile is looking sharp! Preview the final result, download it, or fine-tune specific sections below.
+        </p>
+      </div>
+
+      {/* Primary Actions */}
+      <div className="px-6 sm:px-10 pb-6 flex flex-col sm:flex-row gap-3 shrink-0 relative z-0 border-b border-slate-100">
+        <button 
+          onClick={onPreview} 
+          className="flex-1 group px-5 py-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 text-slate-700 font-semibold flex items-center justify-center gap-2.5 transition-all"
+        >
+          <svg className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+          Preview Full A4
+        </button>
+        
+        <button 
+          onClick={onExport} 
+          className="flex-1 group px-5 py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold flex items-center justify-center gap-2.5 transition-all shadow-[0_4px_14px_0_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] hover:-translate-y-0.5"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          Download PDF
+        </button>
+      </div>
+
+      {/* Quick Section Jump List */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50 p-6 sm:p-10">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Fine-Tune Sections</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pb-8 sm:pb-0">
+          {SECTIONS_LIST.map(sec => (
+            <button 
+              key={sec.id}
+              onClick={() => jumpToSection(sec.id)}
+              className="group flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-sm text-left transition-all duration-200"
+            >
+              <span className="text-sm font-semibold text-slate-600 group-hover:text-orange-600 transition-colors">{sec.title}</span>
+              <svg className="w-4 h-4 text-slate-300 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+          ))}
+        </div>
+      </div>
+      
+    </div>
+  </div>,
+  document.body
+)}
     </div>
   );
 }
