@@ -231,16 +231,34 @@ export default function ModernExecutive({
         {/* RIGHT COLUMN: ASIDE CONTENT */}
         <aside className="w-[42%] pl-8 flex flex-col">
           
-          {/* SKILLS */}
-          {validSkills.length > 0 && (
-            <div className="shrink-0 flex items-center gap-3 mb-4 mt-2">
-              <div className="w-7 h-7 rounded-full bg-[#0f172a] flex items-center justify-center text-white shrink-0">
-                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
-              </div>
-              <h2 className="text-[14px] font-bold tracking-widest text-[#0f172a] uppercase">Skills</h2>
-              <div className="flex-1 border-b border-slate-300"></div>
-            </div>
-          )}
+{/* SKILLS */}
+{validSkills.length > 0 && (
+  <div className="shrink-0 flex items-center gap-3 mb-4 mt-2">
+    <div className="w-7 h-7 rounded-full bg-[#0f172a] flex items-center justify-center text-white shrink-0">
+       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+    </div>
+    <h2 className="text-[14px] font-bold tracking-widest text-[#0f172a] uppercase">Skills</h2>
+    <div className="flex-1 border-b border-slate-300"></div>
+  </div>
+)}
+
+{validSkills.map((skill, idx) => {
+  const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
+  
+  // FIX: Extract the actual skill level (fallback to 3 if it's a legacy string skill)
+  const level = typeof skill === 'string' ? 3 : (skill.level || 3);
+  // Convert 1-5 scale to a 20%-100% width
+  const barWidth = (level / 5) * 100; 
+
+  return (
+    <div key={`skill-${idx}`} className="shrink-0 mb-3.5 w-full">
+      <h4 className="text-[11px] font-semibold text-[#0f172a] mb-1.5">{name}</h4>
+      <div className="w-full bg-slate-200 h-[5px] rounded-full overflow-hidden">
+        <div className="bg-[#0f172a] h-full rounded-full" style={{ width: `${barWidth}%` }}></div>
+      </div>
+    </div>
+  );
+})}
           
           {validSkills.map((skill, idx) => {
             const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);

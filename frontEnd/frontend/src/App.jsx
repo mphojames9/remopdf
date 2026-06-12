@@ -2,6 +2,7 @@ import React, { Suspense, Component } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ResumeBuilder from './pages/ResumeBuilder';
+import TemplateSlider from './components/Resume/TemplateSlider';
 
 // High-Performance Lazy Loading for Viewports
 const Home = React.lazy(() => import('./pages/Home'));
@@ -73,6 +74,11 @@ export default function App() {
                   <>
                     <Navbar />
                     <Home />
+                    
+                    {/* Template Slider moved to the bottom */}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 pt-8">
+                      <TemplateSlider />
+                    </div>
                   </>
                 } 
               />
