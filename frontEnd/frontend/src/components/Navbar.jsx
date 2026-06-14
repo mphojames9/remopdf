@@ -25,46 +25,57 @@ export default function Navbar() {
 
   return (
     <nav 
-      className={`w-full flex justify-between items-center py-4 px-6 md:px-12 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-[0_2px_20px_rgba(0,0,0,0.02)] z-50 font-sans transition-all duration-500 ease-in-out ${
-        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+      className={`fixed top-0 w-full flex justify-between items-center py-3 lg:py-4 px-4 lg:px-12 bg-white/70 backdrop-blur-2xl border-b border-slate-200/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] z-[70] transition-all duration-500 ease-out ${
+        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
       }`}
+      style={{ fontFamily: "'Outfit', 'Metropolis', sans-serif" }}
     >
       
       {/* Left side: Brand/Logo */}
-      <div className="text-lg font-bold tracking-tight text-slate-950">
-        
+      <div className="nav-logo shrink-0 relative z-[70]">
+        <Link to="/" className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg">
+          <img 
+            src="/images/tittleIcon.png" 
+            alt="RemoPDF" 
+            className="w-7 h-7 lg:w-9 lg:h-9 object-contain" 
+            onError={(e) => { e.target.style.display = 'none'; }} 
+          />
+          <span className="font-medium text-[1.1rem] lg:text-xl text-slate-900 tracking-tight">
+            Remo<span className="text-[#ff2d2d] font-normal">PDF</span>
+          </span>
+        </Link>
       </div>
 
       {/* Center: Navigation Links */}
-      <div className="hidden md:flex items-center gap-8">
+      <div className="hidden lg:flex items-center gap-10">
         <Link 
           to="/about" 
-          className="text-[0.9rem] text-slate-500 hover:text-slate-950 font-medium tracking-wide transition-colors duration-200"
+          className="text-[0.95rem] font-medium tracking-wide transition-colors duration-200 text-slate-500 hover:text-slate-900"
         >
           About Us
         </Link>
         <Link 
-          to="/privacy" 
-          className="text-[0.9rem] text-slate-500 hover:text-slate-950 font-medium tracking-wide transition-colors duration-200"
+          to="/PrivacyPolicy" 
+          className="text-[0.95rem] font-medium tracking-wide transition-colors duration-200 text-slate-500 hover:text-slate-900"
         >
           Privacy
         </Link>
         <Link 
-          to="/terms" 
-          className="text-[0.9rem] text-slate-500 hover:text-slate-950 font-medium tracking-wide transition-colors duration-200"
+          to="/terms-of-use" 
+          className="text-[0.95rem] font-medium tracking-wide transition-colors duration-200 text-slate-500 hover:text-slate-900"
         >
           T&C
         </Link>
       </div>
 
       {/* Right side: Upgraded Premium Contact Button */}
-      <div className="flex items-center">
+      <div className="flex items-center gap-3 shrink-0 relative z-[70]">
         <Link 
           to="/contact" 
-          className="group relative flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-b from-slate-800 to-slate-950 text-white text-xs md:text-sm font-semibold tracking-wide shadow-[0_2px_15px_rgba(0,0,0,0.1)] border border-slate-700/80 hover:shadow-[0_4px_25px_rgba(15,23,42,0.25)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
+          className="group relative flex items-center gap-2 px-5 lg:px-6 py-2 lg:py-2.5 rounded-full bg-gradient-to-tr from-slate-900 via-slate-800 to-slate-950 text-white text-[12px] lg:text-sm font-medium tracking-wide shadow-[0_4px_15px_rgba(0,0,0,0.1)] border border-slate-700/80 hover:shadow-[0_6px_20px_rgba(249,115,22,0.15)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
         >
           {/* Sweeping Shine Hover Effect */}
-          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 ease-in-out" />
+          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 ease-in-out" />
           
           {/* Button Text */}
           <span className="relative z-10">Contact Us</span>

@@ -5,6 +5,7 @@ import './App.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    {/* Removed BrowserRouter from here */}
     <App />
   </React.StrictMode>,
 )

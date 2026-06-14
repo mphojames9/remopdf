@@ -116,6 +116,44 @@ export default function ArchitectResume({
     <div className="w-1.5 h-1.5 border border-[#164179] rotate-45 mt-1.5 shrink-0 bg-white"></div>
   );
 
+  // 1.5. DEMOGRAPHICS SECTION
+  if (info.dob || info.nationality || info.gender || info.drivingLicense) {
+    pushSectionDivider();
+    flatLayoutElements.push(
+      <div key="personal-details-row" className="shrink-0 flex w-full font-inter">
+        <div className="w-[28%] shrink-0 pr-4">
+          <h2 className="text-[12.5px] font-bold tracking-[0.25em] uppercase text-[#0B1325]">Details</h2>
+        </div>
+        <div className="w-[72%] grid grid-cols-2 gap-y-3 gap-x-6">
+          {info.dob && (
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#164179]">Date of Birth</span>
+              <span className="text-[11px] text-[#2c3545] mt-0.5">{info.dob}</span>
+            </div>
+          )}
+          {info.nationality && (
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#164179]">Nationality</span>
+              <span className="text-[11px] text-[#2c3545] mt-0.5">{info.nationality}</span>
+            </div>
+          )}
+          {info.gender && (
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#164179]">Gender</span>
+              <span className="text-[11px] text-[#2c3545] mt-0.5">{info.gender}</span>
+            </div>
+          )}
+          {info.drivingLicense && (
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#164179]">Driver's License</span>
+              <span className="text-[11px] text-[#2c3545] mt-0.5">{info.drivingLicense}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // 2. PROFILE SECTION
   if (validSummary) {
     pushSectionDivider();

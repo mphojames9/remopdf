@@ -79,6 +79,43 @@ export default function ProfessionalDark({
           </div>
         )}
 
+        {/* PERSONAL DETAILS / DEMOGRAPHICS */}
+        {(info.dob || info.nationality || info.gender || info.drivingLicense) && (
+          <div className="shrink-0 flex items-center gap-3 mb-3 mt-4">
+            <div className="w-7 h-7 rounded-full border border-[#c99c60] flex items-center justify-center text-[#c99c60] shrink-0">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+              </svg>
+            </div>
+            <h2 className="text-[11px] font-bold tracking-widest text-white uppercase">Personal Details</h2>
+            <div className="flex-1 h-px bg-[#c99c60]/40"></div>
+          </div>
+        )}
+        {info.dob && (
+          <div className="shrink-0 pl-1 mb-2">
+            <span className="text-[9px] text-[#c99c60] font-medium uppercase tracking-widest block mb-0.5">Date of Birth</span>
+            <span className="text-[10px] text-slate-300 font-medium block">{info.dob}</span>
+          </div>
+        )}
+        {info.nationality && (
+          <div className="shrink-0 pl-1 mb-2">
+            <span className="text-[9px] text-[#c99c60] font-medium uppercase tracking-widest block mb-0.5">Nationality</span>
+            <span className="text-[10px] text-slate-300 font-medium block">{info.nationality}</span>
+          </div>
+        )}
+        {info.gender && (
+          <div className="shrink-0 pl-1 mb-2">
+            <span className="text-[9px] text-[#c99c60] font-medium uppercase tracking-widest block mb-0.5">Gender</span>
+            <span className="text-[10px] text-slate-300 font-medium block">{info.gender}</span>
+          </div>
+        )}
+        {info.drivingLicense && (
+          <div className="shrink-0 pl-1 mb-4">
+            <span className="text-[9px] text-[#c99c60] font-medium uppercase tracking-widest block mb-0.5">Driver's License</span>
+            <span className="text-[10px] text-slate-300 font-medium block">{info.drivingLicense}</span>
+          </div>
+        )}
+
         {/* EDUCATION */}
         {validEducation.length > 0 && (
           <div className="shrink-0 flex items-center gap-3 mb-3 mt-4">

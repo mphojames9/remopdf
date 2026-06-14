@@ -231,38 +231,65 @@ export default function ModernExecutive({
         {/* RIGHT COLUMN: ASIDE CONTENT */}
         <aside className="w-[42%] pl-8 flex flex-col">
           
-{/* SKILLS */}
-{validSkills.length > 0 && (
-  <div className="shrink-0 flex items-center gap-3 mb-4 mt-2">
-    <div className="w-7 h-7 rounded-full bg-[#0f172a] flex items-center justify-center text-white shrink-0">
-       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
-    </div>
-    <h2 className="text-[14px] font-bold tracking-widest text-[#0f172a] uppercase">Skills</h2>
-    <div className="flex-1 border-b border-slate-300"></div>
-  </div>
-)}
+          {/* PERSONAL DETAILS */}
+          {(info.dob || info.nationality || info.gender || info.drivingLicense) && (
+            <div className="shrink-0 mb-5">
+              <div className="flex items-center gap-3 mb-3 mt-2">
+                <div className="w-7 h-7 rounded-full bg-[#0f172a] flex items-center justify-center text-white shrink-0">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>
+                <h2 className="text-[14px] font-bold tracking-widest text-[#0f172a] uppercase">Personal Details</h2>
+                <div className="flex-1 border-b border-slate-300"></div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 pl-2">
+                {info.dob && (
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold tracking-widest uppercase text-[#c99c60]">Date of Birth</span>
+                    <span className="text-[11px] font-medium text-[#334155] mt-0.5">{info.dob}</span>
+                  </div>
+                )}
+                {info.nationality && (
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold tracking-widest uppercase text-[#c99c60]">Nationality</span>
+                    <span className="text-[11px] font-medium text-[#334155] mt-0.5">{info.nationality}</span>
+                  </div>
+                )}
+                {info.gender && (
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold tracking-widest uppercase text-[#c99c60]">Gender</span>
+                    <span className="text-[11px] font-medium text-[#334155] mt-0.5">{info.gender}</span>
+                  </div>
+                )}
+                {info.drivingLicense && (
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold tracking-widest uppercase text-[#c99c60]">License</span>
+                    <span className="text-[11px] font-medium text-[#334155] mt-0.5">{info.drivingLicense}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
-{validSkills.map((skill, idx) => {
-  const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
-  
-  // FIX: Extract the actual skill level (fallback to 3 if it's a legacy string skill)
-  const level = typeof skill === 'string' ? 3 : (skill.level || 3);
-  // Convert 1-5 scale to a 20%-100% width
-  const barWidth = (level / 5) * 100; 
+          {/* SKILLS */}
+          {validSkills.length > 0 && (
+            <div className="shrink-0 flex items-center gap-3 mb-4 mt-2">
+              <div className="w-7 h-7 rounded-full bg-[#0f172a] flex items-center justify-center text-white shrink-0">
+                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+              </div>
+              <h2 className="text-[14px] font-bold tracking-widest text-[#0f172a] uppercase">Skills</h2>
+              <div className="flex-1 border-b border-slate-300"></div>
+            </div>
+          )}
 
-  return (
-    <div key={`skill-${idx}`} className="shrink-0 mb-3.5 w-full">
-      <h4 className="text-[11px] font-semibold text-[#0f172a] mb-1.5">{name}</h4>
-      <div className="w-full bg-slate-200 h-[5px] rounded-full overflow-hidden">
-        <div className="bg-[#0f172a] h-full rounded-full" style={{ width: `${barWidth}%` }}></div>
-      </div>
-    </div>
-  );
-})}
-          
           {validSkills.map((skill, idx) => {
             const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
-            const barWidth = 70 + (idx % 4) * 8; 
+            
+            // Extract the actual skill level (fallback to 3 if it's a legacy string skill)
+            const level = typeof skill === 'string' ? 3 : (skill.level || 3);
+            // Convert 1-5 scale to a 20%-100% width
+            const barWidth = (level / 5) * 100; 
+
             return (
               <div key={`skill-${idx}`} className="shrink-0 mb-3.5 w-full">
                 <h4 className="text-[11px] font-semibold text-[#0f172a] mb-1.5">{name}</h4>

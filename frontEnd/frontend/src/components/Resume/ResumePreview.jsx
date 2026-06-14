@@ -1,7 +1,13 @@
 import React from 'react';
 import ModernExecutive from './Templates/ModernExecutive';
 import ProfessionalDark from './Templates/ProfessionalDark';
-import ArchitectResume from './Templates/ArchitectResume'; // Imported the new template
+import ArchitectResume from './Templates/ArchitectResume';
+import PremiumMinimal from './Templates/PremiumMinimal';
+import Visionary2030 from './Templates/Visionary2030';
+import BordeauxElite from './Templates/BordeauxElite';
+import PrestigeIvory from './Templates/PrestigeIvory';
+import ApexExecutive from './Templates/ApexExecutive';
+import PinnaclePremium from './Templates/PinnaclePremium';
 
 export default function ResumePreview({ data, template }) {
   const info = data.personalInfo || {};
@@ -68,6 +74,30 @@ export default function ResumePreview({ data, template }) {
 
   if (template === 'Architect Resume') {
     return <ArchitectResume {...layoutProps} />;
+  }
+
+  if (template === 'Premium Minimal') {
+    return <PremiumMinimal {...layoutProps} />;
+  }
+
+  if (template === 'Visionary 2030') {
+    return <Visionary2030 {...layoutProps} />;
+  }
+
+  if (template === 'Bordeaux Elite') {
+    return <BordeauxElite {...layoutProps} />;
+  }
+
+  if (template === 'Prestige Ivory') {
+    return <PrestigeIvory {...layoutProps} />;
+  }
+
+  if (template === 'Apex Executive') {
+    return <ApexExecutive {...layoutProps} />;
+  }
+
+  if (template === 'Pinnacle Premium') {
+    return <PinnaclePremium {...layoutProps} />;
   }
 
   // Fallback Template

@@ -76,6 +76,7 @@ const demoResumeData = {
 };
 
 const TemplateThumbnail = ({ tmpl, isActive, onSelect }) => {
+  
   const containerRef = useRef(null);
   const [thumbScale, setThumbScale] = useState(0.25);
 
@@ -133,6 +134,21 @@ export default function ResumeBuilder() {
   const [overlayScale, setOverlayScale] = useState(1);
   const [triggerSuccessModal, setTriggerSuccessModal] = useState(0);
   const previewContainerRef = useRef(null);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+const [lastScrollY, setLastScrollY] = useState(0);
+
+const handleGalleryScroll = (e) => {
+  const currentScrollY = e.target.scrollTop;
+  
+  // Hide header when scrolling down past 60px, show when scrolling up
+  if (currentScrollY > lastScrollY && currentScrollY > 60) {
+    setIsHeaderVisible(false);
+  } else if (currentScrollY < lastScrollY) {
+    setIsHeaderVisible(true);
+  }
+  
+  setLastScrollY(currentScrollY);
+};
 
   // Responsive Navigation State
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -394,10 +410,66 @@ export default function ResumeBuilder() {
   };
 
   const templates = [
-    { id: 'Professional Dark', name: 'Professional Dark', vibe: 'Authoritative / Asymmetric Executive', description: 'Features a solid corporate slate command column combined with an accent rule divider line.' },
-    { id: 'Modern Executive', name: 'Modern Executive', vibe: 'Symmetric / Tech Leadership', description: 'Bold integrated top-header layout utilizing strict multi-stage cross-functional content segments.' },
-    { id: 'Architect Resume', name: 'Architect Resume', vibe: 'Minimalist Luxury / Editorial Serif', description: 'An elegant layout using high-fidelity classical aesthetics, tailored borders, and refined text tracking.' }
-  ];
+  { 
+    id: 'Professional Dark', 
+    name: 'Professional Dark', 
+    vibe: 'Classic & Professional', 
+    description: 'A striking two-column layout perfect for highlighting key skills alongside your experience.' 
+  },
+  { 
+    id: 'Modern Executive', 
+    name: 'Modern Executive', 
+    vibe: 'Modern & Clean', 
+    description: 'A sleek, top-header design that cleanly organizes your career history and stands out to recruiters.' 
+  },
+  { 
+    id: 'Architect Resume', 
+    name: 'Architect Resume', 
+    vibe: 'Elegant & Minimalist', 
+    description: 'An editorial-style layout with refined typography and clean, spacious borders for a high-end look.' 
+  },
+  { 
+    id: 'Premium Minimal', 
+    name: 'Premium Minimal', 
+    vibe: 'Crisp & Elegant', 
+    description: 'A high-contrast, premium light aesthetic using deep slates and clean whites, perfectly structured for flawless pagination.' 
+  },
+
+  {
+    id: 'Visionary 2030',
+    name: 'Visionary 2030',
+    vibe: 'Next-Gen & Tech Forward',
+    description: 'A cutting-edge aesthetic blending deep midnight indigo with neon cyan accents, designed for modern innovators.'
+  },
+
+  {
+    id: 'Bordeaux Elite',
+    name: 'Bordeaux Elite',
+    vibe: 'Sophisticated & Prestigious',
+    description: 'A distinguished layout featuring deep burgundy tones, warm cream backgrounds, and refined serif typography for a C-suite presence.'
+  },
+
+  {
+    id: 'Prestige Ivory',
+    name: 'Prestige Ivory',
+    vibe: 'Pure & Minimalist',
+    description: 'An ultra-clean, premium white aesthetic utilizing sharp typography, deep charcoal text, and crisp whitespace for a heavy-stock paper feel.'
+  },
+
+  {
+    id: 'Apex Executive',
+    name: 'Apex Executive',
+    vibe: 'Top-Tier & Premium',
+    description: 'An incredibly sophisticated layout featuring an obsidian slate sidebar, metallic gold accents, and sharp geometric spacing designed for the C-suite.'
+  },
+
+  {
+    id: 'Pinnacle Premium',
+    name: 'Pinnacle Premium',
+    vibe: 'Editorial & Ultra-Premium',
+    description: 'A striking, high-contrast flat layout designed specifically for flawless pagination, featuring elegant typography and pristine row-by-row structure.'
+  }
+];
 
   return (
     <div className="h-screen w-full flex flex-col bg-slate-50 font-sans overflow-hidden antialiased">
@@ -802,43 +874,74 @@ export default function ResumeBuilder() {
         </div>
       )}
 
-      {/* TEMPLATE PICKER MODAL */}
-      {showTemplateModal && (
-        <div onClick={() => setShowTemplateModal(false)} className="fixed inset-0 z-[90000] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-0 transition-all">
-          <div onClick={(e) => e.stopPropagation()} className="bg-white w-full h-full overflow-hidden flex flex-col">
-            <div className="p-4 max-[340px]:p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/80 shrink-0">
-              <div className="min-w-0 pr-2">
-                <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight truncate">Select Architecture</h3>
-                <p className="text-[10px] text-slate-400 truncate mt-0.5">Core data blueprints switch instantaneously.</p>
-              </div>
-              <button onClick={() => setShowTemplateModal(false)} className="bg-slate-200/60 hover:bg-slate-200 text-slate-600 p-1.5 rounded-full outline-none shrink-0">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+{/* FULL-SCREEN TEMPLATE PICKER */}
+{showTemplateModal && (
+  <div 
+    className="fixed inset-0 z-[90000] w-full h-full bg-slate-50 flex flex-col animate-in fade-in zoom-in-95 duration-400 overflow-hidden"
+    style={{ fontFamily: '"Outfit", sans-serif' }}
+  >
+    {/* Auto-Hiding Centered Premium Header */}
+    <div 
+      className={`absolute top-0 left-0 w-full z-50 px-6 py-5 sm:px-10 sm:py-6 border-b border-slate-200/60 bg-white/90 backdrop-blur-xl flex justify-center items-center shadow-[0_4px_40px_rgba(0,0,0,0.04)] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
+      {/* Perfectly Centered Content */}
+      <div className="flex flex-col items-center text-center gap-2 max-w-2xl px-16">
+        <span className="bg-amber-100/50 border border-amber-200/50 text-amber-700 text-[10px] sm:text-xs font-medium uppercase tracking-[0.2em] px-3 py-1 rounded-full">
+          Gallery
+        </span>
+      </div>
+      
+      {/* High-End Tactile Close Button (Absolutely positioned so it doesn't break the text centering) */}
+      <button 
+        onClick={() => setShowTemplateModal(false)} 
+        className="absolute right-6 sm:right-10 group w-12 h-12 flex items-center justify-center bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-full outline-none shrink-0 border border-slate-200 hover:border-rose-200 shadow-sm hover:shadow-[0_8px_20px_-6px_rgba(225,29,72,0.3)] active:scale-90 transition-all duration-300"
+        aria-label="Close gallery"
+      >
+        <svg className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90 font-light" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
 
-            <div className="p-3 max-[340px]:p-2 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-slate-50/30 custom-scrollbar flex-1 max-h-[calc(100vh-56px)]">
-              {templates.map((tmpl) => (
-                <TemplateThumbnail
-                  key={tmpl.id}
-                  tmpl={tmpl}
-                  isActive={activeTemplate === tmpl.id}
-                  onSelect={(id) => {
-                    handleSetActiveTemplate(id);
-                    setShowTemplateModal(false);
-                    const hasSelectedFirst = localStorage.getItem('remo_first_template_selected');
-                    if (!hasSelectedFirst) {
-                      localStorage.setItem('remo_first_template_selected', 'true');
-                      setTimeout(() => { setTriggerSuccessModal(prev => prev + 1); }, 1000);
-                    }
-                  }}
-                />
-              ))}
+    {/* Ambient Background Mesh */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-amber-500/5 to-transparent rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+    {/* Fluid, Upscaled Grid Layout with Scroll Tracker Attached */}
+    <div 
+      onScroll={handleGalleryScroll}
+      className="relative z-10 w-full h-full overflow-y-auto px-6 pt-32 pb-20 sm:px-10 sm:pt-40 lg:px-16 custom-scrollbar"
+    >
+      <div className="max-w-[1800px] mx-auto w-full">
+        {/* Massive Card Sizing (~60% larger minmax targets) */}
+        <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(420px,1fr))] gap-8 sm:gap-10 lg:gap-14">
+          {templates.map((tmpl) => (
+            <div key={tmpl.id} className="w-full h-full flex transform transition-transform duration-300 hover:-translate-y-2">
+              <TemplateThumbnail
+                tmpl={tmpl}
+                isActive={activeTemplate === tmpl.id}
+                onSelect={(id) => {
+                  handleSetActiveTemplate(id);
+                  setShowTemplateModal(false);
+                  
+                  const hasSelectedFirst = localStorage.getItem('remo_first_template_selected');
+                  if (!hasSelectedFirst) {
+                    localStorage.setItem('remo_first_template_selected', 'true');
+                    setTimeout(() => { 
+                      setTriggerSuccessModal(prev => prev + 1); 
+                    }, 1000);
+                  }
+                }}
+              />
             </div>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
+    </div>
+    
+  </div>
+)}
 
       {/* FLOATING ACTION HUD (MOBILE) */}
       <button

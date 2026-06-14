@@ -5,6 +5,7 @@ import profileImgItem from '../../assets/profile.png';
 
 const profileImg = profileImgItem;
 
+// Keeping your demo data exactly intact for the preview engine
 const demoResumeData = {
   personalInfo: {
     fullName: "Alexander Reed",
@@ -73,33 +74,23 @@ const demoResumeData = {
   ]
 };
 
-// USER-FRIENDLY TEXT OVERHAUL
 const RE_TEMPLATES = [
-  { 
-    id: 'Professional Dark', 
-    name: 'Professional Dark', 
-    vibe: 'Classic & Professional', 
-    description: 'A striking two-column layout perfect for highlighting key skills alongside your experience.' 
-  },
-  { 
-    id: 'Modern Executive', 
-    name: 'Modern Executive', 
-    vibe: 'Modern & Clean', 
-    description: 'A sleek, top-header design that cleanly organizes your career history and stands out to recruiters.' 
-  },
-  { 
-    id: 'Architect Resume', 
-    name: 'Architect Resume', 
-    vibe: 'Elegant & Minimalist', 
-    description: 'An editorial-style layout with refined typography and clean, spacious borders for a high-end look.' 
-  }
+  { id: 'Professional Dark', name: 'Professional Dark', vibe: 'Classic & Professional', description: 'A striking two-column layout perfect for highlighting key skills alongside your experience.' },
+  { id: 'Modern Executive', name: 'Modern Executive', vibe: 'Modern & Clean', description: 'A sleek, top-header design that cleanly organizes your career history and stands out to recruiters.' },
+  { id: 'Architect Resume', name: 'Architect Resume', vibe: 'Elegant & Minimalist', description: 'An editorial-style layout with refined typography and clean, spacious borders for a high-end look.' },
+  { id: 'Premium Minimal', name: 'Premium Minimal', vibe: 'Crisp & Elegant', description: 'A high-contrast, premium light aesthetic using deep slates and clean whites, perfectly structured for flawless pagination.' },
+  { id: 'Visionary 2030', name: 'Visionary 2030', vibe: 'Next-Gen & Tech Forward', description: 'A cutting-edge aesthetic blending deep midnight indigo with neon cyan accents, designed for modern innovators.' },
+  { id: 'Bordeaux Elite', name: 'Bordeaux Elite', vibe: 'Sophisticated & Prestigious', description: 'A distinguished layout featuring deep burgundy tones, warm cream backgrounds, and refined serif typography for a C-suite presence.' },
+  { id: 'Prestige Ivory', name: 'Prestige Ivory', vibe: 'Pure & Minimalist', description: 'An ultra-clean, premium white aesthetic utilizing sharp typography, deep charcoal text, and crisp whitespace for a heavy-stock paper feel.' },
+  { id: 'Apex Executive', name: 'Apex Executive', vibe: 'Top-Tier & Premium', description: 'An incredibly sophisticated layout featuring an obsidian slate sidebar, metallic gold accents, and sharp geometric spacing designed for the C-suite.' },
+  { id: 'Pinnacle Premium', name: 'Pinnacle Premium', vibe: 'Editorial & Ultra-Premium', description: 'A striking, high-contrast flat layout designed specifically for flawless pagination, featuring elegant typography and pristine row-by-row structure.' }
 ];
 
 const SliderCard = ({ tmpl, isActive, onSelect }) => {
   const containerRef = useRef(null);
   const [thumbScale, setThumbScale] = useState(0.22);
 
-  // Preserve the robust scaling logic[cite: 2]
+  // Robust observer to perfectly scale the A4 canvas inside the responsive card
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {
@@ -114,63 +105,69 @@ const SliderCard = ({ tmpl, isActive, onSelect }) => {
   return (
     <div
       onClick={() => onSelect(tmpl.id)}
-      className={`flex-shrink-0 w-[220px] max-[340px]:w-[195px] sm:w-[320px] snap-start bg-gradient-to-b from-white to-slate-50/80 rounded-3xl p-3 sm:p-5 transition-all duration-500 group cursor-pointer flex flex-col justify-between select-none relative overflow-hidden ${
+      className={`relative flex-shrink-0 w-[240px] max-[340px]:w-[210px] sm:w-[340px] snap-start rounded-[2rem] p-4 sm:p-5 transition-all duration-500 group cursor-pointer flex flex-col justify-between select-none overflow-hidden ${
         isActive 
-          ? 'border-2 border-orange-400 shadow-[0_16px_40px_-10px_rgba(249,115,22,0.25)] scale-[1.02] ring-4 ring-orange-500/10' 
-          : 'border-2 border-slate-100 hover:border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1'
+          ? 'bg-white shadow-[0_20px_50px_-10px_rgba(245,158,11,0.25)] ring-2 ring-amber-500 scale-[1.02]' 
+          : 'bg-slate-50/50 border border-slate-200/60 hover:bg-white hover:border-amber-200 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1'
       }`}
     >
-      <div>
-        {/* THUMBNAIL CANVAS */}
-        <div ref={containerRef} className="w-full aspect-[1/1.4142] bg-slate-100 rounded-xl overflow-hidden relative shadow-inner mb-4 ring-1 ring-slate-900/5">
+      {/* Dynamic Background Glow for Active State */}
+      {isActive && (
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50/20 opacity-50 pointer-events-none"></div>
+      )}
+
+      <div className="relative z-10">
+        {/* THUMBNAIL CANVAS WRAPPER */}
+        <div ref={containerRef} className="w-full aspect-[1/1.4142] bg-white rounded-xl overflow-hidden relative shadow-[0_4px_20px_rgba(15,23,42,0.08)] mb-6 border border-slate-100 group-hover:shadow-[0_8px_30px_rgba(15,23,42,0.12)] transition-shadow duration-500">
+          
           <div
-            className="absolute top-0 left-0 origin-top-left pointer-events-none select-none bg-white transition-transform duration-700"
+            className="absolute top-0 left-0 origin-top-left pointer-events-none select-none bg-white"
             style={{ width: '794px', height: '1122px', transform: `scale(${thumbScale})` }}
           >
             <ResumePreview data={demoResumeData} template={tmpl.id} />
           </div>
           
-          {/* HOVER GLASS OVERLAY */}
-          <div className="absolute inset-0 bg-slate-950/30 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center z-20">
-            <div className="bg-white text-slate-900 text-[10px] sm:text-xs font-black tracking-wide px-4 py-2 rounded-full shadow-2xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 flex items-center gap-2">
-              Preview Design
+          {/* PREMIUM HOVER GLASS OVERLAY */}
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-400 flex items-center justify-center z-20">
+            <div className="bg-white text-slate-900 text-[11px] sm:text-xs font-bold tracking-wide px-5 py-2.5 rounded-full shadow-2xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-400 ease-out flex items-center gap-2">
+              <i className="fa-regular fa-eye"></i> Preview Layout
             </div>
           </div>
 
-          {/* ACTIVE BADGE */}
+          {/* ACTIVE STATUS BADGE */}
           {isActive && (
-            <div className="absolute top-2.5 right-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg z-20 flex items-center gap-1.5 animate-fade-in border border-white/20">
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+            <div className="absolute top-3 right-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg z-20 flex items-center gap-1.5 animate-in fade-in zoom-in duration-300">
+              <i className="fa-solid fa-check text-[10px]"></i>
               Selected
             </div>
           )}
         </div>
 
-        {/* TYPOGRAPHY */}
-        <div className="space-y-1.5 px-1">
-          <h3 className={`text-sm sm:text-base font-black tracking-tight transition-colors truncate ${isActive ? 'text-slate-900' : 'text-slate-800'}`}>
-            {tmpl.name}
-          </h3>
-          <p className="text-[9px] sm:text-[10px] text-orange-500 font-bold tracking-widest uppercase truncate">
+        {/* TYPOGRAPHY SECTION */}
+        <div className="space-y-2 px-1">
+          <p className="text-[9px] sm:text-[10px] text-amber-500 font-bold tracking-[0.2em] uppercase truncate">
             {tmpl.vibe}
           </p>
-          <p className="text-xs text-slate-500 leading-relaxed mt-1 line-clamp-2 font-medium max-[340px]:hidden">
+          <h3 className={`text-base sm:text-lg font-bold tracking-tight transition-colors truncate ${isActive ? 'text-slate-900' : 'text-slate-800'}`}>
+            {tmpl.name}
+          </h3>
+          <p className="text-xs text-slate-500 leading-relaxed font-medium line-clamp-2 max-[340px]:hidden">
             {tmpl.description}
           </p>
         </div>
       </div>
 
       {/* ACTION BUTTON */}
-      <div className="mt-5 pt-3 border-t border-slate-100 shrink-0">
-        <div className={`w-full text-[10px] sm:text-xs font-bold tracking-wide py-2.5 sm:py-3 rounded-2xl flex items-center justify-center gap-2 transition-all duration-300 ${
+      <div className="relative z-10 mt-6 pt-4 border-t border-slate-100/80 shrink-0">
+        <div className={`w-full text-[11px] sm:text-xs font-bold tracking-wide py-3 sm:py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all duration-400 ${
           isActive 
-            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20' 
-            : 'bg-white border border-slate-200 text-slate-600 group-hover:bg-slate-50 group-hover:text-slate-900 group-hover:border-slate-300'
+            ? 'bg-slate-900 text-white shadow-[0_8px_20px_-6px_rgba(15,23,42,0.4)]' 
+            : 'bg-white border border-slate-200 text-slate-600 group-hover:bg-amber-50 group-hover:text-amber-700 group-hover:border-amber-200'
         }`}>
-          {isActive ? 'Current Design' : 'Choose Design'}
-          <svg className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
+          {isActive ? 'Currently Using' : 'Select Template'}
+          {!isActive && (
+            <i className="fa-solid fa-arrow-right text-[10px] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300"></i>
+          )}
         </div>
       </div>
     </div>
@@ -202,64 +199,79 @@ export default function TemplateSlider({ onSelect, activeTemplateId }) {
   };
 
   return (
-    <div className="w-full bg-white/80 backdrop-blur-xl border border-slate-200/60 py-6 px-4 sm:py-10 sm:px-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative">
+    <div className="w-full py-12 sm:py-16 md:py-20 relative font-sans selection:bg-amber-100 selection:text-amber-900">
       <style>{`
         .scrollbar-hidden::-webkit-scrollbar { display: none; }
         .scrollbar-hidden { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* HEADER SECTION */}
-      <div className="flex flex-row items-center justify-between mb-6 max-[340px]:mb-4 gap-4 shrink-0 px-2">
-        <div className="min-w-0 flex flex-col gap-1.5">
-          <div className="flex items-center gap-2.5">
-            <span className="text-orange-600 text-[9px] font-black uppercase tracking-widest bg-orange-50 px-2.5 py-1 rounded-md border border-orange-100/80 shrink-0">
-              Gallery
-            </span>
-            <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight truncate">
-              Resume Templates
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* PREMIUM RESPONSIVE HEADER */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 sm:mb-14">
+          <div className="max-w-2xl space-y-4">
+            
+            {/* Live Indicator Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50/80 border border-amber-200/50 rounded-full text-[10px] sm:text-xs font-bold tracking-[0.2em] uppercase text-amber-600 shadow-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              Premium Gallery
+            </div>
+
+            {/* Elevated Typography */}
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-light text-slate-900 tracking-tight leading-[1.1]">
+              Design your professional <br className="hidden sm:block"/>
+              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500">
+                Identity.
+              </span>
             </h2>
+            
+            <p className="text-sm sm:text-base text-slate-500 font-medium leading-relaxed">
+              Explore our curated collection of industry-approved layouts. Select a design below to instantly structure your career history with absolute precision.
+            </p>
           </div>
-          <p className="text-slate-500 text-xs sm:text-sm font-medium truncate max-[540px]:hidden">
-            Choose a professional layout to instantly style your resume.
-          </p>
+
+          {/* HIGH-END NAVIGATION HARDWARE BUTTONS */}
+          <div className="flex items-center gap-3 shrink-0 self-start md:self-end">
+            <button
+              onClick={() => handleScroll('left')}
+              className="w-12 h-12 rounded-full border border-slate-200 bg-white text-slate-600 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:shadow-[0_8px_20px_-6px_rgba(245,158,11,0.3)] active:scale-95 flex items-center justify-center transition-all duration-300"
+              aria-label="Slide left"
+            >
+              <i className="fa-solid fa-chevron-left text-sm"></i>
+            </button>
+            <button
+              onClick={() => handleScroll('right')}
+              className="w-12 h-12 rounded-full border border-slate-200 bg-white text-slate-600 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:shadow-[0_8px_20px_-6px_rgba(245,158,11,0.3)] active:scale-95 flex items-center justify-center transition-all duration-300"
+              aria-label="Slide right"
+            >
+              <i className="fa-solid fa-chevron-right text-sm"></i>
+            </button>
+          </div>
         </div>
 
-        {/* NAVIGATION CONTROLS */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => handleScroll('left')}
-            className="w-10 h-10 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 bg-white text-slate-600 active:scale-90 flex items-center justify-center transition-all shadow-sm"
-            aria-label="Slide left"
+        {/* TEMPLATE SLIDER TRACK */}
+        <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-5 sm:gap-8 overflow-x-auto snap-x snap-mandatory scrollbar-hidden pb-10 pt-4"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            onClick={() => handleScroll('right')}
-            className="w-10 h-10 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 bg-white text-slate-600 active:scale-90 flex items-center justify-center transition-all shadow-sm"
-            aria-label="Slide right"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+            {RE_TEMPLATES.map((tmpl) => (
+              <SliderCard
+                key={tmpl.id}
+                tmpl={tmpl}
+                isActive={activeTemplateId === tmpl.id}
+                onSelect={selectTemplate}
+              />
+            ))}
+            
+            {/* End Spacer so the last card doesn't hug the screen edge */}
+            <div className="w-4 sm:w-8 shrink-0"></div>
+          </div>
         </div>
-      </div>
 
-      {/* TEMPLATE SLIDER */}
-      <div
-        ref={scrollContainerRef}
-        className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hidden pb-4 pt-2 px-2"
-      >
-        {RE_TEMPLATES.map((tmpl) => (
-          <SliderCard
-            key={tmpl.id}
-            tmpl={tmpl}
-            isActive={activeTemplateId === tmpl.id}
-            onSelect={selectTemplate}
-          />
-        ))}
       </div>
     </div>
   );

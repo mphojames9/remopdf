@@ -2,8 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { mergePdfs, splitPdf, compressPdf, imagesToPdf, pdfToImages, getPdfPreviews, removePdfPages, compressImages, pdfToWord, pdfToExcel, addPasswordToPdf, verifyPdfPassword, removePdfPassword, changePdfPassword, pdfToPpt } from '../api/client';
 import './Home.css';
+import { toast } from '../components/PremiumToast';
+
 
 export default function Home() {
+  // Premium Pricing States
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [isAnnual, setIsAnnual] = useState(true);
+
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0); 
@@ -172,19 +178,46 @@ const documentTools = [
     }
   };
 
-  const handleMerge = async () => {
-    setIsProcessing(true);
-    setProgress(0);
-    try {
-      await mergePdfs(selectedFiles, setProgress);
-      closeOverlay();
-    } catch (error) {
-      console.error("Merge failed", error);
-    } finally {
-      setIsProcessing(false);
-      setProgress(0);
+const handleMerge = async () => {
+  setIsProcessing(true);
+  setProgress(0);
+  
+  try {
+    await mergePdfs(selectedFiles, setProgress);
+    closeOverlay();
+    
+  } catch (error) {
+    // Safely extract the error detail string
+    const errorMessage = error?.response?.data?.detail || error?.detail || "";
+
+    // 1. Check for our custom encryption flag FIRST
+    if (errorMessage.startsWith("ENCRYPTED:")) {
+      const filename = errorMessage.split("ENCRYPTED:")[1];
+      
+      // Fire the toast, but DO NOT log anything to the console
+      toast.error(`Action Blocked: Password Required`, {
+        description: `"${filename}" is protected. Please remove the password using our Unlock tool first.`,
+        duration: 5000,
+        action: {
+          label: "Go to Unlock Tool",
+          onClick: () => {
+            closeOverlay();
+            setIsUnlockModalOpen(true);
+          }
+        }
+      });
+      
+    } else {
+      // 2. Only print to the console if it is a TRUE, unexpected error
+      console.error("Merge failed:", error);
+      toast.error("Action Restricted One or more documents are password protected. Please remove the password using our Unlock tool first.");
     }
-  };
+    
+  } finally {
+    setIsProcessing(false);
+    setProgress(0);
+  }
+};
 
   const handleCompress = async () => {
     if (!compressFile) return;
@@ -437,6 +470,9 @@ const handlePdfToPpt = async () => {
 
 
   const closeOverlay = () => {
+
+    if (isProcessing) return;
+
     setIsMergeModalOpen(false);
     setIsSplitModalOpen(false);
     setIsCompressModalOpen(false);
@@ -486,6 +522,7 @@ const handlePdfToPpt = async () => {
     setIsPdfToPptModalOpen(false);
     setPdfToPptFiles([]);
     setPptProtectedError(null);
+    setIsPricingModalOpen(false);
     
   };
 
@@ -538,13 +575,6 @@ const handlePdfToPpt = async () => {
           <i className="fa-solid fa-file-pdf text-red-500 drop-shadow-sm"></i>
                 <div className="nav-logo">
                   <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <img 
-                      src="/images/tittleIcon.png" 
-                      alt="Logo" 
-                      style={{ width: '32px', height: '32px' }} 
-                      // Fix: Changed onerror to camelCase onError
-                      onError={(e) => { e.target.style.display = 'none'; }} 
-                    />
                     <span style={{ fontWeight: '700', fontSize: '1.25rem', color: 'var(--text, #121525)' }}>
                       Remo<span style={{ color: 'var(--brand, #ff2d2d)' }}>PDF</span>
                     </span>
@@ -607,11 +637,11 @@ const handlePdfToPpt = async () => {
 </Link>
           
           {/* Unique "Ripple Expand" Button for Pricing */}
-          <a href="#premium" className="relative inline-flex items-center justify-center px-6 py-2 overflow-hidden font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full hover:border-amber-400 transition-all duration-300 group shadow-sm hover:shadow-md">
+          <button onClick={() => setIsPricingModalOpen(true)} className="relative inline-flex items-center justify-center px-6 py-2 overflow-hidden font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full hover:border-amber-400 transition-all duration-300 group shadow-sm hover:shadow-md">
             <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-gradient-to-r from-amber-400 to-orange-400 rounded-full group-hover:w-56 group-hover:h-56 opacity-15"></span>
             <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-amber-200"></span>
             <span className="relative tracking-wider text-xs uppercase">Pricing</span>
-          </a>
+          </button>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -651,14 +681,20 @@ const handlePdfToPpt = async () => {
           
           <div className="h-px bg-gray-100 w-full"></div>
           <a href="#resume-section" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">Resume Builder</a>
-          <a href="#premium" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 py-2 text-sm font-bold text-amber-600 hover:text-amber-700">Pricing</a>
+          <button onClick={() => { setIsMobileMenuOpen(false); setIsPricingModalOpen(true); }} className="w-full text-left block px-2 py-2 text-sm font-bold text-amber-600 hover:text-amber-700">Pricing</button>
 
           {/* New About / Legal Section */}
           <div className="h-px bg-gray-100 w-full"></div>
           <div className="space-y-1 pb-2">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2 mb-2">Company & Legal</p>
             <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">About Us</a>
-            <a href="#privacy" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">Privacy Policy</a>
+            <Link 
+  to="/PrivacyPolicy" 
+  onClick={() => setIsMobileMenuOpen(false)} 
+  className="block px-2 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+>
+  Privacy Policy
+</Link>
             <a href="#terms" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">T&S</a>
           </div>
 
@@ -712,9 +748,10 @@ const handlePdfToPpt = async () => {
             
             {/* Primary Action Button */}
             <button 
-              className="relative w-full sm:w-auto px-8 py-4 bg-gray-900 text-white font-medium rounded-full overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_40px_rgba(249,115,22,0.3)] transition-all duration-300 transform hover:-translate-y-1 group"
-              style={{ fontFamily: 'var(--Project-Font, "Outfit", Metropolis, sans-serif)' }}
-            >
+  onClick={() => setIsPricingModalOpen(true)}
+  className="relative w-full sm:w-auto px-8 py-4 bg-gray-900 text-white font-medium rounded-full overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_40px_rgba(249,115,22,0.3)] transition-all duration-300 transform hover:-translate-y-1 group"
+  style={{ fontFamily: 'var(--Project-Font, "Outfit", Metropolis, sans-serif)' }}
+>
               <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-size-200 animate-gradient-shift opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative z-10 flex items-center justify-center gap-2">
                 Get Premium Access
@@ -893,134 +930,185 @@ const handlePdfToPpt = async () => {
             </div>
           </article>
 
-          {/* PDF to Word */}
-          <article 
-            className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(99,102,241,0.25)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
-            onClick={() => setIsPdfToWordModalOpen(true)}
-          >
-            <div className="absolute -right-16 -top-16 w-48 h-48 bg-indigo-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-15 transition-opacity duration-500"></div>
-            <div className="relative z-10 flex-1">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 text-indigo-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-indigo-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
-                <i className="fa-solid fa-file-word"></i>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-indigo-600 transition-colors duration-300">PDF to Word</h3>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">Convert PDFs to editable Word documents (.docx) keeping fonts and layouts intact.</p>
-            </div>
-            <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
-              <div className="flex items-center gap-2 bg-indigo-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(99,102,241,0.3)] hover:bg-indigo-600 transition-all duration-300">
-                Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
-              </div>
-            </div>
-          </article>
+{/* PDF to Word (Premium - Gold Theme) */}
+<article 
+  className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
+  onClick={() => setIsPdfToWordModalOpen(true)}
+>
+  {/* Premium Free Badge */}
+  <div className="absolute top-6 right-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full font-black shadow-sm flex items-center gap-1.5 z-20">
+    <i className="fa-solid fa-crown text-[10px]"></i> Premium • Free
+  </div>
 
-          {/* PDF to Excel */}
-          <article 
-            className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(16,185,129,0.25)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
-            onClick={() => setIsPdfToExcelModalOpen(true)}
-          >
-            <div className="absolute -right-16 -top-16 w-48 h-48 bg-emerald-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-15 transition-opacity duration-500"></div>
-            <div className="relative z-10 flex-1">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 text-emerald-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-emerald-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
-                <i className="fa-solid fa-file-excel"></i>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors duration-300">PDF to Excel</h3>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">Extract tables and financial data into clean, formatted Excel (.xlsx) spreadsheets.</p>
-            </div>
-            <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
-              <div className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(16,185,129,0.3)] hover:bg-emerald-600 transition-all duration-300">
-                Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
-              </div>
-            </div>
-          </article>
+  {/* Goldish Ambient Glow */}
+  <div className="absolute -right-16 -top-16 w-48 h-48 bg-amber-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+  
+  <div className="relative z-10 flex-1">
+    {/* Icon Container */}
+    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100/60 text-amber-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-amber-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+      <i className="fa-solid fa-file-word"></i>
+    </div>
+    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors duration-300">PDF to Word</h3>
+    <p className="text-gray-500 text-sm leading-relaxed mb-6">Convert PDFs to editable Word documents (.docx) keeping fonts and layouts intact.</p>
+  </div>
+  
+  {/* Action Button */}
+  <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
+    <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(245,158,11,0.4)] hover:from-amber-600 hover:to-orange-600 transition-all duration-300">
+      Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
+    </div>
+  </div>
+</article>
 
-          {/* Protect PDF (Premium - Violet Theme) */}
-          <article 
-            className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(139,92,246,0.25)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
-            onClick={() => setIsProtectModalOpen(true)}
-          >
-            <div className="absolute top-6 right-6 bg-violet-600 text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full font-bold shadow-sm flex items-center gap-1.5 z-20">
-              <i className="fa-solid fa-crown text-[10px]"></i> Premium
-            </div>
-            <div className="absolute -right-16 -top-16 w-48 h-48 bg-violet-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-15 transition-opacity duration-500"></div>
-            <div className="relative z-10 flex-1">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-50 to-violet-100/50 text-violet-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-violet-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
-                <i className="fa-solid fa-shield-halved"></i>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-violet-600 transition-colors duration-300">Protect PDF</h3>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">Encrypt your document with high-security AES-256 passwords to prevent unauthorized access.</p>
-            </div>
-            <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
-              <div className="flex items-center gap-2 bg-violet-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(139,92,246,0.3)] hover:bg-violet-600 transition-all duration-300">
-                Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
-              </div>
-            </div>
-          </article>
+{/* PDF to Excel (Premium - Gold Theme) */}
+<article 
+  className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
+  onClick={() => setIsPdfToExcelModalOpen(true)}
+>
+  {/* Premium Free Badge */}
+  <div className="absolute top-6 right-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full font-black shadow-sm flex items-center gap-1.5 z-20">
+    <i className="fa-solid fa-crown text-[10px]"></i> Premium • Free
+  </div>
 
-          {/* Unlock PDF (Premium - Violet Theme) */}
-          <article 
-            className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(139,92,246,0.25)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
-            onClick={() => setIsUnlockModalOpen(true)}
-          >
-            <div className="absolute top-6 right-6 bg-violet-600 text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full font-bold shadow-sm flex items-center gap-1.5 z-20">
-              <i className="fa-solid fa-crown text-[10px]"></i> Premium
-            </div>
-            <div className="absolute -right-16 -top-16 w-48 h-48 bg-violet-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-15 transition-opacity duration-500"></div>
-            <div className="relative z-10 flex-1">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-50 to-violet-100/50 text-violet-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-violet-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
-                <i className="fa-solid fa-lock-open"></i>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-violet-600 transition-colors duration-300">Unlock PDF</h3>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">Remove security passwords from protected PDFs permanently for easy access.</p>
-            </div>
-            <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
-              <div className="flex items-center gap-2 bg-violet-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(139,92,246,0.3)] hover:bg-violet-600 transition-all duration-300">
-                Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
-              </div>
-            </div>
-          </article>
+  {/* Goldish Ambient Glow */}
+  <div className="absolute -right-16 -top-16 w-48 h-48 bg-amber-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+  
+  <div className="relative z-10 flex-1">
+    {/* Icon Container */}
+    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100/60 text-amber-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-amber-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+      <i className="fa-solid fa-file-excel"></i>
+    </div>
+    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors duration-300">PDF to Excel</h3>
+    <p className="text-gray-500 text-sm leading-relaxed mb-6">Extract tables and financial data into clean, formatted Excel (.xlsx) spreadsheets.</p>
+  </div>
+  
+  {/* Action Button */}
+  <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
+    <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(245,158,11,0.4)] hover:from-amber-600 hover:to-orange-600 transition-all duration-300">
+      Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
+    </div>
+  </div>
+</article>
 
-          {/* Change Password (Premium - Violet Theme) */}
-          <article 
-            className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(139,92,246,0.25)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
-            onClick={() => setIsChangePwdModalOpen(true)}
-          >
-            <div className="absolute top-6 right-6 bg-violet-600 text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full font-bold shadow-sm flex items-center gap-1.5 z-20">
-              <i className="fa-solid fa-crown text-[10px]"></i> Premium
-            </div>
-            <div className="absolute -right-16 -top-16 w-48 h-48 bg-violet-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-15 transition-opacity duration-500"></div>
-            <div className="relative z-10 flex-1">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-50 to-violet-100/50 text-violet-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-violet-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
-                <i className="fa-solid fa-key"></i>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-violet-600 transition-colors duration-300">Change Password</h3>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">Update or swap the security password of an encrypted PDF instantly.</p>
-            </div>
-            <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
-              <div className="flex items-center gap-2 bg-violet-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(139,92,246,0.3)] hover:bg-violet-600 transition-all duration-300">
-                Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
-              </div>
-            </div>
-          </article>
+            {/* Protect PDF (Premium - Gold Theme) */}
+<article 
+  className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
+  onClick={() => setIsProtectModalOpen(true)}
+>
+  {/* Premium Free Badge */}
+  <div className="absolute top-6 right-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full font-black shadow-sm flex items-center gap-1.5 z-20">
+    <i className="fa-solid fa-crown text-[10px]"></i> Premium • Free
+  </div>
+  
+  {/* Goldish Ambient Glow */}
+  <div className="absolute -right-16 -top-16 w-48 h-48 bg-amber-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+  
+  <div className="relative z-10 flex-1">
+    {/* Icon Container */}
+    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100/60 text-amber-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-amber-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+      <i className="fa-solid fa-shield-halved"></i>
+    </div>
+    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors duration-300">Protect PDF</h3>
+    <p className="text-gray-500 text-sm leading-relaxed mb-6">Encrypt your document with high-security AES-256 passwords to prevent unauthorized access.</p>
+  </div>
+  
+  {/* Action Button */}
+  <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
+    <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(245,158,11,0.4)] hover:from-amber-600 hover:to-orange-600 transition-all duration-300">
+      Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
+    </div>
+  </div>
+</article>
 
-          {/* PDF to PowerPoint */}
-          <article 
-            className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(249,115,22,0.25)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
-            onClick={() => setIsPdfToPptModalOpen(true)}
-          >
-            <div className="absolute -right-16 -top-16 w-48 h-48 bg-orange-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-15 transition-opacity duration-500"></div>
-            <div className="relative z-10 flex-1">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100/50 text-orange-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-orange-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
-                <i className="fa-solid fa-file-powerpoint"></i>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-orange-600 transition-colors duration-300">PDF to PPTX</h3>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">Turn your PDF documents into high-quality, presentation-ready PowerPoint slides.</p>
-            </div>
-            <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
-              <div className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(249,115,22,0.3)] hover:bg-orange-600 transition-all duration-300">
-                Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
-              </div>
-            </div>
-          </article>
+{/* Unlock PDF (Premium - Gold Theme) */}
+<article 
+  className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
+  onClick={() => setIsUnlockModalOpen(true)}
+>
+  {/* Premium Free Badge */}
+  <div className="absolute top-6 right-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full font-black shadow-sm flex items-center gap-1.5 z-20">
+    <i className="fa-solid fa-crown text-[10px]"></i> Premium • Free
+  </div>
+  
+  {/* Goldish Ambient Glow */}
+  <div className="absolute -right-16 -top-16 w-48 h-48 bg-amber-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+  
+  <div className="relative z-10 flex-1">
+    {/* Icon Container */}
+    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100/60 text-amber-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-amber-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+      <i className="fa-solid fa-lock-open"></i>
+    </div>
+    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors duration-300">Unlock PDF</h3>
+    <p className="text-gray-500 text-sm leading-relaxed mb-6">Remove security passwords from protected PDFs permanently for easy access.</p>
+  </div>
+  
+  {/* Action Button */}
+  <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
+    <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(245,158,11,0.4)] hover:from-amber-600 hover:to-orange-600 transition-all duration-300">
+      Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
+    </div>
+  </div>
+</article>
+
+{/* Change Password (Premium - Gold Theme) */}
+<article 
+  className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
+  onClick={() => setIsChangePwdModalOpen(true)}
+>
+  {/* Premium Free Badge */}
+  <div className="absolute top-6 right-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full font-black shadow-sm flex items-center gap-1.5 z-20">
+    <i className="fa-solid fa-crown text-[10px]"></i> Premium • Free
+  </div>
+  
+  {/* Goldish Ambient Glow */}
+  <div className="absolute -right-16 -top-16 w-48 h-48 bg-amber-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+  
+  <div className="relative z-10 flex-1">
+    {/* Icon Container */}
+    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100/60 text-amber-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-amber-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+      <i className="fa-solid fa-key"></i>
+    </div>
+    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors duration-300">Change Password</h3>
+    <p className="text-gray-500 text-sm leading-relaxed mb-6">Update or swap the security password of an encrypted PDF instantly.</p>
+  </div>
+  
+  {/* Action Button */}
+  <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
+    <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(245,158,11,0.4)] hover:from-amber-600 hover:to-orange-600 transition-all duration-300">
+      Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
+    </div>
+  </div>
+</article>
+
+{/* PDF to PowerPoint */}
+<article 
+  className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col min-h-[280px]"
+  onClick={() => setIsPdfToPptModalOpen(true)}
+>
+  {/* Premium Free Badge (Unified Gold) */}
+  <div className="absolute top-6 right-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full font-black shadow-sm flex items-center gap-1.5 z-20">
+    <i className="fa-solid fa-crown text-[10px]"></i> Premium • Free
+  </div>
+
+  {/* Goldish Ambient Glow */}
+  <div className="absolute -right-16 -top-16 w-48 h-48 bg-amber-400 rounded-full mix-blend-multiply filter blur-[70px] opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+  
+  <div className="relative z-10 flex-1">
+    {/* Icon Container */}
+    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100/60 text-amber-600 flex items-center justify-center text-2xl mb-6 shadow-inner border border-amber-200/50 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+      <i className="fa-solid fa-file-powerpoint"></i>
+    </div>
+    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors duration-300">PDF to PPTX</h3>
+    <p className="text-gray-500 text-sm leading-relaxed mb-6">Turn your PDF documents into high-quality, presentation-ready PowerPoint slides.</p>
+  </div>
+  
+  {/* Action Button */}
+  <div className="absolute bottom-6 right-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400 ease-out z-20">
+    <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_15px_rgba(245,158,11,0.4)] hover:from-amber-600 hover:to-orange-600 transition-all duration-300">
+      Open Tool <i className="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform duration-300"></i>
+    </div>
+  </div>
+</article>
 
         </div>
       </main>
@@ -2709,6 +2797,122 @@ const handlePdfToPpt = async () => {
           </div>
         </div>
       )}
+      {/* --- PREMIUM PRICING MODAL (LIGHT THEME) --- */}
+{isPricingModalOpen && (
+  <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-900/40 backdrop-blur-md transition-all duration-500 p-2 sm:p-4" onClick={closeOverlay}>
+    <div 
+      className="relative max-w-lg w-full max-h-full flex flex-col bg-white/60 backdrop-blur-2xl rounded-[2rem] sm:rounded-[2.5rem] p-1 sm:p-1.5 shadow-[0_30px_100px_-15px_rgba(245,158,11,0.25)] border border-white overflow-hidden animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 duration-500 ease-out" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Animated Golden Border Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-300 via-orange-400 to-amber-300 opacity-30 animate-[spin_4s_linear_infinite]" style={{ margin: '-50%' }}></div>
+      
+      {/* Inner Light Container (Added overflow-y-auto for max-height handling) */}
+      <div className="relative bg-white rounded-[1.8rem] sm:rounded-[2.2rem] w-full h-full p-4 sm:p-8 flex flex-col border border-white shadow-inner overflow-y-auto">
+        
+        {/* Close Button */}
+        <button onClick={closeOverlay} className="absolute top-3 right-3 sm:top-6 sm:right-6 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center z-20 border border-slate-200 hover:border-red-200">
+          <i className="fa-solid fa-xmark text-sm sm:text-base"></i>
+        </button>
+
+        {/* Header */}
+        <div className="text-center mt-1 sm:mt-2 mb-4 sm:mb-5 z-10">
+          <div className="inline-flex items-center justify-center w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100 shadow-inner mb-2 sm:mb-4 border border-amber-200/50 text-amber-500">
+            <i className="fa-solid fa-crown text-lg sm:text-2xl drop-shadow-sm"></i>
+          </div>
+          <h2 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight mb-1 sm:mb-2">RemoPDF <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">Premium</span></h2>
+          <p className="text-slate-500 text-xs sm:text-sm font-medium">Unlock the ultimate document & career arsenal.</p>
+        </div>
+
+        {/* Promotional Free Banner */}
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 relative overflow-hidden shadow-sm z-10">
+          <div className="absolute -right-4 -top-4 w-12 h-12 sm:w-16 sm:h-16 bg-emerald-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+          <div className="flex items-start gap-2 sm:gap-3 relative z-10">
+            <div className="mt-0.5 text-emerald-500"><i className="fa-solid fa-gift text-base sm:text-lg drop-shadow-sm"></i></div>
+            <div>
+              <p className="text-xs sm:text-sm font-black text-emerald-900 tracking-tight">Everything is Free Right Now!</p>
+              <p className="text-[10px] sm:text-xs font-semibold text-emerald-700/80 mt-1 leading-relaxed">Enjoy full access to all premium features at absolutely zero cost. Paid subscriptions will officially launch on <strong className="text-emerald-800">September 1, 2026</strong>.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Toggle Switch */}
+        <div className="relative flex items-center bg-slate-100 rounded-full p-1 mx-auto mb-4 sm:mb-6 w-fit border border-slate-200 z-10 shadow-inner">
+          <div 
+            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-full transition-all duration-300 shadow-sm border border-slate-200 ${isAnnual ? 'left-[50%]' : 'left-1'}`}
+          ></div>
+          <button 
+            onClick={() => setIsAnnual(false)}
+            className={`relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold rounded-full transition-colors duration-300 ${!isAnnual ? 'text-gray-900' : 'text-slate-500 hover:text-gray-700'}`}
+          >
+            Monthly
+          </button>
+          <button 
+            onClick={() => setIsAnnual(true)}
+            className={`relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold rounded-full transition-colors duration-300 ${isAnnual ? 'text-gray-900' : 'text-slate-500 hover:text-gray-700'}`}
+          >
+            Annually <span className="absolute -top-2 sm:-top-3 -right-1 sm:-right-2 bg-gradient-to-r from-red-500 to-rose-500 text-white text-[8px] sm:text-[9px] px-1.5 sm:px-2 py-0.5 rounded-full shadow-lg border border-red-400">-40%</span>
+          </button>
+        </div>
+
+        {/* Price Display */}
+        <div className="text-center mb-4 sm:mb-6 z-10">
+          <div className="flex items-start justify-center gap-1 opacity-40 relative inline-block">
+            {/* Strikethrough line for the free promo */}
+            <div className="absolute top-1/2 left-0 w-full h-0.5 sm:h-1 bg-red-500 -rotate-6 transform -translate-y-1/2 rounded-full"></div>
+            <span className="text-slate-400 font-bold mt-1 sm:mt-2 text-sm sm:text-lg">R</span>
+            <span className="text-4xl sm:text-5xl font-black text-gray-400 tracking-tighter">
+              {isAnnual ? '425' : '59'}
+            </span>
+          </div>
+          <p className="text-emerald-600 text-[9px] sm:text-xs font-black mt-1 uppercase tracking-widest bg-emerald-50 py-0.5 sm:py-1 px-2 sm:px-3 rounded-full inline-block border border-emerald-100">
+            R0.00 Due Today
+          </p>
+        </div>
+
+        {/* Feature List */}
+        <div className="bg-slate-50/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-100 mb-4 sm:mb-6 z-10">
+          <p className="text-[9px] sm:text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3 sm:mb-4">Future Premium Access Includes:</p>
+          <ul className="space-y-2.5 sm:space-y-3.5">
+            <li className="flex items-start gap-2 sm:gap-3">
+              <i className="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-xs sm:text-sm"></i>
+              <span className="text-xs sm:text-sm font-medium text-slate-600">Completely <span className="text-gray-900 font-bold">Ad-Free Experience</span></span>
+            </li>
+            <li className="flex items-start gap-2 sm:gap-3">
+              <i className="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-xs sm:text-sm"></i>
+              <span className="text-xs sm:text-sm font-medium text-slate-600">Convert PDF to <span className="text-gray-900 font-bold">Word, Excel, & PPT</span></span>
+            </li>
+            <li className="flex items-start gap-2 sm:gap-3">
+              <i className="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-xs sm:text-sm"></i>
+              <span className="text-xs sm:text-sm font-medium text-slate-600">Secure <span className="text-gray-900 font-bold">Cloud Data Storage</span></span>
+            </li>
+            <li className="flex items-start gap-2 sm:gap-3">
+              <i className="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-xs sm:text-sm"></i>
+              <span className="text-xs sm:text-sm font-medium text-slate-600">Exclusive <span className="text-gray-900 font-bold">Premium Resume Templates</span></span>
+            </li>
+            <li className="flex items-start gap-2 sm:gap-3">
+              <i className="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-xs sm:text-sm"></i>
+              <span className="text-xs sm:text-sm font-medium text-slate-600"><span className="text-gray-900 font-bold">Smart ATS Score Checker</span> & tracking</span>
+            </li>
+            <li className="flex items-start gap-2 sm:gap-3">
+              <i className="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-xs sm:text-sm"></i>
+              <span className="text-xs sm:text-sm font-medium text-slate-600">AI-Powered <span className="text-gray-900 font-bold">Advanced Career Suggestions</span></span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Action Button */}
+        <button onClick={closeOverlay} className="relative w-full h-11 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white text-xs sm:text-sm font-black shadow-[0_10px_30px_-10px_rgba(245,158,11,0.5)] hover:shadow-[0_10px_30px_-5px_rgba(245,158,11,0.7)] transition-all duration-500 transform hover:-translate-y-1 z-10 overflow-hidden group bg-[length:200%_auto] hover:bg-right shrink-0">
+          <span className="relative z-10 flex items-center justify-center gap-2">
+            Continue for Free <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+          </span>
+        </button>
+        
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

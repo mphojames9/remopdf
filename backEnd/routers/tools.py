@@ -23,26 +23,50 @@ async def merge_pdfs(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=400, detail="At least two PDFs are required to merge.")
 
     try:
-        merged_pdf = fitz.open()
+        loaded_docs = []
+        
+        # STEP 1: Pre-check all documents for passwords
         for file in files:
             file_bytes = await file.read()
             doc = fitz.open(stream=file_bytes, filetype="pdf")
+            
+            # Check for password protection immediately
+            if doc.is_encrypted and not doc.authenticate(""):
+                # Clean up the current doc
+                doc.close()
+                # Clean up any previously opened docs to prevent memory leaks
+                for previously_opened_doc in loaded_docs:
+                    previously_opened_doc.close()
+                
+                # Abort right here and tell the frontend which file is locked
+                raise HTTPException(status_code=403, detail=f"ENCRYPTED:{file.filename}")
+            
+            # If safe, store the opened document in our temporary list
+            loaded_docs.append(doc)
+
+        # STEP 2: If we reach this line, NO files are encrypted. Proceed to merge.
+        merged_pdf = fitz.open()
+        for doc in loaded_docs:
             merged_pdf.insert_pdf(doc)
-            doc.close()
+            doc.close() # Free up memory as we merge
 
         output = io.BytesIO()
         merged_pdf.save(output, garbage=4, deflate=True)
         merged_pdf.close()
         output.seek(0)
 
+        # Return the successful response stream
         return StreamingResponse(
             output,
             media_type="application/pdf",
             headers={"Content-Disposition": "attachment; filename=RemoPDF_Merged.pdf"}
         )
+        
+    except HTTPException:
+        raise  # Re-raise our custom 403 or 400 safely
     except Exception as e:
+        print(f"Merge Error: {str(e)}") # Log to terminal for debugging
         raise HTTPException(status_code=500, detail=f"Internal Processing Error: {str(e)}")
-
 
 @router.post("/split")
 async def split_pdf(file: UploadFile = File(...)):
