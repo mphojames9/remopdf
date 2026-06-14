@@ -80,9 +80,6 @@ export default function Home() {
   const [isPdfToPptModalOpen, setIsPdfToPptModalOpen] = useState(false);
   const [pdfToPptFiles, setPdfToPptFiles] = useState([]);
   const [pptProtectedError, setPptProtectedError] = useState(null); // Stores the encrypted filename
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDesktopToolsOpen, setIsDesktopToolsOpen] = useState(false);
-  const dropdownRef = useRef(null);
   const [isProtectDragActive, setIsProtectDragActive] = useState(false);
   const [isExcelDragActive, setIsExcelDragActive] = useState(false);
   const [isWordDragActive, setIsWordDragActive] = useState(false);
@@ -90,6 +87,35 @@ export default function Home() {
   const [isRemovePagesDragActive, setIsRemovePagesDragActive] = useState(false);
   const [isPdfToImgDragActive, setIsPdfToImgDragActive] = useState(false);
   const [isImageDragActive, setIsImageDragActive] = useState(false);
+
+  // Listen for tool clicks from the Navbar
+  useEffect(() => {
+    const handleOpenModal = (e) => {
+      const toolId = e.detail;
+      if (toolId === 'merge') setIsMergeModalOpen(true);
+      else if (toolId === 'split') setIsSplitModalOpen(true);
+      else if (toolId === 'compress') setIsCompressModalOpen(true);
+      else if (toolId === 'pdfToWord') setIsPdfToWordModalOpen(true);
+      // Note: isWordToPdfModalOpen & isSignModalOpen are missing from your Home states, 
+      // add them to your Home states if you need them to function.
+      else if (toolId === 'protect') setIsProtectModalOpen(true);
+      else if (toolId === 'unlock') setIsUnlockModalOpen(true);
+      else if (toolId === 'changePwd') setIsChangePwdModalOpen(true);
+      else if (toolId === 'pdfToExcel') setIsPdfToExcelModalOpen(true);
+      else if (toolId === 'pdfToImg') setIsPdfToImgModalOpen(true);
+      else if (toolId === 'imageToPdf') setIsImageModalOpen(true);
+      else if (toolId === 'pdfToPpt') setIsPdfToPptModalOpen(true);
+      else if (toolId === 'pricing') setIsPricingModalOpen(true);
+    };
+
+    window.addEventListener('openToolModal', handleOpenModal);
+    return () => window.removeEventListener('openToolModal', handleOpenModal);
+  }, []);
+
+  // Word to PDF States
+  const [isWordToPdfModalOpen, setIsWordToPdfModalOpen] = useState(false);
+  const [wordToPdfFiles, setWordToPdfFiles] = useState([]);
+  const [isWordToPdfDragActive, setIsWordToPdfDragActive] = useState(false);
 
   // Comprehensive list of document tools
 const documentTools = [
@@ -150,19 +176,7 @@ const documentTools = [
     action: () => setIsPdfToPptModalOpen(true)
   }
 ];
-
-  // Close desktop dropdown when clicking outside (crucial for touch devices)
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDesktopToolsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
   
-
   const handleSplit = async () => {
     if (!splitFile) return;
     setIsProcessing(true);
@@ -526,183 +540,8 @@ const handlePdfToPpt = async () => {
     
   };
 
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      // Calculate scroll progress from 0 to 1 over the first 80 pixels of scrolling
-      // Once you scroll past 80px, it locks at exactly 1.
-      const currentScroll = window.scrollY;
-      const progress = Math.min(currentScroll / 80, 1);
-      setScrollProgress(progress);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    // Trigger once on mount in case the page is reloaded while already scrolled down
-    handleScroll(); 
-    
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Apply a subtle cubic "ease-out" curve so the morphing feels buttery and premium
-  const easeProgress = 1 - Math.pow(1 - scrollProgress, 3);
-
   return (
     <div className="app-container">
-      <nav 
-  style={{
-    // Morph from 72px (top-18) to 0px
-    top: `${72 * (1 - easeProgress)}px`, 
-    
-    // Morph side margins from 24px to 0px 
-    // (Using clamp ensures it looks great on both mobile and desktop)
-    left: `calc(clamp(16px, 3vw, 40px) * ${1 - easeProgress})`,
-    right: `calc(clamp(16px, 3vw, 40px) * ${1 - easeProgress})`,
-    
-    // Morph from rounded-2xl (16px) to sharp corners (0px)
-    borderRadius: `${16 * (1 - easeProgress)}px`,
-  }}
-  // Adjusted py-3 md:py-4 down to py-2 md:py-2.5 to reduce height
-  className="fixed z-50 bg-white/85 backdrop-blur-md border border-gray-100 font-sans tracking-wide shadow-[0_4px_30px_rgba(0,0,0,0.03)] py-1 md:py-1.5 px-6 md:px-12"
->
-      
-      {/* Container: Responsive padding down to 330px */}
-      <div className="flex justify-between items-center px-4 py-3 sm:px-8 sm:py-4 max-w-7xl mx-auto">
-        
-        {/* Brand */}
-        <div className="nav-brand text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2 z-50 relative">
-          <i className="fa-solid fa-file-pdf text-red-500 drop-shadow-sm"></i>
-                <div className="nav-logo">
-                  <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontWeight: '700', fontSize: '1.25rem', color: 'var(--text, #121525)' }}>
-                      Remo<span style={{ color: 'var(--brand, #ff2d2d)' }}>PDF</span>
-                    </span>
-                  </Link>
-                </div>
-        </div>
-
-        {/* Desktop Links */}
-        <div className="nav-links hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
-          
-          {/* Touch-Friendly Animated Dropdown */}
-          <div 
-            className="relative" 
-            ref={dropdownRef}
-            onMouseEnter={() => setIsDesktopToolsOpen(true)}
-            onMouseLeave={() => setIsDesktopToolsOpen(false)}
-          >
-            <button 
-              className={`flex items-center gap-1.5 py-2 transition-colors ${isDesktopToolsOpen ? 'text-red-500' : 'hover:text-gray-900'}`}
-              onClick={() => setIsDesktopToolsOpen(!isDesktopToolsOpen)}
-              aria-expanded={isDesktopToolsOpen}
-            >
-              Tools
-              <svg 
-                className={`w-4 h-4 transition-transform duration-300 ${isDesktopToolsOpen ? '-rotate-180 text-red-500' : 'opacity-70'}`} 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            {/* 2-Column Dropdown Menu */}
-            <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 transition-all duration-300 transform ${isDesktopToolsOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-3'}`}>
-              <div className="bg-white/95 backdrop-blur-xl border border-gray-100 rounded-2xl shadow-xl overflow-hidden p-3">
-                <div className="grid grid-cols-2 gap-1">
-                  {documentTools.map((tool) => (
-                    <button
-  key={tool.name}
-  onClick={() => {
-    tool.action();
-    setIsDesktopToolsOpen(false);
-  }}
-  className="block w-full text-left px-3 py-2.5 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
->
-  {tool.name}
-</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Link 
-  to="/ResumeBuilder" 
-  className="hover:text-gray-900 transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-px after:bg-gray-900 after:transition-all hover:after:w-full"
->
-  Resume Builder
-</Link>
-          
-          {/* Unique "Ripple Expand" Button for Pricing */}
-          <button onClick={() => setIsPricingModalOpen(true)} className="relative inline-flex items-center justify-center px-6 py-2 overflow-hidden font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full hover:border-amber-400 transition-all duration-300 group shadow-sm hover:shadow-md">
-            <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-gradient-to-r from-amber-400 to-orange-400 rounded-full group-hover:w-56 group-hover:h-56 opacity-15"></span>
-            <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-amber-200"></span>
-            <span className="relative tracking-wider text-xs uppercase">Pricing</span>
-          </button>
-        </div>
-
-        {/* Mobile Menu Toggle */}
-        <button 
-          className="md:hidden relative z-50 p-2 text-gray-600 hover:text-gray-900 transition-colors"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label="Toggle Menu"
-        >
-          <div className="w-5 h-4 flex flex-col justify-between">
-            <span className={`block h-[2px] w-full bg-current transform transition duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-[7px]' : ''}`} />
-            <span className={`block h-[2px] w-full bg-current transition duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
-            <span className={`block h-[2px] w-full bg-current transform transition duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-[7px]' : ''}`} />
-          </div>
-        </button>
-      </div>
-
-      {/* Mobile Menu Dropdown */}
-      <div className={`md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl overflow-y-auto transition-all duration-300 ease-in-out ${isMobileMenuOpen ? 'max-h-[70vh] opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="flex flex-col px-4 py-4 space-y-4">
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Document Tools</p>
-            <div className="grid grid-cols-2 gap-2">
-              {documentTools.map((tool) => (
-                <button
-                  key={tool.name}
-                  onClick={() => {
-                    tool.action();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="block w-full text-left px-2 py-2 text-sm font-medium text-gray-600 hover:text-red-500 bg-gray-50 rounded-md"
-                >
-                  {tool.name}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div className="h-px bg-gray-100 w-full"></div>
-          <a href="#resume-section" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">Resume Builder</a>
-          <button onClick={() => { setIsMobileMenuOpen(false); setIsPricingModalOpen(true); }} className="w-full text-left block px-2 py-2 text-sm font-bold text-amber-600 hover:text-amber-700">Pricing</button>
-
-          {/* New About / Legal Section */}
-          <div className="h-px bg-gray-100 w-full"></div>
-          <div className="space-y-1 pb-2">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2 mb-2">Company & Legal</p>
-            <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">About Us</a>
-            <Link 
-  to="/PrivacyPolicy" 
-  onClick={() => setIsMobileMenuOpen(false)} 
-  className="block px-2 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
->
-  Privacy Policy
-</Link>
-            <a href="#terms" onClick={() => setIsMobileMenuOpen(false)} className="block px-2 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">T&S</a>
-          </div>
-
-        </div>
-      </div>
-
-    </nav>
-
 {/* Hero Section Container */}
       <header className="relative min-h-[90vh] flex flex-col justify-center items-center text-center pt-32 pb-20 overflow-hidden bg-slate-50 px-4">
         
@@ -759,22 +598,23 @@ const handlePdfToPpt = async () => {
             </button>
 
             {/* Requested "Build Resume" Button with Arrow Animation */}
-            <button 
-              className="w-full sm:w-auto px-8 py-4 bg-white/70 backdrop-blur-md text-gray-900 font-bold rounded-full border border-gray-200 shadow-sm hover:shadow-lg hover:border-orange-300 transition-all duration-300 transform hover:-translate-y-1 group flex items-center justify-center gap-3"
-              style={{ fontFamily: 'var(--Project-Font, "Outfit", Metropolis, sans-serif)' }}
-            >
-              <span>Build Resume</span>
-              {/* Arrow that slides to the right on hover */}
-              <svg 
-                className="w-5 h-5 text-orange-500 transform group-hover:translate-x-1.5 transition-transform duration-300" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24" 
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-              </svg>
-            </button>
+            <Link 
+  to="/ResumeBuilder"
+  className="w-full sm:w-auto px-8 py-4 bg-white/70 backdrop-blur-md text-gray-900 font-bold rounded-full border border-gray-200 shadow-sm hover:shadow-lg hover:border-orange-300 transition-all duration-300 transform hover:-translate-y-1 group flex items-center justify-center gap-3"
+  style={{ fontFamily: 'var(--Project-Font, "Outfit", Metropolis, sans-serif)' }}
+>
+  <span>Build Resume</span>
+  {/* Arrow that slides to the right on hover */}
+  <svg 
+    className="w-5 h-5 text-orange-500 transform group-hover:translate-x-1.5 transition-transform duration-300" 
+    fill="none" 
+    stroke="currentColor" 
+    viewBox="0 0 24 24" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+  </svg>
+</Link>
 
           </div>
         </div>

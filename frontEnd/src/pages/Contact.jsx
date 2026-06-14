@@ -16,7 +16,7 @@ const SUBJECT_OPTIONS = [
 
 const NAV_LINKS = [
   { label: 'About Us', path: '/about' },
-  { label: 'Privacy', path: '/PrivacyPolicy' },
+  { label: 'Trust Center', path: '/PrivacyPolicy' },
   { label: 'T&C', path: '/terms-of-use' }
 ];
 
@@ -133,15 +133,9 @@ export default function Contact() {
       >
         <div className="nav-logo shrink-0 relative z-50">
           <Link to="/" className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg">
-            <img 
-              src="/images/tittleIcon.png" 
-              alt="RemoPDF" 
-              className="w-7 h-7 lg:w-9 lg:h-9 object-contain" 
-              onError={(e) => { e.target.style.display = 'none'; }} 
-            />
-            <span className="font-medium text-[1.1rem] lg:text-xl text-slate-900 tracking-tight">
-              Remo<span className="text-[#ff2d2d] font-normal">PDF</span>
-            </span>
+            <span className="font-black text-[1.25rem] text-slate-800 tracking-tight">
+                Remo<span className="text-red-600">PDF</span>
+              </span>
           </Link>
         </div>
   

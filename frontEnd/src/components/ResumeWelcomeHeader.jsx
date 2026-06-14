@@ -1,5 +1,6 @@
 import React from 'react';
 import officeImage from '../assets/office.png';
+import { Link } from 'react-router-dom';
 
 const ExecutiveFeatureSection = ({ onNavigate }) => {
   return (
@@ -50,24 +51,26 @@ const ExecutiveFeatureSection = ({ onNavigate }) => {
 
           {/* Premium Call-to-Action Interactive Element */}
           <div className="flex flex-col items-center lg:items-start gap-3 w-full sm:w-auto">
-            <button 
-              onClick={onNavigate} 
-              className="relative w-full sm:w-auto h-13 sm:h-14 px-10 rounded-full bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white text-sm font-semibold shadow-[0_15px_35px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-5px_rgba(15,23,42,0.4)] hover:-translate-y-0.5 transition-all duration-400 overflow-hidden group"
-            >
-              {/* Shimmering highlight lines inside button */}
-              <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 -translate-x-full group-hover:animate-[shimmer_1s_ease-out]"></div>
-              
-              <span className="relative z-10 flex items-center justify-center gap-2.5">
-                Begin Transformation 
-                <i className="fa-solid fa-arrow-right-long text-amber-400 group-hover:translate-x-1.5 transition-transform duration-300"></i>
-              </span>
-            </button>
-            
-            {/* Subtle disclaimer alignment */}
-            <span className="text-[10px] font-medium tracking-wide text-slate-400 mt-1">
-              Polished results in under 5 minutes
-            </span>
-          </div>
+  <Link 
+    to="/ResumeBuilder" 
+    onClick={onNavigate} 
+    className="relative w-full sm:w-auto h-12 sm:h-14 px-10 rounded-full bg-slate-900 text-white text-sm font-semibold shadow-[0_15px_35px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-5px_rgba(15,23,42,0.4)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group flex items-center justify-center"
+  >
+    {/* Shimmering highlight effect */}
+    <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] skew-x-[-20deg]"></div>
+    
+    <span className="relative z-10 flex items-center justify-center gap-2.5 whitespace-nowrap">
+      Begin Transformation 
+      <i className="fa-solid fa-arrow-right-long text-amber-400 group-hover:translate-x-1.5 transition-transform duration-300"></i>
+    </span>
+  </Link>
+  
+  <span className="text-[10px] font-medium tracking-wide text-slate-400">
+    Polished results in under 5 minutes
+  </span>
+</div>
+
+
 
         </div>
 

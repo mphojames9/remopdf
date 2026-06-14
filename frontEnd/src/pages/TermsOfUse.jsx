@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 
 const NAV_LINKS = [
   { label: 'About Us', path: '/about' },
-  { label: 'Privacy', path: '/PrivacyPolicy' },
-  { label: 'T&C', path: '/terms-of-use' }
+  { label: 'Trust Center', path: '/PrivacyPolicy' },
+  { label: 'Contact Support', path: '/contact' }
 ];
 
 export default function Terms() {

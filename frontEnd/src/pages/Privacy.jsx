@@ -96,39 +96,55 @@ export default function TrustCenter() {
       >
         <div className="nav-logo shrink-0 relative z-[70]">
           <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg">
-            <img 
-              src="/images/tittleIcon.png" 
-              alt="RemoPDF" 
-              className="w-7 h-7 lg:w-9 lg:h-9 object-contain" 
-              onError={(e) => { e.target.style.display = 'none'; }} 
-            />
-            <span className="font-medium text-[1.1rem] lg:text-xl text-slate-900 tracking-tight">
-              Remo<span className="text-[#ff2d2d] font-normal">PDF</span>
-            </span>
+            <span className="font-black text-[1.25rem] text-slate-800 tracking-tight">
+                Remo<span className="text-red-600">PDF</span>
+              </span>
           </Link>
         </div>
   
         {/* Desktop Links */}
         <div className="hidden lg:flex items-center gap-10">
-          {['About Us', 'Trust Center', 'Contact'].map((item, idx) => (
-            <Link 
-              key={idx}
-              to={`/${item.replace(/\s+/g, '').toLowerCase()}`} 
-              className={`text-[0.95rem] font-medium tracking-wide transition-colors duration-200 ${item === 'Trust Center' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-900'}`}
-            >
-              {item}
-            </Link>
-          ))}
-        </div>
+  {[
+    { name: 'About Us', path: '/about' },
+    { name: 'Contact', path: '/contact' },
+    { name: 'T&C', path: '/terms-of-use' }
+  ].map((item) => (
+    <Link 
+      key={item.name}
+      to={item.path}
+      className="text-[0.95rem] font-medium text-slate-500 hover:text-slate-900 tracking-wide transition-colors duration-200"
+    >
+      {item.name}
+    </Link>
+  ))}
+</div>
   
         <div className="flex items-center gap-3 shrink-0 relative z-[70]">
-          {/* Premium Contact Us Button (Hidden on Mobile) */}
-          <Link 
-            to="/contact" 
-            className="hidden lg:flex group relative items-center gap-2 px-5 lg:px-6 py-2 lg:py-2.5 rounded-full bg-gradient-to-tr from-slate-900 via-slate-800 to-slate-950 text-white text-[12px] lg:text-sm font-medium tracking-wide shadow-[0_4px_15px_rgba(0,0,0,0.1)] border border-slate-700/80 hover:shadow-[0_6px_20px_rgba(249,115,22,0.15)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
+          {/* Premium Hamburger Toggle (Bold & Equal Lines) */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden relative w-11 h-11 flex items-center justify-center bg-slate-50/80 border border-slate-200/80 backdrop-blur-md rounded-full shadow-sm hover:bg-slate-100 transition-colors"
+            aria-label="Toggle Navigation"
           >
-            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 ease-in-out" />
-            <span className="relative z-10">Contact Us</span>
+            <div className="flex flex-col gap-[5px] items-center justify-center w-5">
+              <span className={`h-[2.5px] bg-slate-900 rounded-full transition-all duration-300 origin-center ${isMobileMenuOpen ? 'w-5 translate-y-[7.5px] rotate-45' : 'w-5'}`} />
+              <span className={`h-[2.5px] bg-slate-900 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0 scale-x-0' : 'w-5 opacity-100 scale-x-100'}`} />
+              <span className={`h-[2.5px] bg-slate-900 rounded-full transition-all duration-300 origin-center ${isMobileMenuOpen ? 'w-5 -translate-y-[7.5px] -rotate-45' : 'w-5'}`} />
+            </div>
+          </button>
+        </div>
+
+                <div className="flex items-center gap-3 shrink-0 relative z-[70]">
+          {/* Premium Contact Us Button (Hidden on Mobile) */}
+            <Link 
+            to="/ResumeBuilder"
+            className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(249,115,22,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(249,115,22,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
+          >
+            <div className="absolute inset-0 z-[-1] bg-gradient-to-r from-red-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute top-0 left-0 w-full h-full -translate-x-full group-hover:translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 transition-transform duration-1000 ease-in-out z-[-1]" />
+            <div className="absolute inset-0 rounded-full border border-white/20 mix-blend-overlay"></div>
+            <span className="relative z-10 drop-shadow-sm">Build Resume</span>
+            <i className="fa-solid fa-wand-magic-sparkles text-[12px] relative z-10 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 drop-shadow-sm"></i>
           </Link>
 
           {/* Premium Hamburger Toggle (Bold & Equal Lines) */}
@@ -199,11 +215,14 @@ export default function TrustCenter() {
           </div>
 
           <Link 
-            to="/contact" 
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="group relative flex items-center justify-center w-full px-6 py-4 rounded-full bg-gradient-to-tr from-slate-900 via-slate-800 to-slate-950 text-white text-[15px] font-medium tracking-wide shadow-xl shadow-slate-900/10 border border-slate-700/80 active:scale-[0.98] transition-all"
+            to="/ResumeBuilder" onClick={() => setIsMobileMenuOpen(false)}
+            className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(249,115,22,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(249,115,22,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
           >
-            Contact Us
+            <div className="absolute inset-0 z-[-1] bg-gradient-to-r from-red-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute top-0 left-0 w-full h-full -translate-x-full group-hover:translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 transition-transform duration-1000 ease-in-out z-[-1]" />
+            <div className="absolute inset-0 rounded-full border border-white/20 mix-blend-overlay"></div>
+            <span className="relative z-10 drop-shadow-sm">Build Resume</span>
+            <i className="fa-solid fa-wand-magic-sparkles text-[12px] relative z-10 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 drop-shadow-sm"></i>
           </Link>
         </div>
       </div>

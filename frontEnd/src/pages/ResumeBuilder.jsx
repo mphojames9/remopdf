@@ -490,8 +490,9 @@ const handleGalleryScroll = (e) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
           </div>
-          <span className="hidden sm:block">Remo<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-400">PDF</span></span>
-          <span className="sm:hidden text-orange-500 font-black">R</span>
+          <span className="font-black text-[1.25rem] text-slate-800 tracking-tight">
+                Remo<span className="text-red-600">PDF</span>
+              </span>
         </a>
 
 {/* 2. Desktop Center Dock (Hidden on Mobile) */}
