@@ -575,4 +575,5 @@ html, body, #root, .app-container {
   .tools-grid article:nth-child(10) { top: 215px; z-index: 19; }
   .tools-grid article:nth-child(11) { top: 230px; z-index: 20; }
   .tools-grid article:nth-child(12) { top: 245px; z-index: 21; }
+  .tools-grid article:nth-child(13) { top: 260px; z-index: 22; }
 }

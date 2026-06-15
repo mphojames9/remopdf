@@ -72,10 +72,19 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Lock scroll when mobile menu is active
+  // Lock scroll & contain overscroll when mobile menu is active
   useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : 'unset';
-    return () => { document.body.style.overflow = 'unset'; };
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'contain';
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.overscrollBehavior = 'unset';
+    }
+    return () => { 
+      document.body.style.overflow = 'unset'; 
+      document.body.style.overscrollBehavior = 'unset';
+    };
   }, [isMobileMenuOpen]);
 
   // Dispatches actions straight to Home.jsx custom triggers
@@ -107,7 +116,7 @@ export default function Navbar() {
       {/* --- DESKTOP HEADER BAR --- */}
       <nav 
         ref={navRef}
-        className={`fixed top-0 inset-x-0 py-3.5 px-4 lg:px-8 xl:px-12 bg-white/90 backdrop-blur-2xl border-b border-slate-200/70 shadow-[0_4px_30px_rgba(0,0,0,0.04)] z-[999] transition-all duration-500 ease-out ${
+        className={`fixed top-0 inset-x-0 py-3.5 px-4 lg:px-8 xl:px-12 bg-white/90 backdrop-blur-2xl border-b border-slate-200/70 shadow-[0_4px_30px_rgba(0,0,0,0.04)] z-40 transition-all duration-500 ease-out ${
           isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
@@ -256,7 +265,7 @@ export default function Navbar() {
 
       {/* --- PREMIUM MOBILE FULL-SCREEN DRAWER OVERLAY (OUTSIDE NAV TO FIX VIEWPORT BUG) --- */}
       <div 
-        className={`lg:hidden fixed inset-0 bg-white/98 backdrop-blur-3xl pt-20 sm:pt-24 px-4 overflow-y-auto transition-all duration-500 ease-in-out z-[998] ${
+        className={`lg:hidden fixed inset-0 bg-white/98 backdrop-blur-3xl pt-20 sm:pt-24 px-4 overflow-y-auto overscroll-contain transition-all duration-500 ease-in-out z-[39] ${
           isMobileMenuOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-4 invisible'
         }`}
       >

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import profile from '../assets/profile.png'
 
 // Structural Core Constants
 const NAV_LINKS = [
@@ -97,9 +98,19 @@ export default function About() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY, isMobileMenuOpen]);
 
+// Bulletproof mobile scroll lock
   useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : 'unset';
-    return () => { document.body.style.overflow = 'unset'; };
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'contain';
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.overscrollBehavior = 'unset';
+    }
+    return () => { 
+      document.body.style.overflow = 'unset'; 
+      document.body.style.overscrollBehavior = 'unset';
+    };
   }, [isMobileMenuOpen]);
 
   useEffect(() => {
@@ -238,7 +249,7 @@ export default function About() {
             <div className="w-36 h-36 lg:w-44 lg:h-44 shrink-0 relative">
               <div className="absolute inset-0 bg-gradient-to-tr from-orange-500 to-red-500 rounded-[2.5rem] rotate-6 opacity-15 animate-pulse"></div>
               <img 
-                src="/assets/profile.png" 
+               src={profile}
                 alt="Mpho James Matli" 
                 className="w-full h-full object-cover rounded-[2.5rem] border-4 border-white shadow-xl relative z-10"
               />
@@ -411,20 +422,6 @@ export default function About() {
         </section>
 
       </main>
-
-      {/* Modern Technical Footer Component Layout */}
-      <footer className="w-full bg-white border-t border-slate-200/60 py-6 px-4 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-400 shrink-0">
-        <div>
-          &copy; {new Date().getFullYear()} RemoPDF. All Rights Reserved.
-        </div>
-        <div className="flex items-center gap-6">
-          {NAV_LINKS.map((link, idx) => (
-            <Link key={idx} to={link.path} className="hover:text-slate-800 transition-colors">
-              {link.label}
-            </Link>
-          ))}
-        </div>
-      </footer>
     </div>
   );
 }

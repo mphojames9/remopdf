@@ -38,9 +38,19 @@ export default function Terms() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY, isMobileMenuOpen]);
 
+// Bulletproof mobile scroll lock
   useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : 'unset';
-    return () => { document.body.style.overflow = 'unset'; };
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'contain';
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.overscrollBehavior = 'unset';
+    }
+    return () => { 
+      document.body.style.overflow = 'unset'; 
+      document.body.style.overscrollBehavior = 'unset';
+    };
   }, [isMobileMenuOpen]);
 
   useEffect(() => {
@@ -101,7 +111,7 @@ export default function Terms() {
   
         <div className="flex items-center gap-4 shrink-0 relative z-50">
           <Link 
-            to="/resume-builder" 
+            to="/ResumeBuilder" 
             className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(249,115,22,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(249,115,22,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
           >
             <div className="absolute inset-0 z-[-1] bg-gradient-to-r from-red-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -124,12 +134,14 @@ export default function Terms() {
         </div>
       </nav>
 
-      {/* Mobile Menu Drawer Overlay */}
-      <div 
-        className={`fixed inset-0 z-50 lg:hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-      >
+{/* Drawer Overlay for Mobile Interfaces */}
+<div 
+  className={`fixed inset-0 z-50 lg:hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+    isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+  }`}
+>
+  {/* Add touch-none here */}
+  <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-sm transition-opacity duration-500 touch-none" onClick={() => setIsMobileMenuOpen(false)} />
         <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-sm transition-opacity duration-500" onClick={() => setIsMobileMenuOpen(false)} />
         <div className={`absolute top-0 right-0 w-full max-w-[310px] h-full bg-white/95 backdrop-blur-3xl shadow-[-25px_0_50px_-15px_rgba(15,23,42,0.06)] border-l border-slate-200/60 p-6 flex flex-col justify-between transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="flex flex-col pt-16">

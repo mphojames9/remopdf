@@ -54,14 +54,19 @@ export default function Contact() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY, isMobileMenuOpen]);
 
-  // Lock body scroll when mobile menu drawer is fully open
+// Bulletproof mobile scroll lock
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'contain';
     } else {
       document.body.style.overflow = 'unset';
+      document.body.style.overscrollBehavior = 'unset';
     }
-    return () => { document.body.style.overflow = 'unset'; };
+    return () => { 
+      document.body.style.overflow = 'unset'; 
+      document.body.style.overscrollBehavior = 'unset';
+    };
   }, [isMobileMenuOpen]);
 
   // Handle clicking outside the custom form dropdown to close it
@@ -186,11 +191,14 @@ export default function Contact() {
       </nav>
 
       {/* --- Premium Mobile Menu Drawer Overlay --- */}
-      <div 
-        className={`fixed inset-0 z-50 lg:hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-      >
+{/* Drawer Overlay for Mobile Interfaces */}
+<div 
+  className={`fixed inset-0 z-50 lg:hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+    isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+  }`}
+>
+  {/* Add touch-none here */}
+  <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-sm transition-opacity duration-500 touch-none" onClick={() => setIsMobileMenuOpen(false)} />
         <div 
           className="absolute inset-0 bg-slate-900/15 backdrop-blur-sm transition-opacity duration-500"
           onClick={() => setIsMobileMenuOpen(false)}

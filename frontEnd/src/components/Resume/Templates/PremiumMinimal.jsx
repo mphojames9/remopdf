@@ -93,10 +93,40 @@ export default function PremiumMinimal({
           </div>
         )}
 
-        {/* Skills Heading Node */}
+{/* Skills Heading Node */}
         {validSkills.length > 0 && (
           <h2 className="text-sm font-bold tracking-widest text-slate-900 uppercase border-b border-slate-300 pb-1 mt-2">Expertise</h2>
         )}
+        {validSkills.map((skill, index) => {
+          // Extract the name robustly (handles plain strings or objects)
+          const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
+          
+          // Extract the level, defaulting to 3 (60%) if missing
+          const level = typeof skill === 'string' ? 3 : (skill.level || 3);
+          
+          // Calculate width to accommodate both 1-5 numerical scale and legacy text strings
+          let barWidth = 100;
+          if (typeof level === 'number' || !isNaN(Number(level))) {
+            barWidth = (Number(level) / 5) * 100;
+          } else {
+            barWidth = level === 'Beginner' ? 30 : level === 'Intermediate' ? 60 : level === 'Advanced' ? 85 : 100;
+          }
+
+          return (
+            <div key={`skill-${index}`} className="flex flex-col gap-1 -mt-2">
+              <div className="flex justify-between text-[13px] font-medium text-slate-700">
+                <span>{name}</span>
+              </div>
+              <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                <div 
+                  className="bg-slate-600 h-full rounded-full" 
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+        
         {validSkills.map((skill, index) => (
           <div key={`skill-${index}`} className="flex flex-col gap-1 -mt-2">
             <div className="flex justify-between text-[13px] font-medium text-slate-700">

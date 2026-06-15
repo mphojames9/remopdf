@@ -55,14 +55,19 @@ export default function TrustCenter() {
     window.scrollTo(0, 0);
   }, []);
 
-  // Lock body scroll when mobile menu is open
+// Bulletproof mobile scroll lock
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'contain';
     } else {
       document.body.style.overflow = 'unset';
+      document.body.style.overscrollBehavior = 'unset';
     }
-    return () => { document.body.style.overflow = 'unset'; };
+    return () => { 
+      document.body.style.overflow = 'unset'; 
+      document.body.style.overscrollBehavior = 'unset';
+    };
   }, [isMobileMenuOpen]);
 
   const scrollToSection = (id) => {
@@ -118,21 +123,6 @@ export default function TrustCenter() {
     </Link>
   ))}
 </div>
-  
-        <div className="flex items-center gap-3 shrink-0 relative z-[70]">
-          {/* Premium Hamburger Toggle (Bold & Equal Lines) */}
-          <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden relative w-11 h-11 flex items-center justify-center bg-slate-50/80 border border-slate-200/80 backdrop-blur-md rounded-full shadow-sm hover:bg-slate-100 transition-colors"
-            aria-label="Toggle Navigation"
-          >
-            <div className="flex flex-col gap-[5px] items-center justify-center w-5">
-              <span className={`h-[2.5px] bg-slate-900 rounded-full transition-all duration-300 origin-center ${isMobileMenuOpen ? 'w-5 translate-y-[7.5px] rotate-45' : 'w-5'}`} />
-              <span className={`h-[2.5px] bg-slate-900 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0 scale-x-0' : 'w-5 opacity-100 scale-x-100'}`} />
-              <span className={`h-[2.5px] bg-slate-900 rounded-full transition-all duration-300 origin-center ${isMobileMenuOpen ? 'w-5 -translate-y-[7.5px] -rotate-45' : 'w-5'}`} />
-            </div>
-          </button>
-        </div>
 
                 <div className="flex items-center gap-3 shrink-0 relative z-[70]">
           {/* Premium Contact Us Button (Hidden on Mobile) */}
@@ -162,35 +152,41 @@ export default function TrustCenter() {
         </div>
       </nav>
 
-      {/* --- Mobile Menu Backdrop --- */}
-      <div 
-        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] lg:hidden transition-opacity duration-500 ${
-          isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setIsMobileMenuOpen(false)}
-      />
+{/* --- Mobile Menu Backdrop --- */}
+<div 
+  className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] lg:hidden transition-opacity duration-500 touch-none ${
+    isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+  }`}
+  onClick={() => setIsMobileMenuOpen(false)}
+/>
 
-      {/* --- Premium Top Dropdown Mobile Menu --- */}
-      <div 
-        className={`fixed top-0 left-0 w-full bg-white/95 backdrop-blur-3xl border-b border-slate-200/80 shadow-[0_20px_40px_rgba(0,0,0,0.08)] z-[65] lg:hidden flex flex-col transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] rounded-b-[2rem] overflow-hidden ${
-          isMobileMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
-        }`}
-      >
-        <div className="flex flex-col pt-24 px-6 pb-8 max-h-[85vh] overflow-y-auto">
+{/* --- Premium Top Dropdown Mobile Menu --- */}
+<div 
+  className={`fixed top-0 left-0 w-full bg-white/95 backdrop-blur-3xl border-b border-slate-200/80 shadow-[0_20px_40px_rgba(0,0,0,0.08)] z-[65] lg:hidden flex flex-col transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] rounded-b-[2rem] overflow-hidden ${
+    isMobileMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
+  }`}
+>
+  {/* Update this inner div */}
+  <div className="flex flex-col pt-24 px-6 pb-8 max-h-[85vh] overflow-y-auto overscroll-contain">
           
           {/* Primary Nav Links */}
-          <div className="flex flex-col gap-5 border-b border-slate-100 pb-6 mb-6">
-            {['About Us', 'Trust Center', 'Contact'].map((item, idx) => (
-              <Link 
-                key={idx}
-                to={`/${item.replace(/\s+/g, '').toLowerCase()}`} 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`text-[1.35rem] font-medium tracking-wide transition-colors ${item === 'Trust Center' ? 'text-orange-500' : 'text-slate-800 hover:text-orange-500'}`}
-              >
-                {item}
-              </Link>
-            ))}
-          </div>
+          {/* Primary Nav Links */}
+<div className="flex flex-col gap-5 border-b border-slate-100 pb-6 mb-6">
+  {[
+    { name: 'About Us', path: '/about' },
+    { name: 'Trust Center', path: '/trustcenter' },
+    { name: 'Contact', path: '/contact' }
+  ].map((item, idx) => (
+    <Link 
+      key={idx}
+      to={item.path} 
+      onClick={() => setIsMobileMenuOpen(false)}
+      className={`text-[1.35rem] font-medium tracking-wide transition-colors ${item.name === 'Trust Center' ? 'text-orange-500' : 'text-slate-800 hover:text-orange-500'}`}
+    >
+      {item.name}
+    </Link>
+  ))}
+</div>
           
           {/* On-Page Document Sections */}
           <h3 className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-4 px-2">On This Page</h3>
@@ -376,6 +372,26 @@ export default function TrustCenter() {
                 </p>
               </div>
             </section>
+
+<hr className="border-slate-200/80" />
+
+{/* Section 6: User Rights */}
+<section id="user-rights" className="scroll-mt-24 lg:scroll-mt-32">
+  <h2 className="text-xl lg:text-3xl font-medium text-slate-900 mb-4 flex items-center gap-3">
+    <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-sky-50 flex items-center justify-center border border-sky-100 shrink-0">
+      <i className="fa-solid fa-scale-balanced text-[14px] lg:text-[18px] text-sky-500"></i>
+    </div>
+    Your Rights & Data Control
+  </h2>
+  <div className="text-[15px] lg:text-lg text-slate-600 font-normal leading-relaxed space-y-4">
+    <p>
+      Even within a data-minimalist architecture, you retain complete authority over your digital footprint. Because our platform operates on a strict zero-knowledge framework, we do not store, profile, or sell your document information.
+    </p>
+    <p>
+      Since we do not support or maintain user accounts, there are no structural data logs or personal profiles to modify, export, or delete. Your right to be forgotten is executed automatically the moment your session processing concludes. You maintain the absolute right to manage or entirely restrict third-party advertising cookies through your individual browser preferences.
+    </p>
+  </div>
+</section>
 
           </div>
         </div>

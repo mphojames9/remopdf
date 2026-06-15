@@ -93,12 +93,41 @@ export default function PrestigeIvory({
           </div>
         )}
 
-        {/* Skills Heading Node */}
+{/* Skills Heading Node */}
         {validSkills.length > 0 && (
           <h2 className="text-[11px] font-bold tracking-[0.3em] text-neutral-400 uppercase border-b border-neutral-200 pb-2 mt-4">
             Core Skills
           </h2>
         )}
+        {validSkills.map((skill, index) => {
+          // Extract the name robustly (handles plain strings or objects)
+          const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
+          
+          // Extract the level, defaulting to 3 (60%) if missing
+          const level = typeof skill === 'string' ? 3 : (skill.level || 3);
+          
+          // Calculate width to accommodate both 1-5 numerical scale and legacy text strings
+          let barWidth = 100;
+          if (typeof level === 'number' || !isNaN(Number(level))) {
+            barWidth = (Number(level) / 5) * 100;
+          } else {
+            barWidth = level === 'Beginner' ? 30 : level === 'Intermediate' ? 60 : level === 'Advanced' ? 85 : 100;
+          }
+
+          return (
+            <div key={`skill-${index}`} className="flex flex-col gap-1.5 -mt-2">
+              <div className="flex justify-between text-[13px] font-semibold text-neutral-800">
+                <span>{name}</span>
+              </div>
+              <div className="w-full bg-neutral-200 h-[3px] rounded-full overflow-hidden">
+                <div 
+                  className="bg-neutral-800 h-full rounded-full" 
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
         {validSkills.map((skill, index) => (
           <div key={`skill-${index}`} className="flex flex-col gap-1.5 -mt-2">
             <div className="flex justify-between text-[13px] font-semibold text-neutral-800">

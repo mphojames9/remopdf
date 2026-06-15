@@ -683,7 +683,7 @@ const handleGalleryScroll = (e) => {
           </div>
         </div>
 
-        {/* PREVIEW CANVAS */}
+{/* PREVIEW CANVAS */}
         <div 
           ref={previewContainerRef} 
           className="hidden lg:flex flex-1 flex-col items-center p-8 overflow-y-auto custom-dark-scrollbar relative bg-gradient-to-b from-slate-950 via-slate-900 to-black shadow-2xl select-none"
@@ -730,7 +730,8 @@ const handleGalleryScroll = (e) => {
             {/* Soft Ambient Depth Glow behind the paper */}
             <div className="absolute -inset-1 bg-gradient-to-b from-orange-500/5 to-transparent rounded-sm blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
             
-            <div className="relative z-10 bg-white">
+            {/* CHANGED FROM bg-white TO bg-transparent */}
+            <div className="relative z-10 bg-transparent">
               <PaginatedPreview data={resumeData} template={activeTemplate} />
             </div>
           </div>

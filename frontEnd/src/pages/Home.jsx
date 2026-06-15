@@ -6,6 +6,7 @@ import { toast } from '../components/PremiumToast';
 
 
 export default function Home() {
+  
   // Premium Pricing States
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isAnnual, setIsAnnual] = useState(true);
@@ -540,6 +541,31 @@ const handlePdfToPpt = async () => {
     
   };
 
+  // 1. Combine all modal states to check if ANY overlay is active
+  const isAnyModalOpen = isMergeModalOpen || isSplitModalOpen || isCompressModalOpen || 
+    isImageModalOpen || isPdfToImgModalOpen || isRemovePagesModalOpen || 
+    isImgCompressModalOpen || isPdfToWordModalOpen || isPdfToExcelModalOpen || 
+    isProtectModalOpen || isUnlockModalOpen || isChangePwdModalOpen || 
+    isPdfToPptModalOpen || isPricingModalOpen;
+
+  // 2. Lock the body scroll when an overlay is open
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      // Prevents background scrolling (and address bar shifting)
+      document.body.style.overflow = 'hidden';
+      // Optional: Prevent iOS bounce effect
+      document.body.style.touchAction = 'none'; 
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.touchAction = 'auto';
+    }
+    
+    // Cleanup function in case the component unmounts
+    return () => { 
+      document.body.style.overflow = 'unset'; 
+      document.body.style.touchAction = 'auto';
+    };
+  }, [isAnyModalOpen]);
   return (
     <div className="app-container">
 {/* Hero Section Container */}

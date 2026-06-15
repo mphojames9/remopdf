@@ -93,12 +93,41 @@ export default function Visionary2030({
           </div>
         )}
 
-        {/* Skills Heading Node */}
+{/* Skills Heading Node */}
         {validSkills.length > 0 && (
           <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800 pb-2 mt-4">
             Core Expertise
           </h2>
         )}
+        {validSkills.map((skill, index) => {
+          // Extract the name robustly (handles plain strings or objects)
+          const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
+          
+          // Extract the level, defaulting to 3 (60%) if missing
+          const level = typeof skill === 'string' ? 3 : (skill.level || 3);
+          
+          // Calculate width to accommodate both 1-5 numerical scale and legacy text strings
+          let barWidth = 100;
+          if (typeof level === 'number' || !isNaN(Number(level))) {
+            barWidth = (Number(level) / 5) * 100;
+          } else {
+            barWidth = level === 'Beginner' ? 30 : level === 'Intermediate' ? 60 : level === 'Advanced' ? 85 : 100;
+          }
+
+          return (
+            <div key={`skill-${index}`} className="flex flex-col gap-1 -mt-1">
+              <div className="flex justify-between text-[13px] font-medium text-indigo-50">
+                <span>{name}</span>
+              </div>
+              <div className="w-full bg-indigo-900 h-1.5 rounded-full overflow-hidden">
+                <div 
+                  className="bg-cyan-400 h-full rounded-full shadow-[0_0_5px_rgba(34,211,238,0.5)]" 
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
         {validSkills.map((skill, index) => (
           <div key={`skill-${index}`} className="flex flex-col gap-1 -mt-1">
             <div className="flex justify-between text-[13px] font-medium text-indigo-50">
