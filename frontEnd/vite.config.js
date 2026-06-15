@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator'
 
 export default defineConfig({
-  base: '/', // <-- Moved this OUTSIDE the plugins array
+  //base: '/', // <-- Moved this OUTSIDE the plugins array
   plugins: [
     react(),
     tailwindcss(),
