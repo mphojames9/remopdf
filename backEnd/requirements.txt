@@ -5,3 +5,4 @@ PyMuPDF
 pymupdf
 playwright
 openai
+Pillow
