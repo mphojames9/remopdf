@@ -22,5 +22,10 @@ playwright
 requests
 beautifulsoup4
 
+# --- Data Processing & Excel ---
+pandas
+openpyxl
+numpy
+
 # --- Image Processing ---
 Pillow
