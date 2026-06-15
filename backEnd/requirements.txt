@@ -1,9 +1,26 @@
+# --- Core Server & API ---
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
-PyMuPDF
+aiofiles
+jinja2
+python-dotenv
+pydantic-settings
+
+# --- Primary PDF & Doc Processing ---
 pymupdf
-playwright
-openai
-Pillow
 pdf2docx
+pdfplumber
+pypdf
+python-docx
+reportlab
+pdfminer.six
+
+# --- AI, Automation & Web ---
+openai
+playwright
+requests
+beautifulsoup4
+
+# --- Image Processing ---
+Pillow
