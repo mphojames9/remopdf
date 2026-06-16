@@ -1,4 +1,4 @@
-import React, { Suspense, Component } from 'react';
+import React, { Suspense, Component, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ResumeBuilder from './pages/ResumeBuilder';
@@ -19,44 +19,48 @@ const Editor = React.lazy(() => import('./pages/Editor'));
 /* ==========================================================================
    PREMIUM SKELETON LOADER (Prevents flashing or blank screens during loads)
    ========================================================================== */
-const PageLoader = () => (
-  <div className="flex flex-col items-center justify-center min-h-[80vh] bg-slate-50/50 font-sans animate-in fade-in duration-700 ease-out p-4">
-    
-    {/* Premium Spinner Assembly */}
-    <div className="relative w-24 h-24 mb-8 flex items-center justify-center">
-      {/* Ambient Pulsing Glow */}
-      <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-xl animate-pulse"></div>
-      
-      {/* Static Background Track */}
-      <div className="absolute inset-0 rounded-full border-[3px] border-slate-200/50 shadow-inner"></div>
-      
-      {/* Outer Fast Spin Ring (Amber/Orange) */}
-      <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-amber-500 border-l-orange-500 animate-[spin_1.2s_linear_infinite]"></div>
-      
-      {/* Inner Slow Reverse Spin Ring (Lighter Gold) */}
-      <div className="absolute inset-3 rounded-full border-[3px] border-transparent border-b-amber-300 border-r-orange-400 animate-[spin_2s_linear_infinite_reverse] opacity-80"></div>
-      
-      {/* Center Floating Icon Container */}
-      <div className="relative z-10 w-11 h-11 bg-white rounded-xl shadow-[0_4px_15px_rgba(245,158,11,0.15)] border border-amber-100 flex items-center justify-center">
-        <i className="fa-solid fa-file-pdf text-xl text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-500 drop-shadow-sm animate-pulse"></i>
-      </div>
-    </div>
+const PageLoader = () => {
+  
+  // Wake up the Render backend as soon as the loader mounts
+  useEffect(() => {
+    // A simple, silent "fire-and-forget" ping to the root URL
+    fetch('https://remopdf-backend.onrender.com/')
+      .catch((error) => {
+        // We expect this might fail or timeout if waking up from a deep sleep, 
+        // but the request itself is enough to trigger Render to spin up.
+        console.log('Backend wake-up initiated.');
+      });
+  }, []); // The empty array ensures this only fires once when the component loads
 
-    {/* User-Friendly Typography */}
-    <div className="text-center space-y-2">
-      <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
-        Preparing your workspace
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[80vh] bg-slate-50/50 font-sans animate-in fade-in duration-700 ease-out p-4">
+      
+      {/* Premium Spinner Assembly */}
+      <div className="relative w-24 h-24 mb-8 flex items-center justify-center">
+        {/* Ambient Pulsing Glow */}
+        <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-xl animate-pulse"></div>
+        
+        {/* Outer Rotating Ring */}
+        <div className="absolute inset-0 border-t-2 border-r-2 border-amber-400 rounded-full animate-spin"></div>
+        
+        {/* Inner Counter-Rotating Ring */}
+        <div className="absolute inset-2 border-b-2 border-l-2 border-slate-800 rounded-full animate-[spin_1.5s_linear_reverse]"></div>
+        
+        {/* Center Core */}
+        <div className="w-8 h-8 bg-slate-900 rounded-full shadow-[0_0_15px_rgba(251,191,36,0.5)] flex items-center justify-center">
+          <div className="w-2 h-2 bg-amber-400 rounded-full animate-ping"></div>
+        </div>
+      </div>
+
+      <h3 className="text-xl font-bold text-slate-800 tracking-tight mb-2">
+        Preparing Workspace
       </h3>
-      <p className="text-sm font-medium text-slate-500 max-w-xs leading-relaxed mx-auto">
-        Gathering your tools and setting things up. This will only take a moment...
+      <p className="text-slate-500 text-sm font-medium animate-pulse">
+        Loading modules and waking up servers...
       </p>
     </div>
-    
-  </div>
-);
-
-
-
+  );
+};
 
 class GlobalErrorBoundary extends Component {
   state = { 
@@ -105,7 +109,7 @@ class GlobalErrorBoundary extends Component {
               We hit a tiny snag.
             </h2>
             <p className="text-slate-500 text-sm leading-relaxed mb-8 font-medium px-2">
-              We're sorry for the interruption. Something unexpected happened, but don't worry—<strong className="text-slate-700 font-bold">your files are perfectly safe</strong>. Let's get you back on track.
+              We're sorry for the interruption. Something unexpected happened, but don't worry, <strong className="text-slate-700 font-bold">your files are perfectly safe</strong>. Let's get you back on track.
             </p>
 
             {/* Interactive Action Button */}
@@ -148,7 +152,7 @@ const MainLayout = () => {
   const location = useLocation();
   
   // Routes where the footer should NOT be displayed
-  const hideFooterRoutes = ['/ResumeBuilder'];
+  const hideFooterRoutes = ['/ResumeBuilder', '/editor'];
   const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
 
   return (

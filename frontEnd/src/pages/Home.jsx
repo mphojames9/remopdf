@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { mergePdfs, splitPdf, compressPdf, imagesToPdf, pdfToImages, getPdfPreviews, removePdfPages, compressImages, pdfToWord, pdfToExcel, addPasswordToPdf, verifyPdfPassword, removePdfPassword, changePdfPassword, pdfToPpt } from '../api/client';
 import './Home.css';
 import { toast } from '../components/PremiumToast';
+import ModalAd from '../components/ModalAd'
 
 
 export default function Home() {
+  const navigate = useNavigate();
   
   // Premium Pricing States
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
@@ -120,10 +122,10 @@ export default function Home() {
 
   // Comprehensive list of document tools
 const documentTools = [
-  {
-    name: "Edit PDF",
-    action: () => setIsEditPdfModalOpen(true)
-  },
+    {
+      name: "Edit PDF",
+      action: () => navigate('/editor') // <-- Updated
+    },
   {
     name: "Merge PDFs",
     action: () => setIsMergeModalOpen(true)
@@ -976,107 +978,152 @@ const handlePdfToPpt = async () => {
   </div>
 </article>
 
+<article
+onClick={() => navigate('/editor')} 
+  className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-2 transition-all duration-500 cursor-default flex flex-col min-h-[280px]"
+>
+  {/* Premium Ambient Background */}
+  <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+
+  {/* Header Section: Icon & Badges */}
+  <div className="flex justify-between items-start mb-6 relative z-10">
+    <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-200 shadow-[0_4px_20px_rgba(245,158,11,0.3)] group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+    </div>
+    
+    <div className="flex flex-col items-end gap-2">
+      {/* Premium Tag */}
+      <span className="px-3 py-1 text-[10px] uppercase tracking-wider font-bold text-amber-700 bg-amber-100/80 rounded-full flex items-center gap-1 border border-amber-200 shadow-sm">
+        <svg className="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+        Premium
+      </span>
+      {/* Coming Soon Tag */}
+      <span className="px-3 py-1 text-[10px] uppercase tracking-wider font-semibold text-gray-500 bg-gray-50 rounded-full border border-gray-200/80 backdrop-blur-sm shadow-sm">
+        Coming Soon
+      </span>
+    </div>
+  </div>
+
+  {/* Content Section */}
+  <div className="relative z-10 mt-auto pt-4">
+    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors duration-300">
+      Edit PDF
+    </h3>
+    <p className="text-gray-500 text-sm leading-relaxed">
+      Take full control of your documents. Add text, modify existing content, insert images, and sign PDFs directly in your browser.
+    </p>
+  </div>
+
+  {/* Subtle "Not Active Yet" Overlay Pattern */}
+  <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(245,158,11,0.02)_10px,rgba(245,158,11,0.02)_20px)] pointer-events-none opacity-50 z-20"></div>
+</article>
+
         </div>
       </main>
 
 {/* --- MERGE MODAL --- */}
-      {isMergeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
+{isMergeModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
           <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(239,68,68,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
+  className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(239,68,68,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out mobile-fullscreen-modal" 
+  onClick={(e) => e.stopPropagation()}
+>
+      {/* Ambient Background Glow */}
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
 
-            {/* Header */}
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center shadow-inner border border-red-200/50">
-                  <i className="fa-solid fa-layer-group text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-rose-500"></i>
-                </div>
-                Merge PDFs
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-red-500 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
+      {/* Header */}
+      <div className="relative z-10 flex justify-between items-center mb-8">
+        <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center shadow-inner border border-red-200/50">
+            <i className="fa-solid fa-layer-group text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-rose-500"></i>
+          </div>
+          Merge PDFs
+        </h2>
+        <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-200 transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-red-500 group-hover:rotate-90 transition-all duration-300"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-6">
+        {/* Interactive Upload Zone - Spatial UI */}
+        <div 
+          className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed border-red-200/60 bg-gradient-to-b from-red-50/30 to-transparent p-8 text-center transition-all duration-500 hover:border-red-400/60 hover:shadow-[0_0_30px_rgba(239,68,68,0.1)] ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+              setSelectedFiles(Array.from(e.dataTransfer.files));
+            }
+          }}
+        >
+          <input type="file" multiple accept=".pdf" id="pdf-upload" className="hidden" onChange={(e) => setSelectedFiles(Array.from(e.target.files))} disabled={isProcessing}/>
+          <label htmlFor="pdf-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             
-            <div className="relative z-10 flex flex-col gap-6">
-              {/* Interactive Upload Zone - Spatial UI */}
-              <div 
-                className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed border-red-200/60 bg-gradient-to-b from-red-50/30 to-transparent p-8 text-center transition-all duration-500 hover:border-red-400/60 hover:shadow-[0_0_30px_rgba(239,68,68,0.1)] ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    setSelectedFiles(Array.from(e.dataTransfer.files));
-                  }
-                }}
-              >
-                <input type="file" multiple accept=".pdf" id="pdf-upload" className="hidden" onChange={(e) => setSelectedFiles(Array.from(e.target.files))} disabled={isProcessing}/>
-                <label htmlFor="pdf-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                  
-                  {selectedFiles.length > 0 ? (
-                    <div className="w-full text-left bg-white/60 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-white max-h-40 overflow-y-auto transform transition-all group-hover:scale-[1.02]">
-                      <div className="flex justify-between items-center mb-3">
-                        <p className="font-extrabold text-sm text-gray-900 tracking-tight">Selected Assets</p>
-                        <span className="bg-gradient-to-r from-red-500 to-rose-500 text-white px-2.5 py-1 rounded-lg text-xs font-black shadow-sm">{selectedFiles.length}</span>
-                      </div>
-                      <ul className="text-xs font-semibold text-gray-500 space-y-2">
-                        {selectedFiles.map((f, i) => (
-                          <li key={i} className="truncate flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                            <i className="fa-solid fa-file-pdf text-red-400"></i> {f.name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <div className="transform transition-all duration-500 group-hover:-translate-y-2">
-                      <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center text-red-500 mb-4 border border-slate-100 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <i className="fa-solid fa-cloud-arrow-up text-2xl relative z-10 group-hover:scale-110 transition-transform duration-500"></i>
-                      </div>
-                      <h3 className="font-bold text-gray-900 text-base">Drop files here</h3>
-                      <p className="text-gray-400 text-xs mt-1 font-medium">or click to browse your device</p>
-                    </div>
-                  )}
-                  
-                  <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                    {selectedFiles.length > 0 ? 'Add More Files' : 'Browse Files'}
-                  </div>
-                </label>
-              </div>
-
-              {/* Dynamic Progress Bar & Action Button */}
-              {isProcessing ? (
-                <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between text-xs font-black text-red-600 mb-2 tracking-wide uppercase">
-                    <span className="flex items-center gap-2"><i className="fa-solid fa-circle-notch fa-spin"></i> Merging Data...</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                    <div className="h-full bg-gradient-to-r from-red-500 via-rose-500 to-orange-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}>
-                      <div className="absolute top-0 right-0 bottom-0 left-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-[progress-stripes_1s_linear_infinite]"></div>
-                    </div>
-                  </div>
+            {selectedFiles.length > 0 ? (
+              <div className="w-full text-left bg-white/60 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-white max-h-40 overflow-y-auto transform transition-all group-hover:scale-[1.02]">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="font-extrabold text-sm text-gray-900 tracking-tight">Selected Assets</p>
+                  <span className="bg-gradient-to-r from-red-500 to-rose-500 text-white px-2.5 py-1 rounded-lg text-xs font-black shadow-sm">{selectedFiles.length}</span>
                 </div>
-              ) : (
-                <button 
-                  onClick={handleMerge} 
-                  disabled={selectedFiles.length < 2} 
-                  className="group relative w-full h-14 mt-2 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(239,68,68,0.5)] transition-all duration-500 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-wand-magic-sparkles group-hover:rotate-12 transition-transform duration-300"></i> Merge Documents
-                  </span>
-                </button>
-              )}
+                <ul className="text-xs font-semibold text-gray-500 space-y-2">
+                  {selectedFiles.map((f, i) => (
+                    <li key={i} className="truncate flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                      <i className="fa-solid fa-file-pdf text-red-400"></i> {f.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="transform transition-all duration-500 group-hover:-translate-y-2">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center text-red-500 mb-4 border border-slate-100 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <i className="fa-solid fa-cloud-arrow-up text-2xl relative z-10 group-hover:scale-110 transition-transform duration-500"></i>
+                </div>
+                <h3 className="font-bold text-gray-900 text-base">Drop files here</h3>
+                <p className="text-gray-400 text-xs mt-1 font-medium">or click to browse your device</p>
+              </div>
+            )}
+            
+            <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
+              {selectedFiles.length > 0 ? 'Add More Files' : 'Browse Files'}
+            </div>
+          </label>
+        </div>
+
+        {/* Dynamic Progress Bar & Action Button */}
+        {isProcessing ? (
+          <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
+            <div className="flex justify-between text-xs font-black text-red-600 mb-2 tracking-wide uppercase">
+              <span className="flex items-center gap-2"><i className="fa-solid fa-circle-notch fa-spin"></i> Merging Data...</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+              <div className="h-full bg-gradient-to-r from-red-500 via-rose-500 to-orange-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}>
+                <div className="absolute top-0 right-0 bottom-0 left-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-[progress-stripes_1s_linear_infinite]"></div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <button 
+            onClick={handleMerge} 
+            disabled={selectedFiles.length < 2} 
+            className="group relative w-full h-14 mt-2 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(239,68,68,0.5)] transition-all duration-500 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <i className="fa-solid fa-wand-magic-sparkles group-hover:rotate-12 transition-transform duration-300"></i> Merge Documents
+            </span>
+          </button>
+        )}
+        <ModalAd slotId="YOUR_MERGE_MODAL_SLOT_ID" />
+      </div>
+    </div>
+  </div>
+)}
 
       {/* --- SPLIT MODAL --- */}
      {isSplitModalOpen && (

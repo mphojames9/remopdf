@@ -356,11 +356,12 @@ const handleGalleryScroll = (e) => {
     return () => window.removeEventListener('resize', calculateOverlayScale);
   }, [showOverlay]);
 
-  const handleExport = async () => {
+const handleExport = async () => {
     setIsExporting(true);
     try {
       const exportContainer = document.getElementById('premium-export-container');
       if (!exportContainer) return;
+      
       const rawHtml = exportContainer.innerHTML;
       const fullHtmlPayload = `
         <!DOCTYPE html>
@@ -378,12 +379,22 @@ const handleGalleryScroll = (e) => {
         <body>${rawHtml}</body>
         </html>
       `;
-      const response = await fetch("http://localhost:8000/api/resume/download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html_content: fullHtmlPayload }),
-      });
-      if (!response.ok) throw new Error("Backend generation breakdown");
+
+      //const response = await fetch("http://localhost:8000/api/resume/download", {
+const response = await fetch("https://remopdf-backend.onrender.com/api/resume/download", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  // 	 This matches the "html_content" field required by your backend
+  body: JSON.stringify({ html_content: fullHtmlPayload }), 
+});
+
+      // Catch and print backend errors explicitly to your browser console
+      if (!response.ok) {
+        const errorReason = await response.text();
+        console.error("🔴 CRITICAL BACKEND ERROR DETAILS:", errorReason);
+        throw new Error(`Server responded with status ${response.status}`);
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -393,21 +404,23 @@ const handleGalleryScroll = (e) => {
       const userProvidedName = resumeData.personalInfo?.fullName;
       const computedName = userProvidedName 
         ? `${userProvidedName.trim().replace(/\s+/g, '_')}_Resume.pdf`
-        : `${currentProfile?.title.trim().replace(/\s+/g, '_') || 'Mpho_James_Matli'}_Resume.pdf`;
+        : `${currentProfile?.title.trim().replace(/\s+/g, '_') || 'Resume'}.pdf`;
 
       link.download = computedName;
       document.body.appendChild(link);
       link.click();
+      
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
       showToast('success', 'Resume generated successfully!');
     } catch (error) {
-      showToast('error', 'Failed to generate PDF. Please try again.');
+      console.error("Frontend export error execution trace:", error);
+      showToast('error', 'Failed to generate PDF. Check browser console for details.');
     } finally {
       setIsExporting(false); 
       setIsMobileMenuOpen(false);
     }
-  };
+  }; 
 
   const templates = [
   { 

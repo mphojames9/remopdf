@@ -23,7 +23,7 @@ export default function Navbar() {
     { name: "Split PDF", id: "split", icon: "fa-scissors", desc: "Extract pages or separate files" },
     { name: "Compress PDF", id: "compress", icon: "fa-file-zipper", desc: "Reduce file footprint instantly" },
     { name: "PDF to Word", id: "pdfToWord", icon: "fa-file-word", desc: "Convert to editable DOCX format" },
-    { name: "Word to PDF", id: "wordToPdf", icon: "fa-file-pdf", desc: "Generate flawless PDFs from Word" },
+    { name: "Word to PDF", id: "wordToPdf", icon: "fa-file-pdf", desc: "Flawless conversion from Word" },
     { name: "Sign Document", id: "sign", icon: "fa-signature", desc: "Apply e-signatures securely" },
     { name: "Protect PDF", id: "protect", icon: "fa-shield-halved", desc: "Add robust password protection" },
     { name: "Unlock PDF", id: "unlock", icon: "fa-lock-open", desc: "Remove encryption restrictions" },
@@ -174,6 +174,11 @@ export default function Navbar() {
               Resume Builder
             </Link>
 
+            {/* Added Workspace Editor Link */}
+            <Link to="/editor" className="transition-colors duration-200 hover:text-slate-900 relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-px after:bg-red-600 after:transition-all hover:after:w-full">
+              Editor
+            </Link>
+
             {/* Company Link Dropdown */}
             <div 
               className="relative py-2" 
@@ -263,7 +268,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* --- PREMIUM MOBILE FULL-SCREEN DRAWER OVERLAY (OUTSIDE NAV TO FIX VIEWPORT BUG) --- */}
+      {/* --- PREMIUM MOBILE FULL-SCREEN DRAWER OVERLAY --- */}
       <div 
         className={`lg:hidden fixed inset-0 bg-white/98 backdrop-blur-3xl pt-20 sm:pt-24 px-4 overflow-y-auto overscroll-contain transition-all duration-500 ease-in-out z-[39] ${
           isMobileMenuOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-4 invisible'
@@ -281,6 +286,18 @@ export default function Navbar() {
               <i className="fa-solid fa-file-invoice text-sm"></i>
             </div>
             Resume Builder
+          </Link>
+
+          {/* Added Workspace Editor Link for Mobile Layout */}
+          <Link 
+            to="/editor" 
+            onClick={closeMobileMenu} 
+            className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 text-slate-800 font-bold hover:border-red-200 hover:shadow-md transition-all shadow-sm"
+          >
+            <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100">
+              <i className="fa-solid fa-pen-to-square text-sm"></i>
+            </div>
+            Workspace Editor
           </Link>
 
           {/* Accordion Block 1: Tools */}
