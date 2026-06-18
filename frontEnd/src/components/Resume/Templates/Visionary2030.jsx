@@ -17,13 +17,13 @@ export default function Visionary2030({
   return (
     <div id="resume-raw-content" className="w-full h-full flex font-sans bg-slate-50 text-slate-800 relative">
       
-      {/* LEFT SIDEBAR: Deep Indigo with Cyan Accents */}
-      <aside className="w-[34%] bg-indigo-950 text-indigo-50 p-8 flex flex-col shrink-0 gap-5 border-r border-indigo-900">
+      {/* LEFT SIDEBAR: Deep Indigo Gradient with Cyan Accents */}
+      <aside className="w-[34%] bg-gradient-to-b from-indigo-950 via-slate-950 to-indigo-900 text-indigo-50 p-8 flex flex-col shrink-0 gap-5 border-r border-indigo-950">
         
         {/* Profile Image Node */}
         {info.photo && (
           <div className="shrink-0 flex justify-center mb-2">
-            <div className="w-36 h-36 rounded-2xl border-2 border-cyan-400 p-1 shadow-[0_0_15px_rgba(34,211,238,0.3)] transform rotate-3">
+            <div className="w-36 h-36 rounded-2xl border-2 border-cyan-400 p-1 shadow-[0_0_20px_rgba(34,211,238,0.25)] transform rotate-3 transition-transform hover:rotate-0 duration-300">
               <div className="w-full h-full rounded-xl overflow-hidden transform -rotate-3 bg-indigo-900 flex items-center justify-center">
                 <img src={info.photo} alt="Profile" className="w-full h-full object-cover" />
               </div>
@@ -33,38 +33,50 @@ export default function Visionary2030({
 
         {/* Contact Heading Node */}
         {hasContact && (
-          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800 pb-2 mt-2">
+          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800/60 pb-2 mt-2">
             Contact
           </h2>
         )}
         {info.email && (
           <div className="flex items-center gap-3 text-[13px] -mt-1">
             <svg className="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-            <span className="break-all text-indigo-100">{info.email}</span>
+            <span className="break-all text-indigo-100/90">{info.email}</span>
           </div>
         )}
         {info.phone && (
           <div className="flex items-center gap-3 text-[13px] -mt-1">
             <svg className="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-            <span className="text-indigo-100">{info.phone}</span>
+            <span className="text-indigo-100/90">{info.phone}</span>
           </div>
         )}
         {info.location && (
           <div className="flex items-center gap-3 text-[13px] -mt-1">
             <svg className="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21s-8-4.5-8-11.8A8 8 0 0112 1.2a8 8 0 018 8C20 16.5 12 21 12 21z"/><circle cx="12" cy="9.2" r="3"/></svg>
-            <span className="text-indigo-100">{info.location}</span>
+            <span className="text-indigo-100/90">{info.location}</span>
           </div>
         )}
         {info.linkedin && (
           <div className="flex items-center gap-3 text-[13px] -mt-1">
             <svg className="w-4 h-4 text-cyan-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" /></svg>
-            <span className="break-all text-indigo-100">{info.linkedin.replace(/(^\w+:|^)\/\//, '')}</span>
+            <span className="break-all text-indigo-100/90">{info.linkedin.replace(/(^\w+:|^)\/\//, '')}</span>
+          </div>
+        )}
+        {info.secondarySocial && (
+          <div className="flex items-center gap-3 text-[13px] -mt-1">
+            <svg className="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+            <span className="break-all text-indigo-100/90">{info.secondarySocial.replace(/(^\w+:|^)\/\//, '')}</span>
+          </div>
+        )}
+        {info.website && (
+          <div className="flex items-center gap-3 text-[13px] -mt-1">
+            <svg className="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M3.6 9h16.8M3.6 15h16.8" /><path strokeLinecap="round" strokeLinejoin="round" d="M11.5 3a17 17 0 000 18M12.5 3a17 17 0 000 18" /></svg>
+            <span className="break-all text-indigo-100/90">{info.website.replace(/(^\w+:|^)\/\//, '')}</span>
           </div>
         )}
 
         {/* Personal Details Node */}
         {(info.dob || info.nationality || info.gender || info.drivingLicense) && (
-          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800 pb-2 mt-4">
+          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800/60 pb-2 mt-4">
             Details
           </h2>
         )}
@@ -93,20 +105,16 @@ export default function Visionary2030({
           </div>
         )}
 
-{/* Skills Heading Node */}
+        {/* Skills Heading Node */}
         {validSkills.length > 0 && (
-          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800 pb-2 mt-4">
+          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800/60 pb-2 mt-4">
             Core Expertise
           </h2>
         )}
         {validSkills.map((skill, index) => {
-          // Extract the name robustly (handles plain strings or objects)
           const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
-          
-          // Extract the level, defaulting to 3 (60%) if missing
           const level = typeof skill === 'string' ? 3 : (skill.level || 3);
           
-          // Calculate width to accommodate both 1-5 numerical scale and legacy text strings
           let barWidth = 100;
           if (typeof level === 'number' || !isNaN(Number(level))) {
             barWidth = (Number(level) / 5) * 100;
@@ -119,53 +127,38 @@ export default function Visionary2030({
               <div className="flex justify-between text-[13px] font-medium text-indigo-50">
                 <span>{name}</span>
               </div>
-              <div className="w-full bg-indigo-900 h-1.5 rounded-full overflow-hidden">
+              <div className="w-full bg-indigo-950 h-1.5 rounded-full overflow-hidden p-[1px] border border-indigo-800/40">
                 <div 
-                  className="bg-cyan-400 h-full rounded-full shadow-[0_0_5px_rgba(34,211,238,0.5)]" 
+                  className="bg-cyan-400 h-full rounded-full shadow-[0_0_8px_rgba(34,211,238,0.6)]" 
                   style={{ width: `${barWidth}%` }}
                 />
               </div>
             </div>
           );
         })}
-        {validSkills.map((skill, index) => (
-          <div key={`skill-${index}`} className="flex flex-col gap-1 -mt-1">
-            <div className="flex justify-between text-[13px] font-medium text-indigo-50">
-              <span>{skill.name}</span>
-            </div>
-            {skill.level && (
-              <div className="w-full bg-indigo-900 h-1.5 rounded-full overflow-hidden">
-                <div 
-                  className="bg-cyan-400 h-full rounded-full shadow-[0_0_5px_rgba(34,211,238,0.5)]" 
-                  style={{ width: `${skill.level === 'Beginner' ? 30 : skill.level === 'Intermediate' ? 60 : skill.level === 'Advanced' ? 85 : 100}%` }}
-                />
-              </div>
-            )}
-          </div>
-        ))}
 
         {/* Languages Heading Node */}
         {validLanguages.length > 0 && (
-          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800 pb-2 mt-4">
+          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800/60 pb-2 mt-4">
             Languages
           </h2>
         )}
         {validLanguages.map((lang, index) => (
           <div key={`lang-${index}`} className="flex justify-between items-center text-[13px] -mt-1">
             <span className="font-medium text-indigo-50">{lang.name}</span>
-            <span className="text-indigo-300 text-[11px] uppercase tracking-widest">{lang.proficiency}</span>
+            <span className="text-cyan-400 text-[10px] font-bold uppercase tracking-widest bg-indigo-950/50 px-2 py-0.5 rounded border border-indigo-800/30">{lang.proficiency}</span>
           </div>
         ))}
 
         {/* Hobbies Heading Node */}
         {validHobbies && validHobbies.length > 0 && (
-          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800 pb-2 mt-4">
+          <h2 className="text-xs font-bold tracking-[0.2em] text-cyan-400 uppercase border-b border-indigo-800/60 pb-2 mt-4">
             Interests
           </h2>
         )}
         {validHobbies && validHobbies.map((hobby, index) => (
-          <div key={`hobby-${index}`} className="flex items-center gap-3 -mt-1 text-[13px] text-indigo-100">
-            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-sm shrink-0 transform rotate-45"></span>
+          <div key={`hobby-${index}`} className="flex items-center gap-3 -mt-1 text-[13px] text-indigo-100/90">
+            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-sm shrink-0 transform rotate-45 shadow-[0_0_4px_rgba(34,211,238,0.5)]"></span>
             {hobby}
           </div>
         ))}
@@ -183,7 +176,7 @@ export default function Visionary2030({
 
         {/* Summary Node */}
         {validSummary && (
-          <div className="text-[14px] leading-relaxed text-slate-600 mb-2 bg-slate-50 p-4 border-l-4 border-cyan-400 rounded-r-lg whitespace-pre-wrap">
+          <div className="text-[14px] leading-relaxed text-slate-600 mb-2 bg-gradient-to-r from-slate-50 to-white p-4 border-l-4 border-cyan-400 rounded-r-lg whitespace-pre-wrap shadow-sm">
             {validSummary}
           </div>
         )}
@@ -224,7 +217,7 @@ export default function Visionary2030({
           </div>
         ))}
 
-        {/* Projects Node - Added directly after Experience */}
+        {/* Projects Node */}
         {data.projects && data.projects.length > 0 && (
           <h2 className="text-lg font-bold text-indigo-950 uppercase tracking-widest flex items-center gap-3 mt-3">
              <svg className="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>

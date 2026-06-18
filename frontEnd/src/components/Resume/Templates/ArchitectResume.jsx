@@ -23,14 +23,15 @@ export default function ArchitectResume({
     if (p.includes('advanced') || p.includes('proficient')) return '80%';
     if (p.includes('intermediate')) return '60%';
     if (p.includes('basic') || p.includes('beginner')) return '35%';
-    return '55%'; 
+    return '55%';
   };
 
   const flatLayoutElements = [];
 
   // Premium Font Injection
   flatLayoutElements.push(
-    <style key="premium-fonts" dangerouslySetInnerHTML={{__html: `
+    <style key="premium-fonts" dangerouslySetInnerHTML={{
+      __html: `
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap');
       .font-playfair { font-family: 'Playfair Display', serif; }
       .font-inter { font-family: 'Inter', sans-serif; }
@@ -94,6 +95,26 @@ export default function ArchitectResume({
                 </svg>
               </div>
               <span className="tracking-wide text-[#2c3545]">{info.location}</span>
+            </div>
+          )}
+          {info.linkedin && (
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 rounded border border-[#164179]/50 flex items-center justify-center shrink-0 text-[#164179]">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <span className="tracking-wide text-[#2c3545]">{info.linkedin}</span>
+            </div>
+          )}
+                    {info.secondarySocial && (
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 rounded border border-[#164179]/50 flex items-center justify-center shrink-0 text-[#164179]">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <span className="tracking-wide text-[#2c3545]">{info.secondarySocial}</span>
             </div>
           )}
         </div>
@@ -190,8 +211,8 @@ export default function ArchitectResume({
                 </span>
               </div>
               <div className="flex justify-between items-baseline mb-1">
-                 <p className="text-[12px] font-playfair italic text-[#164179]">{exp.company}</p>
-                 {exp.location && <p className="text-[10px] text-slate-400">{exp.location}</p>}
+                <p className="text-[12px] font-playfair italic text-[#164179]">{exp.company}</p>
+                {exp.location && <p className="text-[10px] text-slate-400">{exp.location}</p>}
               </div>
               {exp.description && (
                 <p className="text-[11px] text-[#2c3545] mt-1.5 text-justify leading-[1.8] whitespace-pre-wrap">
@@ -358,8 +379,8 @@ export default function ArchitectResume({
                 <span className="text-[11px] text-[#2c3545] tracking-wide font-medium w-[60px] truncate shrink-0">{lang.name}</span>
                 {lang.proficiency && (
                   <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden min-w-[45px]">
-                    <div 
-                      className="h-full bg-[#164179] rounded-full" 
+                    <div
+                      className="h-full bg-[#164179] rounded-full"
                       style={{ width: getProficiencyWidth(lang.proficiency) }}
                     ></div>
                   </div>

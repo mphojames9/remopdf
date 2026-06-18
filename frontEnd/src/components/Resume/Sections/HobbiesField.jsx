@@ -1,23 +1,5 @@
 import React from 'react';
 
-// Premium Standardized InputField
-const InputField = ({ label, placeholder, value, onChange, type = "text" }) => (
-  <div className="flex flex-col group w-full">
-    <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
-      {label}
-    </label>
-    <div className="relative w-full">
-      <input 
-        type={type}
-        placeholder={placeholder} 
-        value={value || ''} 
-        onChange={onChange} 
-        className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium" 
-      />
-    </div>
-  </div>
-);
-
 export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel }) {
   const hobbies = data.hobbies || [];
 
@@ -40,10 +22,10 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
   return (
     <div className="w-full max-w-3xl mx-auto font-['Outfit',_sans-serif] animate-fade-in px-3 sm:px-6 h-[80vh] min-w-[320px] flex flex-col overflow-hidden bg-white selection:bg-orange-100 selection:text-orange-800">
       
-      
+      {/* Scrollable Form Content */}
       <div className="flex-1 overflow-y-auto pr-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-4 pt-3">
         
-        
+        {/* Header Block */}
         <div className="mb-4 sm:mb-6">
           <span className="inline-block text-orange-600 text-[9px] font-bold uppercase tracking-widest bg-orange-50 border border-orange-100 px-2.5 py-0.5 rounded-full mb-1.5">
             Section 8
@@ -56,53 +38,58 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
           </p>
         </div>
 
-        <div className="space-y-4 sm:space-y-5">
+        {/* Minimalist Compact List Row Containers */}
+        <div className="space-y-2">
           {hobbies.map((hobby, index) => (
-            <div key={index} className="p-3.5 sm:p-5 pt-10 sm:pt-5 bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.12)] rounded-2xl relative group/card hover:border-slate-200 hover:shadow-[0_4px_24px_-2px_rgba(148,163,184,0.16)] transition-all duration-300">
-              
-              
-              <div className="flex justify-between items-center absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-[calc(100%-1.5rem)] sm:w-auto">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider sm:hidden">
-                  Hobby #{index + 1}
-                </span>
-                <button 
-                  onClick={() => handleRemove(index)} 
-                  className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-xl border border-transparent hover:border-red-100 shadow-sm sm:shadow-none transition-all duration-200 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider"
-                  title="Remove Hobby"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  <span className="sm:hidden pr-0.5">Delete</span>
-                </button>
+            <div 
+              key={index} 
+              className="p-1.5 sm:p-2 bg-slate-50/40 border border-slate-200/70 rounded-xl hover:border-orange-300 hover:bg-white transition-all duration-200 flex items-center gap-2 group/item shadow-sm"
+            >
+              {/* Dynamic bullet dot indicator */}
+              <div className="flex-shrink-0 ml-2 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover/item:bg-orange-500 transition-colors duration-200"></div>
               </div>
 
-              
-              <InputField 
-  label="Hobby / Interest" 
-  placeholder="e.g. Open Source, Chess, Photography..." 
-  value={hobby} 
-  onChange={(e) => handleUpdate(index, e.target.value)} 
-/>
+              {/* Seamless Inline Input */}
+              <input 
+                type="text"
+                placeholder="e.g. Open Source, Chess, Photography..." 
+                value={hobby || ''} 
+                onChange={(e) => handleUpdate(index, e.target.value)} 
+                className="flex-1 bg-transparent text-slate-800 text-xs sm:text-sm outline-none font-medium placeholder:text-slate-400/70 px-1 py-1.5 focus:ring-0"
+              />
+
+              {/* Integrated modern delete control button */}
+              <button 
+                type="button"
+                onClick={() => handleRemove(index)} 
+                className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all shrink-0 sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus:opacity-100"
+                title="Remove Hobby"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
             </div>
           ))}
         </div>
 
-        
+        {/* Empty State */}
         {hobbies.length === 0 && (
-          <div className="text-center py-8 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 mt-4">
-            <p className="text-slate-400 font-medium text-xs sm:text-sm">No hobbies listed.</p>
+          <div className="text-center py-10 bg-slate-50/30 rounded-xl border-2 border-dashed border-slate-200/60 mt-2">
+            <p className="text-slate-400 font-medium text-xs sm:text-sm">No hobbies listed yet.</p>
           </div>
         )}
 
-        
+        {/* Compact Add Action Button */}
         <button 
+          type="button"
           onClick={handleAdd} 
           disabled={isAddDisabled}
-          className={`mt-4 w-full py-2.5 sm:py-3.5 border-2 border-dashed rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 ${
+          className={`mt-4 w-full py-2.5 border-2 border-dashed rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 ${
             isAddDisabled 
-              ? 'border-slate-200 text-slate-300 bg-slate-50/30 cursor-not-allowed' 
-              : 'border-slate-200 text-slate-400 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50/30 active:scale-[0.995] cursor-pointer'
+              ? 'border-slate-100 text-slate-300 bg-slate-50/20 cursor-not-allowed opacity-60' 
+              : 'border-slate-200 text-slate-400 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50/30 active:scale-[0.995]'
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,9 +99,10 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
         </button>
       </div>
 
-      
+      {/* Fixed Bottom Action Navigation Bar */}
       <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
         <button 
+          type="button"
           onClick={onPrev} 
           className="px-3.5 sm:px-5 py-2.5 border border-slate-200 text-slate-500 font-bold rounded-xl hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50/80 transition-all flex items-center gap-1.5 text-xs sm:text-sm"
         >
@@ -124,6 +112,7 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
           Back
         </button>
         <button 
+          type="button"
           onClick={onNext} 
           className="px-4 sm:px-7 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
         >

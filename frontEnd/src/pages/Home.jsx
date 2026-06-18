@@ -68,6 +68,10 @@ export default function Home() {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockPreviewUrl, setUnlockPreviewUrl] = useState(null);
   const [isPasswordError, setIsPasswordError] = useState(false);
+  const [isMergeDragActive, setIsMergeDragActive] = useState(false);
+const [isSplitDragActive, setIsSplitDragActive] = useState(false);
+const [isCompressDragActive, setIsCompressDragActive] = useState(false);
+// (You already have isPptDragActive)
 
   // Change Password States
   const [isChangePwdModalOpen, setIsChangePwdModalOpen] = useState(false);
@@ -550,24 +554,48 @@ const handlePdfToPpt = async () => {
     isProtectModalOpen || isUnlockModalOpen || isChangePwdModalOpen || 
     isPdfToPptModalOpen || isPricingModalOpen;
 
-  // 2. Lock the body scroll when an overlay is open
-  useEffect(() => {
-    if (isAnyModalOpen) {
-      // Prevents background scrolling (and address bar shifting)
-      document.body.style.overflow = 'hidden';
-      // Optional: Prevent iOS bounce effect
-      document.body.style.touchAction = 'none'; 
-    } else {
-      document.body.style.overflow = 'unset';
-      document.body.style.touchAction = 'auto';
-    }
-    
-    // Cleanup function in case the component unmounts
-    return () => { 
-      document.body.style.overflow = 'unset'; 
-      document.body.style.touchAction = 'auto';
-    };
-  }, [isAnyModalOpen]);
+    // Add this to store where the user was scrolled to
+const scrollPositionRef = useRef(0);
+
+// 2. Bulletproof lock for the body scroll
+useEffect(() => {
+  if (isAnyModalOpen) {
+    // Capture current scroll position BEFORE locking
+    scrollPositionRef.current = window.scrollY;
+
+    // Pin the background in place (The iOS-proof fix)
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollPositionRef.current}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none'; 
+  } else {
+    // Remove the locks
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    document.body.style.touchAction = '';
+
+    // Scroll the user back to exactly where they were instantly
+    window.scrollTo(0, scrollPositionRef.current);
+  }
+
+  // Cleanup function in case the component unmounts
+  return () => { 
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    document.body.style.touchAction = '';
+  };
+}, [isAnyModalOpen]);
   return (
     <div className="app-container">
 {/* Hero Section Container */}
@@ -1025,410 +1053,481 @@ onClick={() => navigate('/editor')}
         </div>
       </main>
 
+
 {/* --- MERGE MODAL --- */}
 {isMergeModalOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-  className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(239,68,68,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out mobile-fullscreen-modal" 
-  onClick={(e) => e.stopPropagation()}
->
-      {/* Ambient Background Glow */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
+  <div 
+    className="fixed inset-0 z-[100] flex items-center justify-center sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+    onClick={closeOverlay}
+  >
+    <style dangerouslySetInnerHTML={{__html: `body { overflow: hidden !important; }` }} />
 
-      {/* Header */}
+    <div 
+      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(239,68,68,0.25),inset_0_1px_1px_rgba(255,255,255,0.8),0_0_1px_1px_rgba(239,68,68,0.1)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 ease-[cubic-bezier(0.34,1.56,0.64,1)] mobile-fullscreen-modal select-none" 
+      style={{ perspective: '1000px' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* 3D Ambient Holographic Glows */}
+      <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-red-400 to-rose-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-25 pointer-events-none animate-pulse"></div>
+      <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-orange-400 to-red-400 rounded-full mix-blend-multiply filter blur-[90px] opacity-20 pointer-events-none"></div>
+
       <div className="relative z-10 flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center shadow-inner border border-red-200/50">
-            <i className="fa-solid fa-layer-group text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-rose-500"></i>
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-red-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(239,68,68,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-red-100/80 transform hover:rotate-6 transition-transform duration-300">
+            <i className="fa-solid fa-layer-group text-xl text-transparent bg-clip-text bg-gradient-to-br from-red-600 to-rose-500"></i>
           </div>
-          Merge PDFs
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-red-900">Merge PDFs</span>
         </h2>
-        <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-200 transition-all duration-300 flex items-center justify-center">
-          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-red-500 group-hover:rotate-90 transition-all duration-300"></i>
+        
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-rose-50 border border-slate-200/80 hover:border-rose-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-rose-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
         </button>
       </div>
       
       <div className="relative z-10 flex flex-col gap-6">
-        {/* Interactive Upload Zone - Spatial UI */}
+        
         <div 
-          className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed border-red-200/60 bg-gradient-to-b from-red-50/30 to-transparent p-8 text-center transition-all duration-500 hover:border-red-400/60 hover:shadow-[0_0_30px_rgba(239,68,68,0.1)] ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-              setSelectedFiles(Array.from(e.dataTransfer.files));
+          className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
+            ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isMergeDragActive 
+              ? 'border-red-500 bg-red-50/60 shadow-[0_25px_50px_-12px_rgba(239,68,68,0.2),inset_0_2px_8px_rgba(239,68,68,0.05)] scale-[1.02]' 
+              : 'border-slate-200 hover:border-red-400/80 bg-gradient-to-b from-white via-slate-50/40 to-slate-100/20 shadow-[0_15px_35px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_45px_-15px_rgba(239,68,68,0.12)]'
             }
+          `}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsMergeDragActive(true); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsMergeDragActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsMergeDragActive(false); }}
+          onDrop={(e) => {
+            e.preventDefault(); e.stopPropagation(); setIsMergeDragActive(false);
+            if (e.dataTransfer.files?.length) setSelectedFiles(Array.from(e.dataTransfer.files));
           }}
         >
-          <input type="file" multiple accept=".pdf" id="pdf-upload" className="hidden" onChange={(e) => setSelectedFiles(Array.from(e.target.files))} disabled={isProcessing}/>
-          <label htmlFor="pdf-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+          <input 
+            type="file" multiple accept=".pdf" id="pdf-merge-upload" className="hidden" 
+            onChange={(e) => { if (e.target.files?.length) setSelectedFiles(Array.from(e.target.files)); }} 
+            disabled={isProcessing}
+          />
+          <label htmlFor="pdf-merge-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             
             {selectedFiles.length > 0 ? (
-              <div className="w-full text-left bg-white/60 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-white max-h-40 overflow-y-auto transform transition-all group-hover:scale-[1.02]">
+              <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
                 <div className="flex justify-between items-center mb-3">
-                  <p className="font-extrabold text-sm text-gray-900 tracking-tight">Selected Assets</p>
-                  <span className="bg-gradient-to-r from-red-500 to-rose-500 text-white px-2.5 py-1 rounded-lg text-xs font-black shadow-sm">{selectedFiles.length}</span>
+                  <p className="font-black text-xs text-red-600 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span> Queue ({selectedFiles.length})
+                  </p>
                 </div>
-                <ul className="text-xs font-semibold text-gray-500 space-y-2">
+                <div className="max-h-36 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                   {selectedFiles.map((f, i) => (
-                    <li key={i} className="truncate flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                      <i className="fa-solid fa-file-pdf text-red-400"></i> {f.name}
-                    </li>
+                    <div key={i} className="bg-slate-50/80 hover:bg-slate-50 p-3 rounded-xl flex items-center justify-between border border-slate-100 shadow-sm transition-all duration-200">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                          <i className="fa-solid fa-file-pdf text-red-600 text-sm"></i>
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 truncate max-w-[220px]">{f.name}</span>
+                      </div>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             ) : (
-              <div className="transform transition-all duration-500 group-hover:-translate-y-2">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center text-red-500 mb-4 border border-slate-100 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <i className="fa-solid fa-cloud-arrow-up text-2xl relative z-10 group-hover:scale-110 transition-transform duration-500"></i>
+              <div className={`transform transition-all duration-500 ${isMergeDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
+                <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
+                  ${isMergeDragActive ? 'bg-gradient-to-br from-red-500 to-rose-600 text-white border-red-400 scale-110 shadow-[0_20px_40px_-10px_rgba(239,68,68,0.4)]' : 'bg-white text-red-500 border-slate-100'}
+                `}>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-red-500 to-rose-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <i className={`fa-solid fa-cloud-arrow-up text-3xl relative z-10 transition-all duration-500 ${isMergeDragActive ? 'text-white scale-110' : 'group-hover:text-white group-hover:scale-110'}`}></i>
                 </div>
-                <h3 className="font-bold text-gray-900 text-base">Drop files here</h3>
-                <p className="text-gray-400 text-xs mt-1 font-medium">or click to browse your device</p>
+                <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">
+                  {isMergeDragActive ? 'Release to combine' : 'Upload PDF Documents'}
+                </h3>
+                <p className="text-slate-400 text-xs mt-1.5 font-medium px-4">Drag multiple files to stitch them together</p>
               </div>
             )}
-            
-            <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-              {selectedFiles.length > 0 ? 'Add More Files' : 'Browse Files'}
+
+            <div className={`mt-6 px-6 py-3 rounded-xl border font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.03] active:scale-95
+              ${selectedFiles.length > 0 ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' : 'bg-red-600 text-white border-red-600 hover:bg-red-700 shadow-red-500/10'}
+            `}>
+              {selectedFiles.length > 0 ? <span><i className="fa-solid fa-plus mr-1.5"></i>Add More</span> : <span><i className="fa-solid fa-folder-open mr-1.5"></i>Browse Local</span>}
             </div>
           </label>
         </div>
 
-        {/* Dynamic Progress Bar & Action Button */}
         {isProcessing ? (
-          <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-            <div className="flex justify-between text-xs font-black text-red-600 mb-2 tracking-wide uppercase">
-              <span className="flex items-center gap-2"><i className="fa-solid fa-circle-notch fa-spin"></i> Merging Data...</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-              <div className="h-full bg-gradient-to-r from-red-500 via-rose-500 to-orange-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}>
-                <div className="absolute top-0 right-0 bottom-0 left-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-[progress-stripes_1s_linear_infinite]"></div>
+          <div className="relative overflow-hidden bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative flex items-center justify-center w-24 h-24 mb-4">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgba(226, 232, 240, 0.6)" strokeWidth="7" fill="transparent" />
+                <circle cx="50" cy="50" r="40" stroke="url(#redCircleGlow)" strokeWidth="7" fill="transparent" strokeDasharray="251.32" strokeDashoffset={251.32 - (251.32 * progress) / 100} strokeLinecap="round" className="transition-all style-none duration-300 ease-out" />
+                <defs>
+                  <linearGradient id="redCircleGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#ef4444" />
+                    <stop offset="100%" stopColor="#f43f5e" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
               </div>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 uppercase tracking-wider">
+                <i className="fa-solid fa-gears text-red-500 animate-spin text-xs"></i> Compiling PDF Matrix...
+              </p>
             </div>
           </div>
         ) : (
           <button 
             onClick={handleMerge} 
             disabled={selectedFiles.length < 2} 
-            className="group relative w-full h-14 mt-2 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(239,68,68,0.5)] transition-all duration-500 overflow-hidden"
+            className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(239,68,68,0.4)] hover:-translate-y-0.5 active:translate-y-0"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              <i className="fa-solid fa-wand-magic-sparkles group-hover:rotate-12 transition-transform duration-300"></i> Merge Documents
+            <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            <span className="relative z-10 flex items-center justify-center gap-2.5 tracking-wide text-sm font-extrabold h-full">
+              <i className="fa-solid fa-wand-magic-sparkles text-xs opacity-70 group-hover:rotate-12 transition-transform duration-300"></i> Merge & Download
             </span>
           </button>
         )}
-        <ModalAd slotId="YOUR_MERGE_MODAL_SLOT_ID" />
       </div>
     </div>
   </div>
 )}
 
-      {/* --- SPLIT MODAL --- */}
-     {isSplitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(34,197,94,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-green-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
-
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center shadow-inner border border-green-200/50">
-                  <i className="fa-solid fa-scissors text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-500"></i>
-                </div>
-                Split PDF
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-green-50 border border-slate-200 hover:border-green-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-green-500 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
-            
-            <div className="relative z-10 flex flex-col gap-6">
-              <div 
-                className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed border-green-200/60 bg-gradient-to-b from-green-50/30 to-transparent p-8 text-center transition-all duration-500 hover:border-green-400/60 hover:shadow-[0_0_30px_rgba(34,197,94,0.1)] ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    setSplitFile(e.dataTransfer.files[0]);
-                  }
-                }}
-              >
-                <input type="file" accept=".pdf" id="pdf-split-upload" className="hidden" onChange={(e) => setSplitFile(e.target.files[0])} disabled={isProcessing} />
-                <label htmlFor="pdf-split-upload" className="cursor-pointer flex flex-col items-center">
-                  {splitFile ? (
-                    <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all group-hover:scale-[1.02]">
-                      <p className="font-extrabold text-xs text-green-900 uppercase tracking-wider mb-2">Target File</p>
-                      <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100">
-                         <i className="fa-solid fa-file-pdf text-green-500 text-xl"></i>
-                         <p className="text-sm font-semibold text-gray-700 truncate">{splitFile.name}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="transform transition-all duration-500 group-hover:-translate-y-2">
-                      <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center text-green-500 mb-4 border border-slate-100 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-green-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <i className="fa-solid fa-file-pdf text-2xl relative z-10 group-hover:scale-110 transition-transform duration-500"></i>
-                      </div>
-                      <h3 className="font-bold text-gray-900 text-base">Select PDF to Split</h3>
-                    </div>
-                  )}
-                  <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-green-100 text-green-600 hover:bg-green-50 hover:border-green-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                    {splitFile ? 'Change File' : 'Browse Files'}
-                  </div>
-                </label>
-              </div>
-
-              {isProcessing ? (
-                <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between text-xs font-black text-green-600 mb-2 tracking-wide uppercase">
-                    <span className="flex items-center gap-2"><i className="fa-solid fa-scissors fa-fade"></i> Processing...</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
-                  </div>
-                </div>
-              ) : (
-                <button 
-                  onClick={handleSplit} 
-                  disabled={!splitFile} 
-                  className="group relative w-full h-14 mt-2 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(34,197,94,0.5)] transition-all duration-500 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-file-zipper group-hover:scale-110 transition-transform duration-300"></i> Split & Download ZIP
-                  </span>
-                </button>
-              )}
-            </div>
+{/* --- SPLIT MODAL --- */}
+{isSplitModalOpen && (
+  <div 
+    className="fixed inset-0 z-[100] flex items-center justify-center sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+    onClick={closeOverlay}
+  >
+    <div 
+      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(34,197,94,0.25),inset_0_1px_1px_rgba(255,255,255,0.8),0_0_1px_1px_rgba(34,197,94,0.1)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 ease-[cubic-bezier(0.34,1.56,0.64,1)] mobile-fullscreen-modal select-none" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-25 pointer-events-none animate-pulse"></div>
+      
+      <div className="relative z-10 flex justify-between items-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-green-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(34,197,94,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-green-100/80 transform hover:rotate-6 transition-transform duration-300">
+            <i className="fa-solid fa-scissors text-xl text-transparent bg-clip-text bg-gradient-to-br from-green-600 to-emerald-500"></i>
           </div>
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-green-900">Split PDF</span>
+        </h2>
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-green-50 border border-slate-200/80 hover:border-green-200 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-green-500 group-hover:rotate-90 transition-all duration-300"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-6">
+        <div 
+          className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
+            ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isSplitDragActive ? 'border-green-500 bg-green-50/60 shadow-[0_25px_50px_-12px_rgba(34,197,94,0.2)] scale-[1.02]' : 'border-slate-200 hover:border-green-400/80 bg-gradient-to-b from-white via-slate-50/40 to-slate-100/20 hover:shadow-[0_25px_45px_-15px_rgba(34,197,94,0.12)]'}
+          `}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsSplitDragActive(true); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsSplitDragActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsSplitDragActive(false); }}
+          onDrop={(e) => {
+            e.preventDefault(); e.stopPropagation(); setIsSplitDragActive(false);
+            if (e.dataTransfer.files?.length) setSplitFile(e.dataTransfer.files[0]);
+          }}
+        >
+          <input type="file" accept=".pdf" id="pdf-split-upload" className="hidden" onChange={(e) => { if (e.target.files?.length) setSplitFile(e.target.files[0]); }} disabled={isProcessing}/>
+          <label htmlFor="pdf-split-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+            {splitFile ? (
+              <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
+                <p className="font-black text-xs text-green-600 uppercase tracking-widest mb-3">Target File</p>
+                <div className="bg-slate-50/80 p-3 rounded-xl flex items-center border border-slate-100 shadow-sm">
+                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0 mr-3">
+                    <i className="fa-solid fa-file-pdf text-green-600 text-sm"></i>
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 truncate">{splitFile.name}</p>
+                </div>
+              </div>
+            ) : (
+              <div className={`transform transition-all duration-500 ${isSplitDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
+                <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
+                  ${isSplitDragActive ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white border-green-400 scale-110 shadow-[0_20px_40px_-10px_rgba(34,197,94,0.4)]' : 'bg-white text-green-500 border-slate-100'}
+                `}>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-green-500 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <i className={`fa-solid fa-cloud-arrow-up text-3xl relative z-10 transition-all duration-500 ${isSplitDragActive ? 'text-white scale-110' : 'group-hover:text-white group-hover:scale-110'}`}></i>
+                </div>
+                <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">{isSplitDragActive ? 'Drop file' : 'Select PDF to Split'}</h3>
+              </div>
+            )}
+            <div className={`mt-6 px-6 py-3 rounded-xl border font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.03]
+              ${splitFile ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' : 'bg-green-600 text-white border-green-600 hover:bg-green-700 shadow-green-500/10'}
+            `}>{splitFile ? 'Change File' : 'Browse Local'}</div>
+          </label>
         </div>
-      )}
 
-      {/* --- COMPRESS MODAL --- */}
-      {isCompressModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(59,130,246,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
-
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center shadow-inner border border-blue-200/50">
-                  <i className="fa-solid fa-file-zipper text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500"></i>
-                </div>
-                Compress PDF
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-blue-500 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
-            
-            <div className="relative z-10 flex flex-col gap-6">
-              <div 
-                className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed border-blue-200/60 bg-gradient-to-b from-blue-50/30 to-transparent p-8 text-center transition-all duration-500 hover:border-blue-400/60 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    setCompressFile(e.dataTransfer.files[0]);
-                  }
-                }}
-              >
-                <input type="file" accept=".pdf" id="pdf-compress-upload" className="hidden" onChange={(e) => setCompressFile(e.target.files[0])} disabled={isProcessing} />
-                <label htmlFor="pdf-compress-upload" className="cursor-pointer flex flex-col items-center">
-                  {compressFile ? (
-                    <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all group-hover:scale-[1.02]">
-                      <p className="font-extrabold text-xs text-blue-900 uppercase tracking-wider mb-2">Target File</p>
-                      <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100">
-                         <i className="fa-solid fa-file-pdf text-blue-500 text-xl"></i>
-                         <p className="text-sm font-semibold text-gray-700 truncate">{compressFile.name}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="transform transition-all duration-500 group-hover:-translate-y-2">
-                      <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center text-blue-500 mb-4 border border-slate-100 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-blue-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <i className="fa-solid fa-minimize text-2xl relative z-10 group-hover:scale-110 transition-transform duration-500"></i>
-                      </div>
-                      <h3 className="font-bold text-gray-900 text-base">Select Heavy PDF</h3>
-                    </div>
-                  )}
-                  <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-blue-100 text-blue-600 hover:bg-blue-50 hover:border-blue-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                    {compressFile ? 'Change File' : 'Browse Files'}
-                  </div>
-                </label>
+        {isProcessing ? (
+          <div className="relative overflow-hidden bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative flex items-center justify-center w-24 h-24 mb-4">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgba(226, 232, 240, 0.6)" strokeWidth="7" fill="transparent" />
+                <circle cx="50" cy="50" r="40" stroke="url(#greenGlow)" strokeWidth="7" fill="transparent" strokeDasharray="251.32" strokeDashoffset={251.32 - (251.32 * progress) / 100} strokeLinecap="round" className="transition-all style-none duration-300 ease-out" />
+                <defs><linearGradient id="greenGlow" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#22c55e"/><stop offset="100%" stopColor="#10b981"/></linearGradient></defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
               </div>
-
-              {/* Neumorphic Slider */}
-              <div className="bg-white/60 backdrop-blur-md border border-white rounded-[1.5rem] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                <div className="flex justify-between items-center mb-4">
-                  <label className="text-sm font-black text-gray-800 tracking-tight">Compression Engine</label>
-                  <span className="text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-indigo-500 px-3 py-1 rounded-full shadow-md">{compressQuality}% Ratio</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="1" 
-                  max="100" 
-                  value={compressQuality} 
-                  onChange={(e) => setCompressQuality(e.target.value)} 
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-indigo-500 transition-all" 
-                  disabled={isProcessing} 
-                />
-              </div>
-
-              {isProcessing ? (
-                <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between text-xs font-black text-blue-600 mb-2 tracking-wide uppercase">
-                    <span className="flex items-center gap-2"><i className="fa-solid fa-compress fa-fade"></i> Optimizing...</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
-                  </div>
-                </div>
-              ) : (
-                <button 
-                  onClick={handleCompress} 
-                  disabled={!compressFile} 
-                  className="group relative w-full h-14 mt-2 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(59,130,246,0.5)] transition-all duration-500 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-bolt group-hover:text-yellow-300 transition-colors duration-300"></i> Compress & Download
-                  </span>
-                </button>
-              )}
             </div>
+            <p className="text-xs font-black text-slate-800 uppercase tracking-wider animate-pulse"><i className="fa-solid fa-scissors text-green-500"></i> Slicing Pages...</p>
           </div>
+        ) : (
+          <button onClick={handleSplit} disabled={!splitFile} className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(34,197,94,0.4)]">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            <span className="relative z-10 flex items-center justify-center gap-2.5 h-full">Split & Download ZIP</span>
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
+{/* --- COMPRESS MODAL --- */}
+{isCompressModalOpen && (
+  <div 
+    className="fixed inset-0 z-[100] flex items-center justify-center sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+    onClick={closeOverlay}
+  >
+    <div 
+      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(59,130,246,0.25),inset_0_1px_1px_rgba(255,255,255,0.8),0_0_1px_1px_rgba(59,130,246,0.1)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95]" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-25 animate-pulse pointer-events-none"></div>
+
+      <div className="relative z-10 flex justify-between items-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-blue-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(59,130,246,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-blue-100/80 transform hover:rotate-6 transition-transform duration-300">
+            <i className="fa-solid fa-file-zipper text-xl text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-cyan-500"></i>
+          </div>
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900">Compress PDF</span>
+        </h2>
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-blue-50 border border-slate-200/80 hover:border-blue-200 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-blue-500 group-hover:rotate-90 transition-all duration-300"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-6">
+        <div 
+          className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
+            ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isCompressDragActive ? 'border-blue-500 bg-blue-50/60 shadow-[0_25px_50px_-12px_rgba(59,130,246,0.2)] scale-[1.02]' : 'border-slate-200 hover:border-blue-400/80 bg-gradient-to-b from-white via-slate-50/40 to-slate-100/20'}
+          `}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsCompressDragActive(true); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsCompressDragActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsCompressDragActive(false); }}
+          onDrop={(e) => {
+            e.preventDefault(); e.stopPropagation(); setIsCompressDragActive(false);
+            if (e.dataTransfer.files?.length) setCompressFile(e.dataTransfer.files[0]);
+          }}
+        >
+          <input type="file" accept=".pdf" id="pdf-compress-upload" className="hidden" onChange={(e) => { if (e.target.files?.length) setCompressFile(e.target.files[0]); }} disabled={isProcessing}/>
+          <label htmlFor="pdf-compress-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+            {compressFile ? (
+              <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100">
+                <p className="font-black text-xs text-blue-600 uppercase tracking-widest mb-3">Target File</p>
+                <div className="bg-slate-50/80 p-3 rounded-xl flex items-center border border-slate-100 shadow-sm">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mr-3">
+                    <i className="fa-solid fa-file-pdf text-blue-600 text-sm"></i>
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 truncate">{compressFile.name}</p>
+                </div>
+              </div>
+            ) : (
+              <div className={`transform transition-all duration-500 ${isCompressDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
+                <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
+                  ${isCompressDragActive ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white border-blue-400 scale-110 shadow-[0_20px_40px_-10px_rgba(59,130,246,0.4)]' : 'bg-white text-blue-500 border-slate-100'}
+                `}>
+                  <i className={`fa-solid fa-minimize text-3xl relative z-10 transition-all duration-500 ${isCompressDragActive ? 'text-white' : 'group-hover:text-white group-hover:scale-110'}`}></i>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                </div>
+                <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">{isCompressDragActive ? 'Drop heavy file' : 'Select Heavy PDF'}</h3>
+              </div>
+            )}
+          </label>
         </div>
-      )}
+
+        {/* 3D Premium Slider Box */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center mb-5">
+            <label className="text-xs font-black text-slate-800 tracking-tight uppercase">Compression Engine</label>
+            <span className="text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-1 rounded-full shadow-md">{compressQuality}% Ratio</span>
+          </div>
+          <input type="range" min="1" max="100" value={compressQuality} onChange={(e) => setCompressQuality(e.target.value)} disabled={isProcessing}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-cyan-500 transition-all focus:outline-none" 
+          />
+        </div>
+
+        {isProcessing ? (
+          <div className="relative overflow-hidden bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative flex items-center justify-center w-24 h-24 mb-4">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgba(226, 232, 240, 0.6)" strokeWidth="7" fill="transparent" />
+                <circle cx="50" cy="50" r="40" stroke="url(#blueGlow)" strokeWidth="7" fill="transparent" strokeDasharray="251.32" strokeDashoffset={251.32 - (251.32 * progress) / 100} strokeLinecap="round" className="transition-all style-none duration-300 ease-out" />
+                <defs><linearGradient id="blueGlow" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#06b6d4"/></linearGradient></defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
+              </div>
+            </div>
+            <p className="text-xs font-black text-slate-800 uppercase animate-pulse"><i className="fa-solid fa-bolt text-blue-500"></i> Optimizing Size...</p>
+          </div>
+        ) : (
+          <button onClick={handleCompress} disabled={!compressFile} className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(59,130,246,0.4)]">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            <span className="relative z-10 flex items-center justify-center gap-2.5 h-full">Compress & Download</span>
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
 
 {/* --- PREMIUM IMAGE TO PDF MODAL --- */}
-      {isImageModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-            className="relative max-w-md w-[95vw] bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(168,85,247,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
+{isImageModalOpen && (
+  <div 
+    className="fixed inset-0 z-[100] flex items-center justify-center  sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+    onClick={closeOverlay}
+  >
+    <style dangerouslySetInnerHTML={{__html: `body { overflow: hidden !important; }` }} />
 
-            {/* Header */}
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center shadow-inner border border-purple-200/50">
-                  <i className="fa-solid fa-image text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-fuchsia-500"></i>
-                </div>
-                Image to PDF
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-purple-500 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
+    <div 
+      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(168,85,247,0.25),inset_0_1px_1px_rgba(255,255,255,0.8),0_0_1px_1px_rgba(168,85,247,0.1)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 ease-[cubic-bezier(0.34,1.56,0.64,1)] mobile-fullscreen-modal select-none" 
+      style={{ perspective: '1000px' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* 3D Ambient Holographic Glows */}
+      <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-purple-400 to-fuchsia-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-25 pointer-events-none animate-pulse"></div>
+      <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-violet-400 to-purple-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-20 pointer-events-none"></div>
+
+      <div className="relative z-10 flex justify-between items-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-purple-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(168,85,247,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-purple-100/80 transform hover:rotate-6 transition-transform duration-300">
+            <i className="fa-solid fa-image text-xl text-transparent bg-clip-text bg-gradient-to-br from-purple-600 to-fuchsia-500"></i>
+          </div>
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-purple-900">Image to PDF</span>
+        </h2>
+        
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-purple-50 border border-slate-200/80 hover:border-purple-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-purple-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-6">
+        
+        <div 
+          className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
+            ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isImageDragActive 
+              ? 'border-purple-500 bg-purple-50/60 shadow-[0_25px_50px_-12px_rgba(168,85,247,0.2),inset_0_2px_8px_rgba(168,85,247,0.05)] scale-[1.02]' 
+              : 'border-slate-200 hover:border-purple-400/80 bg-gradient-to-b from-white via-slate-50/40 to-slate-100/20 shadow-[0_15px_35px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_45px_-15px_rgba(168,85,247,0.12)]'
+            }
+          `}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsImageDragActive(true); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsImageDragActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsImageDragActive(false); }}
+          onDrop={(e) => {
+            e.preventDefault(); e.stopPropagation(); setIsImageDragActive(false);
+            if (e.dataTransfer.files?.length) setImageFiles(Array.from(e.dataTransfer.files));
+          }}
+        >
+          <input 
+            type="file" multiple accept="image/*" id="image-to-pdf-upload" className="hidden" 
+            onChange={(e) => { if (e.target.files?.length) setImageFiles(Array.from(e.target.files)); }} 
+            disabled={isProcessing}
+          />
+          <label htmlFor="image-to-pdf-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             
-            <div className="relative z-10 flex flex-col gap-6">
-              
-              {/* Upload Area */}
-              <div 
-                className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
-                  ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-                  ${isImageDragActive ? 'border-purple-500 bg-purple-50/80 scale-[1.02] shadow-[0_0_30px_rgba(168,85,247,0.15)]' : 'border-purple-200/60 bg-gradient-to-b from-purple-50/30 to-transparent hover:border-purple-400/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.1)]'}
-                `}
-                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsImageDragActive(true); }}
-                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsImageDragActive(true); }}
-                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsImageDragActive(false); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsImageDragActive(false);
-                  if (e.dataTransfer.files) {
-                    setImageFiles(Array.from(e.dataTransfer.files));
-                  }
-                }}
-              >
-                <input 
-                  type="file" multiple accept="image/*" id="image-upload" className="hidden" 
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      setImageFiles(Array.from(e.target.files));
-                    }
-                  }} 
-                  disabled={isProcessing}
-                />
-                <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                  {imageFiles.length > 0 ? (
-                    <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all">
-                      <p className="font-extrabold text-xs text-purple-900 uppercase tracking-wider mb-2">Selected Images ({imageFiles.length})</p>
-                      <div className="max-h-32 overflow-y-auto space-y-2 pr-2">
-                        {imageFiles.map((f, i) => (
-                          <div key={i} className="bg-slate-50 p-2 rounded-lg flex items-center gap-3 border border-slate-100">
-                            <i className="fa-solid fa-image text-purple-500"></i>
-                            <span className="text-xs font-semibold text-gray-700 truncate">{f.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`transform transition-all duration-500 ${isImageDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
-                      <div className={`w-16 h-16 mx-auto rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center mb-4 border relative overflow-hidden transition-all duration-500
-                        ${isImageDragActive ? 'bg-purple-100 text-purple-600 border-purple-200 scale-110' : 'bg-white text-purple-500 border-slate-100'}
-                      `}>
-                        <div className="absolute inset-0 bg-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <i className={`fa-solid fa-cloud-arrow-up text-2xl relative z-10 transition-transform duration-500 ${isImageDragActive ? 'animate-bounce' : 'group-hover:scale-110'}`}></i>
-                      </div>
-                      <h3 className="font-bold text-gray-900 text-base">
-                        {isImageDragActive ? 'Drop to upload!' : 'Upload Images'}
-                      </h3>
-                      <p className="text-gray-400 text-xs mt-1 font-medium">Select JPG, PNG or WEBP</p>
-                    </div>
-                  )}
-                  <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-purple-100 text-purple-600 hover:bg-purple-50 hover:border-purple-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                    {imageFiles.length > 0 ? 'Change Selection' : 'Browse Files'}
-                  </div>
-                </label>
-              </div>
-
-              {/* Action Button */}
-              {isProcessing ? (
-                <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between text-xs font-black text-purple-600 mb-2 tracking-wide uppercase">
-                    <span className="flex items-center gap-2"><i className="fa-solid fa-circle-notch fa-spin"></i> Converting...</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                    <div className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}></div>
-                  </div>
+            {imageFiles.length > 0 ? (
+              <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="font-black text-xs text-purple-600 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping"></span> Files Ready ({imageFiles.length})
+                  </p>
                 </div>
-              ) : (
-                <button 
-                  onClick={handleImageToPdf} 
-                  disabled={imageFiles.length === 0} 
-                  className="group relative w-full h-14 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(168,85,247,0.5)] transition-all duration-500 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-fuchsia-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-wand-magic-sparkles group-hover:rotate-12 transition-transform duration-300"></i> Convert & Download
-                  </span>
-                </button>
-              )}
+                <div className="max-h-36 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                  {imageFiles.map((f, i) => (
+                    <div key={i} className="bg-slate-50/80 hover:bg-slate-50 p-3 rounded-xl flex items-center justify-between border border-slate-100 shadow-sm transition-all duration-200">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                          <i className="fa-solid fa-image text-purple-600 text-sm"></i>
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 truncate max-w-[220px]">{f.name}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className={`transform transition-all duration-500 ${isImageDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
+                <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
+                  ${isImageDragActive ? 'bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white border-purple-400 scale-110 shadow-[0_20px_40px_-10px_rgba(168,85,247,0.4)]' : 'bg-white text-purple-500 border-slate-100'}
+                `}>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-purple-400 to-fuchsia-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <i className={`fa-solid fa-cloud-arrow-up text-3xl relative z-10 transition-all duration-500 ${isImageDragActive ? 'text-white scale-110' : 'group-hover:text-white group-hover:scale-110'}`}></i>
+                </div>
+                <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">
+                  {isImageDragActive ? 'Release to queue' : 'Upload Images'}
+                </h3>
+                <p className="text-slate-400 text-xs mt-1.5 font-medium px-4">Compile JPG, PNG, or WEBP into one file</p>
+              </div>
+            )}
+
+            <div className={`mt-6 px-6 py-3 rounded-xl border font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.03] active:scale-95
+              ${imageFiles.length > 0 ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700 shadow-purple-500/10'}
+            `}>
+              {imageFiles.length > 0 ? <span><i className="fa-solid fa-plus mr-1.5"></i>Select More</span> : <span><i className="fa-solid fa-folder-open mr-1.5"></i>Browse Assets</span>}
+            </div>
+          </label>
+        </div>
+
+        {isProcessing ? (
+          <div className="relative overflow-hidden bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative flex items-center justify-center w-24 h-24 mb-4">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgba(226, 232, 240, 0.6)" strokeWidth="7" fill="transparent" />
+                <circle cx="50" cy="50" r="40" stroke="url(#purpleCircleGlow)" strokeWidth="7" fill="transparent" strokeDasharray="251.32" strokeDashoffset={251.32 - (251.32 * progress) / 100} strokeLinecap="round" className="transition-all style-none duration-300 ease-out" />
+                <defs>
+                  <linearGradient id="purpleCircleGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#d946ef" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 uppercase tracking-wider">
+                <i className="fa-solid fa-layer-group text-purple-500 animate-pulse text-xs"></i> Binding PDF...
+              </p>
             </div>
           </div>
-        </div>
-      )}  
+        ) : (
+          <button 
+            onClick={handleImageToPdf} 
+            disabled={imageFiles.length === 0} 
+            className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(168,85,247,0.4)] hover:-translate-y-0.5 active:translate-y-0"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            <span className="relative z-10 flex items-center justify-center gap-2.5 tracking-wide text-sm font-extrabold h-full">
+              <i className="fa-solid fa-file-pdf text-xs opacity-70 group-hover:rotate-12 transition-transform duration-300"></i> Compile PDF & Download
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
 {/* --- PREMIUM PDF TO IMAGE MODAL --- */}
       {isPdfToImgModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
           <div 
-            className="relative max-w-md w-[95vw] bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(59,130,246,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
+            className="relative max-w-md w-[95vw] bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(59,130,246,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out mobile-fullscreen-modal" 
             onClick={(e) => e.stopPropagation()}
           >
             {/* Ambient Background Glow */}
@@ -1554,93 +1653,128 @@ onClick={() => navigate('/editor')}
 
 {/* --- PREMIUM REMOVE PAGES MODAL --- */}
 {isRemovePagesModalOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
+  <div 
+    className="fixed inset-0 z-[100] flex items-center justify-center sm:p-6 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in" 
+    onClick={closeOverlay}
+  >
+    <style dangerouslySetInnerHTML={{__html: `body { overflow: hidden !important; }` }} />
+
     <div 
-      className="relative max-w-4xl w-[95vw] h-[90vh] bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(245,158,11,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out flex flex-col" 
+      className="relative w-full max-w-5xl h-[92vh] bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-8 shadow-[0_50px_100px_-20px_rgba(245,158,11,0.25),inset_0_1px_1px_rgba(255,255,255,0.8)] border border-white/80 overflow-hidden flex flex-col transform transition-all duration-500 animate-in fade-in zoom-in-[0.95] ease-[cubic-bezier(0.34,1.56,0.64,1)] mobile-fullscreen-modal select-none" 
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Header */}
-      <div className="relative z-10 flex justify-between items-center mb-8 shrink-0">
-        <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center shadow-inner border border-amber-200/50">
-            <i className="fa-solid fa-bezier-curve text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-500"></i>
+      {/* 3D Ambient Holographic Glows */}
+      <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 pointer-events-none animate-pulse"></div>
+
+      {/* Fixed Header */}
+      <div className="relative z-10 flex justify-between items-center mb-6 shrink-0">
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-amber-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(245,158,11,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-amber-100/80 transform hover:rotate-6 transition-transform duration-300">
+            <i className="fa-solid fa-bezier-curve text-xl text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-500"></i>
           </div>
-          Page Manager
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-amber-900">Page Manager</span>
         </h2>
+        
         <div className="flex items-center gap-4">
-          <span className="hidden sm:block bg-amber-500/10 text-amber-600 text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider border border-amber-200">Pro Features Active</span>
-          <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-200 transition-all duration-300 flex items-center justify-center">
-            <i className="fa-solid fa-xmark text-slate-400 group-hover:text-amber-500 group-hover:rotate-90 transition-all duration-300"></i>
+          <span className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-100 to-orange-50 text-amber-700 text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider border border-amber-200 shadow-sm">
+            <i className="fa-solid fa-crown text-[10px]"></i> Pro
+          </span>
+          <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-amber-50 border border-slate-200/80 hover:border-amber-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
+            <i className="fa-solid fa-xmark text-slate-400 group-hover:text-amber-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
           </button>
         </div>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto pr-2 sm:pr-4 custom-scrollbar space-y-8 relative z-10">
         
-        {/* Upload Area */}
+        {/* Advanced Upload Zone */}
         <div 
-          className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
-            ${(isProcessing || isLoadingPreviews) ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-            ${isRemovePagesDragActive ? 'border-amber-500 bg-amber-50/80 scale-[1.02] shadow-[0_0_30px_rgba(245,158,11,0.15)]' : 'border-amber-200/60 bg-gradient-to-b from-amber-50/30 to-transparent hover:border-amber-400/60 hover:shadow-[0_0_30px_rgba(245,158,11,0.1)]'}
+          className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-8 sm:p-10 text-center transform hover:scale-[1.005] active:scale-[0.995]
+            ${(isProcessing || isLoadingPreviews) ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isRemovePagesDragActive 
+              ? 'border-amber-500 bg-amber-50/60 shadow-[0_25px_50px_-12px_rgba(245,158,11,0.2),inset_0_2px_8px_rgba(245,158,11,0.05)] scale-[1.01]' 
+              : 'border-slate-200 hover:border-amber-400/80 bg-gradient-to-b from-white via-slate-50/40 to-slate-100/20 shadow-[0_15px_35px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_45px_-15px_rgba(245,158,11,0.12)]'
+            }
           `}
           onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsRemovePagesDragActive(true); }}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsRemovePagesDragActive(true); }}
           onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsRemovePagesDragActive(false); }}
           onDrop={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsRemovePagesDragActive(false);
-            if (e.dataTransfer.files) {
-               // Assuming your logic requires passing the file list to your existing handler
-               const event = { target: { files: e.dataTransfer.files } };
-               handleRemovePagesFileChange(event);
-            }
+            e.preventDefault(); e.stopPropagation(); setIsRemovePagesDragActive(false);
+            if (e.dataTransfer.files?.length) handleRemovePagesFileChange({ target: { files: e.dataTransfer.files } });
           }}
         >
           <input type="file" multiple accept=".pdf" id="remove-pages-upload" className="hidden" onChange={handleRemovePagesFileChange} disabled={isProcessing || isLoadingPreviews}/>
-          <label htmlFor="remove-pages-upload" className="cursor-pointer flex flex-col items-center">
-            <div className={`w-16 h-16 rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center mb-4 border relative overflow-hidden transition-all duration-500 ${isRemovePagesDragActive ? 'bg-amber-100 scale-110' : 'bg-white'}`}>
-              <i className="fa-solid fa-file-pdf text-2xl text-amber-500 relative z-10"></i>
+          <label htmlFor="remove-pages-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+            <div className={`transform transition-all duration-500 ${isRemovePagesDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
+              <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
+                ${isRemovePagesDragActive ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white border-amber-400 scale-110 shadow-[0_20px_40px_-10px_rgba(245,158,11,0.4)]' : 'bg-white text-amber-500 border-slate-100'}
+              `}>
+                <div className="absolute inset-0 bg-gradient-to-tr from-amber-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <i className={`fa-solid fa-file-pdf text-3xl relative z-10 transition-all duration-500 ${isRemovePagesDragActive ? 'text-white scale-110' : 'group-hover:text-white group-hover:scale-110'}`}></i>
+              </div>
+              <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">
+                {isRemovePagesDragActive ? 'Release to map' : 'Upload PDFs to Manage'}
+              </h3>
+              <p className="text-slate-400 text-xs mt-1.5 font-medium">Extract, delete, or merge specific pages visually</p>
             </div>
-            <h3 className="font-bold text-gray-900 text-base">{isRemovePagesDragActive ? 'Drop PDFs here' : 'Upload PDF Documents'}</h3>
-            <p className="text-gray-400 text-xs mt-1 font-medium">Select files to manage pages or merge</p>
+            
+            <div className={`mt-6 px-6 py-3 rounded-xl border font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.03] active:scale-95 bg-white text-slate-700 border-slate-200 hover:bg-slate-50`}>
+              <i className="fa-solid fa-folder-open mr-1.5"></i>Browse Local Storage
+            </div>
           </label>
         </div>
 
-        {/* Loading State */}
+        {/* Loading State Spinner */}
         {isLoadingPreviews && (
-          <div className="py-12 flex flex-col items-center gap-4">
-            <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-            <p className="text-sm font-bold text-amber-700 animate-pulse">Generating Secure Previews...</p>
+          <div className="py-16 flex flex-col items-center justify-center bg-white/50 rounded-3xl border border-slate-100 shadow-sm animate-in fade-in">
+            <div className="relative flex items-center justify-center w-16 h-16 mb-4">
+              <svg className="w-full h-full transform -rotate-90 animate-spin" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="8" fill="transparent" />
+                <circle cx="50" cy="50" r="40" stroke="#f59e0b" strokeWidth="8" fill="transparent" strokeDasharray="100 200" strokeLinecap="round" />
+              </svg>
+              <i className="fa-solid fa-shield text-amber-500 absolute"></i>
+            </div>
+            <p className="text-sm font-black text-slate-800 tracking-wider uppercase">Generating Secure Canvas...</p>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Rendering high-fidelity thumbnails</p>
           </div>
         )}
 
-        {/* Previews Grid */}
+        {/* 3D Previews Grid */}
         {previewData.length > 0 && !isLoadingPreviews && (
-          <div className="space-y-6 animate-in fade-in duration-700">
+          <div className="space-y-6 animate-in fade-in duration-700 slide-in-from-bottom-4">
             {previewData.map((fileObj, fileIndex) => (
-              <div key={fileIndex} className="bg-white/50 border border-slate-100 rounded-3xl p-6 shadow-sm">
-                <h4 className="font-black text-gray-800 text-sm mb-4 flex items-center gap-2">
-                  <i className="fa-regular fa-file-pdf text-amber-500"></i> {fileObj.filename}
+              <div key={fileIndex} className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-[2rem] p-6 sm:p-8 shadow-[0_15px_30px_-15px_rgba(0,0,0,0.05)]">
+                <h4 className="font-black text-slate-900 text-sm mb-6 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-slate-100 text-amber-600 flex items-center justify-center shadow-inner border border-slate-200">
+                    <i className="fa-regular fa-file-pdf"></i>
+                  </span>
+                  {fileObj.filename}
                 </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-5">
                   {fileObj.pages.map((page) => {
                     const isKept = activeKeptPages[fileIndex]?.includes(page.page_index);
                     return (
-                      <div key={page.page_index} className={`relative rounded-2xl overflow-hidden p-2 border-2 transition-all duration-300 ${isKept ? 'border-transparent bg-white shadow-lg' : 'border-red-200 bg-red-50/50 opacity-60 grayscale'}`}>
-                        <div className="aspect-[3/4] bg-slate-100 rounded-xl overflow-hidden relative">
+                      <div key={page.page_index} className={`group relative rounded-2.5xl overflow-hidden p-2 transition-all duration-300 ${isKept ? 'bg-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] border border-slate-200 hover:border-amber-300 transform hover:-translate-y-1' : 'bg-slate-50 opacity-60 grayscale border border-dashed border-slate-300 hover:opacity-80'}`}>
+                        <div className="aspect-[3/4] bg-slate-100 rounded-xl overflow-hidden relative shadow-inner">
                           <img src={page.thumbnail} alt={`Page ${page.page_index + 1}`} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <button onClick={() => setFullScreenPreviewUrl(page.thumbnail)} className="w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center hover:scale-110 transition-transform">
+                          
+                          {/* Hover Overlay Controls */}
+                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]">
+                            <button onClick={() => setFullScreenPreviewUrl(page.thumbnail)} className="w-9 h-9 bg-white/90 text-slate-700 rounded-full flex items-center justify-center hover:scale-110 hover:bg-white hover:text-slate-900 transition-all shadow-lg">
                               <i className="fa-solid fa-expand text-xs"></i>
                             </button>
-                            <button onClick={() => togglePageSelection(fileIndex, page.page_index)} className={`w-8 h-8 ${isKept ? 'bg-red-500' : 'bg-green-500'} text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform`}>
+                            <button onClick={() => togglePageSelection(fileIndex, page.page_index)} className={`w-9 h-9 text-white rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-lg ${isKept ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`}>
                               <i className={`fa-solid ${isKept ? 'fa-trash-can' : 'fa-arrow-rotate-left'}`}></i>
                             </button>
                           </div>
                         </div>
-                        <p className="text-[10px] font-black text-slate-400 mt-2 uppercase tracking-widest text-center">Page {page.page_index + 1}</p>
+                        <div className="flex justify-between items-center mt-3 px-1">
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Page {page.page_index + 1}</p>
+                          <div className={`w-2 h-2 rounded-full ${isKept ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-red-400'}`}></div>
+                        </div>
                       </div>
                     );
                   })}
@@ -1648,20 +1782,21 @@ onClick={() => navigate('/editor')}
               </div>
             ))}
 
-            {/* Config Mode Toggle */}
-            <div className="bg-white border border-amber-100 rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
+            {/* Output Engine Configuration Box */}
+            <div className="bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row gap-6 items-center justify-between shadow-[0_10px_30px_-15px_rgba(0,0,0,0.05)]">
               <div>
-                <p className="font-black text-gray-900 text-sm">Output Configuration</p>
-                <p className="text-xs text-gray-500 font-medium">Choose how to package your result</p>
+                <p className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                  <i className="fa-solid fa-layer-group text-amber-500"></i> Packaging Protocol
+                </p>
+                <p className="text-xs text-slate-500 font-medium mt-1">Determine the structural output format</p>
               </div>
-              <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full sm:w-auto">
+              <div className="flex bg-slate-100/80 p-1.5 rounded-2xl w-full sm:w-auto border border-slate-200 shadow-inner">
                 {['single', 'multiple'].map((mode) => (
                   <button 
-                    key={mode}
-                    onClick={() => setDownloadMode(mode)}
-                    className={`flex-1 sm:flex-initial px-6 py-2.5 text-xs font-black rounded-xl transition-all ${downloadMode === mode ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    key={mode} onClick={() => setDownloadMode(mode)}
+                    className={`flex-1 sm:flex-initial px-6 py-3 text-xs font-black rounded-xl transition-all duration-300 ${downloadMode === mode ? 'bg-white text-slate-900 shadow-sm border border-slate-200 scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}
                   >
-                    {mode === 'single' ? 'Merge into 1 PDF' : 'Keep Separate (ZIP)'}
+                    {mode === 'single' ? 'Bind as Single PDF' : 'Export as ZIP Archive'}
                   </button>
                 ))}
               </div>
@@ -1670,20 +1805,25 @@ onClick={() => navigate('/editor')}
         )}
       </div>
 
-      {/* Footer / Action */}
-      <div className="shrink-0 pt-6 border-t border-slate-100 mt-2">
+      {/* Fixed Action Footer */}
+      <div className="shrink-0 pt-6 border-t border-slate-100 mt-2 relative z-10">
         {isProcessing ? (
-          <div className="w-full h-14 bg-amber-500/10 rounded-2xl flex items-center justify-between px-6 animate-pulse">
-            <span className="font-bold text-amber-700">Compiling...</span>
-            <span className="font-black text-amber-700">{progress}%</span>
+          <div className="w-full h-15 bg-slate-50 rounded-2.5xl flex items-center justify-between px-8 border border-slate-200">
+            <span className="font-black text-sm text-slate-800 uppercase tracking-widest flex items-center gap-3">
+              <i className="fa-solid fa-circle-notch fa-spin text-amber-500"></i> Restructuring Matrix...
+            </span>
+            <span className="font-black text-amber-500 text-lg">{progress}%</span>
           </div>
         ) : (
           <button 
             onClick={handleRemovePagesSubmit} 
             disabled={previewData.length === 0 || activeKeptPages.every(arr => arr.length === 0)} 
-            className="w-full h-14 rounded-2xl bg-gray-900 text-white font-bold hover:shadow-[0_10px_30px_-10px_rgba(245,158,11,0.5)] transition-all hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="group w-full h-15 rounded-2.5xl bg-slate-900 text-white font-black text-sm tracking-wide hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.4)] transition-all duration-500 disabled:opacity-30 disabled:cursor-not-allowed hover:-translate-y-0.5 relative overflow-hidden"
           >
-            Apply Structural Edits
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              Apply Structural Changes <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+            </span>
           </button>
         )}
       </div>
@@ -1691,1030 +1831,1195 @@ onClick={() => navigate('/editor')}
   </div>
 )}
 
-      {/* --- FULLSCREEN COMPONENT MODAL OVERLAY --- */}
-      {fullScreenPreviewUrl && (
-        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setFullScreenPreviewUrl(null)}>
-          <div className="relative max-w-3xl max-h-[90vh] bg-white rounded-2xl overflow-hidden p-2 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setFullScreenPreviewUrl(null)} className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white transition flex items-center justify-center"><i className="fa-solid fa-xmark"></i></button>
-            <img src={fullScreenPreviewUrl} alt="Fullscreen View" className="max-w-full max-h-[85vh] object-contain rounded-lg" />
-          </div>
+{/* --- FULLSCREEN COMPONENT MODAL OVERLAY --- */}
+{fullScreenPreviewUrl && (
+  <div 
+    className="fixed inset-0 z-[999999] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300" 
+    onClick={() => setFullScreenPreviewUrl(null)}
+  >
+    <div 
+      className="relative max-w-4xl max-h-[92vh] bg-white/5 rounded-3xl overflow-hidden p-2 shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/10 flex items-center justify-center transform transition-all animate-in zoom-in-95 duration-500 select-none" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Premium Floating Close Button */}
+      <button 
+        onClick={() => setFullScreenPreviewUrl(null)} 
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 w-10 h-10 rounded-full bg-slate-900/60 backdrop-blur-md hover:bg-red-500 text-white transition-all duration-300 flex items-center justify-center border border-white/20 hover:border-red-400 shadow-xl group"
+      >
+        <i className="fa-solid fa-xmark text-sm group-hover:rotate-90 transition-transform duration-300"></i>
+      </button>
+
+      {/* The Image Wrapper */}
+      <div className="relative bg-slate-900 rounded-2xl overflow-hidden border border-white/5 shadow-inner">
+        <img 
+          src={fullScreenPreviewUrl} 
+          alt="High Resolution Preview" 
+          className="max-w-full max-h-[88vh] object-contain select-none" 
+        />
+        
+        {/* Subtle Bottom-Left Identifier Label */}
+        <div className="absolute bottom-4 left-4 z-10 px-3 py-1.5 bg-slate-900/80 backdrop-blur border border-white/10 rounded-lg shadow-lg pointer-events-none">
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Preview Mode
+          </p>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
 
 {/* --- PREMIUM IMAGE COMPRESS MODAL --- */}
-      {isImgCompressModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(245,158,11,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
+{isImgCompressModalOpen && (
+  <div 
+    className="fixed inset-0 z-[100] flex items-center justify-center sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+    onClick={closeOverlay}
+  >
+    <style dangerouslySetInnerHTML={{__html: `body { overflow: hidden !important; }` }} />
 
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center shadow-inner border border-amber-200/50">
-                  <i className="fa-solid fa-images text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-500"></i>
-                </div>
-                Compress
-              </h2>
-              <span className="bg-amber-500 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-full tracking-wider shadow-sm">Premium 2026</span>
-            </div>
+    <div 
+      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(245,158,11,0.25),inset_0_1px_1px_rgba(255,255,255,0.8),0_0_1px_1px_rgba(245,158,11,0.1)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 ease-[cubic-bezier(0.34,1.56,0.64,1)] mobile-fullscreen-modal select-none" 
+      style={{ perspective: '1000px' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* 3D Ambient Holographic Glows */}
+      <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-25 pointer-events-none animate-pulse"></div>
+      <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-yellow-300 to-amber-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-20 pointer-events-none"></div>
+
+      <div className="relative z-10 flex justify-between items-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-amber-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(245,158,11,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-amber-100/80 transform hover:rotate-6 transition-transform duration-300">
+            <i className="fa-solid fa-images text-xl text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-500"></i>
+          </div>
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-amber-900">Compress Images</span>
+        </h2>
+        
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-amber-50 border border-slate-200/80 hover:border-amber-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-amber-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-6">
+        
+        <div 
+          className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
+            ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isImgDragActive 
+              ? 'border-amber-500 bg-amber-50/60 shadow-[0_25px_50px_-12px_rgba(245,158,11,0.2),inset_0_2px_8px_rgba(245,158,11,0.05)] scale-[1.02]' 
+              : 'border-slate-200 hover:border-amber-400/80 bg-gradient-to-b from-white via-slate-50/40 to-slate-100/20 shadow-[0_15px_35px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_45px_-15px_rgba(245,158,11,0.12)]'
+            }
+          `}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsImgDragActive(true); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsImgDragActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsImgDragActive(false); }}
+          onDrop={(e) => {
+            e.preventDefault(); e.stopPropagation(); setIsImgDragActive(false);
+            if (e.dataTransfer.files?.length) setImgCompressFiles(Array.from(e.dataTransfer.files));
+          }}
+        >
+          <input 
+            type="file" multiple accept="image/*" id="img-compress-upload" className="hidden" 
+            onChange={(e) => { if (e.target.files?.length) setImgCompressFiles(Array.from(e.target.files)); }} 
+            disabled={isProcessing}
+          />
+          <label htmlFor="img-compress-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             
-            <div className="relative z-10 flex flex-col gap-6">
-              
-              {/* Upload Area */}
-              <div 
-                className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
-                  ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-                  ${isImgDragActive ? 'border-amber-500 bg-amber-50/80 scale-[1.02] shadow-[0_0_30px_rgba(245,158,11,0.15)]' : 'border-amber-200/60 bg-gradient-to-b from-amber-50/30 to-transparent hover:border-amber-400/60 hover:shadow-[0_0_30px_rgba(245,158,11,0.1)]'}
-                `}
-                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsImgDragActive(true); }}
-                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsImgDragActive(true); }}
-                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsImgDragActive(false); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsImgDragActive(false);
-                  if (e.dataTransfer.files) {
-                    setImgCompressFiles(Array.from(e.dataTransfer.files));
-                  }
-                }}
-              >
-                <input 
-                  type="file" multiple accept="image/*" id="img-compress-upload" className="hidden" 
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      setImgCompressFiles(Array.from(e.target.files));
-                    }
-                  }} 
-                  disabled={isProcessing}
-                />
-                <label htmlFor="img-compress-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                  {imgCompressFiles.length > 0 ? (
-                    <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all">
-                      <p className="font-extrabold text-xs text-amber-900 uppercase tracking-wider mb-2">Selected Files ({imgCompressFiles.length})</p>
-                      <div className="max-h-32 overflow-y-auto space-y-2 pr-2">
-                        {imgCompressFiles.map((f, i) => (
-                          <div key={i} className="bg-slate-50 p-2 rounded-lg flex items-center gap-3 border border-slate-100">
-                            <i className="fa-solid fa-image text-amber-500"></i>
-                            <span className="text-xs font-semibold text-gray-700 truncate">{f.name}</span>
-                          </div>
-                        ))}
+            {imgCompressFiles.length > 0 ? (
+              <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="font-black text-xs text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span> Batch Queue ({imgCompressFiles.length})
+                  </p>
+                </div>
+                <div className="max-h-36 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                  {imgCompressFiles.map((f, i) => (
+                    <div key={i} className="bg-slate-50/80 hover:bg-slate-50 p-3 rounded-xl flex items-center justify-between border border-slate-100 shadow-sm transition-all duration-200">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                          <i className="fa-solid fa-image text-amber-600 text-sm"></i>
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 truncate max-w-[220px]">{f.name}</span>
                       </div>
                     </div>
-                  ) : (
-                    <div className={`transform transition-all duration-500 ${isImgDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
-                      <div className={`w-16 h-16 mx-auto rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center mb-4 border relative overflow-hidden transition-all duration-500
-                        ${isImgDragActive ? 'bg-amber-100 text-amber-600 border-amber-200 scale-110' : 'bg-white text-amber-500 border-slate-100'}
-                      `}>
-                        <div className="absolute inset-0 bg-amber-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <i className={`fa-solid fa-cloud-arrow-up text-2xl relative z-10 transition-transform duration-500 ${isImgDragActive ? 'animate-bounce' : 'group-hover:scale-110'}`}></i>
-                      </div>
-                      <h3 className="font-bold text-gray-900 text-base">
-                        {isImgDragActive ? 'Drop to upload!' : 'Upload Images'}
-                      </h3>
-                      <p className="text-gray-400 text-xs mt-1 font-medium">Select JPG, PNG or WEBP files</p>
-                    </div>
-                  )}
-                  <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-amber-100 text-amber-600 hover:bg-amber-50 hover:border-amber-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                    {imgCompressFiles.length > 0 ? 'Change Selection' : 'Browse Files'}
-                  </div>
-                </label>
-              </div>
-
-              {/* Quality Slider */}
-              <div className="flex flex-col gap-3">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-black text-gray-800 tracking-tight uppercase">Compression Quality</label>
-                  <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg uppercase tracking-wide border border-amber-100">{imgCompressQuality}%</span>
-                </div>
-                <input 
-                  type="range" min="10" max="100" value={imgCompressQuality} 
-                  onChange={(e) => setImgCompressQuality(parseInt(e.target.value))} 
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500 transition-all hover:h-3"
-                  disabled={isProcessing}
-                />
-                <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase tracking-wider px-1">
-                  <span>Smaller File</span>
-                  <span>Higher Quality</span>
+                  ))}
                 </div>
               </div>
-
-              {/* Action Button */}
-              {isProcessing ? (
-                <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between text-xs font-black text-amber-600 mb-2 tracking-wide uppercase">
-                    <span className="flex items-center gap-2"><i className="fa-solid fa-compress fa-fade"></i> Optimizing...</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                    <div className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}></div>
-                  </div>
+            ) : (
+              <div className={`transform transition-all duration-500 ${isImgDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
+                <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
+                  ${isImgDragActive ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white border-amber-400 scale-110 shadow-[0_20px_40px_-10px_rgba(245,158,11,0.4)]' : 'bg-white text-amber-500 border-slate-100'}
+                `}>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-amber-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <i className={`fa-solid fa-cloud-arrow-up text-3xl relative z-10 transition-all duration-500 ${isImgDragActive ? 'text-white scale-110' : 'group-hover:text-white group-hover:scale-110'}`}></i>
                 </div>
-              ) : (
-                <button 
-                  onClick={handleCompressImages} 
-                  disabled={imgCompressFiles.length === 0} 
-                  className="group relative w-full h-14 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(245,158,11,0.5)] transition-all duration-500 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-wand-magic-sparkles group-hover:-translate-y-1 transition-transform duration-300"></i> Optimize & Download
-                  </span>
-                </button>
-              )}
+                <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">
+                  {isImgDragActive ? 'Release onto canvas' : 'Upload Images'}
+                </h3>
+                <p className="text-slate-400 text-xs mt-1.5 font-medium px-4">Select JPG, PNG, or WEBP files</p>
+              </div>
+            )}
+
+            <div className={`mt-6 px-6 py-3 rounded-xl border font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.03] active:scale-95
+              ${imgCompressFiles.length > 0 ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' : 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-amber-500/10'}
+            `}>
+              {imgCompressFiles.length > 0 ? <span><i className="fa-solid fa-plus mr-1.5"></i>Add More</span> : <span><i className="fa-solid fa-folder-open mr-1.5"></i>Browse Storage</span>}
             </div>
+          </label>
+        </div>
+
+        {/* 3D Premium Quality Slider */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center mb-5">
+            <label className="text-xs font-black text-slate-800 tracking-tight uppercase">Compression Quality</label>
+            <span className="text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 rounded-full shadow-md">{imgCompressQuality}% Quality</span>
+          </div>
+          <input 
+            type="range" min="10" max="100" value={imgCompressQuality} 
+            onChange={(e) => setImgCompressQuality(parseInt(e.target.value))} 
+            disabled={isProcessing}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-orange-500 transition-all focus:outline-none" 
+          />
+          <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase tracking-wider px-1 mt-3">
+            <span>Max Compression</span>
+            <span>Max Quality</span>
           </div>
         </div>
-      )}
 
-{/* --- PDF TO WORD MODAL --- */}
-      {isPdfToWordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(37,99,235,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
-
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center shadow-inner border border-blue-200/50">
-                  <i className="fa-solid fa-file-word text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500"></i>
-                </div>
-                PDF to Word
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-blue-500 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
-            
-            <div className="relative z-10 flex flex-col gap-6">
-              
-              {/* Upload Area */}
-              <div 
-                className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
-                  ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-                  ${isWordDragActive ? 'border-blue-500 bg-blue-50/80 scale-[1.02] shadow-[0_0_30px_rgba(37,99,235,0.15)]' : 'border-blue-200/60 bg-gradient-to-b from-blue-50/30 to-transparent hover:border-blue-400/60 hover:shadow-[0_0_30px_rgba(37,99,235,0.1)]'}
-                `}
-                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsWordDragActive(true); }}
-                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsWordDragActive(true); }}
-                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsWordDragActive(false); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsWordDragActive(false);
-                  if (e.dataTransfer.files) {
-                    setPdfToWordFiles(Array.from(e.dataTransfer.files));
-                  }
-                }}
-              >
-                <input 
-                  type="file" multiple accept=".pdf" id="pdf-to-word-upload" className="hidden" 
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      setPdfToWordFiles(Array.from(e.target.files));
-                    }
-                  }} 
-                  disabled={isProcessing}
-                />
-                <label htmlFor="pdf-to-word-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                  {pdfToWordFiles.length > 0 ? (
-                    <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all">
-                      <p className="font-extrabold text-xs text-blue-900 uppercase tracking-wider mb-2">Selected Files ({pdfToWordFiles.length})</p>
-                      <div className="max-h-32 overflow-y-auto space-y-2 pr-2">
-                        {pdfToWordFiles.map((f, i) => (
-                          <div key={i} className="bg-slate-50 p-2 rounded-lg flex items-center gap-3 border border-slate-100">
-                            <i className="fa-solid fa-file-pdf text-blue-500"></i>
-                            <span className="text-xs font-semibold text-gray-700 truncate">{f.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`transform transition-all duration-500 ${isWordDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
-                      <div className={`w-16 h-16 mx-auto rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center mb-4 border relative overflow-hidden transition-all duration-500
-                        ${isWordDragActive ? 'bg-blue-100 text-blue-600 border-blue-200 scale-110' : 'bg-white text-blue-500 border-slate-100'}
-                      `}>
-                        <div className="absolute inset-0 bg-blue-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <i className={`fa-solid fa-cloud-arrow-up text-2xl relative z-10 transition-transform duration-500 ${isWordDragActive ? 'animate-bounce' : 'group-hover:scale-110'}`}></i>
-                      </div>
-                      <h3 className="font-bold text-gray-900 text-base">
-                        {isWordDragActive ? 'Drop files to process!' : 'Upload PDF Documents'}
-                      </h3>
-                      <p className="text-gray-400 text-xs mt-1 font-medium">Select one or more PDF files</p>
-                    </div>
-                  )}
-                  <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-blue-100 text-blue-600 hover:bg-blue-50 hover:border-blue-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                    {pdfToWordFiles.length > 0 ? 'Change Selection' : 'Browse Files'}
-                  </div>
-                </label>
+        {isProcessing ? (
+          <div className="relative overflow-hidden bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative flex items-center justify-center w-24 h-24 mb-4">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgba(226, 232, 240, 0.6)" strokeWidth="7" fill="transparent" />
+                <circle cx="50" cy="50" r="40" stroke="url(#amberCircleGlow)" strokeWidth="7" fill="transparent" strokeDasharray="251.32" strokeDashoffset={251.32 - (251.32 * progress) / 100} strokeLinecap="round" className="transition-all style-none duration-300 ease-out" />
+                <defs>
+                  <linearGradient id="amberCircleGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#f59e0b" />
+                    <stop offset="100%" stopColor="#f97316" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
               </div>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 uppercase tracking-wider">
+                <i className="fa-solid fa-compress text-amber-500 animate-pulse text-xs"></i> Shrinking Assets...
+              </p>
+            </div>
+          </div>
+        ) : (
+          <button 
+            onClick={handleCompressImages} 
+            disabled={imgCompressFiles.length === 0} 
+            className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.4)] hover:-translate-y-0.5 active:translate-y-0"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            <span className="relative z-10 flex items-center justify-center gap-2.5 tracking-wide text-sm font-extrabold h-full">
+              <i className="fa-solid fa-wand-magic-sparkles text-xs opacity-70 group-hover:rotate-12 transition-transform duration-300"></i> Optimize & Download
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
-              {/* Info Banner */}
-              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
-                <i className="fa-solid fa-circle-info text-blue-500 mt-1"></i>
-                <p className="text-[11px] text-blue-900 leading-relaxed font-bold">
-                  Layouts and images will be mapped to editable elements. Heavy documents may take a few extra seconds to reconstruct.
+{/* --- PREMIUM 3D PDF TO WORD MODAL --- */}
+{isPdfToWordModalOpen && (
+  <div 
+    className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+    onClick={closeOverlay}
+  >
+    {/* Background Scroll Lock Helper */}
+    <style dangerouslySetInnerHTML={{__html: `body { overflow: hidden !important; }` }} />
+
+    <div 
+      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(37,99,235,0.25),inset_0_1px_1px_rgba(255,255,255,0.8),0_0_1px_1px_rgba(37,99,235,0.1)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 ease-[cubic-bezier(0.34,1.56,0.64,1)] mobile-fullscreen-modal select-none" 
+      style={{ perspective: '1000px' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* 3D Ambient Holographic Glows */}
+      <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-25 pointer-events-none animate-pulse"></div>
+      <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-cyan-400 to-blue-400 rounded-full mix-blend-multiply filter blur-[90px] opacity-20 pointer-events-none"></div>
+
+      {/* Top Header Row */}
+      <div className="relative z-10 flex justify-between items-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-blue-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(37,99,235,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-blue-100/80 transform hover:rotate-6 transition-transform duration-300">
+            <i className="fa-solid fa-file-word text-xl text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-indigo-500"></i>
+          </div>
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900">PDF to Word</span>
+        </h2>
+        
+        <button 
+          onClick={closeOverlay} 
+          className="group w-11 h-11 rounded-full bg-white hover:bg-rose-50 border border-slate-200/80 hover:border-rose-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center"
+          aria-label="Close modal"
+        >
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-rose-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
+        </button>
+      </div>
+      
+      {/* Interactive Body Content */}
+      <div className="relative z-10 flex flex-col gap-6">
+        
+        {/* Advanced 3D Upload Card */}
+        <div 
+          className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
+            ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isWordDragActive 
+              ? 'border-blue-500 bg-blue-50/60 shadow-[0_25px_50px_-12px_rgba(37,99,235,0.2),inset_0_2px_8px_rgba(37,99,235,0.05)] scale-[1.02]' 
+              : 'border-slate-200 hover:border-blue-400/80 bg-gradient-to-b from-white via-slate-50/40 to-slate-100/20 shadow-[0_15px_35px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_45px_-15px_rgba(37,99,235,0.12)]'
+            }
+          `}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsWordDragActive(true); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsWordDragActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsWordDragActive(false); }}
+          onDrop={(e) => {
+            e.preventDefault(); e.stopPropagation(); setIsWordDragActive(false);
+            if (e.dataTransfer.files?.length) setPdfToWordFiles(Array.from(e.dataTransfer.files));
+          }}
+        >
+          <input 
+            type="file" multiple accept=".pdf" id="pdf-to-word-upload" className="hidden" 
+            onChange={(e) => { if (e.target.files?.length) setPdfToWordFiles(Array.from(e.target.files)); }} 
+            disabled={isProcessing}
+          />
+          <label htmlFor="pdf-to-word-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+            
+            {pdfToWordFiles.length > 0 ? (
+              <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="font-black text-xs text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                    Queue ready ({pdfToWordFiles.length})
+                  </p>
+                </div>
+                <div className="max-h-36 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                  {pdfToWordFiles.map((f, i) => (
+                    <div key={i} className="bg-slate-50/80 hover:bg-slate-50 p-3 rounded-xl flex items-center justify-between border border-slate-100 shadow-sm transition-all duration-200">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                          <i className="fa-solid fa-file-pdf text-blue-600 text-sm"></i>
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 truncate max-w-[220px] sm:max-w-[28px]">{f.name}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-md flex-shrink-0">
+                        {(f.size / (1024 * 1024)).toFixed(2)} MB
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className={`transform transition-all duration-500 ${isWordDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
+                {/* Immersive Icon Vessel */}
+                <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
+                  ${isWordDragActive 
+                    ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-400 scale-110 shadow-[0_20px_40px_-10px_rgba(37,99,235,0.4)]' 
+                    : 'bg-white text-blue-500 border-slate-100'
+                  }
+                `}>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <i className={`fa-solid fa-cloud-arrow-up text-3xl relative z-10 transition-all duration-500 ${isWordDragActive ? 'text-white scale-110' : 'group-hover:text-white group-hover:scale-110'}`}></i>
+                </div>
+                <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">
+                  {isWordDragActive ? 'Release onto the canvas' : 'Upload PDF Document'}
+                </h3>
+                <p className="text-slate-400 text-xs mt-1.5 font-medium px-4">
+                  Drag & drop files directly or browse your local system files
                 </p>
               </div>
+            )}
 
-              {/* Action Button */}
-              {isProcessing ? (
-                <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between text-xs font-black text-blue-600 mb-2 tracking-wide uppercase">
-                    <span className="flex items-center gap-2"><i className="fa-solid fa-pen-nib fa-fade"></i> Reconstructing...</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}></div>
-                  </div>
-                </div>
+            {/* Dynamic Button Layer */}
+            <div className={`mt-6 px-6 py-3 rounded-xl border font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.03] active:scale-95
+              ${pdfToWordFiles.length > 0 
+                ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-sm' 
+                : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700 shadow-md shadow-blue-500/10'
+              }
+            `}>
+              {pdfToWordFiles.length > 0 ? (
+                <span><i className="fa-solid fa-arrow-rotate-left mr-1.5"></i>Modify Selection</span>
               ) : (
-                <button 
-                  onClick={handlePdfToWord} 
-                  disabled={pdfToWordFiles.length === 0} 
-                  className="group relative w-full h-14 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(37,99,235,0.5)] transition-all duration-500 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-file-word group-hover:-translate-y-1 transition-transform duration-300"></i> Convert & Download ZIP
-                  </span>
-                </button>
+                <span><i className="fa-solid fa-folder-open mr-1.5"></i>Browse Local Storage</span>
               )}
             </div>
-          </div>
+          </label>
         </div>
-      )}
+
+        {/* Premium Informational Shield Banner */}
+        <div className="bg-gradient-to-r from-blue-50/60 to-indigo-50/30 border border-blue-100/70 rounded-2.5xl p-4 flex items-start gap-3.5 shadow-inner">
+          <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <i className="fa-solid fa-wand-magic-sparkles text-blue-600 text-xs"></i>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
+            <strong className="text-blue-950 font-bold">Vector Structure Mapping:</strong> Dynamic text layouts, asset dimensions, and matrix fonts are perfectly mapped into standard <span className="text-blue-700">DOCX formatting</span>.
+          </p>
+        </div>
+
+        {/* Action Button & Premium 3D Circular Loader Segment */}
+        {isProcessing ? (
+          <div className="relative overflow-hidden bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+            {/* Elegant Premium Circular Loader Ring */}
+            <div className="relative flex items-center justify-center w-24 h-24 mb-4">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                {/* Background Outer Ring Tracks */}
+                <circle
+                  cx="50" cy="50" r="40"
+                  stroke="rgba(226, 232, 240, 0.6)"
+                  strokeWidth="7" fill="transparent"
+                />
+                {/* Dynamic Micro Glow Ring Effect */}
+                <circle
+                  cx="50" cy="50" r="40"
+                  stroke="url(#premiumCircleGlow)"
+                  strokeWidth="7" fill="transparent"
+                  strokeDasharray="251.32"
+                  strokeDashoffset={251.32 - (251.32 * progress) / 100}
+                  strokeLinecap="round"
+                  className="transition-all style-none duration-300 ease-out"
+                />
+                {/* Define Premium Gradient Shaders */}
+                <defs>
+                  <linearGradient id="premiumCircleGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#2563eb" />
+                    <stop offset="50%" stopColor="#4f46e5" />
+                    <stop offset="100%" stopColor="#06b6d4" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              {/* Inner Metric Data Matrix */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
+                <span className="text-[8px] font-black text-blue-600 tracking-widest uppercase">Engine</span>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 uppercase tracking-wider">
+                <i className="fa-solid fa-gears text-blue-500 animate-spin text-xs"></i> 
+                Reconstructing Document Elements
+              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Assembling editable Word matrices, layouts, and tables...</p>
+            </div>
+          </div>
+        ) : (
+          <button 
+            onClick={handlePdfToWord} 
+            disabled={pdfToWordFiles.length === 0} 
+            className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 active:translate-y-0"
+          >
+            {/* Glowing 3D Base Fill Layer */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            
+            <span className="relative z-10 flex items-center justify-center gap-2.5 tracking-wide text-sm font-extrabold">
+              <i className="fa-solid fa-cube text-xs opacity-70 group-hover:rotate-12 transition-transform duration-300"></i>
+              Convert & Download Word Archive
+              <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform duration-300"></i>
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
 {/* --- PDF TO EXCEL MODAL --- */}
-      {isPdfToExcelModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(16,185,129,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
+{isPdfToExcelModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-500" onClick={closeOverlay}>
+    <div 
+      className="relative w-[92%] max-w-md bg-white/90 backdrop-blur-2xl rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-[0_24px_70px_-15px_rgba(16,185,129,0.25)] border border-white/80 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out mobile-fullscreen-modal" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Ambient Background Glow */}
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-25 pointer-events-none animate-pulse"></div>
 
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center shadow-inner border border-emerald-200/50">
-                  <i className="fa-solid fa-file-excel text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500"></i>
-                </div>
-                PDF to Excel
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-emerald-500 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
-            
-            <div className="relative z-10 flex flex-col gap-6">
-              
-              {/* Upload Area */}
-              <div 
-                className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
-                  ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-                  ${isExcelDragActive ? 'border-emerald-500 bg-emerald-50/80 scale-[1.02] shadow-[0_0_30px_rgba(16,185,129,0.15)]' : 'border-emerald-200/60 bg-gradient-to-b from-emerald-50/30 to-transparent hover:border-emerald-400/60 hover:shadow-[0_0_30px_rgba(16,185,129,0.1)]'}
-                `}
-                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsExcelDragActive(true); }}
-                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsExcelDragActive(true); }}
-                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsExcelDragActive(false); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsExcelDragActive(false);
-                  if (e.dataTransfer.files) {
-                    setPdfToExcelFiles(Array.from(e.dataTransfer.files));
-                  }
-                }}
-              >
-                <input 
-                  type="file" multiple accept=".pdf" id="pdf-to-excel-upload" className="hidden" 
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      setPdfToExcelFiles(Array.from(e.target.files));
-                    }
-                  }} 
-                  disabled={isProcessing}
-                />
-                <label htmlFor="pdf-to-excel-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                  {pdfToExcelFiles.length > 0 ? (
-                    <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all">
-                      <p className="font-extrabold text-xs text-emerald-900 uppercase tracking-wider mb-2">Selected Files ({pdfToExcelFiles.length})</p>
-                      <div className="max-h-32 overflow-y-auto space-y-2 pr-2">
-                        {pdfToExcelFiles.map((f, i) => (
-                          <div key={i} className="bg-slate-50 p-2 rounded-lg flex items-center gap-3 border border-slate-100">
-                            <i className="fa-solid fa-file-pdf text-emerald-500"></i>
-                            <span className="text-xs font-semibold text-gray-700 truncate">{f.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`transform transition-all duration-500 ${isExcelDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
-                      <div className={`w-16 h-16 mx-auto rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center mb-4 border relative overflow-hidden transition-all duration-500
-                        ${isExcelDragActive ? 'bg-emerald-100 text-emerald-600 border-emerald-200 scale-110' : 'bg-white text-emerald-500 border-slate-100'}
-                      `}>
-                        <div className="absolute inset-0 bg-emerald-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <i className={`fa-solid fa-cloud-arrow-up text-2xl relative z-10 transition-transform duration-500 ${isExcelDragActive ? 'animate-bounce' : 'group-hover:scale-110'}`}></i>
-                      </div>
-                      <h3 className="font-bold text-gray-900 text-base">
-                        {isExcelDragActive ? 'Drop to upload!' : 'Upload Data Documents'}
-                      </h3>
-                      <p className="text-gray-400 text-xs mt-1 font-medium">Select PDFs containing tables or lists</p>
-                    </div>
-                  )}
-                  <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-emerald-100 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                    {pdfToExcelFiles.length > 0 ? 'Change Selection' : 'Browse Files'}
-                  </div>
-                </label>
-              </div>
-
-              {/* Info Banner */}
-              <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
-                <i className="fa-solid fa-chart-simple text-emerald-500 mt-1"></i>
-                <p className="text-[11px] text-emerald-900 leading-relaxed font-bold">
-                  Pro-tip: This tool automatically scans for grids. Tabular data will be extracted into rows/columns, ignoring non-data formatting.
-                </p>
-              </div>
-
-              {/* Action Button */}
-              {isProcessing ? (
-                <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between text-xs font-black text-emerald-600 mb-2 tracking-wide uppercase">
-                    <span className="flex items-center gap-2"><i className="fa-solid fa-table-cells fa-fade"></i> Parsing Data...</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                    <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}></div>
-                  </div>
-                </div>
-              ) : (
-                <button 
-                  onClick={handlePdfToExcel} 
-                  disabled={pdfToExcelFiles.length === 0} 
-                  className="group relative w-full h-14 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(16,185,129,0.5)] transition-all duration-500 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-file-excel group-hover:-translate-y-1 transition-transform duration-300"></i> Extract to Excel & Download
-                  </span>
-                </button>
-              )}
-            </div>
+      <div className="relative z-10 flex justify-between items-center mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-3 tracking-tight font-sans">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center shadow-inner border border-emerald-200/50">
+            <i className="fa-solid fa-file-excel text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500"></i>
           </div>
+          PDF to Excel
+        </h2>
+        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-200 transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-emerald-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-5 sm:gap-6">
+        
+        {/* Upload Area */}
+        <div 
+          className={`group relative overflow-hidden rounded-[1.75rem] sm:rounded-[2rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center
+            ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isExcelDragActive ? 'border-emerald-500 bg-emerald-50/80 scale-[1.01] shadow-[0_0_30px_rgba(16,185,129,0.15)]' : 'border-slate-200 hover:border-emerald-400 bg-gradient-to-b from-slate-50/50 to-transparent hover:shadow-[0_12px_30px_rgba(16,185,129,0.05)]'}
+          `}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsExcelDragActive(true); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsExcelDragActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsExcelDragActive(false); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsExcelDragActive(false);
+            if (e.dataTransfer.files) {
+              setPdfToExcelFiles(Array.from(e.dataTransfer.files));
+            }
+          }}
+        >
+          <input 
+            type="file" multiple accept=".pdf" id="pdf-to-excel-upload" className="hidden" 
+            onChange={(e) => {
+              if (e.target.files) {
+                setPdfToExcelFiles(Array.from(e.target.files));
+              }
+            }} 
+            disabled={isProcessing}
+          />
+          <label htmlFor="pdf-to-excel-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+            {pdfToExcelFiles.length > 0 ? (
+              <div className="w-full text-left bg-white p-4 rounded-xl shadow-sm border border-slate-100 transform transition-all">
+                <p className="font-bold text-[10px] sm:text-xs text-emerald-800 uppercase tracking-wider mb-2">Selected Files ({pdfToExcelFiles.length})</p>
+                <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1 segment-scrollbar">
+                  {pdfToExcelFiles.map((f, i) => (
+                    <div key={i} className="bg-slate-50 p-2 rounded-lg flex items-center gap-2.5 border border-slate-100/70">
+                      <i className="fa-solid fa-file-pdf text-emerald-500 text-sm flex-shrink-0"></i>
+                      <span className="text-xs font-medium text-slate-700 truncate">{f.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className={`transform transition-all duration-500 ${isExcelDragActive ? '-translate-y-1' : 'group-hover:-translate-y-1'}`}>
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl shadow-sm flex items-center justify-center mb-3.5 border relative overflow-hidden transition-all duration-500
+                  ${isExcelDragActive ? 'bg-emerald-100 text-emerald-600 border-emerald-200 scale-105' : 'bg-white text-slate-400 border-slate-200 group-hover:border-emerald-200 group-hover:text-emerald-500'}
+                `}>
+                  <i className={`fa-solid fa-cloud-arrow-up text-xl sm:text-2xl relative z-10 transition-transform duration-500 ${isExcelDragActive ? 'animate-bounce' : 'group-hover:scale-105'}`}></i>
+                </div>
+                <h3 className="font-semibold text-slate-800 text-sm sm:text-base tracking-tight">
+                  {isExcelDragActive ? 'Drop to upload!' : 'Upload Data Documents'}
+                </h3>
+                <p className="text-slate-400 text-[11px] sm:text-xs mt-1 font-normal max-w-[240px] mx-auto leading-normal">Select PDFs containing tables or lists</p>
+              </div>
+            )}
+            <div className="mt-5 px-5 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 group-hover:text-emerald-600 group-hover:border-emerald-200 font-semibold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.02]">
+              {pdfToExcelFiles.length > 0 ? 'Change Selection' : 'Browse Files'}
+            </div>
+          </label>
         </div>
-      )}
+
+        {/* Info Banner */}
+        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3.5 flex items-start gap-3">
+          <i className="fa-solid fa-chart-simple text-emerald-500 mt-0.5 text-xs sm:text-sm"></i>
+          <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+            <span className="text-slate-800 font-semibold">Pro-tip:</span> This engine extracts structured grid lines directly into perfectly formatted rows and columns, cleaning formatting artifacts automatically.
+          </p>
+        </div>
+
+        {/* Action / Processing Block */}
+        {isProcessing ? (
+          <div className="flex flex-col items-center justify-center p-6 bg-slate-50/50 rounded-2xl border border-slate-100/80 animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" className="stroke-slate-100" strokeWidth="6" fill="transparent" />
+                <circle 
+                  cx="50" 
+                  cy="50" 
+                  r="40" 
+                  className="stroke-emerald-500 transition-all duration-300 ease-out" 
+                  strokeWidth="6" 
+                  fill="transparent"
+                  strokeDasharray="251.2"
+                  strokeDashoffset={251.2 - (251.2 * progress) / 100}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute text-center">
+                <span className="text-base sm:text-lg font-black text-slate-800 font-mono tracking-tighter">{progress}%</span>
+              </div>
+            </div>
+            <p className="text-[11px] font-bold text-emerald-600 mt-3.5 tracking-wider uppercase flex items-center gap-1.5 animate-pulse">
+              <i className="fa-solid fa-table-cells text-xs"></i> Parsing Data Tables...
+            </p>
+          </div>
+        ) : (
+          <button 
+            onClick={handlePdfToExcel} 
+            disabled={pdfToExcelFiles.length === 0} 
+            className="group relative w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(16,185,129,0.4)] transition-all duration-500 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <i className="fa-solid fa-file-excel group-hover:-translate-y-0.5 transition-transform duration-300"></i> Extract to Excel & Download
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
 {/* --- PROTECT PDF MODAL --- */}
-      {isProtectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(79,70,229,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
+{isProtectModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-500" onClick={closeOverlay}>
+    <div 
+      className="relative w-[92%] max-w-md bg-white/90 backdrop-blur-2xl rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-[0_24px_70px_-15px_rgba(79,70,229,0.25)] border border-white/80 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out mobile-fullscreen-modal" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Ambient Background Glow */}
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-25 pointer-events-none animate-pulse"></div>
 
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-50 flex items-center justify-center shadow-inner border border-indigo-200/50">
-                  <i className="fa-solid fa-shield-halved text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-500"></i>
-                </div>
-                Protect PDF
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-indigo-600 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
-            
-            <div className="relative z-10 flex flex-col gap-6">
-              
-              {/* Upload Area */}
-              <div 
-                className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
-                  ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-                  ${isProtectDragActive ? 'border-indigo-500 bg-indigo-50/80 scale-[1.02] shadow-[0_0_30px_rgba(79,70,229,0.15)]' : 'border-indigo-200/60 bg-gradient-to-b from-indigo-50/30 to-transparent hover:border-indigo-400/60 hover:shadow-[0_0_30px_rgba(79,70,229,0.1)]'}
-                `}
-                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsProtectDragActive(true); }}
-                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsProtectDragActive(true); }}
-                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsProtectDragActive(false); }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsProtectDragActive(false);
-                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    setProtectFile(e.dataTransfer.files[0]);
-                  }
-                }}
-              >
-                <input 
-                  type="file" accept=".pdf" id="pdf-protect-upload" className="hidden" 
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setProtectFile(e.target.files[0]);
-                    }
-                  }} 
-                  disabled={isProcessing}
-                />
-                <label htmlFor="pdf-protect-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                  {protectFile ? (
-                    <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all group-hover:scale-[1.02]">
-                      <p className="font-extrabold text-xs text-indigo-900 uppercase tracking-wider mb-2">Target File</p>
-                      <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100">
-                        <i className="fa-solid fa-file-pdf text-indigo-500 text-xl"></i>
-                        <div className="overflow-hidden flex-1">
-                          <p className="text-sm font-semibold text-gray-700 truncate">{protectFile.name}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">{(protectFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`transform transition-all duration-500 ${isProtectDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
-                      <div className={`w-16 h-16 mx-auto rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center mb-4 border relative overflow-hidden transition-all duration-500
-                        ${isProtectDragActive ? 'bg-indigo-100 text-indigo-600 border-indigo-200 scale-110' : 'bg-white text-indigo-500 border-slate-100'}
-                      `}>
-                        <div className="absolute inset-0 bg-indigo-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <i className={`fa-solid fa-cloud-arrow-up text-2xl relative z-10 transition-transform duration-500 ${isProtectDragActive ? 'animate-bounce' : 'group-hover:scale-110'}`}></i>
-                      </div>
-                      <h3 className="font-bold text-gray-900 text-base">
-                        {isProtectDragActive ? 'Drop file to secure it!' : 'Choose PDF File'}
-                      </h3>
-                      <p className="text-gray-400 text-xs mt-1 font-medium">Select a single document to encrypt</p>
-                    </div>
-                  )}
-                  <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                    {protectFile ? 'Change Document' : 'Browse Files'}
+      <div className="relative z-10 flex justify-between items-center mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-3 tracking-tight font-sans">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-50 flex items-center justify-center shadow-inner border border-indigo-200/50">
+            <i className="fa-solid fa-shield-halved text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-500"></i>
+          </div>
+          Protect PDF
+        </h2>
+        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 hover:bg-indigo-50 border border-slate-200/80 hover:border-indigo-200 transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-indigo-600 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-5 sm:gap-6">
+        
+        {/* Upload Area */}
+        <div 
+          className={`group relative overflow-hidden rounded-[1.75rem] sm:rounded-[2rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center
+            ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+            ${isProtectDragActive ? 'border-indigo-500 bg-indigo-50/80 scale-[1.01] shadow-[0_0_30px_rgba(79,70,229,0.15)]' : 'border-slate-200 hover:border-indigo-400 bg-gradient-to-b from-slate-50/50 to-transparent hover:shadow-[0_12px_30px_rgba(79,70,229,0.05)]'}
+          `}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsProtectDragActive(true); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsProtectDragActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsProtectDragActive(false); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsProtectDragActive(false);
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+              setProtectFile(e.dataTransfer.files[0]);
+            }
+          }}
+        >
+          <input 
+            type="file" accept=".pdf" id="pdf-protect-upload" className="hidden" 
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                setProtectFile(e.target.files[0]);
+              }
+            }} 
+            disabled={isProcessing}
+          />
+          <label htmlFor="pdf-protect-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+            {protectFile ? (
+              <div className="w-full text-left bg-white p-4 rounded-xl shadow-sm border border-slate-100 transform transition-all">
+                <p className="font-bold text-[10px] sm:text-xs text-indigo-800 uppercase tracking-wider mb-2">Target File</p>
+                <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100/70">
+                  <i className="fa-solid fa-file-pdf text-indigo-500 text-xl flex-shrink-0"></i>
+                  <div className="overflow-hidden flex-1">
+                    <p className="text-xs font-semibold text-slate-700 truncate">{protectFile.name}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{(protectFile.size / (1024 * 1024)).toFixed(2)} MB</p>
                   </div>
-                </label>
-              </div>
-
-              {/* Password Input */}
-              <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                <label className="text-xs font-black text-gray-800 tracking-tight uppercase">Set Encryption Password</label>
-                <div className="relative flex items-center bg-white/60 backdrop-blur-md rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                  <span className="absolute left-4 text-gray-400 text-sm">
-                    <i className="fa-solid fa-key"></i>
-                  </span>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter strong password..."
-                    value={pdfPassword}
-                    onChange={(e) => setPdfPassword(e.target.value)}
-                    disabled={isProcessing}
-                    className="w-full h-12 pl-11 pr-12 text-sm bg-transparent border-2 border-white rounded-xl focus:outline-none focus:border-indigo-400 transition-all font-bold text-gray-800"
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-gray-400 hover:text-indigo-600 transition-colors text-sm">
-                    <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                  </button>
                 </div>
               </div>
-
-              {/* Action Button */}
-              {isProcessing ? (
-                <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300 mt-2">
-                  <div className="flex justify-between text-xs font-black text-indigo-600 mb-2 tracking-wide uppercase">
-                    <span className="flex items-center gap-2"><i className="fa-solid fa-lock fa-fade"></i> Encrypting...</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                    <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}></div>
-                  </div>
+            ) : (
+              <div className={`transform transition-all duration-500 ${isProtectDragActive ? '-translate-y-1' : 'group-hover:-translate-y-1'}`}>
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl shadow-sm flex items-center justify-center mb-3.5 border relative overflow-hidden transition-all duration-500
+                  ${isProtectDragActive ? 'bg-indigo-100 text-indigo-600 border-indigo-200 scale-105' : 'bg-white text-slate-400 border-slate-200 group-hover:border-indigo-200 group-hover:text-indigo-500'}
+                `}>
+                  <i className={`fa-solid fa-cloud-arrow-up text-xl sm:text-2xl relative z-10 transition-transform duration-500 ${isProtectDragActive ? 'animate-bounce' : 'group-hover:scale-105'}`}></i>
                 </div>
-              ) : (
-                <button 
-                  onClick={handleProtectPdf} 
-                  disabled={!protectFile || !pdfPassword} 
-                  className="group relative w-full h-14 mt-2 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(79,70,229,0.5)] transition-all duration-500 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <i className="fa-solid fa-lock group-hover:-translate-y-1 transition-transform duration-300"></i> Encrypt & Download
-                  </span>
-                </button>
-              )}
+                <h3 className="font-semibold text-slate-800 text-sm sm:text-base tracking-tight">
+                  {isProtectDragActive ? 'Drop file to secure it!' : 'Choose PDF File'}
+                </h3>
+                <p className="text-slate-400 text-[11px] sm:text-xs mt-1 font-normal max-w-[240px] mx-auto leading-normal">Select a single document to encrypt</p>
+              </div>
+            )}
+            <div className="mt-5 px-5 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 group-hover:text-indigo-600 group-hover:border-indigo-200 font-semibold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.02]">
+              {protectFile ? 'Change Document' : 'Browse Files'}
             </div>
+          </label>
+        </div>
+
+        {/* Password Input */}
+        <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide uppercase">Set Encryption Password</label>
+          <div className="relative flex items-center bg-slate-50/50 rounded-xl border border-slate-200/80 transition-all focus-within:border-indigo-400 focus-within:bg-white focus-within:shadow-sm">
+            <span className="absolute left-4 text-slate-400 text-xs sm:text-sm">
+              <i className="fa-solid fa-key"></i>
+            </span>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Enter strong password..."
+              value={pdfPassword}
+              onChange={(e) => setPdfPassword(e.target.value)}
+              disabled={isProcessing}
+              className="w-full h-11 sm:h-12 pl-10 pr-12 text-xs sm:text-sm bg-transparent outline-none font-medium text-slate-800 placeholder-slate-400"
+            />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-slate-400 hover:text-indigo-600 transition-colors text-xs sm:text-sm">
+              <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Action / Processing Block */}
+        {isProcessing ? (
+          <div className="flex flex-col items-center justify-center p-6 bg-slate-50/50 rounded-2xl border border-slate-100/80 animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" className="stroke-slate-100" strokeWidth="6" fill="transparent" />
+                <circle 
+                  cx="50" 
+                  cy="50" 
+                  r="40" 
+                  className="stroke-indigo-500 transition-all duration-300 ease-out" 
+                  strokeWidth="6" 
+                  fill="transparent"
+                  strokeDasharray="251.2"
+                  strokeDashoffset={251.2 - (251.2 * progress) / 100}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute text-center">
+                <span className="text-base sm:text-lg font-black text-slate-800 font-mono tracking-tighter">{progress}%</span>
+              </div>
+            </div>
+            <p className="text-[11px] font-bold text-indigo-600 mt-3.5 tracking-wider uppercase flex items-center gap-1.5 animate-pulse">
+              <i className="fa-solid fa-lock text-xs"></i> Encrypting Document...
+            </p>
+          </div>
+        ) : (
+          <button 
+            onClick={handleProtectPdf} 
+            disabled={!protectFile || !pdfPassword} 
+            className="group relative w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(79,70,229,0.4)] transition-all duration-500 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <i className="fa-solid fa-lock group-hover:-translate-y-0.5 transition-transform duration-300"></i> Encrypt & Download
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
 {/* --- UNLOCK PDF MODAL --- */}
-      {isUnlockModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(6,182,212,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-cyan-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
+{isUnlockModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-500" onClick={closeOverlay}>
+    <div 
+      className="relative w-[92%] max-w-md bg-white/90 backdrop-blur-2xl rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-[0_24px_70px_-15px_rgba(6,182,212,0.25)] border border-white/80 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out mobile-fullscreen-modal" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Ambient Background Glow */}
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-cyan-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-25 pointer-events-none animate-pulse"></div>
 
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-50 flex items-center justify-center shadow-inner border border-cyan-200/50">
-                  <i className="fa-solid fa-lock-open text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-teal-500"></i>
-                </div>
-                Unlock PDF
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-cyan-50 border border-slate-200 hover:border-cyan-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-cyan-500 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
-            
-            <div className="relative z-10 flex flex-col gap-6">
-              
-              {/* Step 1: Upload (Hidden if preview is active) */}
-              {!unlockPreviewUrl && (
-                <div 
-                  className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
-                    ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-                    ${isUnlockDragActive ? 'border-cyan-500 bg-cyan-50/80 scale-[1.02] shadow-[0_0_30px_rgba(6,182,212,0.15)]' : 'border-cyan-200/60 bg-gradient-to-b from-cyan-50/30 to-transparent hover:border-cyan-400/60 hover:shadow-[0_0_30px_rgba(6,182,212,0.1)]'}
-                  `}
-                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsUnlockDragActive(true); }}
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsUnlockDragActive(true); }}
-                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsUnlockDragActive(false); }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsUnlockDragActive(false);
-                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                      setUnlockFile(e.dataTransfer.files[0]);
-                      setUnlockPreviewUrl(null); 
-                      setIsPasswordError(false);
-                    }
-                  }}
-                >
-                  <input 
-                    type="file" accept=".pdf" id="pdf-unlock-upload" className="hidden" 
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setUnlockFile(e.target.files[0]);
-                        setUnlockPreviewUrl(null); 
-                        setIsPasswordError(false);
-                      }
-                    }} 
-                    disabled={isProcessing}
-                  />
-                  <label htmlFor="pdf-unlock-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                    {unlockFile ? (
-                      <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all group-hover:scale-[1.02]">
-                        <p className="font-extrabold text-xs text-cyan-900 uppercase tracking-wider mb-2">Target File</p>
-                        <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100">
-                          <i className="fa-solid fa-file-shield text-cyan-500 text-xl"></i>
-                          <div className="overflow-hidden flex-1">
-                            <p className="text-sm font-semibold text-gray-700 truncate">{unlockFile.name}</p>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase">{(unlockFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={`transform transition-all duration-500 ${isUnlockDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
-                        <div className={`w-16 h-16 mx-auto rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center mb-4 border relative overflow-hidden transition-all duration-500
-                          ${isUnlockDragActive ? 'bg-cyan-100 text-cyan-600 border-cyan-200 scale-110' : 'bg-white text-cyan-500 border-slate-100'}
-                        `}>
-                          <div className="absolute inset-0 bg-cyan-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          <i className={`fa-solid fa-cloud-arrow-up text-2xl relative z-10 transition-transform duration-500 ${isUnlockDragActive ? 'animate-bounce' : 'group-hover:scale-110'}`}></i>
-                        </div>
-                        <h3 className="font-bold text-gray-900 text-base">
-                          {isUnlockDragActive ? 'Drop file to decrypt!' : 'Choose Locked PDF'}
-                        </h3>
-                        <p className="text-gray-400 text-xs mt-1 font-medium">Select a single protected document</p>
-                      </div>
-                    )}
-                    <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-cyan-100 text-cyan-600 hover:bg-cyan-50 hover:border-cyan-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                      {unlockFile ? 'Change Document' : 'Browse Files'}
-                    </div>
-                  </label>
-                </div>
-              )}
-
-              {/* Step 2: Password Input */}
-              {unlockFile && !unlockPreviewUrl && (
-                <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <label className="text-xs font-black text-gray-800 tracking-tight uppercase">Enter Current Password</label>
-                  <div className="relative flex items-center bg-white/60 backdrop-blur-md rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                    <span className="absolute left-4 text-gray-400 text-sm">
-                      <i className="fa-solid fa-key"></i>
-                    </span>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Current document password..."
-                      value={unlockPassword}
-                      onChange={(e) => { setUnlockPassword(e.target.value); setIsPasswordError(false); }}
-                      disabled={isProcessing}
-                      className={`w-full h-12 pl-11 pr-12 text-sm bg-transparent border-2 rounded-xl focus:outline-none transition-all font-bold ${isPasswordError ? 'border-red-400 focus:border-red-500 text-red-900' : 'border-white focus:border-cyan-400 text-gray-800'}`}
-                    />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-gray-400 hover:text-cyan-600 transition-colors text-sm">
-                      <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                    </button>
-                  </div>
-                  {isPasswordError && <p className="text-xs font-bold text-red-500 mt-1 animate-in slide-in-from-left-2"><i className="fa-solid fa-triangle-exclamation mr-1"></i> Incorrect password. Try again.</p>}
-
-                  <button 
-                    onClick={handleVerifyPassword} 
-                    disabled={!unlockPassword || isProcessing} 
-                    className="group relative w-full h-14 mt-4 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(6,182,212,0.5)] transition-all duration-500 overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                      {isProcessing ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Verifying...</> : 'Unlock & Preview'}
-                    </span>
-                  </button>
-                </div>
-              )}
-
-              {/* Step 3: Success Preview & Download */}
-              {unlockPreviewUrl && (
-                <div className="flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-500">
-                  <div className="bg-white/60 backdrop-blur-md border border-white rounded-[1.5rem] p-4 flex items-center justify-between shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 text-white rounded-full flex items-center justify-center text-xl shadow-inner">
-                        <i className="fa-solid fa-check"></i>
-                      </div>
-                      <div>
-                        <p className="font-black text-gray-900 text-sm">Access Granted</p>
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">Document decrypted successfully</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {unlockPreviewUrl !== 'NOT_ENCRYPTED' && (
-                    <div className="border border-white bg-white/40 backdrop-blur-sm rounded-[1.5rem] p-3 shadow-inner">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2 text-center">Document Preview</p>
-                      <div className="aspect-[3/4] w-full max-w-[180px] mx-auto bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm group relative">
-                        <img src={unlockPreviewUrl} alt="PDF Preview" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      </div>
-                    </div>
-                  )}
-
-                  {isProcessing ? (
-                    <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                      <div className="flex justify-between text-xs font-black text-cyan-600 mb-2 tracking-wide uppercase">
-                        <span className="flex items-center gap-2"><i className="fa-solid fa-circle-notch fa-spin"></i> Removing Security...</span>
-                        <span>{progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                        <div className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleRemovePassword}
-                      className="group relative w-full h-14 mt-2 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(6,182,212,0.5)] transition-all duration-500 overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        <i className="fa-solid fa-download group-hover:-translate-y-1 transition-transform duration-300"></i> Remove Password & Download
-                      </span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-            </div>
+      <div className="relative z-10 flex justify-between items-center mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-3 tracking-tight font-sans">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-50 flex items-center justify-center shadow-inner border border-cyan-200/50">
+            <i className="fa-solid fa-lock-open text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-teal-500"></i>
           </div>
-        </div>
-      )}
-
-      {/* --- CHANGE PASSWORD MODAL --- */}
-      {isChangePwdModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
+          Unlock PDF
+        </h2>
+        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 hover:bg-cyan-50 border border-slate-200/80 hover:border-cyan-200 transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-cyan-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-5 sm:gap-6">
+        
+        {/* Step 1: Upload (Hidden if preview is active) */}
+        {!unlockPreviewUrl && (
           <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(244,63,94,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
+            className={`group relative overflow-hidden rounded-[1.75rem] sm:rounded-[2rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center
+              ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+              ${isUnlockDragActive ? 'border-cyan-500 bg-cyan-50/80 scale-[1.01] shadow-[0_0_30px_rgba(6,182,212,0.15)]' : 'border-slate-200 hover:border-cyan-400 bg-gradient-to-b from-slate-50/50 to-transparent hover:shadow-[0_12px_30px_rgba(6,182,212,0.05)]'}
+            `}
+            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsUnlockDragActive(true); }}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsUnlockDragActive(true); }}
+            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsUnlockDragActive(false); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsUnlockDragActive(false);
+              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                setUnlockFile(e.dataTransfer.files[0]);
+                setUnlockPreviewUrl(null); 
+                setIsPasswordError(false);
+              }
+            }}
           >
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-rose-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
-
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-100 to-rose-50 flex items-center justify-center shadow-inner border border-rose-200/50">
-                  <i className="fa-solid fa-key text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-500"></i>
-                </div>
-                Change Password
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-rose-500 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
-            
-            <div className="relative z-10 flex flex-col gap-6">
-              
-              {/* Step 1: Upload */}
-              {!changePreviewUrl && (
-                <div 
-                  className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
-                    ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-                    ${isChangeDragActive ? 'border-rose-500 bg-rose-50/80 scale-[1.02] shadow-[0_0_30px_rgba(244,63,94,0.15)]' : 'border-rose-200/60 bg-gradient-to-b from-rose-50/30 to-transparent hover:border-rose-400/60 hover:shadow-[0_0_30px_rgba(244,63,94,0.1)]'}
-                  `}
-                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsChangeDragActive(true); }}
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsChangeDragActive(true); }}
-                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsChangeDragActive(false); }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsChangeDragActive(false);
-                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                      setChangeFile(e.dataTransfer.files[0]);
-                      setChangePreviewUrl(null); 
-                      setIsChangeError(false);
-                    }
-                  }}
-                >
-                  <input 
-                    type="file" accept=".pdf" id="pdf-change-upload" className="hidden" 
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setChangeFile(e.target.files[0]);
-                        setChangePreviewUrl(null); 
-                        setIsChangeError(false);
-                      }
-                    }} 
-                    disabled={isProcessing}
-                  />
-                  <label htmlFor="pdf-change-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                    {changeFile ? (
-                      <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all group-hover:scale-[1.02]">
-                        <p className="font-extrabold text-xs text-rose-900 uppercase tracking-wider mb-2">Target File</p>
-                        <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100">
-                          <i className="fa-solid fa-file-pdf text-rose-500 text-xl"></i>
-                          <div className="overflow-hidden flex-1">
-                            <p className="text-sm font-semibold text-gray-700 truncate">{changeFile.name}</p>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase">{(changeFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={`transform transition-all duration-500 ${isChangeDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
-                        <div className={`w-16 h-16 mx-auto rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center mb-4 border relative overflow-hidden transition-all duration-500
-                          ${isChangeDragActive ? 'bg-rose-100 text-rose-600 border-rose-200 scale-110' : 'bg-white text-rose-500 border-slate-100'}
-                        `}>
-                          <div className="absolute inset-0 bg-rose-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          <i className={`fa-solid fa-cloud-arrow-up text-2xl relative z-10 transition-transform duration-500 ${isChangeDragActive ? 'animate-bounce' : 'group-hover:scale-110'}`}></i>
-                        </div>
-                        <h3 className="font-bold text-gray-900 text-base">
-                          {isChangeDragActive ? 'Drop file to secure it!' : 'Choose Target PDF'}
-                        </h3>
-                        <p className="text-gray-400 text-xs mt-1 font-medium">Select the encrypted file you want to update</p>
-                      </div>
-                    )}
-                    <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-rose-100 text-rose-600 hover:bg-rose-50 hover:border-rose-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                      {changeFile ? 'Change Document' : 'Browse Files'}
+            <input 
+              type="file" accept=".pdf" id="pdf-unlock-upload" className="hidden" 
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setUnlockFile(e.target.files[0]);
+                  setUnlockPreviewUrl(null); 
+                  setIsPasswordError(false);
+                }
+              }} 
+              disabled={isProcessing}
+            />
+            <label htmlFor="pdf-unlock-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+              {unlockFile ? (
+                <div className="w-full text-left bg-white p-4 rounded-xl shadow-sm border border-slate-100 transform transition-all">
+                  <p className="font-bold text-[10px] sm:text-xs text-cyan-800 uppercase tracking-wider mb-2">Target File</p>
+                  <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100/70">
+                    <i className="fa-solid fa-file-shield text-cyan-500 text-xl flex-shrink-0"></i>
+                    <div className="overflow-hidden flex-1">
+                      <p className="text-xs font-semibold text-slate-700 truncate">{unlockFile.name}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{(unlockFile.size / (1024 * 1024)).toFixed(2)} MB</p>
                     </div>
-                  </label>
-                </div>
-              )}
-
-              {/* Step 2: Verify Old Password */}
-              {changeFile && !changePreviewUrl && (
-                <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <label className="text-xs font-black text-gray-800 tracking-tight uppercase">Enter Current Password</label>
-                  <div className="relative flex items-center bg-white/60 backdrop-blur-md rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                    <span className="absolute left-4 text-gray-400 text-sm">
-                      <i className="fa-solid fa-lock"></i>
-                    </span>
-                    <input
-                      type={showOldPassword ? 'text' : 'password'}
-                      placeholder="Current document password..."
-                      value={oldPassword}
-                      onChange={(e) => { setOldPassword(e.target.value); setIsChangeError(false); }}
-                      disabled={isProcessing}
-                      className={`w-full h-12 pl-11 pr-12 text-sm bg-transparent border-2 rounded-xl focus:outline-none transition-all font-bold ${isChangeError ? 'border-red-400 focus:border-red-500 text-red-900' : 'border-white focus:border-rose-400 text-gray-800'}`}
-                    />
-                    <button type="button" onClick={() => setShowOldPassword(!showOldPassword)} className="absolute right-4 text-gray-400 hover:text-rose-600 transition-colors text-sm">
-                      <i className={`fa-solid ${showOldPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                    </button>
-                  </div>
-                  {isChangeError && <p className="text-xs font-bold text-red-500 mt-1 animate-in slide-in-from-left-2"><i className="fa-solid fa-triangle-exclamation mr-1"></i> Incorrect password. Try again.</p>}
-
-                  <button 
-                    onClick={handleChangeVerify} 
-                    disabled={!oldPassword || isProcessing} 
-                    className="group relative w-full h-14 mt-4 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(244,63,94,0.5)] transition-all duration-500 overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                      {isProcessing ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Verifying...</> : 'Verify Access'}
-                    </span>
-                  </button>
-                </div>
-              )}
-
-              {/* Step 3: Success Preview & New Password Generation */}
-              {changePreviewUrl && (
-                <div className="flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-500">
-                  <div className="flex gap-4 items-stretch bg-white/60 backdrop-blur-md p-4 rounded-[1.5rem] border border-white shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                    {/* Tiny Preview Box */}
-                    {changePreviewUrl !== 'NOT_ENCRYPTED' && (
-                      <div className="w-16 h-20 rounded-xl overflow-hidden shadow-sm border border-gray-100 bg-white flex-shrink-0">
-                        <img src={changePreviewUrl} alt="Preview" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    
-                    {/* Status Text */}
-                    <div className="flex-1 flex flex-col justify-center">
-                      <p className="font-black text-emerald-600 text-sm flex items-center gap-2"><i className="fa-solid fa-shield-check text-lg"></i> Access Verified</p>
-                      <p className="text-xs text-gray-500 font-medium leading-tight mt-1">You may now apply a new high-security layer to this document.</p>
-                    </div>
-                  </div>
-
-                  {/* New Password Input */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-black text-gray-800 tracking-tight uppercase">Set New Password</label>
-                    <div className="relative flex items-center bg-white/60 backdrop-blur-md rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                      <span className="absolute left-4 text-rose-500 text-sm">
-                        <i className="fa-solid fa-key"></i>
-                      </span>
-                      <input
-                        type={showNewPassword ? 'text' : 'password'}
-                        placeholder="Enter robust new password..."
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        disabled={isProcessing}
-                        className="w-full h-12 pl-11 pr-12 text-sm bg-transparent border-2 border-white rounded-xl focus:outline-none focus:border-rose-400 transition-all font-bold text-gray-800"
-                      />
-                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 text-gray-400 hover:text-rose-600 transition-colors text-sm">
-                        <i className={`fa-solid ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                      </button>
-                    </div>
-                  </div>
-
-                  {isProcessing ? (
-                    <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300 mt-2">
-                      <div className="flex justify-between text-xs font-black text-rose-600 mb-2 tracking-wide uppercase">
-                        <span className="flex items-center gap-2"><i className="fa-solid fa-lock fa-fade"></i> Encrypting...</span>
-                        <span>{progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                        <div className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleChangePasswordSubmit}
-                      disabled={!newPassword}
-                      className="group relative w-full h-14 mt-2 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(244,63,94,0.5)] transition-all duration-500 overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        <i className="fa-solid fa-floppy-disk group-hover:-translate-y-1 transition-transform duration-300"></i> Update Security & Download
-                      </span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- PDF TO POWERPOINT MODAL --- */}
-      {isPdfToPptModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-all duration-500" onClick={closeOverlay}>
-          <div 
-            className="relative max-w-md w-full bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(249,115,22,0.2)] border border-white/60 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Ambient Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-orange-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-30 pointer-events-none animate-pulse"></div>
-
-            <div className="relative z-10 flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center shadow-inner border border-orange-200/50">
-                  <i className="fa-solid fa-file-powerpoint text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500"></i>
-                </div>
-                PDF to PPTX
-              </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-200 transition-all duration-300 flex items-center justify-center">
-                <i className="fa-solid fa-xmark text-slate-400 group-hover:text-orange-500 group-hover:rotate-90 transition-all duration-300"></i>
-              </button>
-            </div>
-            
-            <div className="relative z-10 flex flex-col gap-6">
-              
-              {/* Conditional Rendering: Show Error Alert OR Upload Area */}
-              {pptProtectedError ? (
-                <div className="bg-white/60 backdrop-blur-md border border-red-200 rounded-3xl p-8 text-center animate-in zoom-in-95 duration-500 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-                  <div className="w-20 h-20 bg-gradient-to-br from-red-50 to-red-100 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border border-red-200/50">
-                    <i className="fa-solid fa-lock animate-pulse"></i>
-                  </div>
-                  <h3 className="text-xl font-black text-gray-900 mb-2">Protected Document</h3>
-                  <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6 px-2">The file <span className="font-bold text-red-500 truncate inline-block max-w-[150px] align-bottom">"{pptProtectedError}"</span> requires a password. We cannot map it to slides.</p>
-                  
-                  <div className="flex flex-col gap-3">
-                    <button 
-                      onClick={goToUnlockTool}
-                      className="group relative w-full h-12 rounded-2xl bg-gray-900 text-white text-sm font-bold hover:shadow-[0_10px_40px_-10px_rgba(239,68,68,0.5)] transition-all duration-500 overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        Take me to Unlock PDF
-                      </span>
-                    </button>
-                    <button 
-                      onClick={() => { setPptProtectedError(null); setPdfToPptFiles([]); }}
-                      className="w-full h-12 rounded-2xl bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-50 hover:text-gray-900 transition-all duration-300"
-                    >
-                      Upload a Different File
-                    </button>
                   </div>
                 </div>
               ) : (
-                <>
-                  <div 
-                    className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
-                      ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-                      ${isPptDragActive ? 'border-orange-500 bg-orange-50/80 scale-[1.02] shadow-[0_0_30px_rgba(249,115,22,0.15)]' : 'border-orange-200/60 bg-gradient-to-b from-orange-50/30 to-transparent hover:border-orange-400/60 hover:shadow-[0_0_30px_rgba(249,115,22,0.1)]'}
-                    `}
-                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsPptDragActive(true); }}
-                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsPptDragActive(true); }}
-                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsPptDragActive(false); }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsPptDragActive(false);
-                      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        setPdfToPptFiles(Array.from(e.dataTransfer.files));
-                      }
-                    }}
-                  >
-                    <input 
-                      type="file" multiple accept=".pdf" id="pdf-to-ppt-upload" className="hidden" 
-                      onChange={(e) => setPdfToPptFiles(Array.from(e.target.files))} 
-                      disabled={isProcessing}
-                    />
-                    <label htmlFor="pdf-to-ppt-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                      {pdfToPptFiles.length > 0 ? (
-                        <div className="w-full text-left bg-white/80 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-white max-h-40 overflow-y-auto transform transition-all group-hover:scale-[1.02]">
-                          <div className="flex justify-between items-center mb-3">
-                            <p className="font-extrabold text-sm text-gray-900 tracking-tight">Selected Assets</p>
-                            <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-2.5 py-1 rounded-lg text-xs font-black shadow-sm">{pdfToPptFiles.length}</span>
-                          </div>
-                          <ul className="text-xs font-semibold text-gray-500 space-y-2">
-                            {pdfToPptFiles.map((f, i) => (
-                              <li key={i} className="truncate flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                                <i className="fa-solid fa-file-pdf text-orange-400"></i> {f.name}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : (
-                        <div className={`transform transition-all duration-500 ${isPptDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
-                          <div className={`w-16 h-16 mx-auto rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.04)] flex items-center justify-center mb-4 border relative overflow-hidden transition-all duration-500
-                            ${isPptDragActive ? 'bg-orange-100 text-orange-600 border-orange-200 scale-110' : 'bg-white text-orange-500 border-slate-100'}
-                          `}>
-                            <div className="absolute inset-0 bg-orange-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                            <i className={`fa-solid fa-cloud-arrow-up text-2xl relative z-10 transition-transform duration-500 ${isPptDragActive ? 'animate-bounce' : 'group-hover:scale-110'}`}></i>
-                          </div>
-                          <h3 className="font-bold text-gray-900 text-base">
-                            {isPptDragActive ? 'Drop assets to convert!' : 'Upload Presentations'}
-                          </h3>
-                          <p className="text-gray-400 text-xs mt-1 font-medium">Select PDF files to map onto slides</p>
-                        </div>
-                      )}
-                      <div className="mt-6 px-6 py-2.5 rounded-xl bg-white border border-orange-100 text-orange-600 hover:bg-orange-50 hover:border-orange-200 font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-105">
-                        {pdfToPptFiles.length > 0 ? 'Add More Files' : 'Browse Files'}
-                      </div>
-                    </label>
+                <div className={`transform transition-all duration-500 ${isUnlockDragActive ? '-translate-y-1' : 'group-hover:-translate-y-1'}`}>
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl shadow-sm flex items-center justify-center mb-3.5 border relative overflow-hidden transition-all duration-500
+                    ${isUnlockDragActive ? 'bg-cyan-100 text-cyan-600 border-cyan-200 scale-105' : 'bg-white text-slate-400 border-slate-200 group-hover:border-cyan-200 group-hover:text-cyan-500'}
+                  `}>
+                    <i className={`fa-solid fa-cloud-arrow-up text-xl sm:text-2xl relative z-10 transition-transform duration-500 ${isUnlockDragActive ? 'animate-bounce' : 'group-hover:scale-105'}`}></i>
                   </div>
-
-                  {isProcessing ? (
-                    <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                      <div className="flex justify-between text-xs font-black text-orange-600 mb-2 tracking-wide uppercase">
-                        <span className="flex items-center gap-2"><i className="fa-solid fa-circle-notch fa-spin"></i> Generating PPTX...</span>
-                        <span>{progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                        <div className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-300 relative" style={{ width: `${progress}%` }}></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={handlePdfToPpt} 
-                      disabled={pdfToPptFiles.length === 0} 
-                      className="group relative w-full h-14 mt-2 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(249,115,22,0.5)] transition-all duration-500 overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        <i className="fa-solid fa-wand-magic-sparkles group-hover:rotate-12 transition-transform duration-300"></i> Convert to PPTX & Download
-                      </span>
-                    </button>
-                  )}
-                </>
+                  <h3 className="font-semibold text-slate-800 text-sm sm:text-base tracking-tight">
+                    {isUnlockDragActive ? 'Drop file to decrypt!' : 'Choose Locked PDF'}
+                  </h3>
+                  <p className="text-slate-400 text-[11px] sm:text-xs mt-1 font-normal max-w-[240px] mx-auto leading-normal">Select a single protected document</p>
+                </div>
               )}
+              <div className="mt-5 px-5 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 group-hover:text-cyan-600 group-hover:border-cyan-200 font-semibold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.02]">
+                {unlockFile ? 'Change Document' : 'Browse Files'}
+              </div>
+            </label>
+          </div>
+        )}
+
+        {/* Step 2: Password Input */}
+        {unlockFile && !unlockPreviewUrl && (
+          <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide uppercase">Enter Current Password</label>
+            <div className={`relative flex items-center bg-slate-50/50 rounded-xl border transition-all focus-within:bg-white focus-within:shadow-sm ${isPasswordError ? 'border-red-400 focus-within:border-red-500' : 'border-slate-200/80 focus-within:border-cyan-400'}`}>
+              <span className={`absolute left-4 text-xs sm:text-sm ${isPasswordError ? 'text-red-400' : 'text-slate-400'}`}>
+                <i className="fa-solid fa-key"></i>
+              </span>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Current document password..."
+                value={unlockPassword}
+                onChange={(e) => { setUnlockPassword(e.target.value); setIsPasswordError(false); }}
+                disabled={isProcessing}
+                className={`w-full h-11 sm:h-12 pl-10 pr-12 text-xs sm:text-sm bg-transparent outline-none font-medium ${isPasswordError ? 'text-red-900 placeholder-red-300' : 'text-slate-800 placeholder-slate-400'}`}
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute right-4 transition-colors text-xs sm:text-sm ${isPasswordError ? 'text-red-400 hover:text-red-600' : 'text-slate-400 hover:text-cyan-600'}`}>
+                <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+              </button>
+            </div>
+            {isPasswordError && <p className="text-[10px] sm:text-xs font-bold text-red-500 mt-0.5 animate-in slide-in-from-left-2"><i className="fa-solid fa-triangle-exclamation mr-1"></i> Incorrect password. Try again.</p>}
+
+            <button 
+              onClick={handleVerifyPassword} 
+              disabled={!unlockPassword || isProcessing} 
+              className="group relative w-full h-11 sm:h-12 mt-3 sm:mt-4 rounded-xl bg-slate-900 text-white text-xs sm:text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_8px_30px_-8px_rgba(6,182,212,0.4)] transition-all duration-500 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {isProcessing ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Verifying...</> : 'Unlock & Preview'}
+              </span>
+            </button>
+          </div>
+        )}
+
+        {/* Step 3: Success Preview & Download */}
+        {unlockPreviewUrl && (
+          <div className="flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-500">
+            <div className="bg-slate-50/80 border border-slate-100 rounded-[1.25rem] p-3 sm:p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-400 to-emerald-500 text-white rounded-full flex items-center justify-center text-lg sm:text-xl shadow-inner flex-shrink-0">
+                  <i className="fa-solid fa-check"></i>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 text-sm">Access Granted</p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">Document decrypted successfully</p>
+                </div>
+              </div>
+            </div>
+
+            {unlockPreviewUrl !== 'NOT_ENCRYPTED' && (
+              <div className="border border-slate-100 bg-white rounded-[1.25rem] p-3 shadow-sm">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 sm:mb-3 text-center">Document Preview</p>
+                <div className="aspect-[3/4] w-full max-w-[140px] sm:max-w-[160px] mx-auto bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm group relative">
+                  <img src={unlockPreviewUrl} alt="PDF Preview" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+              </div>
+            )}
+
+            {isProcessing ? (
+              <div className="flex flex-col items-center justify-center p-6 bg-slate-50/50 rounded-2xl border border-slate-100/80 animate-in fade-in zoom-in-95 duration-300">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" className="stroke-slate-100" strokeWidth="6" fill="transparent" />
+                    <circle 
+                      cx="50" 
+                      cy="50" 
+                      r="40" 
+                      className="stroke-cyan-500 transition-all duration-300 ease-out" 
+                      strokeWidth="6" 
+                      fill="transparent"
+                      strokeDasharray="251.2"
+                      strokeDashoffset={251.2 - (251.2 * progress) / 100}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute text-center">
+                    <span className="text-base sm:text-lg font-black text-slate-800 font-mono tracking-tighter">{progress}%</span>
+                  </div>
+                </div>
+                <p className="text-[11px] font-bold text-cyan-600 mt-3.5 tracking-wider uppercase flex items-center gap-1.5 animate-pulse">
+                  <i className="fa-solid fa-unlock-keyhole text-xs"></i> Removing Security...
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={handleRemovePassword}
+                className="group relative w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(6,182,212,0.4)] transition-all duration-500 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <i className="fa-solid fa-download group-hover:-translate-y-0.5 transition-transform duration-300"></i> Remove Password & Download
+                </span>
+              </button>
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  </div>
+)}
+
+{/* --- CHANGE PASSWORD MODAL --- */}
+{isChangePwdModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-500" onClick={closeOverlay}>
+    <div 
+      className="relative w-[92%] max-w-md bg-white/90 backdrop-blur-2xl rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-[0_24px_70px_-15px_rgba(244,63,94,0.25)] border border-white/80 overflow-hidden animate-in fade-in zoom-in-[0.98] slide-in-from-bottom-4 duration-500 ease-out mobile-fullscreen-modal" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Ambient Background Glow */}
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-rose-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-25 pointer-events-none animate-pulse"></div>
+
+      <div className="relative z-10 flex justify-between items-center mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-3 tracking-tight font-sans">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-100 to-rose-50 flex items-center justify-center shadow-inner border border-rose-200/50">
+            <i className="fa-solid fa-key text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-500"></i>
+          </div>
+          Change Password
+        </h2>
+        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 hover:bg-rose-50 border border-slate-200/80 hover:border-rose-200 transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-rose-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-5 sm:gap-6">
+        
+        {/* Step 1: Upload */}
+        {!changePreviewUrl && (
+          <div 
+            className={`group relative overflow-hidden rounded-[1.75rem] sm:rounded-[2rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center
+              ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+              ${isChangeDragActive ? 'border-rose-500 bg-rose-50/80 scale-[1.01] shadow-[0_0_30px_rgba(244,63,94,0.15)]' : 'border-slate-200 hover:border-rose-400 bg-gradient-to-b from-slate-50/50 to-transparent hover:shadow-[0_12px_30px_rgba(244,63,94,0.05)]'}
+            `}
+            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsChangeDragActive(true); }}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsChangeDragActive(true); }}
+            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsChangeDragActive(false); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsChangeDragActive(false);
+              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                setChangeFile(e.dataTransfer.files[0]);
+                setChangePreviewUrl(null); 
+                setIsChangeError(false);
+              }
+            }}
+          >
+            <input 
+              type="file" accept=".pdf" id="pdf-change-upload" className="hidden" 
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setChangeFile(e.target.files[0]);
+                  setChangePreviewUrl(null); 
+                  setIsChangeError(false);
+                }
+              }} 
+              disabled={isProcessing}
+            />
+            <label htmlFor="pdf-change-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+              {changeFile ? (
+                <div className="w-full text-left bg-white p-4 rounded-xl shadow-sm border border-slate-100 transform transition-all">
+                  <p className="font-bold text-[10px] sm:text-xs text-rose-800 uppercase tracking-wider mb-2">Target File</p>
+                  <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100/70">
+                    <i className="fa-solid fa-file-pdf text-rose-500 text-xl flex-shrink-0"></i>
+                    <div className="overflow-hidden flex-1">
+                      <p className="text-xs font-semibold text-slate-700 truncate">{changeFile.name}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{(changeFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className={`transform transition-all duration-500 ${isChangeDragActive ? '-translate-y-1' : 'group-hover:-translate-y-1'}`}>
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-xl sm:rounded-2xl shadow-sm flex items-center justify-center mb-3.5 border relative overflow-hidden transition-all duration-500
+                    ${isChangeDragActive ? 'bg-rose-100 text-rose-600 border-rose-200 scale-105' : 'bg-white text-slate-400 border-slate-200 group-hover:border-rose-200 group-hover:text-rose-500'}
+                  `}>
+                    <div className="absolute inset-0 bg-rose-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <i className={`fa-solid fa-cloud-arrow-up text-xl sm:text-2xl relative z-10 transition-transform duration-500 ${isChangeDragActive ? 'animate-bounce' : 'group-hover:scale-105'}`}></i>
+                  </div>
+                  <h3 className="font-semibold text-slate-800 text-sm sm:text-base tracking-tight">
+                    {isChangeDragActive ? 'Drop file to secure it!' : 'Choose Target PDF'}
+                  </h3>
+                  <p className="text-slate-400 text-[11px] sm:text-xs mt-1 font-normal max-w-[240px] mx-auto leading-normal">Select the encrypted file you want to update</p>
+                </div>
+              )}
+              <div className="mt-5 px-5 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 group-hover:text-rose-600 group-hover:border-rose-200 font-semibold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.02]">
+                {changeFile ? 'Change Document' : 'Browse Files'}
+              </div>
+            </label>
+          </div>
+        )}
+
+        {/* Step 2: Verify Old Password */}
+        {changeFile && !changePreviewUrl && (
+          <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide uppercase">Enter Current Password</label>
+            <div className={`relative flex items-center bg-slate-50/50 rounded-xl border transition-all focus-within:bg-white focus-within:shadow-sm ${isChangeError ? 'border-red-400 focus-within:border-red-500' : 'border-slate-200/80 focus-within:border-rose-400'}`}>
+              <span className={`absolute left-4 text-xs sm:text-sm ${isChangeError ? 'text-red-400' : 'text-slate-400'}`}>
+                <i className="fa-solid fa-lock"></i>
+              </span>
+              <input
+                type={showOldPassword ? 'text' : 'password'}
+                placeholder="Current document password..."
+                value={oldPassword}
+                onChange={(e) => { setOldPassword(e.target.value); setIsChangeError(false); }}
+                disabled={isProcessing}
+                className={`w-full h-11 sm:h-12 pl-10 pr-12 text-xs sm:text-sm bg-transparent outline-none font-medium ${isChangeError ? 'text-red-900 placeholder-red-300' : 'text-slate-800 placeholder-slate-400'}`}
+              />
+              <button type="button" onClick={() => setShowOldPassword(!showOldPassword)} className={`absolute right-4 transition-colors text-xs sm:text-sm ${isChangeError ? 'text-red-400 hover:text-red-600' : 'text-slate-400 hover:text-rose-600'}`}>
+                <i className={`fa-solid ${showOldPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+              </button>
+            </div>
+            {isChangeError && <p className="text-[10px] sm:text-xs font-bold text-red-500 mt-0.5 animate-in slide-in-from-left-2"><i className="fa-solid fa-triangle-exclamation mr-1"></i> Incorrect password. Try again.</p>}
+
+            <button 
+              onClick={handleChangeVerify} 
+              disabled={!oldPassword || isProcessing} 
+              className="group relative w-full h-11 sm:h-12 mt-3 sm:mt-4 rounded-xl bg-slate-900 text-white text-xs sm:text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_8px_30px_-8px_rgba(244,63,94,0.4)] transition-all duration-500 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {isProcessing ? <><i className="fa-solid fa-circle-notch fa-spin"></i> Verifying...</> : 'Verify Access'}
+              </span>
+            </button>
+          </div>
+        )}
+
+        {/* Step 3: Success Preview & New Password Generation */}
+        {changePreviewUrl && (
+          <div className="flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-500">
+            <div className="flex gap-3 sm:gap-4 items-stretch bg-slate-50/80 border border-slate-100 p-3 sm:p-4 rounded-[1.25rem]">
+              {/* Tiny Preview Box */}
+              {changePreviewUrl !== 'NOT_ENCRYPTED' && (
+                <div className="w-12 h-16 sm:w-14 sm:h-[4.5rem] rounded-lg overflow-hidden shadow-sm border border-slate-200 bg-white flex-shrink-0">
+                  <img src={changePreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+              
+              {/* Status Text */}
+              <div className="flex-1 flex flex-col justify-center">
+                <p className="font-bold text-emerald-600 text-xs sm:text-sm flex items-center gap-1.5"><i className="fa-solid fa-shield-check text-base"></i> Access Verified</p>
+                <p className="text-[10px] sm:text-xs text-slate-500 font-medium leading-tight mt-1">You may now apply a new high-security layer to this document.</p>
+              </div>
+            </div>
+
+            {/* New Password Input */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide uppercase">Set New Password</label>
+              <div className="relative flex items-center bg-slate-50/50 rounded-xl border border-slate-200/80 transition-all focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-sm">
+                <span className="absolute left-4 text-rose-400 text-xs sm:text-sm">
+                  <i className="fa-solid fa-key"></i>
+                </span>
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  placeholder="Enter robust new password..."
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={isProcessing}
+                  className="w-full h-11 sm:h-12 pl-10 pr-12 text-xs sm:text-sm bg-transparent outline-none font-medium text-slate-800 placeholder-slate-400"
+                />
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 text-slate-400 hover:text-rose-600 transition-colors text-xs sm:text-sm">
+                  <i className={`fa-solid ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                </button>
+              </div>
+            </div>
+
+            {isProcessing ? (
+              <div className="flex flex-col items-center justify-center p-6 bg-slate-50/50 rounded-2xl border border-slate-100/80 animate-in fade-in zoom-in-95 duration-300 mt-2">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" className="stroke-slate-100" strokeWidth="6" fill="transparent" />
+                    <circle 
+                      cx="50" 
+                      cy="50" 
+                      r="40" 
+                      className="stroke-rose-500 transition-all duration-300 ease-out" 
+                      strokeWidth="6" 
+                      fill="transparent"
+                      strokeDasharray="251.2"
+                      strokeDashoffset={251.2 - (251.2 * progress) / 100}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute text-center">
+                    <span className="text-base sm:text-lg font-black text-slate-800 font-mono tracking-tighter">{progress}%</span>
+                  </div>
+                </div>
+                <p className="text-[11px] font-bold text-rose-600 mt-3.5 tracking-wider uppercase flex items-center gap-1.5 animate-pulse">
+                  <i className="fa-solid fa-lock text-xs"></i> Encrypting...
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={handleChangePasswordSubmit}
+                disabled={!newPassword}
+                className="group relative w-full h-12 sm:h-14 mt-2 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(244,63,94,0.4)] transition-all duration-500 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <i className="fa-solid fa-floppy-disk group-hover:-translate-y-0.5 transition-transform duration-300"></i> Update Security & Download
+                </span>
+              </button>
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  </div>
+)}
+
+{/* --- PDF TO POWERPOINT MODAL --- */}
+{isPdfToPptModalOpen && (
+  <div 
+    className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+    onClick={closeOverlay}
+  >
+    <div 
+      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(249,115,22,0.25),inset_0_1px_1px_rgba(255,255,255,0.8)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95]" 
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-25 animate-pulse pointer-events-none"></div>
+
+      <div className="relative z-10 flex justify-between items-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-orange-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(249,115,22,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-orange-100/80 transform hover:rotate-6 transition-transform duration-300">
+            <i className="fa-solid fa-file-powerpoint text-xl text-transparent bg-clip-text bg-gradient-to-br from-orange-600 to-amber-500"></i>
+          </div>
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-orange-900">PDF to PPTX</span>
+        </h2>
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-orange-50 border border-slate-200/80 hover:border-orange-200 shadow-sm transition-all duration-300 flex items-center justify-center">
+          <i className="fa-solid fa-xmark text-slate-400 group-hover:text-orange-500 group-hover:rotate-90 transition-all duration-300"></i>
+        </button>
+      </div>
+      
+      <div className="relative z-10 flex flex-col gap-6">
+        
+        {pptProtectedError ? (
+          <div className="bg-white/80 backdrop-blur-md border border-red-200 rounded-3xl p-8 text-center shadow-lg">
+            <div className="w-16 h-16 bg-red-100 text-red-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 border border-red-200">
+              <i className="fa-solid fa-lock animate-pulse"></i>
+            </div>
+            <h3 className="text-lg font-black text-slate-900 mb-2">Encrypted Document</h3>
+            <p className="text-xs text-slate-500 font-medium mb-6">Password needed for <span className="font-bold text-red-500">{pptProtectedError}</span>.</p>
+            <div className="flex flex-col gap-3">
+              <button onClick={goToUnlockTool} className="w-full h-12 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-orange-600 transition-colors">Go to Unlock PDF</button>
+              <button onClick={() => { setPptProtectedError(null); setPdfToPptFiles([]); }} className="text-xs font-bold text-slate-400 hover:text-slate-600">Upload Different File</button>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <>
+            <div 
+              className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
+                ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+                ${isPptDragActive ? 'border-orange-500 bg-orange-50/60 shadow-[0_25px_50px_-12px_rgba(249,115,22,0.2)] scale-[1.02]' : 'border-slate-200 hover:border-orange-400/80 bg-gradient-to-b from-white to-slate-50/20'}
+              `}
+              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsPptDragActive(true); }}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsPptDragActive(true); }}
+              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsPptDragActive(false); }}
+              onDrop={(e) => {
+                e.preventDefault(); e.stopPropagation(); setIsPptDragActive(false);
+                if (e.dataTransfer.files?.length) setPdfToPptFiles(Array.from(e.dataTransfer.files));
+              }}
+            >
+              <input type="file" multiple accept=".pdf" id="pdf-to-ppt-upload" className="hidden" onChange={(e) => { if (e.target.files?.length) setPdfToPptFiles(Array.from(e.target.files)); }} disabled={isProcessing}/>
+              <label htmlFor="pdf-to-ppt-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+                {pdfToPptFiles.length > 0 ? (
+                  <div className="w-full text-left bg-white/90 p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <p className="font-black text-xs text-orange-600 uppercase tracking-widest mb-3">Presentations mapped ({pdfToPptFiles.length})</p>
+                    <div className="max-h-36 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                      {pdfToPptFiles.map((f, i) => (
+                        <div key={i} className="bg-slate-50/80 p-3 rounded-xl flex items-center border border-slate-100 shadow-sm">
+                          <i className="fa-solid fa-file-powerpoint text-orange-600 mr-3"></i>
+                          <span className="text-xs font-bold text-slate-700 truncate">{f.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`transform transition-all duration-500 ${isPptDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
+                    <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative overflow-hidden transition-all duration-500
+                      ${isPptDragActive ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white border-orange-400 scale-110' : 'bg-white text-orange-500 border-slate-100'}
+                    `}>
+                      <div className="absolute inset-0 bg-gradient-to-tr from-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <i className={`fa-solid fa-cloud-arrow-up text-3xl relative z-10 transition-all duration-500 ${isPptDragActive ? 'text-white' : 'group-hover:text-white group-hover:scale-110'}`}></i>
+                    </div>
+                    <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">{isPptDragActive ? 'Release to map slides' : 'Upload PDF Document'}</h3>
+                  </div>
+                )}
+                <div className={`mt-6 px-6 py-3 rounded-xl border font-bold text-xs shadow-sm transition-all duration-300 transform group-hover:scale-[1.03]
+                  ${pdfToPptFiles.length > 0 ? 'bg-white text-slate-700 border-slate-200' : 'bg-orange-500 text-white border-orange-500'}
+                `}>{pdfToPptFiles.length > 0 ? 'Change File' : 'Browse Local'}</div>
+              </label>
+            </div>
+
+            {isProcessing ? (
+              <div className="relative overflow-hidden bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+                <div className="relative flex items-center justify-center w-24 h-24 mb-4">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="rgba(226, 232, 240, 0.6)" strokeWidth="7" fill="transparent" />
+                    <circle cx="50" cy="50" r="40" stroke="url(#orangeGlow)" strokeWidth="7" fill="transparent" strokeDasharray="251.32" strokeDashoffset={251.32 - (251.32 * progress) / 100} strokeLinecap="round" className="transition-all style-none duration-300 ease-out" />
+                    <defs><linearGradient id="orangeGlow" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f97316"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
+                  </div>
+                </div>
+                <p className="text-xs font-black text-slate-800 uppercase animate-pulse"><i className="fa-solid fa-layer-group text-orange-500"></i> Rendering PPTX Engine...</p>
+              </div>
+            ) : (
+              <button onClick={handlePdfToPpt} disabled={pdfToPptFiles.length === 0} className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(249,115,22,0.4)] hover:-translate-y-0.5">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
+                <span className="relative z-10 flex items-center justify-center gap-2.5 h-full">Convert & Download PPTX</span>
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)}
       {/* --- PREMIUM PRICING MODAL (LIGHT THEME) --- */}
 {isPricingModalOpen && (
   <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-900/40 backdrop-blur-md transition-all duration-500 p-2 sm:p-4" onClick={closeOverlay}>
     <div 
-      className="relative max-w-lg w-full max-h-full flex flex-col bg-white/60 backdrop-blur-2xl rounded-[2rem] sm:rounded-[2.5rem] p-1 sm:p-1.5 shadow-[0_30px_100px_-15px_rgba(245,158,11,0.25)] border border-white overflow-hidden animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 duration-500 ease-out" 
+      className="relative max-w-lg w-full max-h-full flex flex-col bg-white/60 backdrop-blur-2xl rounded-[2rem] sm:rounded-[2.5rem] p-1 sm:p-1.5 shadow-[0_30px_100px_-15px_rgba(245,158,11,0.25)] border border-white overflow-hidden animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 duration-500 ease-out mobile-fullscreen-modal" 
       onClick={(e) => e.stopPropagation()}
     >
       {/* Animated Golden Border Gradient */}

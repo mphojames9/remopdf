@@ -705,7 +705,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_10%,#000_60%,transparent_100%)] opacity-20 pointer-events-none"></div>
           
           {/* Floating Premium HUD Control Hub */}
-          <div className="w-full max-w-[794px] flex justify-between items-center mb-10 z-10 bg-slate-950/40 backdrop-blur-xl border border-white/5 px-4 py-2.5 rounded-2xl shadow-[0_16px_40px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/5 shrink-0">
+          <div className="w-full max-w-[794px] flex justify-between items-center mb-10 bg-slate-950/40 backdrop-blur-xl border border-white/5 px-4 py-2.5 rounded-2xl shadow-[0_16px_40px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/5 shrink-0">
             <div className="flex items-center gap-3 pl-1">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

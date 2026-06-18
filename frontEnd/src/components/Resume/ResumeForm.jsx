@@ -32,10 +32,17 @@ export default function ResumeForm({ data, setData, onExport, onPreview, onOpenT
   const [hasCompleted, setHasCompleted] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // 2. Save to local storage whenever currentStep changes
+  // 2. Save step progress to local storage whenever currentStep changes
   useEffect(() => {
     localStorage.setItem('remo_premium_current_step', currentStep.toString());
   }, [currentStep]);
+
+  // 3. AUTO-SAVE: Save the entire resume data state to local storage whenever it changes
+  useEffect(() => {
+    if (data) {
+      localStorage.setItem('remo_premium_resume_data', JSON.stringify(data));
+    }
+  }, [data]);
 
   // Listen for external trigger to open the success modal with a 1-second delay
   useEffect(() => {

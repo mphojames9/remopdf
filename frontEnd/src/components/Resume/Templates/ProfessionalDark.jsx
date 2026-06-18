@@ -78,6 +78,12 @@ export default function ProfessionalDark({
             <span className="text-[10px] text-slate-300 font-medium truncate">{info.linkedin}</span>
           </div>
         )}
+        {info.secondarySocial && (
+          <div className="shrink-0 flex items-center gap-2 mb-3 pl-1">
+            <svg className="w-3 h-3 text-[#c99c60] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" /><circle cx="4" cy="4" r="2" fill="currentColor" /></svg>
+            <span className="text-[10px] text-slate-300 font-medium truncate">{info.secondarySocial}</span>
+          </div>
+        )}
 
         {/* PERSONAL DETAILS / DEMOGRAPHICS */}
         {(info.dob || info.nationality || info.gender || info.drivingLicense) && (

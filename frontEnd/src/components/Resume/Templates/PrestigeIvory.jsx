@@ -62,6 +62,19 @@ export default function PrestigeIvory({
           </div>
         )}
 
+        {info.secondarySocial && (
+          <div className="flex items-center gap-3 text-[13px] -mt-2">
+            <svg className="w-4 h-4 text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+            <span className="break-all font-medium text-neutral-700">{info.secondarySocial.replace(/(^\w+:|^)\/\//, '')}</span>
+          </div>
+        )} 
+
+                {info.website && (
+          <div className="flex items-center gap-3 text-[13px] -mt-2">
+            <svg className="w-4 h-4 text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+            <span className="break-all font-medium text-neutral-700">{info.website.replace(/(^\w+:|^)\/\//, '')}</span>
+          </div>
+        )} 
         {/* Personal Details Node */}
         {(info.dob || info.nationality || info.gender || info.drivingLicense) && (
           <h2 className="text-[11px] font-bold tracking-[0.3em] text-neutral-400 uppercase border-b border-neutral-200 pb-2 mt-4">
