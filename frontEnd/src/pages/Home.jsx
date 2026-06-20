@@ -2059,7 +2059,7 @@ onClick={() => navigate('/editor')}
       
       {/* Interactive Body Content */}
       <div className="relative z-10 flex flex-col gap-6">
-        
+        <ModalAd />
         {/* Advanced 3D Upload Card */}
         <div 
           className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
