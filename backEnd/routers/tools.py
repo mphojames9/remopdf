@@ -10,7 +10,19 @@ import os
 from pdf2docx import Converter
 import pdfplumber
 import pandas as pd
+from adobe.pdfservices.operation.auth.service_principal_credentials import ServicePrincipalCredentials
+from adobe.pdfservices.operation.exception.exceptions import ServiceApiException, ServiceUsageException, SdkException
+from adobe.pdfservices.operation.io.cloud_asset import CloudAsset
+from adobe.pdfservices.operation.io.stream_asset import StreamAsset
+from adobe.pdfservices.operation.pdf_services import PDFServices
+from adobe.pdfservices.operation.pdf_services_media_type import PDFServicesMediaType
+from adobe.pdfservices.operation.pdfjobs.jobs.export_pdf_job import ExportPDFJob
+from adobe.pdfservices.operation.pdfjobs.params.export_pdf.export_pdf_params import ExportPDFParams
+from adobe.pdfservices.operation.pdfjobs.params.export_pdf.export_pdf_target_format import ExportPDFTargetFormat
+from adobe.pdfservices.operation.pdfjobs.result.export_pdf_result import ExportPDFResult
+from dotenv import load_dotenv
 
+load_dotenv()
 
 router = APIRouter(
     prefix="/api/tools",
@@ -376,58 +388,62 @@ async def convert_pdf_to_word(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=400, detail="No PDF files provided.")
     
     try:
+        # 1. Initialize Adobe Credentials
+        # Replaced os.getenv to pass your specific keys directly so auth doesn't fail
+        credentials = ServicePrincipalCredentials(
+            client_id=os.getenv('PDF_SERVICES_CLIENT_ID'),
+            client_secret=os.getenv('PDF_SERVICES_CLIENT_SECRET')
+        )
+        pdf_services = PDFServices(credentials=credentials)
+        
         zip_buffer = io.BytesIO()
         
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
             for file in files:
+                # Read the uploaded file into raw bytes
                 file_bytes = await file.read()
                 
-                # Create temporary file paths
-                fd_pdf, temp_pdf_path = tempfile.mkstemp(suffix=".pdf")
-                fd_docx, temp_docx_path = tempfile.mkstemp(suffix=".docx")
-                
-                # CRITICAL WINDOWS FIX: Close raw file handles immediately to release 
-                # the OS permission lock. This prevents "PermissionError" when writing.
-                os.close(fd_pdf)
-                os.close(fd_docx)
-                
                 try:
-                    # Write uploaded bytes to temp PDF using standard safe context
-                    with open(temp_pdf_path, 'wb') as f:
-                        f.write(file_bytes)
+                    # 2. Upload asset to Adobe's engine using the raw bytes
+                    input_asset = pdf_services.upload(input_stream=file_bytes, mime_type=PDFServicesMediaType.PDF)
                     
-                    # Convert layout safely via physical file paths
-                    cv = Converter(temp_pdf_path)
-                    cv.convert(temp_docx_path, start=0, end=None) # Convert all pages
-                    cv.close()
+                    # 3. Create DOCX conversion parameters and job
+                    export_pdf_params = ExportPDFParams(target_format=ExportPDFTargetFormat.DOCX)
+                    export_pdf_job = ExportPDFJob(input_asset=input_asset, export_pdf_params=export_pdf_params)
                     
-                    # Read the generated docx back into memory
-                    with open(temp_docx_path, "rb") as docx_file:
-                        docx_bytes = docx_file.read()
+                    # 4. Submit job and wait for the result
+                    location = pdf_services.submit(export_pdf_job)
+                    pdf_services_response = pdf_services.get_job_result(location, ExportPDFResult)
                     
-                    # Format filename
+                    # 5. Extract the resulting file stream
+                    result_asset: CloudAsset = pdf_services_response.get_result().get_asset()
+                    stream_asset: StreamAsset = pdf_services.get_content(result_asset)
+                    
+                    # stream_asset.get_input_stream() returns the raw DOCX bytes
+                    docx_bytes = stream_asset.get_input_stream()
+                    
+                    # Format filename cleanly for the ZIP archive
                     base_name = file.filename.rsplit('.', 1)[0] if '.' in file.filename else file.filename
                     docx_filename = f"{base_name}.docx"
                     
-                    # Add to our download package
+                    # Inject directly into the ZIP archive memory buffer
                     zip_file.writestr(docx_filename, docx_bytes)
                     
-                finally:
-                    # Always clean up physical files to prevent server storage leaks
-                    if os.path.exists(temp_pdf_path):
-                        os.remove(temp_pdf_path)
-                    if os.path.exists(temp_docx_path):
-                        os.remove(temp_docx_path)
-                        
+                except (ServiceApiException, ServiceUsageException, SdkException) as adobe_error:
+                    # If Adobe fails on one file, print the error but don't crash the whole server
+                    print(f"Adobe Engine Error on {file.filename}: {adobe_error}")
+                    raise HTTPException(status_code=500, detail=f"Adobe failed to process {file.filename}.")
+                    
         zip_buffer.seek(0)
+        
         return StreamingResponse(
             zip_buffer,
             media_type="application/zip",
             headers={"Content-Disposition": "attachment; filename=RemoPDF_Word_Files.zip"}
         )
+        
     except Exception as e:
-        # This will dump the exact system traceback to your Python console terminal if something else breaks
-        print(f"Word Conversion Error: {str(e)}")
+        print(f"Word Conversion System Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"PDF to Word conversion failed: {str(e)}")
 
 
