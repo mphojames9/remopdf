@@ -1072,9 +1072,9 @@ onClick={() => navigate('/editor')}
       <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-orange-400 to-red-400 rounded-full mix-blend-multiply filter blur-[90px] opacity-20 pointer-events-none"></div>
 
       <div className="relative z-10 flex justify-between items-center mb-8">
-        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-red-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(239,68,68,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-red-100/80 transform hover:rotate-6 transition-transform duration-300">
-            <i className="fa-solid fa-layer-group text-xl text-transparent bg-clip-text bg-gradient-to-br from-red-600 to-rose-500"></i>
+        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-3 tracking-tight font-sans">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center shadow-inner border border-emerald-200/50">
+            <i className="fa-solid fa-file-excel text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500"></i>
           </div>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-red-900">Merge PDFs</span>
         </h2>
@@ -1085,7 +1085,7 @@ onClick={() => navigate('/editor')}
       </div>
       
       <div className="relative z-10 flex flex-col gap-6">
-        
+        <ModalAd />
         <div 
           className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
             ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
@@ -1217,6 +1217,7 @@ onClick={() => navigate('/editor')}
       </div>
       
       <div className="relative z-10 flex flex-col gap-6">
+        <ModalAd />
         <div 
           className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
             ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
@@ -1291,7 +1292,7 @@ onClick={() => navigate('/editor')}
     onClick={closeOverlay}
   >
     <div 
-      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(59,130,246,0.25),inset_0_1px_1px_rgba(255,255,255,0.8),0_0_1px_1px_rgba(59,130,246,0.1)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95]" 
+      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(59,130,246,0.25),inset_0_1px_1px_rgba(255,255,255,0.8),0_0_1px_1px_rgba(59,130,246,0.1)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95] mobile-fullscreen-modal " 
       onClick={(e) => e.stopPropagation()}
     >
       <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-25 animate-pulse pointer-events-none"></div>
@@ -1309,6 +1310,7 @@ onClick={() => navigate('/editor')}
       </div>
       
       <div className="relative z-10 flex flex-col gap-6">
+        <ModalAd />
         <div 
           className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
             ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
@@ -1351,8 +1353,8 @@ onClick={() => navigate('/editor')}
         {/* 3D Premium Slider Box */}
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-center mb-5">
-            <label className="text-xs font-black text-slate-800 tracking-tight uppercase">Compression Engine</label>
-            <span className="text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-1 rounded-full shadow-md">{compressQuality}% Ratio</span>
+            <label className="text-xs font-black text-slate-800 tracking-tight">Compression Ratio</label>
+            <span className="text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-1 rounded-full shadow-md">{compressQuality}%</span>
           </div>
           <input type="range" min="1" max="100" value={compressQuality} onChange={(e) => setCompressQuality(e.target.value)} disabled={isProcessing}
             className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-cyan-500 transition-all focus:outline-none" 
@@ -1416,7 +1418,7 @@ onClick={() => navigate('/editor')}
       </div>
       
       <div className="relative z-10 flex flex-col gap-6">
-        
+        <ModalAd />
         <div 
           className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
             ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
@@ -1547,8 +1549,7 @@ onClick={() => navigate('/editor')}
             </div>
             
             <div className="relative z-10 flex flex-col gap-6">
-              
-              {/* Upload Area */}
+              <ModalAd />
               <div 
                 className={`group relative overflow-hidden rounded-[2rem] border-2 border-dashed transition-all duration-500 p-8 text-center
                   ${isProcessing ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
@@ -1610,15 +1611,15 @@ onClick={() => navigate('/editor')}
 
               {/* Format Selector */}
               <div className="bg-white/50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-2">
-                <label className="text-xs font-black text-gray-800 tracking-tight uppercase">Output Format</label>
+                <label className="text-xs font-black text-gray-800 tracking-tight">Output Format</label>
                 <select 
                   value={imageFormat} 
                   onChange={(e) => setImageFormat(e.target.value)}
                   className="w-full h-12 border border-slate-200 rounded-xl px-4 bg-white text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer transition-all appearance-none"
                   disabled={isProcessing}
                 >
-                  <option value="png">High Quality PNG (.png)</option>
-                  <option value="jpeg">Standard JPEG (.jpg)</option>
+                  <option value="png">png</option>
+                  <option value="jpeg">jpg</option>
                 </select>
               </div>
 
@@ -1687,7 +1688,7 @@ onClick={() => navigate('/editor')}
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto pr-2 sm:pr-4 custom-scrollbar space-y-8 relative z-10">
-        
+        <ModalAd />
         {/* Advanced Upload Zone */}
         <div 
           className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-8 sm:p-10 text-center transform hover:scale-[1.005] active:scale-[0.995]
@@ -1886,9 +1887,9 @@ onClick={() => navigate('/editor')}
       <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-yellow-300 to-amber-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-20 pointer-events-none"></div>
 
       <div className="relative z-10 flex justify-between items-center mb-8">
-        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-4 tracking-tight drop-shadow-sm font-sans">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-white to-amber-50 flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(245,158,11,0.3),inset_0_2px_4px_rgba(255,255,255,1)] border border-amber-100/80 transform hover:rotate-6 transition-transform duration-300">
-            <i className="fa-solid fa-images text-xl text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-500"></i>
+        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-3 tracking-tight font-sans">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center shadow-inner border border-emerald-200/50">
+            <i className="fa-solid fa-file-excel text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500"></i>
           </div>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-amber-900">Compress Images</span>
         </h2>
@@ -1899,7 +1900,7 @@ onClick={() => navigate('/editor')}
       </div>
       
       <div className="relative z-10 flex flex-col gap-6">
-        
+        <ModalAd />
         <div 
           className={`group relative overflow-hidden rounded-[2.25rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center transform hover:scale-[1.01] active:scale-[0.99]
             ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
@@ -1969,8 +1970,8 @@ onClick={() => navigate('/editor')}
         {/* 3D Premium Quality Slider */}
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-center mb-5">
-            <label className="text-xs font-black text-slate-800 tracking-tight uppercase">Compression Quality</label>
-            <span className="text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 rounded-full shadow-md">{imgCompressQuality}% Quality</span>
+            <label className="text-xs font-black text-slate-800 tracking-tight">Compression Quality</label>
+            <span className="text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 rounded-full shadow-md">{imgCompressQuality}%</span>
           </div>
           <input 
             type="range" min="10" max="100" value={imgCompressQuality} 
@@ -1978,10 +1979,6 @@ onClick={() => navigate('/editor')}
             disabled={isProcessing}
             className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-orange-500 transition-all focus:outline-none" 
           />
-          <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase tracking-wider px-1 mt-3">
-            <span>Max Compression</span>
-            <span>Max Quality</span>
-          </div>
         </div>
 
         {isProcessing ? (
@@ -2027,7 +2024,7 @@ onClick={() => navigate('/editor')}
 {/* --- PREMIUM 3D PDF TO WORD MODAL --- */}
 {isPdfToWordModalOpen && (
   <div 
-    className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+    className="fixed inset-0 z-50 flex items-center justify-center sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
     onClick={closeOverlay}
   >
     {/* Background Scroll Lock Helper */}
@@ -2148,16 +2145,6 @@ onClick={() => navigate('/editor')}
           </label>
         </div>
 
-        {/* Premium Informational Shield Banner */}
-        <div className="bg-gradient-to-r from-blue-50/60 to-indigo-50/30 border border-blue-100/70 rounded-2.5xl p-4 flex items-start gap-3.5 shadow-inner">
-          <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <i className="fa-solid fa-wand-magic-sparkles text-blue-600 text-xs"></i>
-          </div>
-          <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
-            <strong className="text-blue-950 font-bold">Vector Structure Mapping:</strong> Dynamic text layouts, asset dimensions, and matrix fonts are perfectly mapped into standard <span className="text-blue-700">DOCX formatting</span>.
-          </p>
-        </div>
-
         {/* Action Button & Premium 3D Circular Loader Segment */}
         {isProcessing ? (
           <div className="relative overflow-hidden bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
@@ -2215,7 +2202,7 @@ onClick={() => navigate('/editor')}
             
             <span className="relative z-10 flex items-center justify-center gap-2.5 tracking-wide text-sm font-extrabold">
               <i className="fa-solid fa-cube text-xs opacity-70 group-hover:rotate-12 transition-transform duration-300"></i>
-              Convert & Download Word Archive
+              Convert & Download
               <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform duration-300"></i>
             </span>
           </button>
@@ -2249,7 +2236,7 @@ onClick={() => navigate('/editor')}
       
       <div className="relative z-10 flex flex-col gap-5 sm:gap-6">
         
-        {/* Upload Area */}
+       <ModalAd />
         <div 
           className={`group relative overflow-hidden rounded-[1.75rem] sm:rounded-[2rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center
             ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
@@ -2306,14 +2293,6 @@ onClick={() => navigate('/editor')}
               {pdfToExcelFiles.length > 0 ? 'Change Selection' : 'Browse Files'}
             </div>
           </label>
-        </div>
-
-        {/* Info Banner */}
-        <div className="bg-slate-50/80 border border-slate-100 rounded-2xl p-3.5 flex items-start gap-3">
-          <i className="fa-solid fa-chart-simple text-emerald-500 mt-0.5 text-xs sm:text-sm"></i>
-          <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-            <span className="text-slate-800 font-semibold">Pro-tip:</span> This engine extracts structured grid lines directly into perfectly formatted rows and columns, cleaning formatting artifacts automatically.
-          </p>
         </div>
 
         {/* Action / Processing Block */}
@@ -2383,7 +2362,7 @@ onClick={() => navigate('/editor')}
       
       <div className="relative z-10 flex flex-col gap-5 sm:gap-6">
         
-        {/* Upload Area */}
+        <ModalAd />
         <div 
           className={`group relative overflow-hidden rounded-[1.75rem] sm:rounded-[2rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center
             ${isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
@@ -2443,7 +2422,7 @@ onClick={() => navigate('/editor')}
 
         {/* Password Input */}
         <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide uppercase">Set Encryption Password</label>
+          <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide">Set Encryption Password</label>
           <div className="relative flex items-center bg-slate-50/50 rounded-xl border border-slate-200/80 transition-all focus-within:border-indigo-400 focus-within:bg-white focus-within:shadow-sm">
             <span className="absolute left-4 text-slate-400 text-xs sm:text-sm">
               <i className="fa-solid fa-key"></i>
@@ -2529,7 +2508,7 @@ onClick={() => navigate('/editor')}
       
       <div className="relative z-10 flex flex-col gap-5 sm:gap-6">
         
-        {/* Step 1: Upload (Hidden if preview is active) */}
+        <ModalAd />
         {!unlockPreviewUrl && (
           <div 
             className={`group relative overflow-hidden rounded-[1.75rem] sm:rounded-[2rem] border-2 border-dashed transition-all duration-500 p-6 sm:p-8 text-center
@@ -2720,7 +2699,7 @@ onClick={() => navigate('/editor')}
       </div>
       
       <div className="relative z-10 flex flex-col gap-5 sm:gap-6">
-        
+        <ModalAd />
         {/* Step 1: Upload */}
         {!changePreviewUrl && (
           <div 
@@ -2908,11 +2887,11 @@ onClick={() => navigate('/editor')}
 {/* --- PDF TO POWERPOINT MODAL --- */}
 {isPdfToPptModalOpen && (
   <div 
-    className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+    className="fixed inset-0 z-[100] flex items-center justify-center sm:p-6 md:p-10 bg-slate-950/60 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
     onClick={closeOverlay}
   >
     <div 
-      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(249,115,22,0.25),inset_0_1px_1px_rgba(255,255,255,0.8)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95]" 
+      className="relative w-full max-w-lg bg-gradient-to-b from-white via-white/95 to-slate-50/90 rounded-[2.5rem] p-6 sm:p-10 shadow-[0_50px_100px_-20px_rgba(249,115,22,0.25),inset_0_1px_1px_rgba(255,255,255,0.8)] border border-white/80 overflow-hidden transform transition-all duration-500 animate-in fade-in zoom-in-[0.95] mobile-fullscreen-modal" 
       onClick={(e) => e.stopPropagation()}
     >
       <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full mix-blend-multiply filter blur-[90px] opacity-25 animate-pulse pointer-events-none"></div>
@@ -2930,7 +2909,7 @@ onClick={() => navigate('/editor')}
       </div>
       
       <div className="relative z-10 flex flex-col gap-6">
-        
+        <ModalAd />
         {pptProtectedError ? (
           <div className="bg-white/80 backdrop-blur-md border border-red-200 rounded-3xl p-8 text-center shadow-lg">
             <div className="w-16 h-16 bg-red-100 text-red-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 border border-red-200">

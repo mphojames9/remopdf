@@ -481,6 +481,27 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
     name: 'Pinnacle Premium',
     vibe: 'Editorial & Ultra-Premium',
     description: 'A striking, high-contrast flat layout designed specifically for flawless pagination, featuring elegant typography and pristine row-by-row structure.'
+  },
+
+  {
+    id: 'Corporate Legacy',
+    name: 'Corporate Legacy',
+    vibe: 'Executive & Recruiter-Approved',
+    description: 'A polished, high-impact double-column executive design featuring clear visual timelines, explicit skill tracks, and strict compliance pagination metrics.'
+  },
+
+  {
+    id: 'Legacy Elite',
+    name: 'Legacy Elite',
+    vibe: 'Modern Executive & High-Contrast',
+    description: 'A striking high-contrast layout utilizing elegant custom font configurations, clear visual metrics, and structured sidebars designed for technical leadership.'
+  },
+
+  { 
+    id: 'Nova Standard', 
+    name: 'Nova Standard', 
+    vibe: 'Tech-Forward & Crisp', 
+    description: 'A precise, tech-oriented layout featuring sharp blue accents, clean typography grids, and high-visibility data mapping.' 
   }
 ];
 

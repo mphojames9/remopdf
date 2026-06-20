@@ -339,7 +339,7 @@ export default function About() {
                 <h2 className="text-2xl lg:text-4xl font-bold text-white tracking-tight">The Interactive Resume Builder</h2>
               </div>
               <Link 
-                to="/resume-builder" 
+                to="/ResumeBuilder" 
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-slate-950 text-xs font-bold hover:bg-slate-100 transition-colors shadow-md shrink-0"
               >
                 Launch Resume Workspace

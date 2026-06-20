@@ -8,6 +8,9 @@ import BordeauxElite from './Templates/BordeauxElite';
 import PrestigeIvory from './Templates/PrestigeIvory';
 import ApexExecutive from './Templates/ApexExecutive';
 import PinnaclePremium from './Templates/PinnaclePremium';
+import CorporateLegacy from './Templates/CorporateLegacy';
+import LegacyElite from './Templates/LegacyElite';
+import NovaStandard from './Templates/NovaStandard';
 
 export default function ResumePreview({ data, template }) {
   const info = data.personalInfo || {};
@@ -99,6 +102,19 @@ export default function ResumePreview({ data, template }) {
   if (template === 'Pinnacle Premium') {
     return <PinnaclePremium {...layoutProps} />;
   }
+
+  if (template === 'Corporate Legacy') {
+  return <CorporateLegacy {...layoutProps} />;
+  }
+
+  if (template === 'Legacy Elite') {
+  return <LegacyElite {...layoutProps} />;
+  }
+
+  if (template === 'Nova Standard') {
+  return <NovaStandard {...layoutProps} />;
+}
+
 
   // Fallback Template
   return (

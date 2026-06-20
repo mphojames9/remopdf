@@ -83,7 +83,10 @@ const RE_TEMPLATES = [
   { id: 'Bordeaux Elite', name: 'Bordeaux Elite', vibe: 'Sophisticated & Prestigious', description: 'A distinguished layout featuring deep burgundy tones, warm cream backgrounds, and refined serif typography for a C-suite presence.' },
   { id: 'Prestige Ivory', name: 'Prestige Ivory', vibe: 'Pure & Minimalist', description: 'An ultra-clean, premium white aesthetic utilizing sharp typography, deep charcoal text, and crisp whitespace for a heavy-stock paper feel.' },
   { id: 'Apex Executive', name: 'Apex Executive', vibe: 'Top-Tier & Premium', description: 'An incredibly sophisticated layout featuring an obsidian slate sidebar, metallic gold accents, and sharp geometric spacing designed for the C-suite.' },
-  { id: 'Pinnacle Premium', name: 'Pinnacle Premium', vibe: 'Editorial & Ultra-Premium', description: 'A striking, high-contrast flat layout designed specifically for flawless pagination, featuring elegant typography and pristine row-by-row structure.' }
+  { id: 'Pinnacle Premium', name: 'Pinnacle Premium', vibe: 'Editorial & Ultra-Premium', description: 'A striking, high-contrast flat layout designed specifically for flawless pagination, featuring elegant typography and pristine row-by-row structure.' },
+  {  id: 'Corporate Legacy', name: 'Corporate Legacy', vibe: 'Executive & Recruiter-Approved', description: 'A polished, high-impact double-column executive design featuring clear visual timelines, explicit skill tracks, and strict compliance pagination metrics.' },
+  { id: 'Legacy Elite', name: 'Legacy Elite', vibe: 'Modern Executive & High-Contrast', description: 'A striking high-contrast layout utilizing elegant custom font configurations, clear visual metrics, and structured sidebars designed for technical leadership.' },
+  { id: 'Nova Standard', name: 'Nova Standard', vibe: 'Tech-Forward & Crisp', description: 'A precise, tech-oriented layout featuring sharp blue accents, clean typography grids, and high-visibility data mapping.' }
 ];
 
 const SliderCard = ({ tmpl, isActive, onSelect }) => {

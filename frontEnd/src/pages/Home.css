@@ -579,6 +579,22 @@ html, body, #root, .app-container {
   .tools-grid article:nth-child(14) { top: 275px; z-index: 23; }
 }
 
+  .mobile-fullscreen-modal h2 {
+    font-size: 20px;
+  }
+
+    .mobile-fullscreen-modal h3 {
+    font-size: 17px;
+  }
+
+      .mobile-fullscreen-modal label {
+    font-size: 12px;
+  }
+
+        .mobile-fullscreen-modal select  {
+    font-size: 12px;
+  }
+
 @media (max-width: 450px), (max-height: 680px) {
   /* KEEP THIS: This makes sure your modal looks good and scrolls internally on mobile */
   .mobile-fullscreen-modal {
@@ -588,10 +604,18 @@ html, body, #root, .app-container {
     max-height: 100vh !important;
     border-radius: 0 !important;
     border: none !important;
-    padding: 1.5rem !important; 
+    padding: 2rem !important; 
     overflow-y: auto !important; /* Lets the modal itself scroll */
     display: flex;
     flex-direction: column;
+  }
+
+  .mobile-fullscreen-modal h2 {
+    font-size: 17px;
+  }
+
+    .mobile-fullscreen-modal h3 {
+    font-size: 14px;
   }
 
   /* REMOVED: The body:has(...) block is gone because React handles it now */
