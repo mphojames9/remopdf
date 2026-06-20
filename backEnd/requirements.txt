@@ -6,7 +6,6 @@ aiofiles
 jinja2
 python-dotenv
 pydantic-settings
-pip freeze
 
 # --- Primary PDF & Doc Processing ---
 pymupdf
