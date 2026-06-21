@@ -618,5 +618,7 @@ html, body, #root, .app-container {
     font-size: 14px;
   }
 
-  /* REMOVED: The body:has(...) block is gone because React handles it now */
+  .ss {
+  display: none;
+}
 }

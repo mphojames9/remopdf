@@ -9,6 +9,7 @@ import LanguagesField from './Sections/LanguagesField';
 import HobbiesField from './Sections/HobbiesField';
 import ReferencesField from './Sections/ReferencesField';
 import { createPortal } from 'react-dom';
+import '../../pages/Home.css'
 
 const SECTIONS_LIST = [
   { id: 1, title: 'Personal Information' },
@@ -56,7 +57,8 @@ export default function ResumeForm({ data, setData, onExport, onPreview, onOpenT
       setHasCompleted(true);
       
       // Check local storage for the trace
-      const hasPromptedTemplate = localStorage.getItem('remo_template_prompted');
+      const hasPromptedTemplate = 'true' //localStorage.getItem('remo_template_prompted');
+   
       
       if (!hasPromptedTemplate) {
         // First time finishing: set the trace and trigger the Template Modal
@@ -92,7 +94,7 @@ export default function ResumeForm({ data, setData, onExport, onPreview, onOpenT
       </div>
 
       {/* DYNAMIC CONTENT ROUTER */}
-      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar pb-10">
+      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar pb-0">
         {currentStep === 1 && <PersonalInfo data={data} setData={setData} onNext={handleNext} nextLabel={nextBtnLabel} />}
         {currentStep === 2 && <ExperienceField data={data} setData={setData} onNext={handleNext} onPrev={() => setCurrentStep(1)} nextLabel={nextBtnLabel} />}
         {currentStep === 3 && <EducationField data={data} setData={setData} onNext={handleNext} onPrev={() => setCurrentStep(2)} nextLabel={nextBtnLabel} />}
@@ -130,11 +132,11 @@ export default function ResumeForm({ data, setData, onExport, onPreview, onOpenT
             {/* Header Section */}
             <div className="pt-14 sm:pt-16 pb-6 px-6 sm:px-10 text-center relative shrink-0">
               {/* Compact Success Icon */}
-              <div className="w-14 h-14 mx-auto mb-5 relative flex items-center justify-center rounded-full bg-orange-50 text-orange-500 ring-4 ring-white shadow-sm">
+              <div className="ss w-14 h-14 mx-auto mb-5 relative flex items-center justify-center rounded-full bg-orange-50 text-orange-500 ring-4 ring-white shadow-sm">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
               </div>
 
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-2 tracking-tight">
+              <h2 className="ss text-2xl sm:text-3xl font-extrabold text-slate-800 mb-2 tracking-tight">
                 Resume Masterpiece Ready
               </h2>
               <p className="text-slate-500 text-sm font-medium max-w-sm mx-auto">

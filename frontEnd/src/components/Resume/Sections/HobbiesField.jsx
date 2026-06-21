@@ -63,7 +63,7 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
               <button 
                 type="button"
                 onClick={() => handleRemove(index)} 
-                className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all shrink-0 sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus:opacity-100"
+                className="text-slate-400 cursor-pointer hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all shrink-0 sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus:opacity-100"
                 title="Remove Hobby"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,7 +86,7 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
           type="button"
           onClick={handleAdd} 
           disabled={isAddDisabled}
-          className={`mt-4 w-full py-2.5 border-2 border-dashed rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 ${
+          className={`mt-4 w-full cursor-pointer py-2.5 border-2 border-dashed rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 ${
             isAddDisabled 
               ? 'border-slate-100 text-slate-300 bg-slate-50/20 cursor-not-allowed opacity-60' 
               : 'border-slate-200 text-slate-400 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50/30 active:scale-[0.995]'
@@ -104,7 +104,7 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
         <button 
           type="button"
           onClick={onPrev} 
-          className="px-3.5 sm:px-5 py-2.5 border border-slate-200 text-slate-500 font-bold rounded-xl hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50/80 transition-all flex items-center gap-1.5 text-xs sm:text-sm"
+          className="px-3.5 sm:px-5 py-2.5 cursor-pointer border border-slate-200 text-slate-500 font-bold rounded-xl hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50/80 transition-all flex items-center gap-1.5 text-xs sm:text-sm"
         >
           <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -114,7 +114,7 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
         <button 
           type="button"
           onClick={onNext} 
-          className="px-4 sm:px-7 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
+          className="px-4 sm:px-7 py-2.5 cursor-pointer bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
         >
           {nextLabel || "Next: References"}
         </button>

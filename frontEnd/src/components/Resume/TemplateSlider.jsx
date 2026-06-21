@@ -202,7 +202,7 @@ export default function TemplateSlider({ onSelect, activeTemplateId }) {
   };
 
   return (
-    <div className="w-full py-12 sm:py-16 md:py-20 relative font-sans selection:bg-amber-100 selection:text-amber-900">
+    <div className="w-full py-5 sm:py-5 md:py-5 relative font-sans selection:bg-amber-100 selection:text-amber-900">
       <style>{`
         .scrollbar-hidden::-webkit-scrollbar { display: none; }
         .scrollbar-hidden { -ms-overflow-style: none; scrollbar-width: none; }

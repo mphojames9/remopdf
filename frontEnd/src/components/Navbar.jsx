@@ -247,7 +247,7 @@ export default function Navbar() {
           <div className="flex items-center gap-4 shrink-0 relative z-[70]">
             <button 
               onClick={() => handleOpenTool('pricing')} 
-              className="hidden lg:inline-flex relative items-center justify-center px-6 py-2.5 overflow-hidden font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-full shadow-[0_8px_20px_rgba(245,158,11,0.25)] hover:shadow-[0_8px_25px_rgba(245,158,11,0.4)] hover:-translate-y-0.5 transition-all duration-300 group"
+              className="hidden cursor-pointer lg:inline-flex relative items-center justify-center px-6 py-2.5 overflow-hidden font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-full shadow-[0_8px_20px_rgba(245,158,11,0.25)] hover:shadow-[0_8px_25px_rgba(245,158,11,0.4)] hover:-translate-y-0.5 transition-all duration-300 group"
             >
               <span className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></span>
               <span className="relative tracking-wide text-xs uppercase z-10 flex items-center gap-2">

@@ -157,8 +157,8 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
                     <>
                       <img src={data.personalInfo.photo} alt="Profile" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => fileInputRef.current.click()} className="text-white text-[9px] font-bold uppercase tracking-wider mb-1 hover:text-orange-400">Change</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleRemovePhoto(); }} className="text-white text-[9px] font-bold uppercase tracking-wider hover:text-red-400">Remove</button>
+                        <button onClick={() => fileInputRef.current.click()} className="text-white cursor-pointer text-[9px] font-bold uppercase tracking-wider mb-1 hover:text-orange-400">Change</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleRemovePhoto(); }} className="text-white cursor-pointer text-[9px] font-bold uppercase tracking-wider hover:text-red-400">Remove</button>
                       </div>
                     </>
                   ) : (
@@ -217,7 +217,7 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
 
           {/* Card 4: Accordion Block: Legal & Demographics */}
           <div className="bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.12)] rounded-2xl relative group/card hover:border-slate-200 hover:shadow-[0_4px_24px_-2px_rgba(148,163,184,0.16)] transition-all duration-300 overflow-hidden">
-            <button type="button" onClick={() => setShowDemographics(!showDemographics)} className="w-full p-3.5 sm:p-5 flex justify-between items-center hover:bg-slate-50/50 transition-colors text-left">
+            <button type="button" onClick={() => setShowDemographics(!showDemographics)} className="w-full p-3.5 sm:p-5 flex cursor-pointer justify-between items-center hover:bg-slate-50/50 transition-colors text-left">
               <div>
                 <h3 className="text-[10px] sm:text-[11px] font-bold text-slate-600 uppercase tracking-wider">
                   4. Verifications & Demographics
@@ -261,7 +261,7 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
         <div className="border-t border-slate-100 pt-3 pb-4 flex justify-end items-center gap-3 bg-white shrink-0">
           <button 
             onClick={onNext} 
-            className="px-4 sm:px-7 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
+            className="px-4 sm:px-7 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 cursor-pointer hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
           >
             {nextLabel || "Next: Experience"}
             {nextLabel?.includes('Finish') ? (
@@ -320,8 +320,8 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
             </div>
 
             <div className="p-3.5 flex gap-2.5 bg-white border-t border-slate-100 shrink-0">
-              <button onClick={() => setShowPhotoModal(false)} className="flex-1 px-3 py-2.5 border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-bold rounded-xl text-xs transition-all">Cancel</button>
-              <button onClick={handleSavePhoto} className="flex-1 px-3 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-md transition-all">Apply Photo</button>
+              <button onClick={() => setShowPhotoModal(false)} className="flex-1 px-3 py-2.5 cursor-pointer border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-bold rounded-xl text-xs transition-all">Cancel</button>
+              <button onClick={handleSavePhoto} className="flex-1 px-3 py-2.5 bg-slate-900 cursor-pointer hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-md transition-all">Apply Photo</button>
             </div>
           </div>
         </div>

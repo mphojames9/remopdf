@@ -210,7 +210,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
                     {experiences.length > 1 && (
                       <button 
                         onClick={() => removeExperience(index)} 
-                        className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-xl border border-transparent hover:border-red-100 shadow-sm sm:shadow-none transition-all duration-200 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider"
+                        className="text-slate-400 hover:text-red-500 cursor-pointer hover:bg-red-50 p-1.5 rounded-xl border border-transparent hover:border-red-100 shadow-sm sm:shadow-none transition-all duration-200 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider"
                         title="Remove Experience"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -293,7 +293,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
                       {hasSuggestions && (
                          <button 
                             onClick={() => setActiveSuggestionIndex(index)}
-                            className="text-[9px] sm:text-[10px] font-extrabold flex items-center gap-1 py-0.5 px-2.5 rounded-full border border-indigo-200/80 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 hover:from-indigo-100 hover:to-purple-100 shadow-[0_2px_8px_rgba(99,102,241,0.08)] transition-all shrink-0 animate-[pulse_2.5s_infinite_ease-in-out] group/sparkle active:scale-[0.96]"
+                            className="text-[9px] sm:text-[10px] cursor-pointer font-extrabold flex items-center gap-1 py-0.5 px-2.5 rounded-full border border-indigo-200/80 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 hover:from-indigo-100 hover:to-purple-100 shadow-[0_2px_8px_rgba(99,102,241,0.08)] transition-all shrink-0 animate-[pulse_2.5s_infinite_ease-in-out] group/sparkle active:scale-[0.96]"
                          >
                             <svg className="w-2.5 h-2.5 text-indigo-500 group-hover/sparkle:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -322,7 +322,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
                         
                         <button 
                           onClick={() => removeAchievement(index, aIndex)} 
-                          className="text-slate-400 hover:text-red-500 hover:bg-red-50 self-start p-2.5 rounded-xl border border-slate-100 hover:border-red-100 transition-all shadow-sm shrink-0" 
+                          className="text-slate-400 hover:text-red-500 hover:bg-red-50 cursor-pointer self-start p-2.5 rounded-xl border border-slate-100 hover:border-red-100 transition-all shadow-sm shrink-0" 
                           title="Remove bullet point"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,7 +336,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
                       <button 
                         onClick={() => addAchievement(index)} 
                         disabled={isAddAchievementDisabled}
-                        className={`text-[10px] sm:text-xs font-bold flex items-center gap-1.5 ml-0.5 py-1.5 px-3 rounded-lg border transition-all shadow-sm ${
+                        className={`text-[10px] sm:text-xs font-bold cursor-pointer flex items-center gap-1.5 ml-0.5 py-1.5 px-3 rounded-lg border transition-all shadow-sm ${
                           isAddAchievementDisabled 
                             ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60' 
                             : 'text-orange-600 hover:text-orange-700 bg-orange-50/50 hover:bg-orange-50 border-orange-200/60 active:scale-[0.98]'
@@ -356,7 +356,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
           
           <button 
             onClick={addExperience} 
-            className="mt-4 w-full py-2.5 sm:py-3.5 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50/30 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.995]"
+            className="mt-4 w-full py-2.5 cursor-pointer sm:py-3.5 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50/30 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.995]"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
@@ -369,7 +369,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
         <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
           <button 
             onClick={onPrev} 
-            className="px-3.5 sm:px-5 py-2.5 border border-slate-200 text-slate-500 font-bold rounded-xl hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50/80 transition-all flex items-center gap-1.5 text-xs sm:text-sm"
+            className="px-3.5 sm:px-5 py-2.5 cursor-pointer border border-slate-200 text-slate-500 font-bold rounded-xl hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50/80 transition-all flex items-center gap-1.5 text-xs sm:text-sm"
           >
             <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -378,7 +378,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
           </button>
           <button 
             onClick={onNext} 
-            className="px-4 sm:px-7 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
+            className="px-4 sm:px-7 py-2.5 cursor-pointer bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
           >
             {nextLabel || "Next: Education"}
           </button>
@@ -422,7 +422,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
             
             <button 
               onClick={() => setActiveSuggestionIndex(null)}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 cursor-pointer hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -445,7 +445,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
                   key={i}
                   type="button"
                   onClick={() => handleAddSuggestedAchievement(activeSuggestionIndex, ach)}
-                  className="w-full text-left p-3 bg-white hover:bg-indigo-50/30 text-slate-600 hover:text-indigo-800 text-[11px] sm:text-xs rounded-xl border border-slate-200/80 hover:border-indigo-200 shadow-sm transition-all duration-200 flex items-start gap-2.5 active:scale-[0.98] group/btn"
+                  className="w-full text-left p-3 bg-white cursor-pointer hover:bg-indigo-50/30 text-slate-600 hover:text-indigo-800 text-[11px] sm:text-xs rounded-xl border border-slate-200/80 hover:border-indigo-200 shadow-sm transition-all duration-200 flex items-start gap-2.5 active:scale-[0.98] group/btn"
                 >
                   <span className="flex-shrink-0 w-5 h-5 rounded-md bg-indigo-50 text-indigo-500 flex items-center justify-center font-bold group-hover/btn:bg-indigo-500 group-hover/btn:text-white transition-colors">
                     +
@@ -460,7 +460,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
           <div className="p-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
              <button 
                 onClick={() => setActiveSuggestionIndex(null)}
-                className="w-full py-2.5 bg-white border border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+                className="w-full py-2.5 bg-white border cursor-pointer border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
              >
                 Done
              </button>

@@ -63,7 +63,7 @@ export default function CertificatesField({ data, setData, onPrev, onNext, nextL
                 </span>
                 <button 
                   onClick={() => handleRemove(index)} 
-                  className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-xl border border-transparent hover:border-red-100 shadow-sm sm:shadow-none transition-all duration-200 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider"
+                  className="text-slate-400 cursor-pointer hover:text-red-500 hover:bg-red-50 p-1.5 rounded-xl border border-transparent hover:border-red-100 shadow-sm sm:shadow-none transition-all duration-200 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider"
                   title="Remove Certificate"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +100,7 @@ export default function CertificatesField({ data, setData, onPrev, onNext, nextL
         <button 
           onClick={handleAdd} 
           disabled={isAddDisabled} 
-          className={`mt-4 w-full py-2.5 sm:py-3.5 border-2 border-dashed rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.995] ${isAddDisabled ? 'border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed opacity-70' : 'border-slate-200 text-slate-400 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50/30'}`}
+          className={`mt-4 w-full py-2.5 sm:py-3.5 border-2 cursor-pointer border-dashed rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.995] ${isAddDisabled ? 'border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed opacity-70' : 'border-slate-200 text-slate-400 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50/30'}`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
@@ -113,7 +113,7 @@ export default function CertificatesField({ data, setData, onPrev, onNext, nextL
       <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
         <button 
           onClick={onPrev} 
-          className="px-3.5 sm:px-5 py-2.5 border border-slate-200 text-slate-500 font-bold rounded-xl hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50/80 transition-all flex items-center gap-1.5 text-xs sm:text-sm"
+          className="px-3.5 sm:px-5 py-2.5 border border-slate-200 cursor-pointer text-slate-500 font-bold rounded-xl hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50/80 transition-all flex items-center gap-1.5 text-xs sm:text-sm"
         >
           <svg className="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -122,7 +122,7 @@ export default function CertificatesField({ data, setData, onPrev, onNext, nextL
         </button>
         <button 
           onClick={onNext} 
-          className="px-4 sm:px-7 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
+          className="px-4 sm:px-7 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 cursor-pointer hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
         >
           {nextLabel || "Next: Projects"}
         </button>

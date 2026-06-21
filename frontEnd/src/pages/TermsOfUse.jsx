@@ -90,10 +90,9 @@ export default function Terms() {
       >
         <div className="nav-logo shrink-0 relative z-50">
           <Link to="/" className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg">
-            <i className="fa-solid fa-file-pdf text-red-500 text-xl lg:text-2xl drop-shadow-sm"></i>
-            <span className="font-medium text-[1.1rem] lg:text-xl text-slate-900 tracking-tight">
-              Remo<span className="text-[#ff2d2d] font-normal">PDF</span>
-            </span>
+            <span className="font-black text-[1.25rem] text-slate-800 tracking-tight">
+                Remo<span className="text-red-600">PDF</span>
+              </span>
           </Link>
         </div>
   

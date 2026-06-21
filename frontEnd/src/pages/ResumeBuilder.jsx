@@ -560,18 +560,18 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
             <div className="w-px h-5 bg-slate-200 mx-1"></div>
 
             {/* Quick Actions */}
-            <button onClick={openRenameModal} className="p-1.5 hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-full transition-all outline-none" title="Rename Workspace">
+            <button onClick={openRenameModal} className="p-1.5 hover:bg-slate-50 text-slate-500 cursor-pointer hover:text-slate-800 rounded-full transition-all outline-none" title="Rename Workspace">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
               </svg>
             </button>
-            <button onClick={handleCreateNew} className="p-1.5 hover:bg-orange-50 hover:text-orange-600 text-slate-500 rounded-full transition-all outline-none" title="New Profile">
+            <button onClick={handleCreateNew} className="p-1.5 hover:bg-orange-50 hover:text-orange-600 cursor-pointer text-slate-500 rounded-full transition-all outline-none" title="New Profile">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
             </button>
             {savedResumes.length > 1 && (
-              <button onClick={(e) => openDeleteModal(activeId, e)} className="p-1.5 hover:bg-red-50 hover:text-red-600 text-slate-400 rounded-full transition-all outline-none" title="Delete Profile">
+              <button onClick={(e) => openDeleteModal(activeId, e)} className="p-1.5 hover:bg-red-50 cursor-pointer hover:text-red-600 cursor-pointer text-slate-400 rounded-full transition-all outline-none" title="Delete Profile">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                 </svg>
@@ -582,7 +582,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
           <div className="w-px h-6 bg-slate-200/60"></div>
 
           {/* Template Indicator */}
-          <button onClick={() => setShowTemplateModal(true)} className="group flex items-center gap-2 bg-slate-50 hover:bg-slate-100 ring-1 ring-slate-200/50 text-slate-800 text-xs font-bold rounded-full px-4 py-1.5 transition-all duration-300 outline-none max-w-[150px]">
+          <button onClick={() => setShowTemplateModal(true)} className="group flex items-center cursor-pointer gap-2 bg-slate-50 hover:bg-slate-100 ring-1 ring-slate-200/50 text-slate-800 text-xs font-bold rounded-full px-4 py-1.5 transition-all duration-300 outline-none max-w-[150px]">
             <span className="text-orange-500 font-extrabold tracking-wide truncate">{activeTemplate}</span>
             <svg className="w-3.5 h-3.5 text-slate-400 shrink-0 transform group-hover:translate-y-px transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"></path>
@@ -594,7 +594,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           
           {/* Upgraded Premium Download Button */}
-          <button onClick={handleExport} className="hidden sm:flex items-center gap-2 bg-gradient-to-b from-slate-800 via-slate-900 to-black hover:from-slate-700 hover:via-slate-800 hover:to-slate-950 text-white px-5 py-2.5 rounded-full text-xs font-bold tracking-wide shadow-[0_4px_15px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.25)] ring-1 ring-white/10 transition-all duration-300 transform active:scale-95">
+          <button onClick={handleExport} className="hidden sm:flex items-center cursor-pointer gap-2 bg-gradient-to-b from-slate-800 via-slate-900 to-black hover:from-slate-700 hover:via-slate-800 hover:to-slate-950 text-white px-5 py-2.5 rounded-full text-xs font-bold tracking-wide shadow-[0_4px_15px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.25)] ring-1 ring-white/10 transition-all duration-300 transform active:scale-95">
             <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
@@ -604,7 +604,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
           {/* Mobile Menu Toggle */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200"
+            className="md:hidden p-2 text-slate-700 cursor-pointer hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200"
           >
             <svg className="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {isMobileMenuOpen ? (
@@ -641,14 +641,14 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
 
             {/* Mobile Action Buttons */}
             <div className="grid grid-cols-3 gap-3">
-              <button onClick={openRenameModal} className="flex flex-col items-center justify-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-600 hover:bg-slate-100 active:scale-95 transition-all">
+              <button onClick={openRenameModal} className="flex flex-col items-center cursor-pointer justify-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-600 hover:bg-slate-100 active:scale-95 transition-all">
                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
                 </svg>
                 <span className="text-[10px] font-bold">Rename</span>
               </button>
               
-              <button onClick={handleCreateNew} className="flex flex-col items-center justify-center gap-2 p-3 bg-orange-50 rounded-xl border border-orange-100 text-orange-600 hover:bg-orange-100 active:scale-95 transition-all">
+              <button onClick={handleCreateNew} className="flex flex-col items-center cursor-pointer justify-center gap-2 p-3 bg-orange-50 rounded-xl border border-orange-100 text-orange-600 hover:bg-orange-100 active:scale-95 transition-all">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
@@ -658,7 +658,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
               <button 
                 onClick={(e) => openDeleteModal(activeId, e)} 
                 disabled={savedResumes.length <= 1}
-                className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all ${savedResumes.length > 1 ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100 active:scale-95' : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'}`}
+                className={`flex flex-col items-center justify-center gap-2 p-3 cursor-pointer rounded-xl border transition-all ${savedResumes.length > 1 ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100 active:scale-95' : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'}`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -685,7 +685,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
             {/* Mobile Export */}
             <button 
               onClick={handleExport} 
-              className="mt-2 w-full bg-gradient-to-b from-slate-800 via-slate-900 to-black hover:from-slate-700 hover:via-slate-800 hover:to-slate-950 text-white font-bold py-3.5 rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.15)] ring-1 ring-white/10 flex items-center justify-center gap-2.5 active:scale-95 transition-all duration-300"
+              className="mt-2 w-full bg-gradient-to-b cursor-pointer from-slate-800 via-slate-900 to-black hover:from-slate-700 hover:via-slate-800 hover:to-slate-950 text-white font-bold py-3.5 rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.15)] ring-1 ring-white/10 flex items-center justify-center gap-2.5 active:scale-95 transition-all duration-300"
             >
               <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -740,7 +740,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
             
             <button 
               onClick={() => setShowOverlay(true)} 
-              className="group flex items-center gap-2 bg-slate-800 hover:bg-slate-700/80 ring-1 ring-white/10 text-slate-200 hover:text-white px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 shadow-md active:scale-95"
+              className="group flex items-center cursor-pointer gap-2 bg-slate-800 hover:bg-slate-700/80 ring-1 ring-white/10 text-slate-200 hover:text-white px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 shadow-md active:scale-95"
             >
               <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.644m19.928 0a1.012 1.012 0 010 .644M12 18.75a6.75 6.75 0 110-13.5 6.75 6.75 0 010 13.5z" />
@@ -805,13 +805,13 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
             <div className="flex items-center justify-end gap-3 shrink-0">
               <button 
                 onClick={() => setShowRenameModal(false)}
-                className="px-5 py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-full transition-all outline-none shadow-sm active:scale-95"
+                className="px-5 py-2.5 bg-white border border-slate-200 cursor-pointer hover:border-slate-300 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-full transition-all outline-none shadow-sm active:scale-95"
               >
                 Cancel
               </button>
               <button 
                 onClick={executeRenameSave}
-                className="px-6 py-2.5 bg-gradient-to-b from-slate-800 via-slate-900 to-black hover:from-slate-700 hover:via-slate-800 hover:to-slate-950 text-white text-xs font-bold rounded-full shadow-[0_4px_15px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.25)] ring-1 ring-white/10 transition-all duration-300 outline-none transform active:scale-95"
+                className="px-6 py-2.5 bg-gradient-to-b from-slate-800 cursor-pointer via-slate-900 to-black hover:from-slate-700 hover:via-slate-800 hover:to-slate-950 text-white text-xs font-bold rounded-full shadow-[0_4px_15px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.25)] ring-1 ring-white/10 transition-all duration-300 outline-none transform active:scale-95"
               >
                 Save Changes
               </button>
@@ -843,13 +843,13 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
             <div className="flex items-center gap-3 w-full">
               <button 
                 onClick={() => { setShowDeleteModal(false); setIdToDelete(null); }}
-                className="flex-1 px-4 py-3 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-2xl transition-all outline-none shadow-sm active:scale-95"
+                className="flex-1 px-4 py-3 bg-white border border-slate-200 cursor-pointer hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-2xl transition-all outline-none shadow-sm active:scale-95"
               >
                 Cancel Action
               </button>
               <button 
                 onClick={executeDeleteConfirm}
-                className="flex-1 px-4 py-3 bg-gradient-to-b from-red-500 via-red-600 to-red-700 hover:from-red-400 hover:via-red-500 hover:to-red-600 text-white text-xs font-bold rounded-2xl shadow-[0_4px_15px_rgba(220,38,38,0.3)] hover:shadow-[0_6px_20px_rgba(220,38,38,0.4)] ring-1 ring-white/20 transition-all duration-300 outline-none transform active:scale-95"
+                className="flex-1 px-4 py-3 bg-gradient-to-b from-red-500 via-red-600 cursor-pointer to-red-700 hover:from-red-400 hover:via-red-500 hover:to-red-600 text-white text-xs font-bold rounded-2xl shadow-[0_4px_15px_rgba(220,38,38,0.3)] hover:shadow-[0_6px_20px_rgba(220,38,38,0.4)] ring-1 ring-white/20 transition-all duration-300 outline-none transform active:scale-95"
               >
                 Delete Document
               </button>
@@ -864,7 +864,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
           <div className="absolute top-3 right-3 max-[340px]:top-2 max-[340px]:right-2 z-[1000005]">
             <button 
               onClick={() => setShowOverlay(false)} 
-              className="bg-white/5 hover:bg-white/10 active:scale-90 text-white/70 hover:text-white p-2.5 max-[340px]:p-2 rounded-full border border-white/10 backdrop-blur-md transition-all outline-none"
+              className="bg-white/5 hover:bg-white/10 active:scale-90 cursor-pointer text-white/70 hover:text-white p-2.5 max-[340px]:p-2 rounded-full border border-white/10 backdrop-blur-md transition-all outline-none"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -876,7 +876,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
             <button
               onClick={(e) => { e.stopPropagation(); handleExport(); }}
               disabled={isExporting}
-              className="group flex items-center gap-2.5 bg-gradient-to-b from-orange-500 via-orange-600 to-amber-600 hover:from-orange-400 hover:via-orange-500 hover:to-amber-500 text-white font-black tracking-wide text-xs max-[340px]:text-[11px] px-6 py-3.5 max-[540px]:py-3 rounded-full shadow-[0_12px_32px_rgba(234,88,12,0.35)] hover:shadow-[0_16px_40px_rgba(234,88,12,0.55)] border border-white/10 whitespace-nowrap transition-all duration-300 transform active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
+              className="group flex items-center cursor-pointer gap-2.5 bg-gradient-to-b from-orange-500 via-orange-600 to-amber-600 hover:from-orange-400 hover:via-orange-500 hover:to-amber-500 text-white font-black tracking-wide text-xs max-[340px]:text-[11px] px-6 py-3.5 max-[540px]:py-3 rounded-full shadow-[0_12px_32px_rgba(234,88,12,0.35)] hover:shadow-[0_16px_40px_rgba(234,88,12,0.55)] border border-white/10 whitespace-nowrap transition-all duration-300 transform active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
             >
               {isExporting ? (
                 <>
@@ -932,7 +932,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
       {/* High-End Tactile Close Button (Absolutely positioned so it doesn't break the text centering) */}
       <button 
         onClick={() => setShowTemplateModal(false)} 
-        className="absolute right-6 sm:right-10 group w-12 h-12 flex items-center justify-center bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-full outline-none shrink-0 border border-slate-200 hover:border-rose-200 shadow-sm hover:shadow-[0_8px_20px_-6px_rgba(225,29,72,0.3)] active:scale-90 transition-all duration-300"
+        className="absolute right-6 sm:right-10 cursor-pointer group w-12 h-12 flex items-center justify-center bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-full outline-none shrink-0 border border-slate-200 hover:border-rose-200 shadow-sm hover:shadow-[0_8px_20px_-6px_rgba(225,29,72,0.3)] active:scale-90 transition-all duration-300"
         aria-label="Close gallery"
       >
         <svg className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90 font-light" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -982,7 +982,7 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
       {/* FLOATING ACTION HUD (MOBILE) */}
       <button
         onClick={() => setShowOverlay(true)}
-        className="group fixed bottom-3 right-3 z-[45] lg:hidden flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_25px_rgba(16,185,129,0.6)] border border-emerald-200/40 active:scale-95 transition-all duration-300 focus:outline-none"
+        className="group fixed bottom-3 cursor-pointer right-3 z-[45] lg:hidden flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_25px_rgba(16,185,129,0.6)] border border-emerald-200/40 active:scale-95 transition-all duration-300 focus:outline-none"
         aria-label="Toggle dynamic preview"
       >
         <span className="absolute inset-0 rounded-full bg-emerald-400 animate-[ping_2.5s_ease-in-out_infinite] opacity-30"></span>

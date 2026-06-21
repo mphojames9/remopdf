@@ -646,7 +646,7 @@ useEffect(() => {
             {/* Primary Action Button */}
             <button 
   onClick={() => setIsPricingModalOpen(true)}
-  className="relative w-full sm:w-auto px-8 py-4 bg-gray-900 text-white font-medium rounded-full overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_40px_rgba(249,115,22,0.3)] transition-all duration-300 transform hover:-translate-y-1 group"
+  className="relative w-full cursor-pointer sm:w-auto px-8 py-4 bg-gray-900 text-white font-medium rounded-full overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_40px_rgba(249,115,22,0.3)] transition-all duration-300 transform hover:-translate-y-1 group"
   style={{ fontFamily: 'var(--Project-Font, "Outfit", Metropolis, sans-serif)' }}
 >
               <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-size-200 animate-gradient-shift opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -665,7 +665,7 @@ useEffect(() => {
   {/* Arrow that slides to the right on hover */}
   <svg 
     className="w-5 h-5 text-orange-500 transform group-hover:translate-x-1.5 transition-transform duration-300" 
-    fill="none" 
+    fill="none" x
     stroke="currentColor" 
     viewBox="0 0 24 24" 
     xmlns="http://www.w3.org/2000/svg"
@@ -1081,7 +1081,7 @@ onClick={() => navigate('/workspace')}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-red-900">Merge PDFs</span>
         </h2>
         
-        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-rose-50 border border-slate-200/80 hover:border-rose-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-11 h-11 cursor-pointer rounded-full bg-white hover:bg-rose-50 border border-slate-200/80 hover:border-rose-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-rose-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
         </button>
       </div>
@@ -1181,7 +1181,7 @@ onClick={() => navigate('/workspace')}
           <button 
             onClick={handleMerge} 
             disabled={selectedFiles.length < 2} 
-            className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(239,68,68,0.4)] hover:-translate-y-0.5 active:translate-y-0"
+            className="group relative w-full cursor-pointer h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(239,68,68,0.4)] hover:-translate-y-0.5 active:translate-y-0"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
             <span className="relative z-10 flex items-center justify-center gap-2.5 tracking-wide text-sm font-extrabold h-full">
@@ -1213,7 +1213,7 @@ onClick={() => navigate('/workspace')}
           </div>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-green-900">Split PDF</span>
         </h2>
-        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-green-50 border border-slate-200/80 hover:border-green-200 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full cursor-pointer bg-white hover:bg-green-50 border border-slate-200/80 hover:border-green-200 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-green-500 group-hover:rotate-90 transition-all duration-300"></i>
         </button>
       </div>
@@ -1277,7 +1277,7 @@ onClick={() => navigate('/workspace')}
             <p className="text-xs font-black text-slate-800 tracking-wider animate-pulse"><i className="fa-solid fa-scissors text-green-500"></i> Slicing Pages...</p>
           </div>
         ) : (
-          <button onClick={handleSplit} disabled={!splitFile} className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(34,197,94,0.4)]">
+          <button onClick={handleSplit} disabled={!splitFile} className="group relative cursor-pointer w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(34,197,94,0.4)]">
             <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
             <span className="relative z-10 flex items-center justify-center gap-2.5 h-full">Split & Download ZIP</span>
           </button>
@@ -1306,7 +1306,7 @@ onClick={() => navigate('/workspace')}
           </div>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900">Compress PDF</span>
         </h2>
-        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-blue-50 border border-slate-200/80 hover:border-blue-200 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white cursor-pointer hover:bg-blue-50 border border-slate-200/80 hover:border-blue-200 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-blue-500 group-hover:rotate-90 transition-all duration-300"></i>
         </button>
       </div>
@@ -1378,7 +1378,7 @@ onClick={() => navigate('/workspace')}
             <p className="text-xs font-black text-slate-800 animate-pulse"><i className="fa-solid fa-bolt text-blue-500"></i> Optimizing Size...</p>
           </div>
         ) : (
-          <button onClick={handleCompress} disabled={!compressFile} className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(59,130,246,0.4)]">
+          <button onClick={handleCompress} disabled={!compressFile} className="group relative cursor-pointer w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(59,130,246,0.4)]">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
             <span className="relative z-10 flex items-center justify-center gap-2.5 h-full">Compress & Download</span>
           </button>
@@ -1414,7 +1414,7 @@ onClick={() => navigate('/workspace')}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-purple-900">Image to PDF</span>
         </h2>
         
-        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-purple-50 border border-slate-200/80 hover:border-purple-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-11 h-11 cursor-pointer rounded-full bg-white hover:bg-purple-50 border border-slate-200/80 hover:border-purple-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-purple-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
         </button>
       </div>
@@ -1514,7 +1514,7 @@ onClick={() => navigate('/workspace')}
           <button 
             onClick={handleImageToPdf} 
             disabled={imageFiles.length === 0} 
-            className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(168,85,247,0.4)] hover:-translate-y-0.5 active:translate-y-0"
+            className="group relative w-full h-15 cursor-pointer rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(168,85,247,0.4)] hover:-translate-y-0.5 active:translate-y-0"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
             <span className="relative z-10 flex items-center justify-center gap-2.5 tracking-wide text-sm font-extrabold h-full">
@@ -1545,7 +1545,7 @@ onClick={() => navigate('/workspace')}
                 </div>
                 PDF to Image
               </h2>
-              <button onClick={closeOverlay} className="group w-10 h-10 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 transition-all duration-300 flex items-center justify-center">
+              <button onClick={closeOverlay} className="group cursor-pointer w-10 h-10 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 transition-all duration-300 flex items-center justify-center">
                 <i className="fa-solid fa-xmark text-slate-400 group-hover:text-blue-500 group-hover:rotate-90 transition-all duration-300"></i>
               </button>
             </div>
@@ -1640,7 +1640,7 @@ onClick={() => navigate('/workspace')}
                 <button 
                   onClick={handlePdfToImagesSubmit} 
                   disabled={pdfToImgFiles.length === 0} 
-                  className="group relative w-full h-14 rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(59,130,246,0.5)] transition-all duration-500 overflow-hidden"
+                  className="group relative w-full h-14 cursor-pointer rounded-2xl bg-gray-900 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_10px_40px_-10px_rgba(59,130,246,0.5)] transition-all duration-500 overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
                   <span className="relative z-10 flex items-center justify-center gap-2">
@@ -1682,7 +1682,7 @@ onClick={() => navigate('/workspace')}
           <span className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-100 to-orange-50 text-amber-700 text-[10px] font-black px-3 py-1.5 rounded-full tracking-wider border border-amber-200 shadow-sm">
             <i className="fa-solid fa-crown text-[10px]"></i> Pro
           </span>
-          <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-amber-50 border border-slate-200/80 hover:border-amber-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
+          <button onClick={closeOverlay} className="group cursor-pointer w-11 h-11 rounded-full bg-white hover:bg-amber-50 border border-slate-200/80 hover:border-amber-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
             <i className="fa-solid fa-xmark text-slate-400 group-hover:text-amber-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
           </button>
         </div>
@@ -1766,10 +1766,10 @@ onClick={() => navigate('/workspace')}
                           
                           {/* Hover Overlay Controls */}
                           <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]">
-                            <button onClick={() => setFullScreenPreviewUrl(page.thumbnail)} className="w-9 h-9 bg-white/90 text-slate-700 rounded-full flex items-center justify-center hover:scale-110 hover:bg-white hover:text-slate-900 transition-all shadow-lg">
+                            <button onClick={() => setFullScreenPreviewUrl(page.thumbnail)} className="w-9 h-9 bg-white/90 cursor-pointer text-slate-700 rounded-full flex items-center justify-center hover:scale-110 hover:bg-white hover:text-slate-900 transition-all shadow-lg">
                               <i className="fa-solid fa-expand text-xs"></i>
                             </button>
-                            <button onClick={() => togglePageSelection(fileIndex, page.page_index)} className={`w-9 h-9 text-white rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-lg ${isKept ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`}>
+                            <button onClick={() => togglePageSelection(fileIndex, page.page_index)} className={`w-9 h-9 text-white cursor-pointer rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-lg ${isKept ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`}>
                               <i className={`fa-solid ${isKept ? 'fa-trash-can' : 'fa-arrow-rotate-left'}`}></i>
                             </button>
                           </div>
@@ -1797,7 +1797,7 @@ onClick={() => navigate('/workspace')}
                 {['single', 'multiple'].map((mode) => (
                   <button 
                     key={mode} onClick={() => setDownloadMode(mode)}
-                    className={`flex-1 sm:flex-initial px-6 py-3 text-xs font-black rounded-xl transition-all duration-300 ${downloadMode === mode ? 'bg-white text-slate-900 shadow-sm border border-slate-200 scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 sm:flex-initial cursor-pointer px-6 py-3 text-xs font-black rounded-xl transition-all duration-300 ${downloadMode === mode ? 'bg-white text-slate-900 shadow-sm border border-slate-200 scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     {mode === 'single' ? 'Bind as Single PDF' : 'Export as ZIP Archive'}
                   </button>
@@ -1821,7 +1821,7 @@ onClick={() => navigate('/workspace')}
           <button 
             onClick={handleRemovePagesSubmit} 
             disabled={previewData.length === 0 || activeKeptPages.every(arr => arr.length === 0)} 
-            className="group w-full h-15 rounded-2.5xl bg-slate-900 text-white font-black text-sm tracking-wide hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.4)] transition-all duration-500 disabled:opacity-30 disabled:cursor-not-allowed hover:-translate-y-0.5 relative overflow-hidden"
+            className="group w-full h-15 cursor-pointer rounded-2.5xl bg-slate-900 text-white font-black text-sm tracking-wide hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.4)] transition-all duration-500 disabled:opacity-30 disabled:cursor-not-allowed hover:-translate-y-0.5 relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
             <span className="relative z-10 flex items-center justify-center gap-2">
@@ -1847,7 +1847,7 @@ onClick={() => navigate('/workspace')}
       {/* Premium Floating Close Button */}
       <button 
         onClick={() => setFullScreenPreviewUrl(null)} 
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 w-10 h-10 rounded-full bg-slate-900/60 backdrop-blur-md hover:bg-red-500 text-white transition-all duration-300 flex items-center justify-center border border-white/20 hover:border-red-400 shadow-xl group"
+        className="absolute top-4 right-4 cursor-pointer sm:top-6 sm:right-6 z-20 w-10 h-10 rounded-full bg-slate-900/60 backdrop-blur-md hover:bg-red-500 text-white transition-all duration-300 flex items-center justify-center border border-white/20 hover:border-red-400 shadow-xl group"
       >
         <i className="fa-solid fa-xmark text-sm group-hover:rotate-90 transition-transform duration-300"></i>
       </button>
@@ -1896,7 +1896,7 @@ onClick={() => navigate('/workspace')}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-amber-900">Compress Images</span>
         </h2>
         
-        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-amber-50 border border-slate-200/80 hover:border-amber-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full cursor-pointer bg-white hover:bg-amber-50 border border-slate-200/80 hover:border-amber-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-amber-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
         </button>
       </div>
@@ -2010,7 +2010,7 @@ onClick={() => navigate('/workspace')}
           <button 
             onClick={handleCompressImages} 
             disabled={imgCompressFiles.length === 0} 
-            className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.4)] hover:-translate-y-0.5 active:translate-y-0"
+            className="group relative w-full h-15 cursor-pointer rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.4)] hover:-translate-y-0.5 active:translate-y-0"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
             <span className="relative z-10 flex items-center justify-center gap-2.5 tracking-wide text-sm font-extrabold h-full">
@@ -2052,7 +2052,7 @@ onClick={() => navigate('/workspace')}
         
         <button 
           onClick={closeOverlay} 
-          className="group w-11 h-11 rounded-full bg-white hover:bg-rose-50 border border-slate-200/80 hover:border-rose-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center"
+          className="group w-11 h-11 rounded-full cursor-pointer bg-white hover:bg-rose-50 border border-slate-200/80 hover:border-rose-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center"
           aria-label="Close modal"
         >
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-rose-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
@@ -2196,7 +2196,7 @@ onClick={() => navigate('/workspace')}
           <button 
             onClick={handlePdfToWord} 
             disabled={pdfToWordFiles.length === 0} 
-            className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 active:translate-y-0"
+            className="group relative w-full h-15 cursor-pointer rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 active:translate-y-0"
           >
             {/* Glowing 3D Base Fill Layer */}
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
@@ -2230,7 +2230,7 @@ onClick={() => navigate('/workspace')}
           </div>
           PDF to Excel
         </h2>
-        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-200 transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 sm:h-10 rounded-full cursor-pointer bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-200 transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-emerald-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
         </button>
       </div>
@@ -2326,7 +2326,7 @@ onClick={() => navigate('/workspace')}
           <button 
             onClick={handlePdfToExcel} 
             disabled={pdfToExcelFiles.length === 0} 
-            className="group relative w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(16,185,129,0.4)] transition-all duration-500 overflow-hidden"
+            className="group relative w-full cursor-pointer h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(16,185,129,0.4)] transition-all duration-500 overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
             <span className="relative z-10 flex items-center justify-center gap-2">
@@ -2356,7 +2356,7 @@ onClick={() => navigate('/workspace')}
           </div>
           Protect PDF
         </h2>
-        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 hover:bg-indigo-50 border border-slate-200/80 hover:border-indigo-200 transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-9 h-9 cursor-pointer sm:w-10 sm:h-10 rounded-full bg-slate-50 hover:bg-indigo-50 border border-slate-200/80 hover:border-indigo-200 transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-indigo-600 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
         </button>
       </div>
@@ -2436,7 +2436,7 @@ onClick={() => navigate('/workspace')}
               disabled={isProcessing}
               className="w-full h-11 sm:h-12 pl-10 pr-12 text-xs sm:text-sm bg-transparent outline-none font-medium text-slate-800 placeholder-slate-400"
             />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-slate-400 hover:text-indigo-600 transition-colors text-xs sm:text-sm">
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute cursor-pointer right-4 text-slate-400 hover:text-indigo-600 transition-colors text-xs sm:text-sm">
               <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
             </button>
           </div>
@@ -2472,7 +2472,7 @@ onClick={() => navigate('/workspace')}
           <button 
             onClick={handleProtectPdf} 
             disabled={!protectFile || !pdfPassword} 
-            className="group relative w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(79,70,229,0.4)] transition-all duration-500 overflow-hidden"
+            className="group relative cursor-pointer w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(79,70,229,0.4)] transition-all duration-500 overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
             <span className="relative z-10 flex items-center justify-center gap-2">
@@ -2502,7 +2502,7 @@ onClick={() => navigate('/workspace')}
           </div>
           Unlock PDF
         </h2>
-        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 hover:bg-cyan-50 border border-slate-200/80 hover:border-cyan-200 transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 cursor-pointer sm:h-10 rounded-full bg-slate-50 hover:bg-cyan-50 border border-slate-200/80 hover:border-cyan-200 transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-cyan-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
         </button>
       </div>
@@ -2589,7 +2589,7 @@ onClick={() => navigate('/workspace')}
                 disabled={isProcessing}
                 className={`w-full h-11 sm:h-12 pl-10 pr-12 text-xs sm:text-sm bg-transparent outline-none font-medium ${isPasswordError ? 'text-red-900 placeholder-red-300' : 'text-slate-800 placeholder-slate-400'}`}
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute right-4 transition-colors text-xs sm:text-sm ${isPasswordError ? 'text-red-400 hover:text-red-600' : 'text-slate-400 hover:text-cyan-600'}`}>
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className={`absolute right-4 cursor-pointer transition-colors text-xs sm:text-sm ${isPasswordError ? 'text-red-400 hover:text-red-600' : 'text-slate-400 hover:text-cyan-600'}`}>
                 <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
               </button>
             </div>
@@ -2598,7 +2598,7 @@ onClick={() => navigate('/workspace')}
             <button 
               onClick={handleVerifyPassword} 
               disabled={!unlockPassword || isProcessing} 
-              className="group relative w-full h-11 sm:h-12 mt-3 sm:mt-4 rounded-xl bg-slate-900 text-white text-xs sm:text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_8px_30px_-8px_rgba(6,182,212,0.4)] transition-all duration-500 overflow-hidden"
+              className="group relative w-full h-11 cursor-pointer sm:h-12 mt-3 sm:mt-4 rounded-xl bg-slate-900 text-white text-xs sm:text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_8px_30px_-8px_rgba(6,182,212,0.4)] transition-all duration-500 overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
               <span className="relative z-10 flex items-center justify-center gap-2">
@@ -2661,7 +2661,7 @@ onClick={() => navigate('/workspace')}
             ) : (
               <button
                 onClick={handleRemovePassword}
-                className="group relative w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(6,182,212,0.4)] transition-all duration-500 overflow-hidden"
+                className="group relative w-full cursor-pointer h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(6,182,212,0.4)] transition-all duration-500 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
                 <span className="relative z-10 flex items-center justify-center gap-2">
@@ -2694,7 +2694,7 @@ onClick={() => navigate('/workspace')}
           </div>
           Change Password
         </h2>
-        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 hover:bg-rose-50 border border-slate-200/80 hover:border-rose-200 transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-9 h-9 sm:w-10 cursor-pointer sm:h-10 rounded-full bg-slate-50 hover:bg-rose-50 border border-slate-200/80 hover:border-rose-200 transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-rose-500 group-hover:rotate-90 transition-all duration-300 text-sm"></i>
         </button>
       </div>
@@ -2782,7 +2782,7 @@ onClick={() => navigate('/workspace')}
                 disabled={isProcessing}
                 className={`w-full h-11 sm:h-12 pl-10 pr-12 text-xs sm:text-sm bg-transparent outline-none font-medium ${isChangeError ? 'text-red-900 placeholder-red-300' : 'text-slate-800 placeholder-slate-400'}`}
               />
-              <button type="button" onClick={() => setShowOldPassword(!showOldPassword)} className={`absolute right-4 transition-colors text-xs sm:text-sm ${isChangeError ? 'text-red-400 hover:text-red-600' : 'text-slate-400 hover:text-rose-600'}`}>
+              <button type="button" onClick={() => setShowOldPassword(!showOldPassword)} className={`absolute right-4 cursor-pointer transition-colors text-xs sm:text-sm ${isChangeError ? 'text-red-400 hover:text-red-600' : 'text-slate-400 hover:text-rose-600'}`}>
                 <i className={`fa-solid ${showOldPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
               </button>
             </div>
@@ -2791,7 +2791,7 @@ onClick={() => navigate('/workspace')}
             <button 
               onClick={handleChangeVerify} 
               disabled={!oldPassword || isProcessing} 
-              className="group relative w-full h-11 sm:h-12 mt-3 sm:mt-4 rounded-xl bg-slate-900 text-white text-xs sm:text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_8px_30px_-8px_rgba(244,63,94,0.4)] transition-all duration-500 overflow-hidden"
+              className="group relative w-full cursor-pointer h-11 sm:h-12 mt-3 sm:mt-4 rounded-xl bg-slate-900 text-white text-xs sm:text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_8px_30px_-8px_rgba(244,63,94,0.4)] transition-all duration-500 overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
               <span className="relative z-10 flex items-center justify-center gap-2">
@@ -2834,7 +2834,7 @@ onClick={() => navigate('/workspace')}
                   disabled={isProcessing}
                   className="w-full h-11 sm:h-12 pl-10 pr-12 text-xs sm:text-sm bg-transparent outline-none font-medium text-slate-800 placeholder-slate-400"
                 />
-                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 text-slate-400 hover:text-rose-600 transition-colors text-xs sm:text-sm">
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 cursor-pointer text-slate-400 hover:text-rose-600 transition-colors text-xs sm:text-sm">
                   <i className={`fa-solid ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                 </button>
               </div>
@@ -2869,7 +2869,7 @@ onClick={() => navigate('/workspace')}
               <button
                 onClick={handleChangePasswordSubmit}
                 disabled={!newPassword}
-                className="group relative w-full h-12 sm:h-14 mt-2 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(244,63,94,0.4)] transition-all duration-500 overflow-hidden"
+                className="group relative w-full h-12 cursor-pointer sm:h-14 mt-2 rounded-xl sm:rounded-2xl bg-slate-950 text-white text-xs sm:text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_12px_40px_-10px_rgba(244,63,94,0.4)] transition-all duration-500 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
                 <span className="relative z-10 flex items-center justify-center gap-2">
@@ -2904,7 +2904,7 @@ onClick={() => navigate('/workspace')}
           </div>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-orange-900">PDF to PPTX</span>
         </h2>
-        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-orange-50 border border-slate-200/80 hover:border-orange-200 shadow-sm transition-all duration-300 flex items-center justify-center">
+        <button onClick={closeOverlay} className="group w-11 h-11 rounded-full cursor-pointer bg-white hover:bg-orange-50 border border-slate-200/80 hover:border-orange-200 shadow-sm transition-all duration-300 flex items-center justify-center">
           <i className="fa-solid fa-xmark text-slate-400 group-hover:text-orange-500 group-hover:rotate-90 transition-all duration-300"></i>
         </button>
       </div>
@@ -2919,8 +2919,8 @@ onClick={() => navigate('/workspace')}
             <h3 className="text-lg font-black text-slate-900 mb-2">Encrypted Document</h3>
             <p className="text-xs text-slate-500 font-medium mb-6">Password needed for <span className="font-bold text-red-500">{pptProtectedError}</span>.</p>
             <div className="flex flex-col gap-3">
-              <button onClick={goToUnlockTool} className="w-full h-12 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-orange-600 transition-colors">Go to Unlock PDF</button>
-              <button onClick={() => { setPptProtectedError(null); setPdfToPptFiles([]); }} className="text-xs font-bold text-slate-400 hover:text-slate-600">Upload Different File</button>
+              <button onClick={goToUnlockTool} className="w-full h-12 rounded-2xl cursor-pointer bg-slate-900 text-white text-sm font-bold hover:bg-orange-600 transition-colors">Go to Unlock PDF</button>
+              <button onClick={() => { setPptProtectedError(null); setPdfToPptFiles([]); }} className="text-xs font-bold cursor-pointer text-slate-400 hover:text-slate-600">Upload Different File</button>
             </div>
           </div>
         ) : (
@@ -2984,7 +2984,7 @@ onClick={() => navigate('/workspace')}
                 <p className="text-xs font-black text-slate-800 animate-pulse"><i className="fa-solid fa-layer-group text-orange-500"></i> Rendering PPTX Engine...</p>
               </div>
             ) : (
-              <button onClick={handlePdfToPpt} disabled={pdfToPptFiles.length === 0} className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(249,115,22,0.4)] hover:-translate-y-0.5">
+              <button onClick={handlePdfToPpt} disabled={pdfToPptFiles.length === 0} className="group relative w-full cursor-pointer h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(249,115,22,0.4)] hover:-translate-y-0.5">
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 disabled:hidden"></div>
                 <span className="relative z-10 flex items-center justify-center gap-2.5 h-full">Convert & Download PPTX</span>
               </button>
@@ -3009,7 +3009,7 @@ onClick={() => navigate('/workspace')}
       <div className="relative bg-white rounded-[1.8rem] sm:rounded-[2.2rem] w-full h-full p-4 sm:p-8 flex flex-col border border-white shadow-inner overflow-y-auto">
         
         {/* Close Button */}
-        <button onClick={closeOverlay} className="absolute top-3 right-3 sm:top-6 sm:right-6 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center z-20 border border-slate-200 hover:border-red-200">
+        <button onClick={closeOverlay} className="absolute top-3 right-3 cursor-pointer sm:top-6 sm:right-6 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center z-20 border border-slate-200 hover:border-red-200">
           <i className="fa-solid fa-xmark text-sm sm:text-base"></i>
         </button>
 
@@ -3041,13 +3041,13 @@ onClick={() => navigate('/workspace')}
           ></div>
           <button 
             onClick={() => setIsAnnual(false)}
-            className={`relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold rounded-full transition-colors duration-300 ${!isAnnual ? 'text-gray-900' : 'text-slate-500 hover:text-gray-700'}`}
+            className={`relative z-10 px-4 sm:px-6 py-1.5 cursor-pointer sm:py-2 text-[10px] sm:text-xs font-bold rounded-full transition-colors duration-300 ${!isAnnual ? 'text-gray-900' : 'text-slate-500 hover:text-gray-700'}`}
           >
             Monthly
           </button>
           <button 
             onClick={() => setIsAnnual(true)}
-            className={`relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold rounded-full transition-colors duration-300 ${isAnnual ? 'text-gray-900' : 'text-slate-500 hover:text-gray-700'}`}
+            className={`relative z-10 px-4 sm:px-6 py-1.5 sm:py-2 cursor-pointer text-[10px] sm:text-xs font-bold rounded-full transition-colors duration-300 ${isAnnual ? 'text-gray-900' : 'text-slate-500 hover:text-gray-700'}`}
           >
             Annually <span className="absolute -top-2 sm:-top-3 -right-1 sm:-right-2 bg-gradient-to-r from-red-500 to-rose-500 text-white text-[8px] sm:text-[9px] px-1.5 sm:px-2 py-0.5 rounded-full shadow-lg border border-red-400">-40%</span>
           </button>
@@ -3100,7 +3100,7 @@ onClick={() => navigate('/workspace')}
         </div>
 
         {/* Action Button */}
-        <button onClick={closeOverlay} className="relative w-full h-11 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white text-xs sm:text-sm font-black shadow-[0_10px_30px_-10px_rgba(245,158,11,0.5)] hover:shadow-[0_10px_30px_-5px_rgba(245,158,11,0.7)] transition-all duration-500 transform hover:-translate-y-1 z-10 overflow-hidden group bg-[length:200%_auto] hover:bg-right shrink-0">
+        <button onClick={closeOverlay} className="relative w-full cursor-pointer h-11 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white text-xs sm:text-sm font-black shadow-[0_10px_30px_-10px_rgba(245,158,11,0.5)] hover:shadow-[0_10px_30px_-5px_rgba(245,158,11,0.7)] transition-all duration-500 transform hover:-translate-y-1 z-10 overflow-hidden group bg-[length:200%_auto] hover:bg-right shrink-0">
           <span className="relative z-10 flex items-center justify-center gap-2">
             Continue for Free <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
           </span>
