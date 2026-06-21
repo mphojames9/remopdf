@@ -31,6 +31,11 @@ export default function Home() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageFiles, setImageFiles] = useState([]);
 
+    // Word to PDF States
+  const [isWordToPdfModalOpen, setIsWordToPdfModalOpen] = useState(false);
+  const [wordToPdfFiles, setWordToPdfFiles] = useState([]);
+  const [isWordToPdfDragActive, setIsWordToPdfDragActive] = useState(false);
+
   const [isPdfToImgModalOpen, setIsPdfToImgModalOpen] = useState(false);
   const [pdfToImgFiles, setPdfToImgFiles] = useState([]);
   const [imageFormat, setImageFormat] = useState('png');
@@ -119,16 +124,13 @@ const [isCompressDragActive, setIsCompressDragActive] = useState(false);
     return () => window.removeEventListener('openToolModal', handleOpenModal);
   }, []);
 
-  // Word to PDF States
-  const [isWordToPdfModalOpen, setIsWordToPdfModalOpen] = useState(false);
-  const [wordToPdfFiles, setWordToPdfFiles] = useState([]);
-  const [isWordToPdfDragActive, setIsWordToPdfDragActive] = useState(false);
+
 
   // Comprehensive list of document tools
 const documentTools = [
     {
       name: "Edit PDF",
-      action: () => navigate('/editor') // <-- Updated
+      action: () => navigate('/workspace') // <-- Updated
     },
   {
     name: "Merge PDFs",
@@ -1007,7 +1009,7 @@ useEffect(() => {
 </article>
 
 <article
-onClick={() => navigate('/editor')} 
+onClick={() => navigate('/workspace')} 
   className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-2 transition-all duration-500 cursor-default flex flex-col min-h-[280px]"
 >
   {/* Premium Ambient Background */}
@@ -1112,7 +1114,7 @@ onClick={() => navigate('/editor')}
             {selectedFiles.length > 0 ? (
               <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
                 <div className="flex justify-between items-center mb-3">
-                  <p className="font-black text-xs text-red-600 uppercase tracking-widest flex items-center gap-1.5">
+                  <p className="font-black text-xs text-red-600 tracking-widest flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span> Queue ({selectedFiles.length})
                   </p>
                 </div>
@@ -1170,7 +1172,7 @@ onClick={() => navigate('/editor')}
               </div>
             </div>
             <div className="text-center">
-              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 uppercase tracking-wider">
+              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 tracking-wider">
                 <i className="fa-solid fa-gears text-red-500 animate-spin text-xs"></i> Compiling PDF Matrix...
               </p>
             </div>
@@ -1235,7 +1237,7 @@ onClick={() => navigate('/editor')}
           <label htmlFor="pdf-split-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             {splitFile ? (
               <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
-                <p className="font-black text-xs text-green-600 uppercase tracking-widest mb-3">Target File</p>
+                <p className="font-black text-xs text-green-600 tracking-widest mb-3">Target File</p>
                 <div className="bg-slate-50/80 p-3 rounded-xl flex items-center border border-slate-100 shadow-sm">
                   <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0 mr-3">
                     <i className="fa-solid fa-file-pdf text-green-600 text-sm"></i>
@@ -1272,7 +1274,7 @@ onClick={() => navigate('/editor')}
                 <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
               </div>
             </div>
-            <p className="text-xs font-black text-slate-800 uppercase tracking-wider animate-pulse"><i className="fa-solid fa-scissors text-green-500"></i> Slicing Pages...</p>
+            <p className="text-xs font-black text-slate-800 tracking-wider animate-pulse"><i className="fa-solid fa-scissors text-green-500"></i> Slicing Pages...</p>
           </div>
         ) : (
           <button onClick={handleSplit} disabled={!splitFile} className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(34,197,94,0.4)]">
@@ -1328,7 +1330,7 @@ onClick={() => navigate('/editor')}
           <label htmlFor="pdf-compress-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             {compressFile ? (
               <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100">
-                <p className="font-black text-xs text-blue-600 uppercase tracking-widest mb-3">Target File</p>
+                <p className="font-black text-xs text-blue-600 tracking-widest mb-3">Target File</p>
                 <div className="bg-slate-50/80 p-3 rounded-xl flex items-center border border-slate-100 shadow-sm">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mr-3">
                     <i className="fa-solid fa-file-pdf text-blue-600 text-sm"></i>
@@ -1373,7 +1375,7 @@ onClick={() => navigate('/editor')}
                 <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
               </div>
             </div>
-            <p className="text-xs font-black text-slate-800 uppercase animate-pulse"><i className="fa-solid fa-bolt text-blue-500"></i> Optimizing Size...</p>
+            <p className="text-xs font-black text-slate-800 animate-pulse"><i className="fa-solid fa-bolt text-blue-500"></i> Optimizing Size...</p>
           </div>
         ) : (
           <button onClick={handleCompress} disabled={!compressFile} className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(59,130,246,0.4)]">
@@ -1445,7 +1447,7 @@ onClick={() => navigate('/editor')}
             {imageFiles.length > 0 ? (
               <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
                 <div className="flex justify-between items-center mb-3">
-                  <p className="font-black text-xs text-purple-600 uppercase tracking-widest flex items-center gap-1.5">
+                  <p className="font-black text-xs text-purple-600 tracking-widest flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping"></span> Files Ready ({imageFiles.length})
                   </p>
                 </div>
@@ -1503,7 +1505,7 @@ onClick={() => navigate('/editor')}
               </div>
             </div>
             <div className="text-center">
-              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 uppercase tracking-wider">
+              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 tracking-wider">
                 <i className="fa-solid fa-layer-group text-purple-500 animate-pulse text-xs"></i> Binding PDF...
               </p>
             </div>
@@ -1579,7 +1581,7 @@ onClick={() => navigate('/editor')}
                 <label htmlFor="pdf-to-img-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
                   {pdfToImgFiles.length > 0 ? (
                     <div className="w-full text-left bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white transform transition-all">
-                      <p className="font-extrabold text-xs text-blue-900 uppercase tracking-wider mb-2">Selected Files ({pdfToImgFiles.length})</p>
+                      <p className="font-extrabold text-xs text-blue-900 tracking-wider mb-2">Selected Files ({pdfToImgFiles.length})</p>
                       <div className="max-h-32 overflow-y-auto space-y-2 pr-2">
                         {pdfToImgFiles.map((f, i) => (
                           <div key={i} className="bg-slate-50 p-2 rounded-lg flex items-center gap-3 border border-slate-100">
@@ -1626,7 +1628,7 @@ onClick={() => navigate('/editor')}
               {/* Action Button */}
               {isProcessing ? (
                 <div className="progress-container bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between text-xs font-black text-blue-600 mb-2 tracking-wide uppercase">
+                  <div className="flex justify-between text-xs font-black text-blue-600 mb-2 tracking-wide">
                     <span className="flex items-center gap-2"><i className="fa-solid fa-circle-notch fa-spin"></i> Converting...</span>
                     <span>{progress}%</span>
                   </div>
@@ -1677,7 +1679,7 @@ onClick={() => navigate('/editor')}
         </h2>
         
         <div className="flex items-center gap-4">
-          <span className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-100 to-orange-50 text-amber-700 text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider border border-amber-200 shadow-sm">
+          <span className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-100 to-orange-50 text-amber-700 text-[10px] font-black px-3 py-1.5 rounded-full tracking-wider border border-amber-200 shadow-sm">
             <i className="fa-solid fa-crown text-[10px]"></i> Pro
           </span>
           <button onClick={closeOverlay} className="group w-11 h-11 rounded-full bg-white hover:bg-amber-50 border border-slate-200/80 hover:border-amber-200 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 flex items-center justify-center">
@@ -1737,7 +1739,7 @@ onClick={() => navigate('/editor')}
               </svg>
               <i className="fa-solid fa-shield text-amber-500 absolute"></i>
             </div>
-            <p className="text-sm font-black text-slate-800 tracking-wider uppercase">Generating Secure Canvas...</p>
+            <p className="text-sm font-black text-slate-800 tracking-wider">Generating Secure Canvas...</p>
             <p className="text-xs text-slate-400 mt-1 font-medium">Rendering high-fidelity thumbnails</p>
           </div>
         )}
@@ -1773,7 +1775,7 @@ onClick={() => navigate('/editor')}
                           </div>
                         </div>
                         <div className="flex justify-between items-center mt-3 px-1">
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Page {page.page_index + 1}</p>
+                          <p className="text-[10px] font-black text-slate-500 tracking-widest">Page {page.page_index + 1}</p>
                           <div className={`w-2 h-2 rounded-full ${isKept ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-red-400'}`}></div>
                         </div>
                       </div>
@@ -1810,7 +1812,7 @@ onClick={() => navigate('/editor')}
       <div className="shrink-0 pt-6 border-t border-slate-100 mt-2 relative z-10">
         {isProcessing ? (
           <div className="w-full h-15 bg-slate-50 rounded-2.5xl flex items-center justify-between px-8 border border-slate-200">
-            <span className="font-black text-sm text-slate-800 uppercase tracking-widest flex items-center gap-3">
+            <span className="font-black text-sm text-slate-800 tracking-widest flex items-center gap-3">
               <i className="fa-solid fa-circle-notch fa-spin text-amber-500"></i> Restructuring Matrix...
             </span>
             <span className="font-black text-amber-500 text-lg">{progress}%</span>
@@ -1860,7 +1862,7 @@ onClick={() => navigate('/editor')}
         
         {/* Subtle Bottom-Left Identifier Label */}
         <div className="absolute bottom-4 left-4 z-10 px-3 py-1.5 bg-slate-900/80 backdrop-blur border border-white/10 rounded-lg shadow-lg pointer-events-none">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+          <p className="text-[10px] font-black text-slate-300 tracking-widest flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Preview Mode
           </p>
         </div>
@@ -1927,7 +1929,7 @@ onClick={() => navigate('/editor')}
             {imgCompressFiles.length > 0 ? (
               <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
                 <div className="flex justify-between items-center mb-3">
-                  <p className="font-black text-xs text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
+                  <p className="font-black text-xs text-amber-600 tracking-widest flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span> Batch Queue ({imgCompressFiles.length})
                   </p>
                 </div>
@@ -1999,7 +2001,7 @@ onClick={() => navigate('/editor')}
               </div>
             </div>
             <div className="text-center">
-              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 uppercase tracking-wider">
+              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 tracking-wider">
                 <i className="fa-solid fa-compress text-amber-500 animate-pulse text-xs"></i> Shrinking Assets...
               </p>
             </div>
@@ -2087,7 +2089,7 @@ onClick={() => navigate('/editor')}
             {pdfToWordFiles.length > 0 ? (
               <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
                 <div className="flex justify-between items-center mb-3">
-                  <p className="font-black text-xs text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
+                  <p className="font-black text-xs text-blue-600 tracking-widest flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
                     Queue ready ({pdfToWordFiles.length})
                   </p>
@@ -2179,12 +2181,11 @@ onClick={() => navigate('/editor')}
               {/* Inner Metric Data Matrix */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
-                <span className="text-[8px] font-black text-blue-600 tracking-widest uppercase">Engine</span>
               </div>
             </div>
 
             <div className="text-center">
-              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 uppercase tracking-wider">
+              <p className="text-xs font-black text-slate-800 flex items-center justify-center gap-2 tracking-wider">
                 <i className="fa-solid fa-gears text-blue-500 animate-spin text-xs"></i> 
                 Reconstructing Document Elements
               </p>
@@ -2266,7 +2267,7 @@ onClick={() => navigate('/editor')}
           <label htmlFor="pdf-to-excel-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             {pdfToExcelFiles.length > 0 ? (
               <div className="w-full text-left bg-white p-4 rounded-xl shadow-sm border border-slate-100 transform transition-all">
-                <p className="font-bold text-[10px] sm:text-xs text-emerald-800 uppercase tracking-wider mb-2">Selected Files ({pdfToExcelFiles.length})</p>
+                <p className="font-bold text-[10px] sm:text-xs text-emerald-800 tracking-wider mb-2">Selected Files ({pdfToExcelFiles.length})</p>
                 <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1 segment-scrollbar">
                   {pdfToExcelFiles.map((f, i) => (
                     <div key={i} className="bg-slate-50 p-2 rounded-lg flex items-center gap-2.5 border border-slate-100/70">
@@ -2317,7 +2318,7 @@ onClick={() => navigate('/editor')}
                 <span className="text-base sm:text-lg font-black text-slate-800 font-mono tracking-tighter">{progress}%</span>
               </div>
             </div>
-            <p className="text-[11px] font-bold text-emerald-600 mt-3.5 tracking-wider uppercase flex items-center gap-1.5 animate-pulse">
+            <p className="text-[11px] font-bold text-emerald-600 mt-3.5 tracking-wider flex items-center gap-1.5 animate-pulse">
               <i className="fa-solid fa-table-cells text-xs"></i> Parsing Data Tables...
             </p>
           </div>
@@ -2392,12 +2393,12 @@ onClick={() => navigate('/editor')}
           <label htmlFor="pdf-protect-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             {protectFile ? (
               <div className="w-full text-left bg-white p-4 rounded-xl shadow-sm border border-slate-100 transform transition-all">
-                <p className="font-bold text-[10px] sm:text-xs text-indigo-800 uppercase tracking-wider mb-2">Target File</p>
+                <p className="font-bold text-[10px] sm:text-xs text-indigo-800 tracking-wider mb-2">Target File</p>
                 <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100/70">
                   <i className="fa-solid fa-file-pdf text-indigo-500 text-xl flex-shrink-0"></i>
                   <div className="overflow-hidden flex-1">
                     <p className="text-xs font-semibold text-slate-700 truncate">{protectFile.name}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{(protectFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">{(protectFile.size / (1024 * 1024)).toFixed(2)} MB</p>
                   </div>
                 </div>
               </div>
@@ -2463,7 +2464,7 @@ onClick={() => navigate('/editor')}
                 <span className="text-base sm:text-lg font-black text-slate-800 font-mono tracking-tighter">{progress}%</span>
               </div>
             </div>
-            <p className="text-[11px] font-bold text-indigo-600 mt-3.5 tracking-wider uppercase flex items-center gap-1.5 animate-pulse">
+            <p className="text-[11px] font-bold text-indigo-600 mt-3.5 tracking-wider flex items-center gap-1.5 animate-pulse">
               <i className="fa-solid fa-lock text-xs"></i> Encrypting Document...
             </p>
           </div>
@@ -2548,7 +2549,7 @@ onClick={() => navigate('/editor')}
                     <i className="fa-solid fa-file-shield text-cyan-500 text-xl flex-shrink-0"></i>
                     <div className="overflow-hidden flex-1">
                       <p className="text-xs font-semibold text-slate-700 truncate">{unlockFile.name}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{(unlockFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      <p className="text-[10px] text-slate-400 font-bold mt-0.5">{(unlockFile.size / (1024 * 1024)).toFixed(2)} MB</p>
                     </div>
                   </div>
                 </div>
@@ -2575,7 +2576,7 @@ onClick={() => navigate('/editor')}
         {/* Step 2: Password Input */}
         {unlockFile && !unlockPreviewUrl && (
           <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide uppercase">Enter Current Password</label>
+            <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide">Enter Current Password</label>
             <div className={`relative flex items-center bg-slate-50/50 rounded-xl border transition-all focus-within:bg-white focus-within:shadow-sm ${isPasswordError ? 'border-red-400 focus-within:border-red-500' : 'border-slate-200/80 focus-within:border-cyan-400'}`}>
               <span className={`absolute left-4 text-xs sm:text-sm ${isPasswordError ? 'text-red-400' : 'text-slate-400'}`}>
                 <i className="fa-solid fa-key"></i>
@@ -2624,7 +2625,7 @@ onClick={() => navigate('/editor')}
 
             {unlockPreviewUrl !== 'NOT_ENCRYPTED' && (
               <div className="border border-slate-100 bg-white rounded-[1.25rem] p-3 shadow-sm">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 sm:mb-3 text-center">Document Preview</p>
+                <p className="text-[10px] font-bold text-slate-400 tracking-widest mb-2 sm:mb-3 text-center">Document Preview</p>
                 <div className="aspect-[3/4] w-full max-w-[140px] sm:max-w-[160px] mx-auto bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm group relative">
                   <img src={unlockPreviewUrl} alt="PDF Preview" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -2653,7 +2654,7 @@ onClick={() => navigate('/editor')}
                     <span className="text-base sm:text-lg font-black text-slate-800 font-mono tracking-tighter">{progress}%</span>
                   </div>
                 </div>
-                <p className="text-[11px] font-bold text-cyan-600 mt-3.5 tracking-wider uppercase flex items-center gap-1.5 animate-pulse">
+                <p className="text-[11px] font-bold text-cyan-600 mt-3.5 tracking-wider flex items-center gap-1.5 animate-pulse">
                   <i className="fa-solid fa-unlock-keyhole text-xs"></i> Removing Security...
                 </p>
               </div>
@@ -2735,12 +2736,12 @@ onClick={() => navigate('/editor')}
             <label htmlFor="pdf-change-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
               {changeFile ? (
                 <div className="w-full text-left bg-white p-4 rounded-xl shadow-sm border border-slate-100 transform transition-all">
-                  <p className="font-bold text-[10px] sm:text-xs text-rose-800 uppercase tracking-wider mb-2">Target File</p>
+                  <p className="font-bold text-[10px] sm:text-xs text-rose-800 tracking-wider mb-2">Target File</p>
                   <div className="bg-slate-50 p-3 rounded-lg flex items-center gap-3 border border-slate-100/70">
                     <i className="fa-solid fa-file-pdf text-rose-500 text-xl flex-shrink-0"></i>
                     <div className="overflow-hidden flex-1">
                       <p className="text-xs font-semibold text-slate-700 truncate">{changeFile.name}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{(changeFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      <p className="text-[10px] text-slate-400 font-bold mt-0.5">{(changeFile.size / (1024 * 1024)).toFixed(2)} MB</p>
                     </div>
                   </div>
                 </div>
@@ -2768,7 +2769,7 @@ onClick={() => navigate('/editor')}
         {/* Step 2: Verify Old Password */}
         {changeFile && !changePreviewUrl && (
           <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide uppercase">Enter Current Password</label>
+            <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide">Enter Current Password</label>
             <div className={`relative flex items-center bg-slate-50/50 rounded-xl border transition-all focus-within:bg-white focus-within:shadow-sm ${isChangeError ? 'border-red-400 focus-within:border-red-500' : 'border-slate-200/80 focus-within:border-rose-400'}`}>
               <span className={`absolute left-4 text-xs sm:text-sm ${isChangeError ? 'text-red-400' : 'text-slate-400'}`}>
                 <i className="fa-solid fa-lock"></i>
@@ -2820,7 +2821,7 @@ onClick={() => navigate('/editor')}
 
             {/* New Password Input */}
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide uppercase">Set New Password</label>
+              <label className="text-[10px] sm:text-xs font-bold text-slate-700 tracking-wide">Set New Password</label>
               <div className="relative flex items-center bg-slate-50/50 rounded-xl border border-slate-200/80 transition-all focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-sm">
                 <span className="absolute left-4 text-rose-400 text-xs sm:text-sm">
                   <i className="fa-solid fa-key"></i>
@@ -2860,7 +2861,7 @@ onClick={() => navigate('/editor')}
                     <span className="text-base sm:text-lg font-black text-slate-800 font-mono tracking-tighter">{progress}%</span>
                   </div>
                 </div>
-                <p className="text-[11px] font-bold text-rose-600 mt-3.5 tracking-wider uppercase flex items-center gap-1.5 animate-pulse">
+                <p className="text-[11px] font-bold text-rose-600 mt-3.5 tracking-wider flex items-center gap-1.5 animate-pulse">
                   <i className="fa-solid fa-lock text-xs"></i> Encrypting...
                 </p>
               </div>
@@ -2941,7 +2942,7 @@ onClick={() => navigate('/editor')}
               <label htmlFor="pdf-to-ppt-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
                 {pdfToPptFiles.length > 0 ? (
                   <div className="w-full text-left bg-white/90 p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <p className="font-black text-xs text-orange-600 uppercase tracking-widest mb-3">Presentations mapped ({pdfToPptFiles.length})</p>
+                    <p className="font-black text-xs text-orange-600 tracking-widest mb-3">Presentations mapped ({pdfToPptFiles.length})</p>
                     <div className="max-h-36 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                       {pdfToPptFiles.map((f, i) => (
                         <div key={i} className="bg-slate-50/80 p-3 rounded-xl flex items-center border border-slate-100 shadow-sm">
@@ -2980,7 +2981,7 @@ onClick={() => navigate('/editor')}
                     <span className="text-xl font-black text-slate-900 tracking-tighter">{progress}%</span>
                   </div>
                 </div>
-                <p className="text-xs font-black text-slate-800 uppercase animate-pulse"><i className="fa-solid fa-layer-group text-orange-500"></i> Rendering PPTX Engine...</p>
+                <p className="text-xs font-black text-slate-800 animate-pulse"><i className="fa-solid fa-layer-group text-orange-500"></i> Rendering PPTX Engine...</p>
               </div>
             ) : (
               <button onClick={handlePdfToPpt} disabled={pdfToPptFiles.length === 0} className="group relative w-full h-15 rounded-2.5xl bg-slate-900 text-white text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-500 overflow-hidden hover:shadow-[0_20px_40px_-10px_rgba(249,115,22,0.4)] hover:-translate-y-0.5">

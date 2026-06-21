@@ -16,7 +16,6 @@ export default function PremiumFooter() {
           {/* Brand & Address Column */}
           <div className="md:col-span-5 space-y-6">
             <div className="flex items-center gap-2">
-              <i className="fa-solid fa-file-pdf text-red-500 text-xl drop-shadow-[0_2px_10px_rgba(239,68,68,0.2)]"></i>
               <span className="font-bold text-xl tracking-tight text-white">
                 Remo<span className="text-red-500">PDF</span>
               </span>
@@ -47,7 +46,7 @@ export default function PremiumFooter() {
                 </li>
                 <li>
                   <Link 
-                    to="/editor" 
+                    to="/workspace" 
                     className="text-[0.95rem] font-medium tracking-wide transition-colors duration-200 text-slate-400 hover:text-white block"
                   >
                     PDF Editor

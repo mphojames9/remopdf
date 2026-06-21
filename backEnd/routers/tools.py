@@ -388,8 +388,7 @@ async def convert_pdf_to_word(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=400, detail="No PDF files provided.")
     
     try:
-        # 1. Initialize Adobe Credentials
-        # Replaced os.getenv to pass your specific keys directly so auth doesn't fail
+        # Initialize Adobe Credentials correctly using your .env variable names
         credentials = ServicePrincipalCredentials(
             client_id=os.getenv('PDF_SERVICES_CLIENT_ID'),
             client_secret=os.getenv('PDF_SERVICES_CLIENT_SECRET')
@@ -400,40 +399,50 @@ async def convert_pdf_to_word(files: List[UploadFile] = File(...)):
         
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
             for file in files:
-                # Read the uploaded file into raw bytes
                 file_bytes = await file.read()
                 
+                # --- The "Just Like All Others" Temp File Fix ---
+                # We create a secure temporary physical file for Adobe to write to, 
+                # exactly how you structured the pdf-to-excel route.
+                fd_docx, temp_docx_path = tempfile.mkstemp(suffix=".docx")
+                os.close(fd_docx)
+                
                 try:
-                    # 2. Upload asset to Adobe's engine using the raw bytes
+                    # Upload the raw bytes to Adobe
                     input_asset = pdf_services.upload(input_stream=file_bytes, mime_type=PDFServicesMediaType.PDF)
                     
-                    # 3. Create DOCX conversion parameters and job
+                    # Generate the DOCX
                     export_pdf_params = ExportPDFParams(target_format=ExportPDFTargetFormat.DOCX)
                     export_pdf_job = ExportPDFJob(input_asset=input_asset, export_pdf_params=export_pdf_params)
-                    
-                    # 4. Submit job and wait for the result
                     location = pdf_services.submit(export_pdf_job)
                     pdf_services_response = pdf_services.get_job_result(location, ExportPDFResult)
                     
-                    # 5. Extract the resulting file stream
+                    # Retrieve the Adobe Stream
                     result_asset: CloudAsset = pdf_services_response.get_result().get_asset()
                     stream_asset: StreamAsset = pdf_services.get_content(result_asset)
                     
-                    # stream_asset.get_input_stream() returns the raw DOCX bytes
-                    docx_bytes = stream_asset.get_input_stream()
-                    
+                    # 1. Safely write Adobe's output stream to the physical temp file
+                    with open(temp_docx_path, "wb") as f:
+                        f.write(stream_asset.get_input_stream())
+                        
+                    # 2. Read the physical file back into pure bytes for the ZIP archive
+                    with open(temp_docx_path, "rb") as f:
+                        docx_bytes = f.read()
+                        
                     # Format filename cleanly for the ZIP archive
                     base_name = file.filename.rsplit('.', 1)[0] if '.' in file.filename else file.filename
                     docx_filename = f"{base_name}.docx"
                     
-                    # Inject directly into the ZIP archive memory buffer
                     zip_file.writestr(docx_filename, docx_bytes)
                     
-                except (ServiceApiException, ServiceUsageException, SdkException) as adobe_error:
-                    # If Adobe fails on one file, print the error but don't crash the whole server
+                except Exception as adobe_error:
                     print(f"Adobe Engine Error on {file.filename}: {adobe_error}")
                     raise HTTPException(status_code=500, detail=f"Adobe failed to process {file.filename}.")
-                    
+                finally:
+                    # Always clean up physical files to protect Render's storage
+                    if os.path.exists(temp_docx_path):
+                        os.remove(temp_docx_path)
+                        
         zip_buffer.seek(0)
         
         return StreamingResponse(
@@ -445,7 +454,6 @@ async def convert_pdf_to_word(files: List[UploadFile] = File(...)):
     except Exception as e:
         print(f"Word Conversion System Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"PDF to Word conversion failed: {str(e)}")
-
 
 @router.post("/pdf-to-excel")
 async def convert_pdf_to_excel(files: List[UploadFile] = File(...)):

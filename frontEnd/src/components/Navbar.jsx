@@ -23,7 +23,6 @@ export default function Navbar() {
     { name: "Split PDF", id: "split", icon: "fa-scissors", desc: "Extract pages or separate files" },
     { name: "Compress PDF", id: "compress", icon: "fa-file-zipper", desc: "Reduce file footprint instantly" },
     { name: "PDF to Word", id: "pdfToWord", icon: "fa-file-word", desc: "Convert to editable DOCX format" },
-    { name: "Word to PDF", id: "wordToPdf", icon: "fa-file-pdf", desc: "Flawless conversion from Word" },
     { name: "Sign Document", id: "sign", icon: "fa-signature", desc: "Apply e-signatures securely" },
     { name: "Protect PDF", id: "protect", icon: "fa-shield-halved", desc: "Add robust password protection" },
     { name: "Unlock PDF", id: "unlock", icon: "fa-lock-open", desc: "Remove encryption restrictions" },
@@ -89,6 +88,10 @@ export default function Navbar() {
 
   // Dispatches actions straight to Home.jsx custom triggers
   const handleOpenTool = (toolId) => {
+    console.log(toolId)
+    if (toolId === 'edit' || toolId === 'sign') {
+      navigate('/workspace')
+    }
     if (location.pathname !== '/') {
       navigate('/');
       setTimeout(() => {
@@ -165,6 +168,7 @@ export default function Navbar() {
                         </div>
                       </button>
                     ))}
+                    
                   </div>
                 </div>
               </div>
@@ -175,7 +179,7 @@ export default function Navbar() {
             </Link>
 
             {/* Added Workspace Editor Link */}
-            <Link to="/editor" className="transition-colors duration-200 hover:text-slate-900 relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-px after:bg-red-600 after:transition-all hover:after:w-full">
+            <Link to="/workspace" className="transition-colors duration-200 hover:text-slate-900 relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-px after:bg-red-600 after:transition-all hover:after:w-full">
               Editor
             </Link>
 
@@ -290,7 +294,7 @@ export default function Navbar() {
 
           {/* Added Workspace Editor Link for Mobile Layout */}
           <Link 
-            to="/editor" 
+            to="/workspace" 
             onClick={closeMobileMenu} 
             className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 text-slate-800 font-bold hover:border-red-200 hover:shadow-md transition-all shadow-sm"
           >

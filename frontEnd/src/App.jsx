@@ -14,7 +14,7 @@ import WhyChooseUs from './components/WhyChooseUs'
 
 // High-Performance Lazy Loading for Viewports
 const Home = React.lazy(() => import('./pages/Home'));
-const Editor = React.lazy(() => import('./pages/Editor'));
+const Editor = React.lazy(() => import('./pages/workspace'));
 
 /* ==========================================================================
    PREMIUM SKELETON LOADER (Prevents flashing or blank screens during loads)
@@ -152,7 +152,7 @@ const MainLayout = () => {
   const location = useLocation();
   
   // Routes where the footer should NOT be displayed
-  const hideFooterRoutes = ['/ResumeBuilder', '/editor'];
+  const hideFooterRoutes = ['/ResumeBuilder', '/workspace'];
   const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
 
   return (
@@ -187,7 +187,7 @@ const MainLayout = () => {
             />
 
             {/* Advanced Workspace Editor Route */}
-            <Route path="/editor" element={<Editor />} />
+            <Route path="/workspace" element={<Editor />} />
             <Route path="/ResumeBuilder" element={<ResumeBuilder />} />
             <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
             <Route path="/Contact" element={<Contact />} />
