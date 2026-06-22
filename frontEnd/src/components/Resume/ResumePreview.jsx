@@ -11,6 +11,9 @@ import PinnaclePremium from './Templates/PinnaclePremium';
 import CorporateLegacy from './Templates/CorporateLegacy';
 import LegacyElite from './Templates/LegacyElite';
 import NovaStandard from './Templates/NovaStandard';
+import QuantumObsidian from './Templates/QuantumObsidian';
+import AetherMinimal from './Templates/AetherMinimal';
+import HeliosZenith from './Templates/HeliosZenith';
 
 export default function ResumePreview({ data, template }) {
   const info = data.personalInfo || {};
@@ -115,6 +118,17 @@ export default function ResumePreview({ data, template }) {
   return <NovaStandard {...layoutProps} />;
 }
 
+if (template === 'Quantum Obsidian') {
+    return <QuantumObsidian {...layoutProps} />;
+  }
+
+if (template === 'Aether Minimal') {
+    return <AetherMinimal {...layoutProps} />;
+  }
+  
+  if (template === 'Helios Zenith') {
+    return <HeliosZenith {...layoutProps} />;
+  }
 
   // Fallback Template
   return (

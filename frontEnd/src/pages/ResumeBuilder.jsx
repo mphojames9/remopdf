@@ -423,6 +423,14 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
   }; 
 
   const templates = [
+
+    {
+    id: 'Quantum Obsidian',
+    name: 'Quantum Obsidian',
+    vibe: 'Premium 2030 & Technical Architecture',
+    description: 'An elite technical configuration featuring high-contrast subgrids, razor-sharp asymmetry, and clean monospaced layout hooks built for innovators.'
+  },
+
   { 
     id: 'Professional Dark', 
     name: 'Professional Dark', 

@@ -87,7 +87,7 @@ export default function ArchitectResume({
 
   const mainElements = [];
 
-  // 1. SKILLS SECTION
+// 1. SKILLS SECTION
   if (validSkills && validSkills.length > 0) {
     const isFlatStringList = validSkills.every(s => typeof s === 'string');
     mainElements.push(
@@ -100,11 +100,16 @@ export default function ArchitectResume({
         ) : (
           <div className="space-y-1">
             {validSkills.map((skill, idx) => {
-              const name = skill.name || skill.category || '';
-              const keywords = skill.keywords ? skill.keywords.join(', ') : skill.details || skill.level || '';
+              // Extract the name robustly
+              const name = skill.name || skill.category || skill.skill || '';
+              
+              // Removed skill.level fallback to prevent numbers from showing
+              const keywords = skill.keywords ? skill.keywords.join(', ') : skill.details || '';
+              
               return (
                 <div key={`skill-${idx}`} className="text-[12px] text-black leading-[1.5]">
-                  {name && <span className="font-bold">{name}: </span>}
+                  {/* Only add the colon if there is a keyword/detail string to display */}
+                  {name && <span className="font-bold">{name}{keywords ? ': ' : ''}</span>}
                   {keywords && <span>{keywords}</span>}
                 </div>
               );
@@ -203,7 +208,7 @@ export default function ArchitectResume({
     );
   }
 
-  // 5. CERTIFICATIONS SECTION (Fixed descriptions)
+// 5. CERTIFICATIONS SECTION (Fixed descriptions)
   if (validCertificates && validCertificates.length > 0) {
     mainElements.push(
       <div key="section-certifications" className="w-full mb-3 shrink-0">
@@ -211,10 +216,12 @@ export default function ArchitectResume({
         <ul className="list-disc list-outside ml-5 text-[11.5px] text-black space-y-2 leading-[1.55]">
           {validCertificates.map((cert, idx) => (
             <li key={`cert-${idx}`} className="pl-0.5">
-              <div>
-                <span className="font-bold">{cert.title || cert.name}</span>
-                {cert.issuer && <span> – {cert.issuer}</span>}
-                {cert.date && <span> ({cert.date})</span>}
+              <div className="flex justify-between items-baseline">
+                <div>
+                  <span className="font-bold">{cert.title || cert.name}</span>
+                  {cert.issuer && <span> – {cert.issuer}</span>}
+                </div>
+                {cert.date && <span className="shrink-0 ml-2">{cert.date}</span>}
               </div>
               {cert.description && (
                 <div className="mt-0.5 whitespace-pre-wrap text-black leading-[1.6]">

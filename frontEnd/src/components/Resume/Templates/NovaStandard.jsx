@@ -12,329 +12,361 @@ export default function ArchitectResume({
   validCertificates,
   validLanguages,
   validHobbies,
-  validReferences,
-  firstName,
-  lastName
+  validReferences
 }) {
-  
-  // Create Contact Items
-  const contactItems = [];
-  if (info.phone) {
-    contactItems.push(
-      <span key="phone" className="flex items-center gap-1.5 justify-end">
-        <svg className="w-3.5 h-3.5 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-        </svg>
-        {info.phone}
-      </span>
-    );
-  }
-  if (info.email) {
-    contactItems.push(
-      <span key="email" className="flex items-center gap-1.5 justify-end">
-        <svg className="w-3.5 h-3.5 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-        </svg>
-        {info.email}
-      </span>
-    );
-  }
-  if (info.location) {
-    contactItems.push(
-      <span key="location" className="flex items-center gap-1.5 justify-end">
-        <svg className="w-3.5 h-3.5 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-        </svg>
-        {info.location}
-      </span>
-    );
-  }
-  if (info.linkedin) {
-    contactItems.push(
-      <span key="linkedin" className="flex items-center gap-1.5 justify-end">
-        <svg className="w-3.5 h-3.5 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-        </svg>
-        {info.linkedin.replace(/(^\w+:|^)\/\//, '')}
-      </span>
-    );
-  }
-  if (info.github || info.website || info.secondarySocial) {
-    const url = info.github || info.website || info.secondarySocial;
-    contactItems.push(
-      <span key="web" className="flex items-center gap-1.5 justify-end">
-        <svg className="w-3.5 h-3.5 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
-        </svg>
-        {url.replace(/(^\w+:|^)\/\//, '')}
-      </span>
-    );
-  }
-
-  // Section Heading Builder (Modern Line Design)
-  const renderSectionHeader = (title) => (
-    <div className="w-full mt-6 mb-4 flex items-center gap-4 shrink-0">
-      <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-900 whitespace-nowrap">
-        {title}
-      </h3>
-      <div className="flex-1 h-[1px] bg-zinc-200/80"></div>
-    </div>
-  );
-
-  const mainElements = [];
-
-  // 1. SKILLS SECTION (Modern Badges)
-  if (validSkills && validSkills.length > 0) {
-    const isFlatStringList = validSkills.every(s => typeof s === 'string');
-    mainElements.push(
-      <div key="section-skills" className="w-full mb-3 shrink-0">
-        {renderSectionHeader("Expertise")}
-        {isFlatStringList ? (
-          <div className="flex flex-wrap gap-1.5">
-            {validSkills.map((skill, idx) => (
-              <span key={idx} className="px-2.5 py-1 bg-zinc-50 border border-zinc-200 rounded-md text-[11px] font-medium text-zinc-700 tracking-tight shadow-sm">
-                {skill}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {validSkills.map((skill, idx) => {
-              const name = skill.name || skill.category || '';
-              const keywordsArray = skill.keywords ? skill.keywords : (skill.details ? skill.details.split(',') : []);
-              return (
-                <div key={`skill-${idx}`} className="flex flex-col gap-1.5">
-                  {name && <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-900">{name}</span>}
-                  <div className="flex flex-wrap gap-1.5">
-                    {keywordsArray.map((kw, i) => (
-                       <span key={i} className="px-2.5 py-1 bg-zinc-50 border border-zinc-200 rounded-md text-[11px] font-medium text-zinc-700 tracking-tight shadow-sm">
-                         {kw.trim()}
-                       </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+  return (
+    <div id="resume-raw-content" className="w-full h-full flex bg-[#F9FAFB] text-[#1E2229] relative font-sans select-none">
+      
+      {/* LEFT ARCHITECTURAL SIDEBAR - COMPLETELY FLAT INTERNALS */}
+      <aside className="w-[35%] bg-[#0F1113] text-[#E4E6EB] p-8 flex flex-col shrink-0 gap-6 border-r border-[#1F2429]">
+        
+        {/* Avant-Garde Geometric Profile Picture Frame */}
+        {info.photo && (
+          <div className="shrink-0 flex justify-center mb-4 relative">
+            <div className="relative w-42 h-42 bg-[#17191C] border border-white/10 p-2">
+              {/* Technical Corner Accents */}
+              <div className="absolute top-0 left-0 w-3 h-[1px] bg-[#FF5A1F]"></div>
+              <div className="absolute top-0 left-0 w-[1px] h-3 bg-[#FF5A1F]"></div>
+              <div className="absolute bottom-0 right-0 w-3 h-[1px] bg-[#FF5A1F]"></div>
+              <div className="absolute bottom-0 right-0 w-[1px] h-3 bg-[#FF5A1F]"></div>
+              
+              <img 
+                src={info.photo} 
+                alt="Profile" 
+                className="w-full h-full object-cover grayscale contrast-110 brightness-95" 
+              />
+            </div>
           </div>
         )}
-      </div>
-    );
-  }
 
-  // 2. EXPERIENCE SECTION
-  if (validExperience && validExperience.length > 0) {
-    mainElements.push(
-      <div key="section-experience" className="w-full mb-3 shrink-0">
-        {renderSectionHeader("Experience")}
-        {validExperience.map((exp, idx) => (
-          <div key={`exp-${idx}`} className="w-full mb-5 break-inside-avoid relative">
-            <div className="flex justify-between items-baseline mb-1">
-              <div className="flex items-center gap-2">
-                <h4 className="text-[13px] font-bold text-zinc-900 tracking-tight">{exp.role}</h4>
-                <span className="w-1 h-1 rounded-full bg-zinc-300"></span>
-                <span className="text-[12.5px] font-semibold text-zinc-500">{exp.company}</span>
+        {/* Technical Section: Contact */}
+        {hasContact && (
+          <h2 className="text-[10px] font-black tracking-[0.4em] text-[#FF5A1F] uppercase border-b border-white/10 pb-2 mt-2 flex justify-between items-center">
+            <span>CONTACT</span>
+            <span className="text-[8px] font-mono text-white/20 font-normal tracking-normal">// 01</span>
+          </h2>
+        )}
+
+        {info.email && (
+          <div className="flex items-center gap-3 text-[12.5px] -mt-2 group">
+            <div className="w-5 h-5 rounded-none bg-[#1A1D20] flex items-center justify-center border border-white/5 shrink-0">
+              <svg className="w-3 h-3 text-[#FF5A1F]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+            </div>
+            <span className="break-all font-light text-[#A9AFA6] tracking-wide">{info.email}</span>
+          </div>
+        )}
+        {info.phone && (
+          <div className="flex items-center gap-3 text-[12.5px] -mt-2">
+            <div className="w-5 h-5 rounded-none bg-[#1A1D20] flex items-center justify-center border border-white/5 shrink-0">
+              <svg className="w-3 h-3 text-[#FF5A1F]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>
+            </div>
+            <span className="font-light text-[#A9AFA6] tracking-wide">{info.phone}</span>
+          </div>
+        )}
+        {info.location && (
+          <div className="flex items-center gap-3 text-[12.5px] -mt-2">
+            <div className="w-5 h-5 rounded-none bg-[#1A1D20] flex items-center justify-center border border-white/5 shrink-0">
+              <svg className="w-3 h-3 text-[#FF5A1F]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+            </div>
+            <span className="font-light text-[#A9AFA6] tracking-wide">{info.location}</span>
+          </div>
+        )}
+        {info.website && (
+          <div className="flex items-center gap-3 text-[12.5px] -mt-2">
+            <div className="w-5 h-5 rounded-none bg-[#1A1D20] flex items-center justify-center border border-white/5 shrink-0">
+              <svg className="w-3 h-3 text-[#FF5A1F]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-3.6-9m3.6 9a9 9 0 003.6-9m-3.6-9a9 9 0 00-3.6 9m3.6-9a9 9 0 013.6 9" /></svg>
+            </div>
+            <span className="break-all font-light text-[#A9AFA6] tracking-wide">{info.website.replace(/(^\w+:|^)\/\//, '')}</span>
+          </div>
+        )}
+        {info.linkedin && (
+          <div className="flex items-center gap-3 text-[12.5px] -mt-2">
+            <div className="w-5 h-5 rounded-none bg-[#1A1D20] flex items-center justify-center border border-white/5 shrink-0">
+              <svg className="w-3 h-3 text-[#FF5A1F]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+            </div>
+            <span className="break-all font-light text-[#A9AFA6] tracking-wide">{info.linkedin.replace(/(^\w+:|^)\/\//, '')}</span>
+          </div>
+        )}
+        {info.secondarySocial && (
+          <div className="flex items-center gap-3 text-[12.5px] -mt-2">
+            <div className="w-5 h-5 rounded-none bg-[#1A1D20] flex items-center justify-center border border-white/5 shrink-0">
+              <svg className="w-3 h-3 text-[#FF5A1F]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.738.09-1.454.257-2.137" />
+              </svg>
+            </div>
+            <span className="break-all font-light text-[#A9AFA6] tracking-wide">{info.secondarySocial.replace(/(^\w+:|^)\/\//, '')}</span>
+          </div>
+        )}
+
+        {/* Technical Section: Personal Parameters */}
+        {(info.dob || info.nationality || info.gender || info.drivingLicense) && (
+          <h2 className="text-[10px] font-black tracking-[0.4em] text-[#FF5A1F] uppercase border-b border-white/10 pb-2 mt-4 flex justify-between items-center">
+            <span>METRICS</span>
+            <span className="text-[8px] font-mono text-white/20 font-normal tracking-normal">// 02</span>
+          </h2>
+        )}
+        {info.dob && (
+          <div className="flex flex-col gap-0.5 -mt-2">
+            <span className="text-[8.5px] font-mono uppercase tracking-widest text-[#72787E]">INITIAL_DATE</span>
+            <span className="text-[13px] font-light text-[#E4E6EB]">{info.dob}</span>
+          </div>
+        )}
+        {info.nationality && (
+          <div className="flex flex-col gap-0.5 -mt-2">
+            <span className="text-[8.5px] font-mono uppercase tracking-widest text-[#72787E]">REGION_ORIGIN</span>
+            <span className="text-[13px] font-light text-[#E4E6EB]">{info.nationality}</span>
+          </div>
+        )}
+        {info.gender && (
+          <div className="flex flex-col gap-0.5 -mt-2">
+            <span className="text-[8.5px] font-mono uppercase tracking-widest text-[#72787E]">GENDER_IDENT</span>
+            <span className="text-[13px] font-light text-[#E4E6EB]">{info.gender}</span>
+          </div>
+        )}
+        {info.drivingLicense && (
+          <div className="flex flex-col gap-0.5 -mt-2">
+            <span className="text-[8.5px] font-mono uppercase tracking-widest text-[#72787E]">MOBILITY_AUTH</span>
+            <span className="text-[13px] font-light text-[#E4E6EB]">{info.drivingLicense}</span>
+          </div>
+        )}
+
+        {/* Technical Section: Core Architecture (Skills) */}
+        {validSkills.length > 0 && (
+          <h2 className="text-[10px] font-black tracking-[0.4em] text-[#FF5A1F] uppercase border-b border-white/10 pb-2 mt-4 flex justify-between items-center">
+            <span>EXPERTISE</span>
+            <span className="text-[8px] font-mono text-white/20 font-normal tracking-normal">// 03</span>
+          </h2>
+        )}
+        {/* Unified, single elegant skills mapping block */}
+        {validSkills.map((skill, index) => {
+          const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
+          const level = typeof skill === 'object' && skill.level ? skill.level : 3;
+          
+          let barWidth = 100;
+          if (typeof level === 'number' || !isNaN(Number(level))) {
+            barWidth = (Number(level) / 5) * 100;
+          } else {
+            barWidth = level === 'Beginner' ? 33 : level === 'Intermediate' ? 66 : level === 'Advanced' ? 88 : 100;
+          }
+
+          return (
+            <div key={`skill-${index}`} className="flex flex-col gap-1.5 -mt-2">
+              <div className="flex justify-between text-[12.5px] font-medium text-[#E4E6EB] tracking-wide">
+                <span>{name}</span>
+                <span className="text-[9px] font-mono text-[#FF5A1F] opacity-70">{Math.round(barWidth)}%</span>
               </div>
-              <div className="flex items-center gap-2 text-[11px] text-zinc-500 shrink-0">
-                {exp.location && <span>{exp.location}</span>}
-                {exp.location && <span className="opacity-40">•</span>}
-                <span className="font-medium tracking-wide uppercase">{formatDates(exp.startDate, exp.endDate, exp.isCurrent)}</span>
+              <div className="w-full bg-[#1F2326] h-[3px] relative">
+                <div 
+                  className="bg-gradient-to-r from-[#FF5A1F] to-[#FF8154] h-full transition-all" 
+                  style={{ width: `${barWidth}%` }}
+                />
               </div>
             </div>
-            
-            {exp.achievements && exp.achievements.length > 0 ? (
-              <ul className="list-none ml-1 text-[11.5px] text-zinc-600 space-y-1.5 leading-[1.6]">
+          );
+        })}
+
+        {/* Technical Section: Languages */}
+        {validLanguages.length > 0 && (
+          <h2 className="text-[10px] font-black tracking-[0.4em] text-[#FF5A1F] uppercase border-b border-white/10 pb-2 mt-4 flex justify-between items-center">
+            <span>LINGUISTICS</span>
+            <span className="text-[8px] font-mono text-white/20 font-normal tracking-normal">// 04</span>
+          </h2>
+        )}
+        {validLanguages.map((lang, index) => (
+          <div key={`lang-${index}`} className="flex justify-between items-baseline -mt-2">
+             <span className="text-[13px] font-medium tracking-wide text-[#E4E6EB]">{lang.name}</span>
+             <span className="text-[10px] text-[#FF5A1F] font-mono uppercase tracking-wider bg-[#1F2326] px-1.5 py-0.5">{lang.proficiency}</span>
+          </div>
+        ))}
+
+        {/* Technical Section: Hobbies */}
+        {validHobbies && validHobbies.length > 0 && (
+          <h2 className="text-[10px] font-black tracking-[0.4em] text-[#FF5A1F] uppercase border-b border-white/10 pb-2 mt-4 flex justify-between items-center">
+            <span>INTERESTS</span>
+            <span className="text-[8px] font-mono text-white/20 font-normal tracking-normal">// 05</span>
+          </h2>
+        )}
+        {validHobbies && validHobbies.map((hobby, index) => {
+          const name = typeof hobby === 'string' ? hobby : hobby.name;
+          return (
+            <div key={`hobby-${index}`} className="flex items-center gap-3 -mt-2 text-[12.5px] font-light text-[#A9AFA6] tracking-wide">
+              <span className="w-1.5 h-[1px] bg-[#FF5A1F] shrink-0"></span>
+              {name}
+            </div>
+          );
+        })}
+
+      </aside>
+
+      {/* RIGHT EXECUTIVE WORKSPACE - COMPLETELY FLAT INTERNALS */}
+      <main className="w-[65%] p-10 flex flex-col gap-6 shrink-0 bg-white">
+        
+        {/* High-Impact Architectural Title Header Block */}
+        <div className="flex flex-col gap-2 pb-6 border-b border-[#E4E6EB] mb-2 relative">
+          <div className="absolute top-0 right-0 font-mono text-[9px] tracking-widest text-[#1E2229]/30">// CORE_ENGINE_BUILD</div>
+          {info.fullName && (
+            <h1 className="text-5xl font-black tracking-tight text-[#0F1113] uppercase leading-none">
+              {info.fullName}
+            </h1>
+          )}
+          {info.jobTitle && (
+            <div className="flex items-center gap-3 mt-1">
+              <span className="w-2 h-2 bg-[#FF5A1F]"></span>
+              <p className="text-[13px] font-bold tracking-[0.35em] text-[#FF5A1F] uppercase">{info.jobTitle}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Executive Summary Statement */}
+        {validSummary && (
+          <div className="text-[13px] leading-[1.75] text-[#485260] mb-2 font-normal text-justify whitespace-pre-wrap pl-4 border-l-2 border-[#0F1113]">
+            {validSummary}
+          </div>
+        )}
+
+        {/* --- EXPERIENCE COMPONENT SECTION --- */}
+        {validExperience.length > 0 && (
+          <h2 className="text-xs font-black text-[#0F1113] uppercase tracking-[0.3em] mt-2 mb-1 flex items-center justify-between bg-[#F3F4F6] p-2">
+            <span className="flex items-center gap-2">
+              <span className="text-[#FF5A1F]">■</span> CHRONOLOGICAL DISPATCH
+            </span>
+            <span className="font-mono text-[10px] font-normal opacity-40">SEC_01</span>
+          </h2>
+        )}
+
+        {validExperience.map((exp, index) => (
+          <div key={`exp-${index}`} className="flex flex-col gap-1.5 -mt-2 mb-4 relative pl-4">
+            <div className="absolute left-0 top-1.5 w-1 h-3 bg-[#FF5A1F]"></div>
+            <div className="flex justify-between items-baseline">
+              <h3 className="text-[15px] font-black text-[#0F1113] uppercase tracking-wide">{exp.role}</h3>
+              <span className="text-[11px] font-mono font-bold text-[#FF5A1F] bg-[#FF5A1F]/5 px-2 py-0.5 tracking-wider shrink-0 ml-2">
+                {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
+              </span>
+            </div>
+            <div className="flex justify-between items-baseline -mt-0.5">
+              <p className="text-[12.5px] font-bold text-[#485260] uppercase tracking-wider">{exp.company}</p>
+              {exp.location && <p className="text-[10px] font-bold text-[#8E97A4] uppercase tracking-wider">{exp.location}</p>}
+            </div>
+            {exp.description && (
+              <p className="text-[12.5px] text-[#485260] leading-relaxed mt-1 whitespace-pre-wrap text-justify">{exp.description}</p>
+            )}
+            {exp.achievements && exp.achievements.length > 0 && (
+              <ul className="mt-1 list-none text-[12.5px] text-[#485260] space-y-1.5 leading-relaxed">
                 {exp.achievements.map((ach, i) => (
                   <li key={i} className="flex items-start gap-2.5">
-                    <span className="text-zinc-400 mt-[0.3em] shrink-0 text-[10px]">○</span>
-                    <span>{ach}</span>
+                    <span className="text-[#FF5A1F] font-mono text-[10px] mt-0.5 shrink-0">›</span>
+                    <span className="text-justify">{ach}</span>
                   </li>
                 ))}
               </ul>
-            ) : exp.description ? (
-              <div className="text-[11.5px] text-zinc-600 leading-[1.6] whitespace-pre-wrap mt-2">
-                {exp.description}
-              </div>
-            ) : null}
+            )}
           </div>
         ))}
-      </div>
-    );
-  }
 
-  // 3. EDUCATION SECTION
-  if (validEducation && validEducation.length > 0) {
-    mainElements.push(
-      <div key="section-education" className="w-full mb-3 shrink-0">
-        {renderSectionHeader("Education")}
-        {validEducation.map((edu, idx) => (
-          <div key={`edu-${idx}`} className="w-full mb-4 break-inside-avoid">
-            <div className="flex justify-between items-baseline mb-0.5">
-              <div className="flex items-center gap-2">
-                <h4 className="text-[13px] font-bold text-zinc-900 tracking-tight">
-                  {edu.degree || edu.studyType}{edu.area && <span className="font-normal text-zinc-500"> in {edu.area}</span>}
-                </h4>
-              </div>
-              <span className="text-[11px] text-zinc-500 font-medium tracking-wide uppercase shrink-0">
+        {/* --- PROJECTS COMPONENT SECTION --- */}
+        {data.projects && data.projects.length > 0 && (
+          <h2 className="text-xs font-black text-[#0F1113] uppercase tracking-[0.3em] mt-2 mb-1 flex items-center justify-between bg-[#F3F4F6] p-2">
+            <span className="flex items-center gap-2">
+              <span className="text-[#FF5A1F]">■</span> DEPLOYED APPLICATIONS
+            </span>
+            <span className="font-mono text-[10px] font-normal opacity-40">SEC_02</span>
+          </h2>
+        )}
+
+        {data.projects && data.projects.map((proj, index) => (
+          <div key={`proj-${index}`} className="flex flex-col gap-1.5 -mt-2 mb-4 relative pl-4">
+            <div className="absolute left-0 top-1.5 w-1 h-3 bg-[#0F1113]"></div>
+            <div className="flex justify-between items-baseline">
+              <h3 className="text-[15px] font-black text-[#0F1113] uppercase tracking-wide">{proj.title}</h3>
+              {proj.date && <span className="text-[11px] font-mono font-bold text-[#8E97A4] shrink-0 ml-2">{proj.date}</span>}
+            </div>
+            {proj.description && (
+              <p className="text-[12.5px] text-[#485260] leading-relaxed mt-1 whitespace-pre-wrap text-justify">{proj.description}</p>
+            )}
+          </div>
+        ))}
+
+        {/* --- EDUCATION COMPONENT SECTION --- */}
+        {validEducation.length > 0 && (
+          <h2 className="text-xs font-black text-[#0F1113] uppercase tracking-[0.3em] mt-3 mb-1 flex items-center justify-between bg-[#F3F4F6] p-2">
+            <span className="flex items-center gap-2">
+              <span className="text-[#FF5A1F]">■</span> ACADEMIC FOUNDATION
+            </span>
+            <span className="font-mono text-[10px] font-normal opacity-40">SEC_03</span>
+          </h2>
+        )}
+
+        {validEducation.map((edu, index) => (
+          <div key={`edu-${index}`} className="flex flex-col gap-1.5 -mt-2 mb-4 relative pl-4">
+             <div className="absolute left-0 top-1.5 w-1 h-3 bg-[#0F1113]"></div>
+            <div className="flex justify-between items-baseline">
+              <h3 className="text-[14.5px] font-black text-[#0F1113] uppercase tracking-wide">{edu.degree}</h3>
+              <span className="text-[11px] font-mono font-bold text-[#8E97A4] shrink-0 ml-2">
                 {formatDates(edu.startDate, edu.endDate, edu.isCurrent)}
               </span>
             </div>
-            <div className="flex justify-between items-baseline">
-              <span className="text-[12.5px] font-semibold text-zinc-600">{edu.school || edu.institution}</span>
-              {edu.location && <span className="text-[11px] text-zinc-400 font-medium shrink-0">{edu.location}</span>}
+            <div className="flex justify-between items-baseline -mt-0.5">
+              <p className="text-[12.5px] font-medium text-[#485260]">{edu.school}</p>
+              {edu.location && <p className="text-[10px] font-bold text-[#8E97A4] uppercase tracking-wider">{edu.location}</p>}
             </div>
             {edu.description && (
-              <div className="text-[11.5px] text-zinc-500 mt-1.5 leading-[1.6] whitespace-pre-wrap">
-                {edu.description}
-              </div>
+              <p className="text-[12.5px] text-[#485260] leading-relaxed mt-1 whitespace-pre-wrap">{edu.description}</p>
             )}
           </div>
         ))}
-      </div>
-    );
-  }
 
-  // 4. PROJECTS SECTION
-  const validProjects = data?.projects || [];
-  if (validProjects.length > 0) {
-    mainElements.push(
-      <div key="section-projects" className="w-full mb-3 shrink-0">
-        {renderSectionHeader("Projects")}
-        {validProjects.map((proj, idx) => (
-          <div key={`proj-${idx}`} className="w-full mb-4 break-inside-avoid">
-            <div className="flex justify-between items-baseline mb-1.5">
-              <h4 className="text-[13px] font-bold text-zinc-900 tracking-tight">{proj.title || proj.name}</h4>
-              {proj.date && <span className="text-[11px] text-zinc-500 font-medium tracking-wide uppercase shrink-0">{proj.date}</span>}
+        {/* --- CERTIFICATIONS COMPONENT SECTION --- */}
+        {validCertificates && validCertificates.length > 0 && (
+          <h2 className="text-xs font-black text-[#0F1113] uppercase tracking-[0.3em] mt-3 mb-1 flex items-center justify-between bg-[#F3F4F6] p-2">
+            <span className="flex items-center gap-2">
+              <span className="text-[#FF5A1F]">■</span> CREDENTIAL VERIFICATION
+            </span>
+            <span className="font-mono text-[10px] font-normal opacity-40">SEC_04</span>
+          </h2>
+        )}
+
+        {validCertificates && validCertificates.map((cert, index) => (
+          <div key={`cert-${index}`} className="flex flex-col gap-1.5 -mt-2 mb-4 relative pl-4">
+             <div className="absolute left-0 top-1.5 w-1 h-3 bg-[#0F1113]"></div>
+            <div className="flex justify-between items-baseline">
+              <h3 className="text-[14px] font-black text-[#0F1113] uppercase tracking-wide">{cert.title}</h3>
+              {cert.date && <span className="text-[11px] font-mono font-bold text-[#8E97A4] shrink-0 ml-2">{cert.date}</span>}
             </div>
-            {proj.description && (
-              <div className="text-[11.5px] text-zinc-600 leading-[1.6] whitespace-pre-wrap">
-                {proj.description}
-              </div>
+            {cert.issuer && <p className="text-[12px] text-[#FF5A1F] font-bold uppercase tracking-wider -mt-0.5">{cert.issuer}</p>}
+            {cert.description && (
+              <p className="text-[12.5px] text-[#485260] leading-relaxed mt-1 whitespace-pre-wrap">{cert.description}</p>
             )}
           </div>
         ))}
-      </div>
-    );
-  }
 
-  // 5. CERTIFICATIONS SECTION
-  if (validCertificates && validCertificates.length > 0) {
-    mainElements.push(
-      <div key="section-certifications" className="w-full mb-3 shrink-0">
-        {renderSectionHeader("Certifications")}
-        <div className="grid grid-cols-2 gap-4">
-          {validCertificates.map((cert, idx) => (
-            <div key={`cert-${idx}`} className="text-[11.5px] leading-[1.5]">
-              <div className="font-bold text-zinc-900">{cert.title || cert.name}</div>
-              {cert.issuer && <div className="text-zinc-600 mt-0.5">{cert.issuer}</div>}
-              {cert.date && <div className="text-zinc-400 text-[10.5px] mt-0.5 uppercase tracking-wide">{cert.date}</div>}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+        {/* --- REFERENCES COMPONENT SECTION --- */}
+        {validReferences && validReferences.length > 0 && (
+          <h2 className="text-xs font-black text-[#0F1113] uppercase tracking-[0.3em] mt-3 mb-1 flex items-center justify-between bg-[#F3F4F6] p-2">
+            <span className="flex items-center gap-2">
+              <span className="text-[#FF5A1F]">■</span> ATTRIBUTION VOUCHERS
+            </span>
+            <span className="font-mono text-[10px] font-normal opacity-40">SEC_05</span>
+          </h2>
+        )}
 
-  // 6. LANGUAGES SECTION
-  if (validLanguages && validLanguages.length > 0) {
-    mainElements.push(
-      <div key="section-languages" className="w-full mb-3 shrink-0">
-        {renderSectionHeader("Languages")}
-        <div className="flex flex-wrap gap-4 text-[11.5px] leading-[1.5]">
-          {validLanguages.map((l, idx) => (
-            <div key={idx} className="flex flex-col">
-              <span className="font-bold text-zinc-900">{l.name || l.language}</span>
-              {(l.proficiency || l.level) && <span className="text-zinc-500 text-[10.5px] uppercase tracking-wide">{l.proficiency || l.level}</span>}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // 7. HOBBIES SECTION
-  if (validHobbies && validHobbies.length > 0) {
-    const hobbiesStr = validHobbies.map(h => typeof h === 'string' ? h : h.name).join(' • ');
-    mainElements.push(
-      <div key="section-hobbies" className="w-full mb-3 shrink-0">
-        {renderSectionHeader("Interests")}
-        <div className="text-[11.5px] text-zinc-600 font-medium tracking-wide leading-[1.5]">
-          {hobbiesStr}
-        </div>
-      </div>
-    );
-  }
-
-  // 8. REFERENCES SECTION
-  if (validReferences && validReferences.length > 0) {
-    mainElements.push(
-      <div key="section-references" className="w-full mb-3 shrink-0">
-        {renderSectionHeader("References")}
-        <div className="grid grid-cols-2 gap-5">
-          {validReferences.map((ref, idx) => (
-            <div key={`ref-${idx}`} className="text-[11.5px] leading-[1.5] break-inside-avoid">
-              <div className="font-bold text-zinc-900">{ref.name}</div>
-              {(ref.role || ref.company) && (
-                <div className="text-zinc-600 font-medium mt-0.5">
-                  {ref.role}{ref.role && ref.company ? ` at ${ref.company}` : ref.company}
-                </div>
-              )}
-              {ref.contact && <div className="text-zinc-400 mt-1">{ref.contact}</div>}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div id="resume-raw-content" className="w-full min-h-full bg-white pt-14 pb-14 px-16 relative flex flex-col font-sans-modern selection:bg-zinc-100">
-      
-      {/* High-Fidelity Font Injection */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        .font-sans-modern { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-      `}} />
-
-      {/* 1. ASYMMETRICAL HEADER (Strictly isolated for the paginator) */}
-      <header className="shrink-0 flex justify-between items-end w-full mb-6 pb-6 border-b-[1.5px] border-zinc-900">
-        <div className="flex flex-col">
-          <h1 className="text-[36px] font-extrabold tracking-tight text-zinc-900 leading-[1.1] mb-1">
-            {firstName} <span className="text-zinc-400">{lastName}</span>
-          </h1>
-          {info.jobTitle && (
-            <h2 className="text-[12.5px] font-bold tracking-[0.2em] uppercase text-zinc-500">
-              {info.jobTitle}
-            </h2>
-          )}
-        </div>
-        
-        {hasContact && (
-          <div className="flex flex-col items-end gap-1.5 text-[10.5px] text-zinc-600 font-medium">
-            {contactItems.map((item, idx) => (
-              <div key={idx}>{item}</div>
+        {validReferences && validReferences.length > 0 && (
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 -mt-2">
+            {validReferences.map((ref, index) => (
+              <div key={`ref-${index}`} className="flex flex-col gap-0.5 relative pl-4">
+                <div className="absolute left-0 top-1.5 w-1 h-3 bg-[#0F1113]"></div>
+                <h3 className="text-[14px] font-black text-[#0F1113] uppercase tracking-wide">{ref.name}</h3>
+                {(ref.role || ref.company) && (
+                  <p className="text-[11.5px] font-bold text-[#FF5A1F] tracking-wide">
+                    {ref.role}{ref.role && ref.company ? ` @ ${ref.company}` : ref.company}
+                  </p>
+                )}
+                {ref.contact && <p className="text-[11px] font-mono text-[#8E97A4] mt-0.5">{ref.contact}</p>}
+              </div>
             ))}
           </div>
         )}
-      </header>
 
-      {/* 2. SUMMARY (Strictly given id="summary-section" for the paginator) */}
-      {validSummary && (
-        <div id="summary-section" className="w-full mb-2 shrink-0">
-          <p className="text-[12.5px] text-zinc-700 leading-[1.7] whitespace-pre-wrap font-medium">
-            {validSummary}
-          </p>
-        </div>
-      )}
-
-      {/* 3. PAGINATOR DOM QUEUES */}
-      <div className="w-full flex flex-col flex-1 mt-2">
-        <aside className="hidden"></aside>
-        <main className="w-full flex flex-col">
-          {mainElements}
-        </main>
-      </div>
-
+      </main>
     </div>
   );
 }

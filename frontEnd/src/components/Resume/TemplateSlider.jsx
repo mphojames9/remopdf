@@ -75,6 +75,25 @@ const demoResumeData = {
 };
 
 const RE_TEMPLATES = [
+  { 
+    id: 'Aether Minimal', 
+    name: 'Aether Minimal', 
+    vibe: 'Modern Executive & Fine-line Grid', 
+    description: 'An editorial workspace configuration emphasizing whitespace, high-end asymmetric content streams, and subtle typography accents.' 
+  },
+  { 
+    id: 'Helios Zenith', 
+    name: 'Helios Zenith', 
+    vibe: 'Premium Architectural Canvas', 
+    description: 'A striking structural canvas built with flipped geometric layout streams, luxury amber indicators, and encapsulated work modules.' 
+  },
+
+  { 
+    id: 'Quantum Obsidian', 
+    name: 'Quantum Obsidian', 
+    vibe: 'Premium 2030 & Technical Architecture', 
+    description: 'An elite technical configuration featuring high-contrast subgrids, razor-sharp asymmetry, and clean monospaced layout hooks built for innovators.' 
+  },
   { id: 'Professional Dark', name: 'Professional Dark', vibe: 'Classic & Professional', description: 'A striking two-column layout perfect for highlighting key skills alongside your experience.' },
   { id: 'Modern Executive', name: 'Modern Executive', vibe: 'Modern & Clean', description: 'A sleek, top-header design that cleanly organizes your career history and stands out to recruiters.' },
   { id: 'Architect Resume', name: 'Architect Resume', vibe: 'Elegant & Minimalist', description: 'An editorial-style layout with refined typography and clean, spacious borders for a high-end look.' },
