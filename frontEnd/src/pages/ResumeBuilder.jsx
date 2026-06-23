@@ -3,13 +3,15 @@ import ResumeForm from '../components/Resume/ResumeForm';
 import PaginatedPreview from '../components/Resume/PaginatedPreview';
 import ResumePreview from '../components/Resume/ResumePreview';
 import TemplateSlider from '../components/Resume/TemplateSlider';
-import profileImgItem from '../assets/profile.png';
+import profileImgItem from '../assets/profile2.png';
+
+
 
 const profileImg = profileImgItem;
 
 const demoResumeData = {
   personalInfo: {
-    fullName: "Alexander Reed",
+    fullName: "Violet Vanessa Sinclair",
     jobTitle: "Senior Cloud & DevOps Architect",
     email: "alexander.reed@example.com",
     phone: "+1 (555) 019-8273",
@@ -22,7 +24,7 @@ const demoResumeData = {
     photo: profileImg,
     profilePic: profileImg,
     picture: profileImg,
-    summary: "Visionary Cloud Architect with 10+ years of enterprise engineering experience..."
+    summary: "Visionary Cloud Architect with 10+ years of enterprise engineering experience. Architecting resilient, next-gen multi-cloud ecosystems and driving digital transformation. Expert in cloud-native scaling, advanced DevOps, and zero-trust security."
   },
   experience: [
     {
@@ -32,9 +34,10 @@ const demoResumeData = {
       endDate: "Present",
       isCurrent: true,
       achievements: [
-        "Architected multi-region active-active cloud mesh systems utilizing Terraform Enterprise IaC profiles.",
-        "Spearheaded containerization strategy using Kubernetes, accelerating rapid feature deployment workflows by 60%."
-      ]
+  "Orchestrated a cross-provider FinOps governance framework, slashing redundant enterprise infrastructure spend by 35% annually without degrading performance.",
+  "Engineered a zero-trust cloud security architecture integrating automated IAM governance, reducing perimeter vulnerability vectors across hybrid environments by 45%.",
+  "Formulated an automated cross-cloud disaster recovery playbook, shrinking Recovery Time Objective (RTO) to under 5 minutes for tier-1 core banking systems."
+]
     },
     {
       role: "Senior Systems Specialist",
@@ -43,9 +46,10 @@ const demoResumeData = {
       endDate: "Dec 2020",
       isCurrent: false,
       achievements: [
-        "Automated continuous integration structures reducing software regression cycles from days to minutes.",
-        "Designed centralized high-throughput telemetry logging layers, shrinking incident recovery time vectors by 45%."
-      ]
+  "Engineered an automated FinOps orchestration matrix across multi-cloud clusters, slashing redundant enterprise compute overhead by 38%.",
+  "Architected a global service mesh topology across edge nodes, stabilizing cross-region microservice latency to sub-10ms under peak transactional loads.",
+  "Formulated automated chaos engineering and self-healing resilience protocols, shrinking platform Mean Time to Detect (MTTD) to under 90 seconds."
+]
     }
   ],
   education: [
@@ -423,6 +427,50 @@ const response = await fetch("https://remopdf-backend.onrender.com/api/resume/do
   }; 
 
   const templates = [
+
+    {
+    id: 'Cyber Matrix',
+    name: 'Cyber Matrix',
+    vibe: 'Tech & Terminal',
+    description: 'A futuristic, monospace aesthetic with sharp high-contrast terminal styling.'
+  },
+  {
+    id: 'Velvet Standard',
+    name: 'Velvet Standard',
+    vibe: 'Classic & Elegant',
+    description: 'Refined serif typography with rich maroon accents for a highly traditional presence.'
+  },
+  {
+    id: 'Aurora Minimal',
+    name: 'Aurora Minimal',
+    vibe: 'Modern & Spacious',
+    description: 'Ultra-clean sans-serif design utilizing subtle gradients and expansive whitespace.'
+  },
+  {
+    id: 'Graphite Pro',
+    name: 'Graphite Pro',
+    vibe: 'Bold & Industrial',
+    description: 'Heavy charcoal sectioning and stark structural alignments for engineering profiles.'
+  },
+  {
+    id: 'Monolith Brutalist',
+    name: 'Monolith Brutalist',
+    vibe: 'Stark & Architectural',
+    description: 'Thick borders, heavy uppercase headers, and high-impact structural contrast.'
+  },
+
+    {
+    id: 'Aether Minimal',
+    name: 'Aether Minimal',
+    vibe: 'Modern Executive & Fine-line Grid',
+    description: 'An editorial workspace configuration emphasizing whitespace, high-end asymmetric content streams, and subtle typography accents.'
+  },
+  {
+    id: 'Helios Zenith',
+    name: 'Helios Zenith',
+    vibe: 'Premium Architectural Canvas',
+    description: 'A striking structural canvas built with flipped geometric layout streams, luxury amber indicators, and encapsulated work modules.'
+  },
 
     {
     id: 'Quantum Obsidian',

@@ -14,6 +14,12 @@ import NovaStandard from './Templates/NovaStandard';
 import QuantumObsidian from './Templates/QuantumObsidian';
 import AetherMinimal from './Templates/AetherMinimal';
 import HeliosZenith from './Templates/HeliosZenith';
+import CyberMatrix from './Templates/CyberMatrix';
+import VelvetStandard from './Templates/VelvetStandard';
+import AuroraMinimal from './Templates/AuroraMinimal';
+import GraphitePro from './Templates/GraphitePro';
+import MonolithBrutalist from './Templates/MonolithBrutalist';
+
 
 export default function ResumePreview({ data, template }) {
   const info = data.personalInfo || {};
@@ -129,6 +135,12 @@ if (template === 'Aether Minimal') {
   if (template === 'Helios Zenith') {
     return <HeliosZenith {...layoutProps} />;
   }
+
+  if (template === 'Cyber Matrix') return <CyberMatrix {...layoutProps} />;
+  if (template === 'Velvet Standard') return <VelvetStandard {...layoutProps} />;
+  if (template === 'Aurora Minimal') return <AuroraMinimal {...layoutProps} />;
+  if (template === 'Graphite Pro') return <GraphitePro {...layoutProps} />;
+  if (template === 'Monolith Brutalist') return <MonolithBrutalist {...layoutProps} />;
 
   // Fallback Template
   return (
