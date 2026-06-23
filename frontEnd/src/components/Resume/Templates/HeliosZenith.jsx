@@ -19,7 +19,7 @@ export default function HeliosZenith({
   // 1. DEMOGRAPHICS
   if (info.dob || info.nationality || info.gender || info.drivingLicense) {
     mainElements.push(
-      <div key="demographics" className="flex flex-wrap gap-x-10 gap-y-4 pb-6 mb-8 border-b border-stone-200/80 shrink-0">
+      <div key="demographics" className="flex flex-wrap gap-x-10 gap-y-4 pb-6 mb-8 border-b border-stone-200/80">
         {info.dob && (
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Date of Birth</span>
@@ -51,7 +51,7 @@ export default function HeliosZenith({
   // 2. EXECUTIVE SUMMARY
   if (validSummary) {
     mainElements.push(
-      <div key="summary" id="summary-section" className="relative font-serif text-[15px] leading-relaxed text-stone-700 italic bg-white p-6 mb-8 border-l-[3px] border-amber-500 rounded-r-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] whitespace-pre-wrap shrink-0">
+      <div key="summary" id="summary-section" className="relative font-serif text-[15px] leading-relaxed text-stone-700 italic bg-white p-6 mb-8 border-l-[3px] border-amber-500 rounded-r-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] whitespace-pre-wrap">
         <span className="absolute text-5xl text-amber-200 font-serif -top-3 left-2 select-none pointer-events-none">“</span>
         <div className="relative z-10 pl-3">{validSummary}</div>
       </div>
@@ -61,83 +61,109 @@ export default function HeliosZenith({
   // 3. EXPERIENCE
   if (validExperience.length > 0) {
     mainElements.push(
-      <h2 key="experience-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2 shrink-0">
+      <h2 key="experience-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2">
         <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
         Professional Experience
       </h2>
     );
     validExperience.forEach((exp, index) => {
+      const hasAchievements = exp.achievements && exp.achievements.length > 0;
+      const hasDescription = !!exp.description;
+
+      // Role Title Header
       mainElements.push(
-        <div key={`exp-${index}`} className="flex flex-col gap-1 relative pl-6 border-l border-stone-200 ml-1.5 mb-6 shrink-0">
+        <div key={`exp-${index}-header`} className="flex justify-between items-baseline gap-4 relative pl-6 border-l border-stone-200 ml-1.5 pt-1">
           <div className="absolute w-2 h-2 rounded-full bg-amber-500 -left-[4.5px] top-[7px] ring-4 ring-stone-50" />
-          <div className="flex justify-between items-baseline gap-4">
-            <h3 className="text-[15px] font-bold text-stone-900 tracking-tight">{exp.role}</h3>
-            <span className="text-[10px] font-extrabold text-stone-600 bg-stone-200/60 border border-stone-300/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">
-              {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
-            </span>
-          </div>
-          <div className="flex justify-between items-baseline">
-            <p className="text-[13px] font-semibold text-amber-600 tracking-wide">{exp.company}</p>
-            {exp.location && <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider">{exp.location}</p>}
-          </div>
-          {exp.description && (
-            <p className="text-[13.5px] text-stone-600 leading-relaxed mt-1.5 whitespace-pre-wrap">{exp.description}</p>
-          )}
-          {exp.achievements && exp.achievements.length > 0 && (
-            <ul className="mt-2 list-none text-[13.5px] text-stone-600 space-y-1.5 leading-relaxed">
-              {exp.achievements.map((ach, i) => (
-                <li key={`ach-${i}`} className="flex items-start gap-2.5">
-                  <span className="text-amber-500 font-bold mt-0.5 select-none">→</span>
-                  <span>{ach}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <h3 className="text-[15px] font-bold text-stone-900 tracking-tight">{exp.role}</h3>
+          <span className="text-[10px] font-extrabold text-stone-600 bg-stone-200/60 border border-stone-300/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">
+            {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
+          </span>
         </div>
       );
+
+      // Company Info Line
+      const isCompanyLast = !hasDescription && !hasAchievements;
+      mainElements.push(
+        <div key={`exp-${index}-company`} className={`flex justify-between items-baseline pl-6 border-l border-stone-200 ml-1.5 mt-0.5 ${isCompanyLast ? 'mb-6 pb-2' : ''}`}>
+          <p className="text-[13px] font-semibold text-amber-600 tracking-wide">{exp.company}</p>
+          {exp.location && <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider">{exp.location}</p>}
+        </div>
+      );
+
+      // Description Line
+      if (hasDescription) {
+        const isDescLast = !hasAchievements;
+        mainElements.push(
+          <p key={`exp-${index}-desc`} className={`text-[13.5px] text-stone-600 leading-relaxed pl-6 border-l border-stone-200 ml-1.5 mt-1.5 whitespace-pre-wrap ${isDescLast ? 'mb-6 pb-2' : ''}`}>
+            {exp.description}
+          </p>
+        );
+      }
+
+      // Achievement Lines - Fully unwrapped and built explicitly line-by-line
+      if (hasAchievements) {
+        exp.achievements.forEach((ach, i) => {
+          const isLastAch = i === exp.achievements.length - 1;
+          mainElements.push(
+            <div key={`exp-${index}-ach-${i}`} className={`flex items-start gap-2.5 text-[13.5px] text-stone-600 leading-relaxed pl-6 border-l border-stone-200 ml-1.5 pt-1.5 ${isLastAch ? 'mb-6 pb-2' : ''}`}>
+              <span className="text-amber-500 font-bold mt-0.5 select-none">→</span>
+              <span>{ach}</span>
+            </div>
+          );
+        });
+      }
     });
   }
 
   // 4. EDUCATION
   if (validEducation.length > 0) {
     mainElements.push(
-      <h2 key="education-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2 shrink-0">
+      <h2 key="education-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2">
         <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
         Education History
       </h2>
     );
     validEducation.forEach((edu, index) => {
+      const hasDescription = !!edu.description;
+
       mainElements.push(
-        <div key={`edu-${index}`} className="flex flex-col gap-1 relative pl-6 border-l border-stone-200 ml-1.5 mb-6 shrink-0">
+        <div key={`edu-${index}-header`} className="flex justify-between items-baseline gap-4 relative pl-6 border-l border-stone-200 ml-1.5 pt-1">
           <div className="absolute w-2 h-2 rounded-full bg-amber-500 -left-[4.5px] top-[7px] ring-4 ring-stone-50" />
-          <div className="flex justify-between items-baseline gap-4">
-            <h3 className="text-[15px] font-bold text-stone-900 tracking-tight">{edu.degree}</h3>
-            <span className="text-[10px] font-extrabold text-stone-600 bg-stone-200/60 border border-stone-300/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">
-              {formatDates(edu.startDate, edu.endDate, edu.isCurrent)}
-            </span>
-          </div>
-          <div className="flex justify-between items-baseline">
-            <p className="text-[13px] text-stone-700 font-semibold">{edu.school}</p>
-            {edu.location && <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider">{edu.location}</p>}
-          </div>
-          {edu.description && (
-            <p className="text-[13.5px] text-stone-600 leading-relaxed mt-1 whitespace-pre-wrap">{edu.description}</p>
-          )}
+          <h3 className="text-[15px] font-bold text-stone-900 tracking-tight">{edu.degree}</h3>
+          <span className="text-[10px] font-extrabold text-stone-600 bg-stone-200/60 border border-stone-300/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">
+            {formatDates(edu.startDate, edu.endDate, edu.isCurrent)}
+          </span>
         </div>
       );
+
+      const isSchoolLast = !hasDescription;
+      mainElements.push(
+        <div key={`edu-${index}-school`} className={`flex justify-between items-baseline pl-6 border-l border-stone-200 ml-1.5 mt-0.5 ${isSchoolLast ? 'mb-6 pb-2' : ''}`}>
+          <p className="text-[13px] text-stone-700 font-semibold">{edu.school}</p>
+          {edu.location && <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider">{edu.location}</p>}
+        </div>
+      );
+
+      if (hasDescription) {
+        mainElements.push(
+          <p key={`edu-${index}-desc`} className="text-[13.5px] text-stone-600 leading-relaxed pl-6 border-l border-stone-200 ml-1.5 mt-1 mb-6 pb-2 whitespace-pre-wrap">
+            {edu.description}
+          </p>
+        );
+      }
     });
   }
 
   // 5. SKILLS
   if (validSkills.length > 0) {
     mainElements.push(
-      <h2 key="skills-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2 shrink-0">
+      <h2 key="skills-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2">
         <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
         Core Expertise
       </h2>
     );
     mainElements.push(
-      <div key="skills-grid" className="grid grid-cols-2 gap-x-8 gap-y-3 pl-4.5 mb-8 shrink-0">
+      <div key="skills-grid" className="grid grid-cols-2 gap-x-8 gap-y-3 pl-4.5 mb-8">
         {validSkills.map((skill, index) => {
           const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
           const level = typeof skill === 'string' ? 3 : (skill.level || 3);
@@ -170,56 +196,71 @@ export default function HeliosZenith({
   // 6. PROJECTS
   if (data.projects && data.projects.length > 0) {
     mainElements.push(
-      <h2 key="projects-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2 shrink-0">
+      <h2 key="projects-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2">
         <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
         Featured Projects
       </h2>
     );
     data.projects.forEach((proj, index) => {
+      const hasDescription = !!proj.description;
+
       mainElements.push(
-        <div key={`proj-${index}`} className="flex flex-col gap-1 relative pl-6 border-l border-stone-200 ml-1.5 mb-6 shrink-0">
+        <div key={`proj-${index}-header`} className={`flex justify-between items-baseline gap-4 relative pl-6 border-l border-stone-200 ml-1.5 pt-1 ${!hasDescription ? 'mb-6 pb-2' : ''}`}>
           <div className="absolute w-2 h-2 rounded-full bg-amber-500 -left-[4.5px] top-[7px] ring-4 ring-stone-50" />
-          <div className="flex justify-between items-baseline gap-4">
-            <h3 className="text-[15px] font-bold text-stone-900 tracking-tight">{proj.title}</h3>
-            {proj.date && <span className="text-[10px] font-extrabold text-stone-600 bg-stone-200/60 border border-stone-300/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">{proj.date}</span>}
-          </div>
-          {proj.description && (
-            <p className="text-[13.5px] text-stone-600 leading-relaxed mt-1 whitespace-pre-wrap">{proj.description}</p>
-          )}
+          <h3 className="text-[15px] font-bold text-stone-900 tracking-tight">{proj.title}</h3>
+          {proj.date && <span className="text-[10px] font-extrabold text-stone-600 bg-stone-200/60 border border-stone-300/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">{proj.date}</span>}
         </div>
       );
+
+      if (hasDescription) {
+        mainElements.push(
+          <p key={`proj-${index}-desc`} className="text-[13.5px] text-stone-600 leading-relaxed pl-6 border-l border-stone-200 ml-1.5 mt-1 mb-6 pb-2 whitespace-pre-wrap">
+            {proj.description}
+          </p>
+        );
+      }
     });
   }
 
   // 7. CERTIFICATIONS
   if (validCertificates && validCertificates.length > 0) {
     mainElements.push(
-      <h2 key="certs-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2 shrink-0">
+      <h2 key="certs-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2">
         <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
         Certifications
       </h2>
     );
     validCertificates.forEach((cert, index) => {
+      const hasDescription = !!cert.description;
+
       mainElements.push(
-        <div key={`cert-${index}`} className="flex flex-col gap-0.5 relative pl-6 border-l border-stone-200 ml-1.5 mb-6 shrink-0">
+        <div key={`cert-${index}-header`} className="flex justify-between items-baseline gap-4 relative pl-6 border-l border-stone-200 ml-1.5 pt-1">
           <div className="absolute w-2 h-2 rounded-full bg-amber-500 -left-[4.5px] top-[7px] ring-4 ring-stone-50" />
-          <div className="flex justify-between items-baseline gap-4">
-            <h3 className="text-[14px] font-bold text-stone-900 tracking-tight">{cert.title}</h3>
-            {cert.date && <span className="text-[10px] font-extrabold text-stone-600 bg-stone-200/60 border border-stone-300/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">{cert.date}</span>}
-          </div>
-          <p className="text-[12.5px] text-amber-600 font-semibold">{cert.issuer}</p>
-          {cert.description && (
-            <p className="text-[13.5px] text-stone-600 leading-relaxed mt-1 whitespace-pre-wrap">{cert.description}</p>
-          )}
+          <h3 className="text-[14px] font-bold text-stone-900 tracking-tight">{cert.title}</h3>
+          {cert.date && <span className="text-[10px] font-extrabold text-stone-600 bg-stone-200/60 border border-stone-300/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">{cert.date}</span>}
         </div>
       );
+
+      mainElements.push(
+        <p key={`cert-${index}-issuer`} className={`text-[12.5px] text-amber-600 font-semibold pl-6 border-l border-stone-200 ml-1.5 mt-0.5 ${!hasDescription ? 'mb-6 pb-2' : ''}`}>
+          {cert.issuer}
+        </p>
+      );
+
+      if (hasDescription) {
+        mainElements.push(
+          <p key={`cert-${index}-desc`} className="text-[13.5px] text-stone-600 leading-relaxed pl-6 border-l border-stone-200 ml-1.5 mt-1 mb-6 pb-2 whitespace-pre-wrap">
+            {cert.description}
+          </p>
+        );
+      }
     });
   }
 
-  // 8. LANGUAGES & HOBBIES (Dual Column)
+  // 8. LANGUAGES & HOBBIES (Dual Column Block)
   if (validLanguages.length > 0 || (validHobbies && validHobbies.length > 0)) {
     mainElements.push(
-      <div key="lang-hobbies-block" className="flex flex-col sm:flex-row gap-8 pb-2 mb-8 mt-2 shrink-0">
+      <div key="lang-hobbies-block" className="flex flex-col sm:flex-row gap-8 pb-2 mb-8 mt-2">
         {validLanguages.length > 0 && (
           <div className="flex-1 flex flex-col gap-3">
             <h2 className="font-serif text-base font-bold text-stone-900 uppercase tracking-wider flex items-center gap-2.5">
@@ -259,37 +300,48 @@ export default function HeliosZenith({
     );
   }
 
-  // 9. REFERENCES
+  // 9. REFERENCES (Flattened down to lines; Grid removed to prevent column pagination mismatch)
   if (validReferences && validReferences.length > 0) {
     mainElements.push(
-      <h2 key="refs-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2 shrink-0">
+      <h2 key="refs-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2">
         <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
         References
       </h2>
     );
-    mainElements.push(
-      <div key="refs-grid" className="grid grid-cols-2 gap-6 pl-1.5 relative mb-8 shrink-0">
-        {validReferences.map((ref, index) => (
-          <div key={`ref-${index}`} className="flex flex-col gap-0.5 relative pl-6 border-l border-stone-200">
-            <div className="absolute w-2 h-2 rounded-full bg-amber-500 -left-[4.5px] top-[7px] ring-4 ring-stone-50" />
-            <h3 className="text-[14px] font-bold text-stone-900 tracking-tight">{ref.name}</h3>
-            {(ref.role || ref.company) && (
-              <p className="text-[12.5px] font-semibold text-amber-600">
-                {ref.role}{ref.role && ref.company ? `, ${ref.company}` : ref.company}
-              </p>
-            )}
-            {ref.contact && <p className="text-[12.5px] text-stone-500 mt-1 font-mono tracking-tight">{ref.contact}</p>}
-          </div>
-        ))}
-      </div>
-    );
+    validReferences.forEach((ref, index) => {
+      const hasRole = ref.role || ref.company;
+      const hasContact = !!ref.contact;
+
+      mainElements.push(
+        <div key={`ref-${index}-name`} className={`relative pl-6 border-l border-stone-200 ml-1.5 pt-1 ${(!hasRole && !hasContact) ? 'mb-6 pb-2' : ''}`}>
+          <div className="absolute w-2 h-2 rounded-full bg-amber-500 -left-[4.5px] top-[7px] ring-4 ring-stone-50" />
+          <h3 className="text-[14px] font-bold text-stone-900 tracking-tight">{ref.name}</h3>
+        </div>
+      );
+
+      if (hasRole) {
+        mainElements.push(
+          <p key={`ref-${index}-role`} className={`text-[12.5px] font-semibold text-amber-600 pl-6 border-l border-stone-200 ml-1.5 mt-0.5 ${!hasContact ? 'mb-6 pb-2' : ''}`}>
+            {ref.role}{ref.role && ref.company ? `, ${ref.company}` : ref.company}
+          </p>
+        );
+      }
+
+      if (hasContact) {
+        mainElements.push(
+          <p key={`ref-${index}-contact`} className="text-[12.5px] text-stone-500 mt-1 font-mono tracking-tight pl-6 border-l border-stone-200 ml-1.5 mb-6 pb-2">
+            {ref.contact}
+          </p>
+        );
+      }
+    });
   }
 
   return (
     <div id="resume-raw-content" className="w-full h-full flex flex-col font-sans bg-stone-50 text-stone-800 relative">
       
       {/* TOP HEADER SIDEBAR */}
-      <aside className="w-full shrink-0 bg-stone-50">
+      <aside className="w-full bg-stone-50">
         <div className="w-full bg-stone-950 text-stone-300 px-12 py-10 flex flex-col md:flex-row gap-10 md:items-center border-b-[4px] border-amber-500 shadow-2xl relative z-10 selection:bg-amber-500/30">
           
           {info.photo && (
