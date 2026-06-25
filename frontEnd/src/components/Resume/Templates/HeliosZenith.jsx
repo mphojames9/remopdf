@@ -260,7 +260,7 @@ export default function HeliosZenith({
   // 8. LANGUAGES & HOBBIES (Dual Column Block)
   if (validLanguages.length > 0 || (validHobbies && validHobbies.length > 0)) {
     mainElements.push(
-      <div key="lang-hobbies-block" className="flex flex-col sm:flex-row gap-8 pb-2 mb-8 mt-2">
+      <div key="lang-hobbies-block" className="flex flex-row gap-8 pb-2 mb-8 mt-2">
         {validLanguages.length > 0 && (
           <div className="flex-1 flex flex-col gap-3">
             <h2 className="font-serif text-base font-bold text-stone-900 uppercase tracking-wider flex items-center gap-2.5">
@@ -300,7 +300,7 @@ export default function HeliosZenith({
     );
   }
 
-  // 9. REFERENCES (Flattened down to lines; Grid removed to prevent column pagination mismatch)
+  // 9. REFERENCES
   if (validReferences && validReferences.length > 0) {
     mainElements.push(
       <h2 key="refs-heading" className="font-serif text-lg font-bold text-stone-900 uppercase tracking-wider flex items-center gap-3 mb-5 mt-2">
@@ -338,11 +338,11 @@ export default function HeliosZenith({
   }
 
   return (
-    <div id="resume-raw-content" className="w-full h-full flex flex-col font-sans bg-stone-50 text-stone-800 relative">
+    <div id="resume-raw-content" className="w-full min-w-[800px] h-full flex flex-col font-sans bg-stone-50 text-stone-800 relative">
       
       {/* TOP HEADER SIDEBAR */}
       <aside className="w-full bg-stone-50">
-        <div className="w-full bg-stone-950 text-stone-300 px-12 py-10 flex flex-col md:flex-row gap-10 md:items-center border-b-[4px] border-amber-500 shadow-2xl relative z-10 selection:bg-amber-500/30">
+        <div className="w-full bg-stone-950 text-stone-300 px-12 py-10 flex flex-row gap-10 items-center border-b-[4px] border-amber-500 shadow-2xl relative z-10 selection:bg-amber-500/30">
           
           {info.photo && (
             <div className="shrink-0 flex justify-center">

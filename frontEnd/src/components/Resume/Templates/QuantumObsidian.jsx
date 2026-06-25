@@ -260,7 +260,7 @@ export default function QuantumObsidian({
   // 8. LANGUAGES & HOBBIES (Dual Column Block)
   if (validLanguages.length > 0 || (validHobbies && validHobbies.length > 0)) {
     mainElements.push(
-      <div key="lang-hobbies-block" className="flex flex-col sm:flex-row gap-10 pb-2 mb-8 mt-2">
+      <div key="lang-hobbies-block" className="flex flex-row gap-10 pb-2 mb-8 mt-2">
         {validLanguages.length > 0 && (
           <div className="flex-1 flex flex-col gap-4">
             <h2 className="text-base font-black text-zinc-900 uppercase tracking-[0.15em] flex items-center gap-2.5">
@@ -338,11 +338,11 @@ export default function QuantumObsidian({
   }
 
   return (
-    <div id="resume-raw-content" className="w-full h-full flex flex-col font-sans bg-white text-slate-800 relative">
+    <div id="resume-raw-content" className="w-full min-w-[800px] h-full flex flex-col font-sans bg-white text-slate-800 relative">
       
       {/* TOP HEADER SIDEBAR - OBSIDIAN THEME */}
       <aside className="w-full bg-white">
-        <div className="w-full bg-zinc-950 text-slate-300 px-12 py-10 flex flex-col md:flex-row gap-10 md:items-center border-b-[4px] border-cyan-500 shadow-xl relative z-10 selection:bg-cyan-500/30 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-zinc-900 to-zinc-950">
+        <div className="w-full bg-zinc-950 text-slate-300 px-12 py-10 flex flex-row gap-10 items-center border-b-[4px] border-cyan-500 shadow-xl relative z-10 selection:bg-cyan-500/30 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-zinc-900 to-zinc-950">
           
           {info.photo && (
             <div className="shrink-0 flex justify-center">

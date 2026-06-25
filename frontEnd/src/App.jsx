@@ -8,13 +8,14 @@ import PrivacyPolicy from './pages/Privacy';
 import Contact from './pages/Contact';
 import AboutUs from './pages/AboutUs';
 import Terms from './pages/TermsOfUse';
+import Workspace from './pages/Workspace';
 import PremiumFooter from './components/PremiumFooter';
 import ResumeHeader from './components/ResumeWelcomeHeader'
 import WhyChooseUs from './components/WhyChooseUs'
 
 // High-Performance Lazy Loading for Viewports
 const Home = React.lazy(() => import('./pages/Home'));
-const Editor = React.lazy(() => import('./pages/workspace'));
+const Editor = React.lazy(() => import('./pages/Workspace'));
 
 /* ==========================================================================
    PREMIUM SKELETON LOADER (Prevents flashing or blank screens during loads)
@@ -121,7 +122,7 @@ class GlobalErrorBoundary extends Component {
               {this.state.isReloading ? (
                 <>
                   <i className="fa-solid fa-circle-notch animate-spin text-lg text-rose-400"></i>
-                  <span>Refreshing workspace...</span>
+                  <span>Refreshing Workspace...</span>
                 </>
               ) : (
                 <>
@@ -152,7 +153,7 @@ const MainLayout = () => {
   const location = useLocation();
   
   // Routes where the footer should NOT be displayed
-  const hideFooterRoutes = ['/ResumeBuilder', '/workspace'];
+  const hideFooterRoutes = ['/ResumeBuilder', '/Workspace'];
   const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
 
   return (
@@ -187,7 +188,7 @@ const MainLayout = () => {
             />
 
             {/* Advanced Workspace Editor Route */}
-            <Route path="/workspace" element={<Editor />} />
+            <Route path="/Workspace" element={<Workspace />} />
             <Route path="/ResumeBuilder" element={<ResumeBuilder />} />
             <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
             <Route path="/Contact" element={<Contact />} />

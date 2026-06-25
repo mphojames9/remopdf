@@ -15,13 +15,13 @@ export default function GraphitePro({
   validReferences
 }) {
   return (
-    <div id="resume-raw-content" className="w-full min-h-full flex flex-col sm:flex-row print:flex-row bg-[#030712] text-[#E2E8F0] relative font-sans overflow-hidden">
+    <div id="resume-raw-content" className="w-full min-w-[800px] min-h-full flex flex-row print:flex-row bg-[#030712] text-[#E2E8F0] relative font-sans overflow-hidden">
       
       {/* 2030 Futuristic Cyber-style Grid Overlay */}
       <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:32px_32px]"></div>
       
       {/* LEFT SIDEBAR */}
-      <aside className="w-full sm:w-[35%] print:w-[35%] bg-white/[0.02] backdrop-blur-md pt-12 pb-8 px-6 sm:px-10 flex flex-col shrink-0 gap-6 border-b sm:border-b-0 sm:border-r border-white/10 relative z-10">
+      <aside className="w-[35%] print:w-[35%] bg-white/[0.02] backdrop-blur-md pt-12 pb-8 px-10 flex flex-col shrink-0 gap-6 border-r border-white/10 relative z-10">
         
         {/* Profile Image */}
         {info.photo && (
@@ -148,7 +148,7 @@ export default function GraphitePro({
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="w-full sm:w-[65%] print:w-[65%] pt-12 pb-20 px-6 sm:px-12 flex flex-col shrink-0 relative z-10">
+      <main className="w-[65%] print:w-[65%] pt-12 pb-20 px-12 flex flex-col shrink-0 relative z-10">
         
         {/* EXPERIENCE SECTION */}
         {validExperience.length > 0 && (
@@ -159,8 +159,8 @@ export default function GraphitePro({
         <div className="flex flex-col gap-6 mb-8">
           {validExperience.map((exp, index) => (
             <div key={`exp-${index}`} className="relative group">
-              <div className="absolute -left-4 sm:-left-6 top-1.5 w-1.5 h-1.5 bg-[#10B981] rounded-full shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:scale-150 transition-transform"></div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline mb-1 gap-1 sm:gap-4">
+              <div className="absolute -left-6 top-1.5 w-1.5 h-1.5 bg-[#10B981] rounded-full shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:scale-150 transition-transform"></div>
+              <div className="flex flex-row justify-between items-baseline mb-1 gap-4">
                 <h3 className="text-[14px] font-bold text-white">{exp.role}</h3>
                 <span className="text-[11px] font-mono text-[#8B5CF6] whitespace-nowrap">
                   {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
@@ -196,7 +196,7 @@ export default function GraphitePro({
           <div className="flex flex-col gap-6 mb-8">
             {data.projects.map((proj, index) => (
               <div key={`proj-${index}`} className="relative group p-4 rounded-lg bg-white/[0.02] border border-white/5 hover:border-[#8B5CF6]/30 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline mb-2 gap-1 sm:gap-4">
+                <div className="flex flex-row justify-between items-baseline mb-2 gap-4">
                   <h3 className="text-[14px] font-bold text-white">{proj.title}</h3>
                   <span className="text-[11px] font-mono text-[#8B5CF6] whitespace-nowrap">{proj.date || 'Project'}</span>
                 </div>
@@ -217,8 +217,8 @@ export default function GraphitePro({
         <div className="flex flex-col gap-6 mb-8">
           {validEducation.map((edu, index) => (
             <div key={`edu-${index}`} className="relative group">
-               <div className="absolute -left-4 sm:-left-6 top-1.5 w-1.5 h-1.5 bg-transparent border border-[#8B5CF6] rounded-full group-hover:bg-[#8B5CF6] transition-colors"></div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline mb-1 gap-1 sm:gap-4">
+               <div className="absolute -left-6 top-1.5 w-1.5 h-1.5 bg-transparent border border-[#8B5CF6] rounded-full group-hover:bg-[#8B5CF6] transition-colors"></div>
+              <div className="flex flex-row justify-between items-baseline mb-1 gap-4">
                 <h3 className="text-[14px] font-bold text-white">{edu.degree}</h3>
                 <span className="text-[11px] font-mono text-[#8B5CF6] whitespace-nowrap">
                   {formatDates(edu.startDate, edu.endDate, edu.isCurrent)}
@@ -238,7 +238,7 @@ export default function GraphitePro({
             <span className="text-[#10B981]">04.</span> Skills
           </h2>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8">
           {validSkills.map((skill, index) => {
             const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
             const level = typeof skill === 'string' ? 3 : (skill.level || 3);
@@ -275,7 +275,7 @@ export default function GraphitePro({
         <div className="flex flex-col gap-5 mb-8">
           {validCertificates && validCertificates.map((cert, index) => (
             <div key={`cert-${index}`} className="flex flex-col">
-               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1">
+               <div className="flex flex-row justify-between items-baseline gap-1">
                  <h3 className="text-[13px] font-bold text-white">{cert.title}</h3>
                  <span className="text-[11px] font-mono text-[#8B5CF6] whitespace-nowrap">{cert.date || 'Certification'}</span>
                </div>
@@ -295,7 +295,7 @@ export default function GraphitePro({
             <span className="text-[#10B981]">06.</span> References
           </h2>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-2 gap-6 mb-8">
           {validReferences && validReferences.map((ref, index) => (
             <div key={`ref-${index}`} className="flex flex-col p-4 bg-white/[0.02] border border-white/5 rounded-lg">
                <h3 className="text-[13px] font-bold text-white">{ref.name}</h3>

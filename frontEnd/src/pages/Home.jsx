@@ -130,7 +130,7 @@ const [isCompressDragActive, setIsCompressDragActive] = useState(false);
 const documentTools = [
     {
       name: "Edit PDF",
-      action: () => navigate('/workspace') // <-- Updated
+      action: () => navigate('/Workspace') // <-- Updated
     },
   {
     name: "Merge PDFs",
@@ -1009,7 +1009,7 @@ useEffect(() => {
 </article>
 
 <article
-onClick={() => navigate('/workspace')} 
+onClick={() => navigate('/Workspace')} 
   className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)] hover:-translate-y-2 transition-all duration-500 cursor-default flex flex-col min-h-[280px]"
 >
   {/* Premium Ambient Background */}

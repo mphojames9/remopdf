@@ -90,7 +90,7 @@ export default function Navbar() {
   const handleOpenTool = (toolId) => {
     console.log(toolId)
     if (toolId === 'edit' || toolId === 'sign') {
-      navigate('/workspace')
+      navigate('/Workspace')
     }
     if (location.pathname !== '/') {
       navigate('/');
@@ -179,7 +179,7 @@ export default function Navbar() {
             </Link>
 
             {/* Added Workspace Editor Link */}
-            <Link to="/workspace" className="transition-colors duration-200 hover:text-slate-900 relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-px after:bg-red-600 after:transition-all hover:after:w-full">
+            <Link to="/Workspace" className="transition-colors duration-200 hover:text-slate-900 relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-px after:bg-red-600 after:transition-all hover:after:w-full">
               Editor
             </Link>
 
@@ -294,7 +294,7 @@ export default function Navbar() {
 
           {/* Added Workspace Editor Link for Mobile Layout */}
           <Link 
-            to="/workspace" 
+            to="/Workspace" 
             onClick={closeMobileMenu} 
             className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 text-slate-800 font-bold hover:border-red-200 hover:shadow-md transition-all shadow-sm"
           >
