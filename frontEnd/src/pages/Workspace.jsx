@@ -72,7 +72,6 @@ export default function Workspace() {
                         <div className="absolute inset-0 h-full w-full bg-gray-800 transform scale-x-0 origin-left transition-transform duration-300 ease-out group-hover:scale-x-100"></div>
                     </button>
                 </div>
-
             </div>
         </div>
     );
