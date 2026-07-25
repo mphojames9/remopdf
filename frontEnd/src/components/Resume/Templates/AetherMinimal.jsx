@@ -77,213 +77,16 @@ export default function AetherMinimal({
     return [...acc, <span key={`sep-${idx}`} className="mx-2 text-gray-300">•</span>, curr];
   }, []);
 
-  // Section Heading Builder
+  // Section Heading Builder (Renders as direct DOM sibling)
   const renderSectionHeader = (title) => (
-    <div className="w-full mt-5 mb-3 border-b border-gray-200 pb-1.5 shrink-0">
+    <div className="w-full mt-5 mb-3 border-b border-gray-200 pb-1.5 shrink-0 break-inside-avoid">
       <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-gray-500 leading-none">
         {title}
       </h3>
     </div>
   );
 
-  const mainElements = [];
-
-  // 1. SKILLS SECTION
-  if (validSkills && validSkills.length > 0) {
-    const isFlatStringList = validSkills.every(s => typeof s === 'string');
-    mainElements.push(
-      <div key="section-skills" className="w-full mb-4 shrink-0">
-        {renderSectionHeader("Expertise")}
-        {isFlatStringList ? (
-          <div className="text-[12px] text-gray-700 leading-relaxed font-medium">
-            {validSkills.join('  •  ')}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-x-6 gap-y-1.5">
-            {validSkills.map((skill, idx) => {
-              const name = skill.name || skill.category || skill.skill || '';
-              const keywords = skill.keywords ? skill.keywords.join(', ') : skill.details || '';
-              
-              return (
-                <div key={`skill-${idx}`} className="text-[12px] text-gray-700 leading-relaxed">
-                  {name && <span className="font-semibold text-gray-900">{name}{keywords ? ': ' : ''}</span>}
-                  {keywords && <span className="text-gray-600">{keywords}</span>}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // 2. EXPERIENCE SECTION
-  if (validExperience && validExperience.length > 0) {
-    mainElements.push(
-      <div key="section-experience" className="w-full mb-4 shrink-0">
-        {renderSectionHeader("Experience")}
-        {validExperience.map((exp, idx) => (
-          <div key={`exp-${idx}`} className="w-full mb-4 break-inside-avoid">
-            <div className="flex justify-between items-baseline mb-0.5">
-              <h4 className="text-[13px] font-semibold text-gray-900">{exp.role}</h4>
-              <span className="text-[11px] text-gray-500 font-medium tracking-wide shrink-0">
-                {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
-              </span>
-            </div>
-            <div className="flex justify-between items-baseline mb-2">
-              <span className="text-[12px] text-gray-600 font-medium">{exp.company}</span>
-              {exp.location && <span className="text-[11px] text-gray-500 shrink-0">{exp.location}</span>}
-            </div>
-            
-            {exp.achievements && exp.achievements.length > 0 ? (
-              <ul className="list-none ml-0 text-[11.5px] text-gray-700 space-y-1.5 leading-relaxed">
-                {exp.achievements.map((ach, i) => (
-                  <li key={i} className="pl-3 relative before:content-[''] before:absolute before:left-0 before:top-[0.45em] before:w-[3px] before:h-[3px] before:bg-gray-400 before:rounded-full">
-                    {ach}
-                  </li>
-                ))}
-              </ul>
-            ) : exp.description ? (
-              <div className="text-[11.5px] text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {exp.description}
-              </div>
-            ) : null}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // 3. EDUCATION SECTION
-  if (validEducation && validEducation.length > 0) {
-    mainElements.push(
-      <div key="section-education" className="w-full mb-4 shrink-0">
-        {renderSectionHeader("Education")}
-        {validEducation.map((edu, idx) => (
-          <div key={`edu-${idx}`} className="w-full mb-3 break-inside-avoid">
-            <div className="flex justify-between items-baseline mb-0.5">
-              <h4 className="text-[13px] font-semibold text-gray-900">
-                {edu.degree || edu.studyType}{edu.area && ` in ${edu.area}`}
-              </h4>
-              <span className="text-[11px] text-gray-500 font-medium tracking-wide shrink-0">
-                {formatDates(edu.startDate, edu.endDate, edu.isCurrent)}
-              </span>
-            </div>
-            <div className="flex justify-between items-baseline">
-              <span className="text-[12px] text-gray-600 font-medium">{edu.school || edu.institution}</span>
-              {edu.location && <span className="text-[11px] text-gray-500 shrink-0">{edu.location}</span>}
-            </div>
-            {edu.description && (
-              <div className="text-[11.5px] text-gray-700 mt-1.5 leading-relaxed whitespace-pre-wrap">
-                {edu.description}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // 4. PROJECTS SECTION
   const validProjects = data?.projects || [];
-  if (validProjects.length > 0) {
-    mainElements.push(
-      <div key="section-projects" className="w-full mb-4 shrink-0">
-        {renderSectionHeader("Projects")}
-        {validProjects.map((proj, idx) => (
-          <div key={`proj-${idx}`} className="w-full mb-3 break-inside-avoid">
-            <div className="flex justify-between items-baseline mb-1">
-              <h4 className="text-[13px] font-semibold text-gray-900">{proj.title || proj.name}</h4>
-              {proj.date && <span className="text-[11px] text-gray-500 font-medium tracking-wide shrink-0">{proj.date}</span>}
-            </div>
-            {proj.description && (
-              <div className="text-[11.5px] text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {proj.description}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // 5. CERTIFICATIONS SECTION
-  if (validCertificates && validCertificates.length > 0) {
-    mainElements.push(
-      <div key="section-certifications" className="w-full mb-4 shrink-0">
-        {renderSectionHeader("Certifications")}
-        <ul className="list-none ml-0 text-[11.5px] text-gray-700 space-y-2.5 leading-relaxed">
-          {validCertificates.map((cert, idx) => (
-            <li key={`cert-${idx}`} className="pl-3 relative before:content-[''] before:absolute before:left-0 before:top-[0.45em] before:w-[3px] before:h-[3px] before:bg-gray-400 before:rounded-full">
-              <div className="flex justify-between items-baseline">
-                <div>
-                  <span className="font-semibold text-gray-900">{cert.title || cert.name}</span>
-                  {cert.issuer && <span className="text-gray-600"> – {cert.issuer}</span>}
-                </div>
-                {cert.date && <span className="shrink-0 ml-2 text-[11px] text-gray-500 tracking-wide font-medium">{cert.date}</span>}
-              </div>
-              {cert.description && (
-                <div className="mt-1 whitespace-pre-wrap text-gray-600 leading-relaxed">
-                  {cert.description}
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-
-  // 6. LANGUAGES SECTION
-  if (validLanguages && validLanguages.length > 0) {
-    const langStr = validLanguages.map(l => {
-      const name = l.name || l.language;
-      const prof = l.proficiency || l.level;
-      return `${name}${prof ? ` (${prof})` : ''}`;
-    }).join('  •  ');
-
-    mainElements.push(
-      <div key="section-languages" className="w-full mb-4 shrink-0">
-        {renderSectionHeader("Languages")}
-        <div className="text-[11.5px] text-gray-700 leading-relaxed font-medium">
-          {langStr}
-        </div>
-      </div>
-    );
-  }
-
-  // 7. HOBBIES SECTION
-  if (validHobbies && validHobbies.length > 0) {
-    const hobbiesStr = validHobbies.map(h => typeof h === 'string' ? h : h.name).join('  •  ');
-    mainElements.push(
-      <div key="section-hobbies" className="w-full mb-4 shrink-0">
-        {renderSectionHeader("Hobbies")}
-        <div className="text-[11.5px] text-gray-700 leading-relaxed font-medium">
-          {hobbiesStr}
-        </div>
-      </div>
-    );
-  }
-
-  // 8. REFERENCES SECTION
-  if (validReferences && validReferences.length > 0) {
-    mainElements.push(
-      <div key="section-references" className="w-full mb-4 shrink-0">
-        {renderSectionHeader("References")}
-        <div className="grid grid-cols-2 gap-4">
-          {validReferences.map((ref, idx) => (
-            <div key={`ref-${idx}`} className="text-[11.5px] text-gray-700 leading-relaxed break-inside-avoid">
-              <div className="font-semibold text-gray-900">{ref.name}</div>
-              {(ref.role || ref.company) && (
-                <div className="text-gray-600">{ref.role}{ref.role && ref.company ? `, ${ref.company}` : ref.company}</div>
-              )}
-              {ref.contact && <div className="text-gray-500 mt-0.5">{ref.contact}</div>}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div id="resume-raw-content" className="w-full min-h-full bg-white pt-14 pb-14 px-12 relative flex flex-col font-sans-minimal">
@@ -295,7 +98,7 @@ export default function AetherMinimal({
         .font-sans-minimal { font-family: 'Inter', sans-serif; }
       `}} />
 
-      {/* 1. HEADER (Strictly isolated for the paginator) */}
+      {/* 1. HEADER */}
       <header className="shrink-0 flex flex-col w-full mb-6 text-left">
         <h1 className="text-[36px] font-bold tracking-tight text-gray-900 leading-none mb-1">
           {firstName} {lastName}
@@ -312,7 +115,7 @@ export default function AetherMinimal({
         )}
       </header>
 
-      {/* 2. SUMMARY (Strictly given id="summary-section" for the paginator) */}
+      {/* 2. SUMMARY */}
       {validSummary && (
         <div id="summary-section" className="w-full mb-2 shrink-0">
           <p className="text-[12px] text-gray-700 leading-[1.7] whitespace-pre-wrap">
@@ -321,11 +124,158 @@ export default function AetherMinimal({
         </div>
       )}
 
-      {/* 3. PAGINATOR DOM QUEUES */}
+      {/* 3. PAGINATOR DOM QUEUES - UNWRAPPED & FLATTENED */}
       <div className="w-full flex flex-col flex-1 mt-2">
         <aside className="hidden"></aside>
+        
         <main className="w-full flex flex-col">
-          {mainElements}
+
+          {/* 1. SKILLS SECTION */}
+          {validSkills && validSkills.length > 0 && renderSectionHeader("Expertise")}
+          {validSkills && validSkills.length > 0 && (
+            validSkills.every(s => typeof s === 'string') ? (
+              <div className="w-full mb-4 text-[12px] text-gray-700 leading-relaxed font-medium break-inside-avoid shrink-0">
+                {validSkills.join('  •  ')}
+              </div>
+            ) : (
+              <div className="w-full flex flex-wrap gap-x-6 gap-y-1.5 mb-4 break-inside-avoid shrink-0">
+                {validSkills.map((skill, idx) => {
+                  const name = skill.name || skill.category || skill.skill || '';
+                  const keywords = skill.keywords ? skill.keywords.join(', ') : skill.details || '';
+                  
+                  return (
+                    <div key={`skill-${idx}`} className="text-[12px] text-gray-700 leading-relaxed">
+                      {name && <span className="font-semibold text-gray-900">{name}{keywords ? ': ' : ''}</span>}
+                      {keywords && <span className="text-gray-600">{keywords}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+
+          {/* 2. EXPERIENCE SECTION */}
+          {validExperience && validExperience.length > 0 && renderSectionHeader("Experience")}
+          {validExperience && validExperience.map((exp, idx) => (
+            <React.Fragment key={`exp-${idx}`}>
+              <div className="flex justify-between items-baseline mb-0.5 w-full break-inside-avoid shrink-0">
+                <h4 className="text-[13px] font-semibold text-gray-900">{exp.role}</h4>
+                <span className="text-[11px] text-gray-500 font-medium tracking-wide shrink-0">
+                  {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
+                </span>
+              </div>
+              <div className={`flex justify-between items-baseline w-full break-inside-avoid shrink-0 ${(exp.achievements?.length > 0 || exp.description) ? 'mb-2' : 'mb-4'}`}>
+                <span className="text-[12px] text-gray-600 font-medium">{exp.company}</span>
+                {exp.location && <span className="text-[11px] text-gray-500 shrink-0">{exp.location}</span>}
+              </div>
+              
+              {exp.achievements && exp.achievements.length > 0 ? (
+                exp.achievements.map((ach, i) => (
+                  <li key={`ach-${i}`} className={`list-none pl-3 relative before:content-[''] before:absolute before:left-0 before:top-[0.45em] before:w-[3px] before:h-[3px] before:bg-gray-400 before:rounded-full text-[11.5px] text-gray-700 leading-relaxed w-full break-inside-avoid shrink-0 ${i === exp.achievements.length - 1 ? 'mb-4' : 'mb-1.5'}`}>
+                    {ach}
+                  </li>
+                ))
+              ) : exp.description ? (
+                <div className="text-[11.5px] text-gray-700 leading-relaxed whitespace-pre-wrap w-full mb-4 break-inside-avoid shrink-0">
+                  {exp.description}
+                </div>
+              ) : null}
+            </React.Fragment>
+          ))}
+
+          {/* 3. EDUCATION SECTION */}
+          {validEducation && validEducation.length > 0 && renderSectionHeader("Education")}
+          {validEducation && validEducation.map((edu, idx) => (
+            <React.Fragment key={`edu-${idx}`}>
+              <div className="flex justify-between items-baseline mb-0.5 w-full break-inside-avoid shrink-0">
+                <h4 className="text-[13px] font-semibold text-gray-900">
+                  {edu.degree || edu.studyType}{edu.area && ` in ${edu.area}`}
+                </h4>
+                <span className="text-[11px] text-gray-500 font-medium tracking-wide shrink-0">
+                  {formatDates(edu.startDate, edu.endDate, edu.isCurrent)}
+                </span>
+              </div>
+              <div className={`flex justify-between items-baseline w-full break-inside-avoid shrink-0 ${!edu.description ? 'mb-3' : 'mb-1.5'}`}>
+                <span className="text-[12px] text-gray-600 font-medium">{edu.school || edu.institution}</span>
+                {edu.location && <span className="text-[11px] text-gray-500 shrink-0">{edu.location}</span>}
+              </div>
+              {edu.description && (
+                <div className="text-[11.5px] text-gray-700 leading-relaxed whitespace-pre-wrap w-full mb-3 break-inside-avoid shrink-0">
+                  {edu.description}
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+
+          {/* 4. PROJECTS SECTION */}
+          {validProjects.length > 0 && renderSectionHeader("Projects")}
+          {validProjects.map((proj, idx) => (
+            <React.Fragment key={`proj-${idx}`}>
+              <div className={`flex justify-between items-baseline w-full break-inside-avoid shrink-0 ${!proj.description ? 'mb-3' : 'mb-1'}`}>
+                <h4 className="text-[13px] font-semibold text-gray-900">{proj.title || proj.name}</h4>
+                {proj.date && <span className="text-[11px] text-gray-500 font-medium tracking-wide shrink-0">{proj.date}</span>}
+              </div>
+              {proj.description && (
+                <div className="text-[11.5px] text-gray-700 leading-relaxed whitespace-pre-wrap w-full mb-3 break-inside-avoid shrink-0">
+                  {proj.description}
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+
+          {/* 5. CERTIFICATIONS SECTION */}
+          {validCertificates && validCertificates.length > 0 && renderSectionHeader("Certifications")}
+          {validCertificates && validCertificates.map((cert, idx) => (
+            <React.Fragment key={`cert-${idx}`}>
+              <div className={`list-none pl-3 relative before:content-[''] before:absolute before:left-0 before:top-[0.45em] before:w-[3px] before:h-[3px] before:bg-gray-400 before:rounded-full text-[11.5px] text-gray-700 leading-relaxed w-full break-inside-avoid shrink-0 ${!cert.description ? (idx === validCertificates.length - 1 ? 'mb-4' : 'mb-2.5') : 'mb-1'}`}>
+                <div className="flex justify-between items-baseline">
+                  <div>
+                    <span className="font-semibold text-gray-900">{cert.title || cert.name}</span>
+                    {cert.issuer && <span className="text-gray-600"> – {cert.issuer}</span>}
+                  </div>
+                  {cert.date && <span className="shrink-0 ml-2 text-[11px] text-gray-500 tracking-wide font-medium">{cert.date}</span>}
+                </div>
+              </div>
+              {cert.description && (
+                <div className={`whitespace-pre-wrap text-[11.5px] text-gray-600 leading-relaxed pl-3 w-full break-inside-avoid shrink-0 ${idx === validCertificates.length - 1 ? 'mb-4' : 'mb-2.5'}`}>
+                  {cert.description}
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+
+          {/* 6. LANGUAGES SECTION */}
+          {validLanguages && validLanguages.length > 0 && renderSectionHeader("Languages")}
+          {validLanguages && validLanguages.length > 0 && (
+            <div className="w-full mb-4 text-[11.5px] text-gray-700 leading-relaxed font-medium break-inside-avoid shrink-0">
+              {validLanguages.map(l => `${l.name || l.language}${l.proficiency || l.level ? ` (${l.proficiency || l.level})` : ''}`).join('  •  ')}
+            </div>
+          )}
+
+          {/* 7. HOBBIES SECTION */}
+          {validHobbies && validHobbies.length > 0 && renderSectionHeader("Hobbies")}
+          {validHobbies && validHobbies.length > 0 && (
+            <div className="w-full mb-4 text-[11.5px] text-gray-700 leading-relaxed font-medium break-inside-avoid shrink-0">
+              {validHobbies.map(h => typeof h === 'string' ? h : h.name).join('  •  ')}
+            </div>
+          )}
+
+          {/* 8. REFERENCES SECTION */}
+          {validReferences && validReferences.length > 0 && renderSectionHeader("References")}
+          {validReferences && validReferences.length > 0 && (
+            <div className="w-full grid grid-cols-2 gap-4 mb-4 break-inside-avoid shrink-0">
+              {validReferences.map((ref, idx) => (
+                <div key={`ref-${idx}`} className="text-[11.5px] text-gray-700 leading-relaxed">
+                  <div className="font-semibold text-gray-900">{ref.name}</div>
+                  {(ref.role || ref.company) && (
+                    <div className="text-gray-600">{ref.role}{ref.role && ref.company ? `, ${ref.company}` : ref.company}</div>
+                  )}
+                  {ref.contact && <div className="text-gray-500 mt-0.5">{ref.contact}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
         </main>
       </div>
 
