@@ -141,21 +141,6 @@ export default function PrestigeIvory({
             </div>
           );
         })}
-        {validSkills.map((skill, index) => (
-          <div key={`skill-${index}`} className="flex flex-col gap-1.5 -mt-2">
-            <div className="flex justify-between text-[13px] font-semibold text-neutral-800">
-              <span>{skill.name}</span>
-            </div>
-            {skill.level && (
-              <div className="w-full bg-neutral-200 h-[3px] rounded-full overflow-hidden">
-                <div 
-                  className="bg-neutral-800 h-full rounded-full" 
-                  style={{ width: `${skill.level === 'Beginner' ? 30 : skill.level === 'Intermediate' ? 60 : skill.level === 'Advanced' ? 85 : 100}%` }}
-                />
-              </div>
-            )}
-          </div>
-        ))}
 
         {/* Languages Heading Node */}
         {validLanguages.length > 0 && (
