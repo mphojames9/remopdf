@@ -75,6 +75,7 @@ export default function BordeauxElite({
             <span className="break-all font-light tracking-wide">{info.secondarySocial.replace(/(^\w+:|^)\/\//, '')}</span>
           </div>
         )}
+        
         {/* Demographics Node */}
         {(info.dob || info.nationality || info.gender || info.drivingLicense) && (
           <h2 className="text-xs font-bold tracking-[0.25em] text-[#D4AF37] uppercase border-b border-[#8B3A46]/50 pb-2 mt-4 font-serif">
@@ -106,20 +107,16 @@ export default function BordeauxElite({
           </div>
         )}
 
-{/* Skills Heading Node */}
+        {/* Skills Heading Node */}
         {validSkills.length > 0 && (
           <h2 className="text-xs font-bold tracking-[0.25em] text-[#D4AF37] uppercase border-b border-[#8B3A46]/50 pb-2 mt-4 font-serif">
             Expertise
           </h2>
         )}
         {validSkills.map((skill, index) => {
-          // Extract the name robustly
           const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
-          
-          // Extract the level, defaulting to 3 (60%) if missing
           const level = typeof skill === 'string' ? 3 : (skill.level || 3);
           
-          // Calculate width to accommodate both 1-5 numerical scale and legacy text strings
           let barWidth = 100;
           if (typeof level === 'number' || !isNaN(Number(level))) {
             barWidth = (Number(level) / 5) * 100;
@@ -136,24 +133,6 @@ export default function BordeauxElite({
                 <div 
                   className="bg-[#D4AF37] h-full rounded-full" 
                   style={{ width: `${barWidth}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-        
-        {validSkills.map((skill, index) => {
-          const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
-          const level = typeof skill === 'object' && skill.level ? skill.level : 'Advanced';
-          return (
-            <div key={`skill-${index}`} className="flex flex-col gap-1.5 -mt-2">
-              <div className="flex justify-between text-[13px] font-medium tracking-wide">
-                <span>{name}</span>
-              </div>
-              <div className="w-full bg-[#1A0C10] h-[2px] rounded-full overflow-hidden">
-                <div 
-                  className="bg-[#D4AF37] h-full rounded-full" 
-                  style={{ width: `${level === 'Beginner' ? 30 : level === 'Intermediate' ? 60 : level === 'Advanced' ? 85 : 100}%` }}
                 />
               </div>
             </div>
@@ -191,62 +170,68 @@ export default function BordeauxElite({
 
       </aside>
 
-      {/* RIGHT MAIN SIDE - FLAT STRUCTURE */}
-      <main className="w-[67%] p-10 flex flex-col gap-6 shrink-0">
+      {/* RIGHT MAIN SIDE - FLATTENED FOR PAGINATION */}
+      <main className="w-[67%] p-10 flex flex-col shrink-0">
         
         {/* Header Node */}
-        <div className="flex flex-col gap-2 pb-6 border-b border-[#E5E0D8] mb-2">
+        <div className="flex flex-col gap-2 pb-6 border-b border-[#E5E0D8] mb-6 w-full break-inside-avoid shrink-0">
           {info.fullName && <h1 className="text-5xl font-light tracking-tight text-[#2A141A] font-serif uppercase">{info.fullName}</h1>}
           {info.jobTitle && <p className="text-[15px] font-medium tracking-[0.2em] text-[#8B3A46] uppercase mt-1">{info.jobTitle}</p>}
         </div>
 
         {/* Summary Node */}
         {validSummary && (
-          <div className="text-[14px] leading-relaxed text-[#4A4A4A] mb-2 font-light text-justify whitespace-pre-wrap">
+          <div className="text-[14px] leading-relaxed text-[#4A4A4A] mb-6 font-light text-justify whitespace-pre-wrap w-full break-inside-avoid shrink-0">
             {validSummary}
           </div>
         )}
 
         {/* Experience Heading Node */}
         {validExperience.length > 0 && (
-          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mt-2 font-serif">
+          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mb-4 font-serif w-full break-inside-avoid shrink-0">
             <svg className="w-5 h-5 text-[#8B3A46]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" /></svg>
             Professional Experience
           </h2>
         )}
 
         {/* Experience Item Nodes */}
-        {validExperience.map((exp, index) => (
-          <div key={`exp-${index}`} className="flex flex-col gap-1.5 -mt-2 mb-3">
-            <div className="flex justify-between items-end border-b border-dashed border-[#E5E0D8] pb-1">
-              <h3 className="text-[16px] font-semibold text-[#2A141A] tracking-wide uppercase">{exp.role}</h3>
-              <span className="text-[12px] font-medium text-[#8B3A46] uppercase tracking-wider shrink-0 ml-2">
-                {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
-              </span>
-            </div>
-            <div className="flex justify-between items-baseline mt-1">
-              <p className="text-[14px] font-medium text-[#4A4A4A]">{exp.company}</p>
-              {exp.location && <p className="text-[11px] font-medium text-[#8B3A46] uppercase">{exp.location}</p>}
-            </div>
-            {exp.description && (
-              <p className="text-[13.5px] text-[#5A5A5A] font-light leading-relaxed mt-1 whitespace-pre-wrap">{exp.description}</p>
-            )}
-            {exp.achievements && exp.achievements.length > 0 && (
-              <ul className="mt-1.5 list-none text-[13.5px] text-[#5A5A5A] space-y-2 leading-relaxed font-light">
-                {exp.achievements.map((ach, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="text-[#D4AF37] mt-1 text-[14px] leading-none">♦</span>
-                    <span>{ach}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
+        {validExperience.map((exp, index) => {
+          const hasDesc = !!exp.description;
+          const hasAch = exp.achievements && exp.achievements.length > 0;
+          
+          return (
+            <React.Fragment key={`exp-${index}`}>
+              <div className="flex justify-between items-end border-b border-dashed border-[#E5E0D8] pb-1 w-full break-inside-avoid shrink-0">
+                <h3 className="text-[16px] font-semibold text-[#2A141A] tracking-wide uppercase">{exp.role}</h3>
+                <span className="text-[12px] font-medium text-[#8B3A46] uppercase tracking-wider shrink-0 ml-2">
+                  {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
+                </span>
+              </div>
+              
+              <div className={`flex justify-between items-baseline mt-2 w-full break-inside-avoid shrink-0 ${(!hasDesc && !hasAch) ? 'mb-6' : ''}`}>
+                <p className="text-[14px] font-medium text-[#4A4A4A]">{exp.company}</p>
+                {exp.location && <p className="text-[11px] font-medium text-[#8B3A46] uppercase">{exp.location}</p>}
+              </div>
+              
+              {hasDesc && (
+                <p className={`text-[13.5px] text-[#5A5A5A] font-light leading-relaxed mt-1.5 whitespace-pre-wrap w-full break-inside-avoid shrink-0 ${!hasAch ? 'mb-6' : ''}`}>
+                  {exp.description}
+                </p>
+              )}
+              
+              {hasAch && exp.achievements.map((ach, i) => (
+                <div key={`ach-${i}`} className={`flex items-start gap-3 mt-2 text-[13.5px] text-[#5A5A5A] leading-relaxed font-light w-full break-inside-avoid shrink-0 ${i === exp.achievements.length - 1 ? 'mb-6' : ''}`}>
+                  <span className="text-[#D4AF37] mt-1 text-[14px] leading-none shrink-0">♦</span>
+                  <span>{ach}</span>
+                </div>
+              ))}
+            </React.Fragment>
+          );
+        })}
 
         {/* Projects Heading Node */}
         {data.projects && data.projects.length > 0 && (
-          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mt-3 font-serif">
+          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mb-4 font-serif w-full break-inside-avoid shrink-0">
             <svg className="w-5 h-5 text-[#8B3A46]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" /></svg>
             Key Projects
           </h2>
@@ -254,20 +239,20 @@ export default function BordeauxElite({
 
         {/* Projects Item Nodes */}
         {data.projects && data.projects.map((proj, index) => (
-          <div key={`proj-${index}`} className="flex flex-col gap-1.5 -mt-2 mb-3">
-            <div className="flex justify-between items-end border-b border-dashed border-[#E5E0D8] pb-1">
+          <React.Fragment key={`proj-${index}`}>
+            <div className={`flex justify-between items-end border-b border-dashed border-[#E5E0D8] pb-1 w-full break-inside-avoid shrink-0 ${!proj.description ? 'mb-6' : ''}`}>
               <h3 className="text-[16px] font-semibold text-[#2A141A] tracking-wide uppercase">{proj.title}</h3>
               {proj.date && <span className="text-[12px] font-medium text-[#8B3A46] uppercase tracking-wider shrink-0 ml-2">{proj.date}</span>}
             </div>
             {proj.description && (
-              <p className="text-[13.5px] text-[#5A5A5A] font-light leading-relaxed mt-1 whitespace-pre-wrap">{proj.description}</p>
+              <p className="text-[13.5px] text-[#5A5A5A] font-light leading-relaxed mt-1.5 mb-6 whitespace-pre-wrap w-full break-inside-avoid shrink-0">{proj.description}</p>
             )}
-          </div>
+          </React.Fragment>
         ))}
 
         {/* Education Heading Node */}
         {validEducation.length > 0 && (
-          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mt-3 font-serif">
+          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mb-4 font-serif w-full break-inside-avoid shrink-0">
              <svg className="w-5 h-5 text-[#8B3A46]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>
             Academic Profile
           </h2>
@@ -275,26 +260,26 @@ export default function BordeauxElite({
 
         {/* Education Item Nodes */}
         {validEducation.map((edu, index) => (
-          <div key={`edu-${index}`} className="flex flex-col gap-1 -mt-2 mb-3">
-            <div className="flex justify-between items-end border-b border-dashed border-[#E5E0D8] pb-1">
+          <React.Fragment key={`edu-${index}`}>
+            <div className="flex justify-between items-end border-b border-dashed border-[#E5E0D8] pb-1 w-full break-inside-avoid shrink-0">
               <h3 className="text-[15px] font-semibold text-[#2A141A]">{edu.degree}</h3>
               <span className="text-[12px] font-medium text-[#8B3A46] uppercase tracking-wider shrink-0 ml-2">
                 {formatDates(edu.startDate, edu.endDate, edu.isCurrent)}
               </span>
             </div>
-            <div className="flex justify-between items-baseline mt-1">
+            <div className={`flex justify-between items-baseline mt-2 w-full break-inside-avoid shrink-0 ${!edu.description ? 'mb-6' : ''}`}>
               <p className="text-[14px] text-[#5A5A5A] font-medium">{edu.school}</p>
               {edu.location && <p className="text-[11px] font-medium text-[#8B3A46] uppercase">{edu.location}</p>}
             </div>
             {edu.description && (
-              <p className="text-[13.5px] text-[#5A5A5A] font-light leading-relaxed mt-1 whitespace-pre-wrap">{edu.description}</p>
+              <p className="text-[13.5px] text-[#5A5A5A] font-light leading-relaxed mt-1.5 mb-6 whitespace-pre-wrap w-full break-inside-avoid shrink-0">{edu.description}</p>
             )}
-          </div>
+          </React.Fragment>
         ))}
 
         {/* Certifications Heading Node */}
         {validCertificates && validCertificates.length > 0 && (
-          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mt-3 font-serif">
+          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mb-4 font-serif w-full break-inside-avoid shrink-0">
              <svg className="w-5 h-5 text-[#8B3A46]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             Certifications
           </h2>
@@ -302,21 +287,21 @@ export default function BordeauxElite({
 
         {/* Certifications Item Nodes */}
         {validCertificates && validCertificates.map((cert, index) => (
-          <div key={`cert-${index}`} className="flex flex-col gap-1 -mt-2 mb-3">
-            <div className="flex justify-between items-end border-b border-dashed border-[#E5E0D8] pb-1">
+          <React.Fragment key={`cert-${index}`}>
+            <div className="flex justify-between items-end border-b border-dashed border-[#E5E0D8] pb-1 w-full break-inside-avoid shrink-0">
               <h3 className="text-[15px] font-semibold text-[#2A141A]">{cert.title}</h3>
               {cert.date && <span className="text-[12px] font-medium text-[#8B3A46] uppercase tracking-wider shrink-0 ml-2">{cert.date}</span>}
             </div>
-            {cert.issuer && <p className="text-[14px] text-[#5A5A5A] font-medium mt-1">{cert.issuer}</p>}
+            {cert.issuer && <p className={`text-[14px] text-[#5A5A5A] font-medium mt-1.5 w-full break-inside-avoid shrink-0 ${!cert.description ? 'mb-6' : ''}`}>{cert.issuer}</p>}
             {cert.description && (
-              <p className="text-[13.5px] text-[#5A5A5A] font-light leading-relaxed mt-1 whitespace-pre-wrap">{cert.description}</p>
+              <p className="text-[13.5px] text-[#5A5A5A] font-light leading-relaxed mt-1.5 mb-6 whitespace-pre-wrap w-full break-inside-avoid shrink-0">{cert.description}</p>
             )}
-          </div>
+          </React.Fragment>
         ))}
 
         {/* References Heading Node */}
         {validReferences && validReferences.length > 0 && (
-          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mt-3 font-serif">
+          <h2 className="text-xl font-medium text-[#2A141A] uppercase tracking-widest flex items-center gap-4 mb-4 font-serif w-full break-inside-avoid shrink-0">
              <svg className="w-5 h-5 text-[#8B3A46]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
             References
           </h2>
@@ -324,7 +309,7 @@ export default function BordeauxElite({
 
         {/* References Item Nodes */}
         {validReferences && validReferences.length > 0 && (
-          <div className="grid grid-cols-2 gap-6 -mt-2">
+          <div className="grid grid-cols-2 gap-6 w-full break-inside-avoid shrink-0 mb-6">
             {validReferences.map((ref, index) => (
               <div key={`ref-${index}`} className="flex flex-col gap-0.5">
                 <h3 className="text-[15px] font-semibold text-[#2A141A]">{ref.name}</h3>

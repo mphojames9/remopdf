@@ -39,9 +39,14 @@ export default function ResumeForm({ data, setData, onExport, onPreview, onOpenT
   }, [currentStep]);
 
   // 3. AUTO-SAVE: Save the entire resume data state to local storage whenever it changes
+  // CRITICAL FIX: Debounced by 800ms to prevent input lag during typing
   useEffect(() => {
     if (data) {
-      localStorage.setItem('remo_premium_resume_data', JSON.stringify(data));
+      const autoSaveTimer = setTimeout(() => {
+        localStorage.setItem('remo_premium_resume_data', JSON.stringify(data));
+      }, 800); 
+      
+      return () => clearTimeout(autoSaveTimer);
     }
   }, [data]);
 

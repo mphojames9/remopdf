@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useDeferredValue } from 'react';
 import { renderToString } from 'react-dom/server';
 import ResumePreview from './ResumePreview';
 
@@ -6,13 +6,27 @@ const PAGE_HEIGHT = 1122; // Strict A4 Height
 
 export default function PaginatedPreview({ data, template }) {
   const [pages, setPages] = useState([]);
+  
+  // 1. Decouple the data: React will prioritize input typing over updating this value
+  const deferredData = useDeferredValue(data);
 
   useEffect(() => {
-    const rawHtml = renderToString(<ResumePreview data={data} template={template} />);
-    paginate(rawHtml);
-  }, [data, template]);
+    let isCancelled = false; 
 
-  const paginate = (html) => {
+    // Increased debounce timer to 1200ms to allow typing to finish without triggering heavy renders
+    const debounceTimer = setTimeout(async () => {
+      // Use deferredData so the preview renders behind the user's live typing
+      const rawHtml = renderToString(<ResumePreview data={deferredData} template={template} />);
+      await paginate(rawHtml, () => isCancelled);
+    }, 5000);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(debounceTimer);
+    };
+  }, [deferredData, template]);
+
+  const paginate = async (html, checkCancelled) => {
     const temp = document.createElement('div');
     temp.style.position = 'absolute';
     temp.style.top = '0';
@@ -31,7 +45,7 @@ export default function PaginatedPreview({ data, template }) {
     const main = root.querySelector('main');
 
     if (!sidebar || !main) {
-      setPages([html]);
+      if (!checkCancelled()) setPages([html]);
       document.body.removeChild(temp);
       return;
     }
@@ -39,15 +53,12 @@ export default function PaginatedPreview({ data, template }) {
     const sidebarQueue = Array.from(sidebar.children);
     const mainQueue = Array.from(main.children);
 
-    // Remove the original root from the container so it doesn't mess with height calculations
     temp.removeChild(root);
 
     let pagesData = [];
 
     const createNewPage = () => {
       const clone = root.cloneNode(true);
-      
-      // CRITICAL FIX: The clone MUST be attached to the DOM to accurately measure scrollHeight
       temp.appendChild(clone);
 
       const cloneSidebar = clone.querySelector('aside');
@@ -56,7 +67,6 @@ export default function PaginatedPreview({ data, template }) {
       cloneSidebar.innerHTML = '';
       cloneMain.innerHTML = '';
 
-      // Clean up the header and summary on page 2+ so they don't duplicate
       if (pagesData.length > 0) {
         const header = clone.querySelector('header');
         if (header) header.remove();
@@ -64,7 +74,6 @@ export default function PaginatedPreview({ data, template }) {
         const summary = clone.querySelector('#summary-section');
         if (summary) summary.remove();
         
-        // Add padding so text doesn't hit the absolute ceiling of the new page
         cloneMain.style.paddingTop = '40px';
         cloneSidebar.style.paddingTop = '40px';
       }
@@ -82,13 +91,18 @@ export default function PaginatedPreview({ data, template }) {
     let currentPage = createNewPage();
     let pageIndex = 0;
 
-    const processQueue = (queue, colName) => {
+    const processQueue = async (queue, colName) => {
+      // Time-slicing: Track when this batch of DOM work started
+      let frameStartTime = performance.now();
+
       while (queue.length > 0) {
+        if (checkCancelled()) return false;
+
         const el = queue.shift();
         let current = pagesData[pageIndex];
         current[colName].appendChild(el);
 
-        // Uses scrollHeight to detect overflow 
+        // Using scrollHeight to detect overflow for accurate A4 sizing
         if (current.page.scrollHeight > PAGE_HEIGHT) {
           if (current[colName].children.length === 1) {
             pageIndex++;
@@ -100,24 +114,44 @@ export default function PaginatedPreview({ data, template }) {
             queue.unshift(el); 
           }
         }
+
+        // Time-slicing check: if we've spent more than 12ms working on the DOM
+        if (performance.now() - frameStartTime > 12) {
+          // Yield to the main thread so it can process typing/rendering
+          await new Promise(resolve => setTimeout(resolve, 0));
+          
+          // Reset the timer for the next batch of work
+          frameStartTime = performance.now();
+        }
       }
       pageIndex = 0; 
+      return true;
     };
 
-    processQueue(sidebarQueue, 'sidebar');
-    processQueue(mainQueue, 'main');
+    const sidebarCompleted = await processQueue(sidebarQueue, 'sidebar');
+    if (!sidebarCompleted) {
+      document.body.removeChild(temp);
+      return;
+    }
 
-    setPages(pagesData.map(p => p.page.outerHTML));
+    const mainCompleted = await processQueue(mainQueue, 'main');
+    if (!mainCompleted) {
+      document.body.removeChild(temp);
+      return;
+    }
+
+    if (!checkCancelled()) {
+      setPages(pagesData.map(p => p.page.outerHTML));
+    }
+    
     document.body.removeChild(temp);
   };
 
   return (
-    // Added the ID here
     <div id="premium-export-container" className="flex flex-col gap-8 items-center origin-top w-full">
       {pages.map((pageHtml, index) => (
         <div 
           key={index}
-          // Added 'export-page' class here
           className="export-page bg-white shadow-[0_10px_40px_rgba(0,0,0,0.5)] ring-1 ring-slate-800/20 shrink-0 relative overflow-hidden"
           style={{ width: '794px', height: '1122px' }}
           dangerouslySetInnerHTML={{ __html: pageHtml }}

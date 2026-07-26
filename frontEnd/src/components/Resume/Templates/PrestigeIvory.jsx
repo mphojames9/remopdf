@@ -69,7 +69,7 @@ export default function PrestigeIvory({
           </div>
         )} 
 
-                {info.website && (
+        {info.website && (
           <div className="flex items-center gap-3 text-[13px] -mt-2">
             <svg className="w-4 h-4 text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
             <span className="break-all font-medium text-neutral-700">{info.website.replace(/(^\w+:|^)\/\//, '')}</span>
@@ -106,20 +106,16 @@ export default function PrestigeIvory({
           </div>
         )}
 
-{/* Skills Heading Node */}
+        {/* Skills Heading Node */}
         {validSkills.length > 0 && (
           <h2 className="text-[11px] font-bold tracking-[0.3em] text-neutral-400 uppercase border-b border-neutral-200 pb-2 mt-4">
             Core Skills
           </h2>
         )}
         {validSkills.map((skill, index) => {
-          // Extract the name robustly (handles plain strings or objects)
           const name = typeof skill === 'string' ? skill : (skill.name || skill.skill);
-          
-          // Extract the level, defaulting to 3 (60%) if missing
           const level = typeof skill === 'string' ? 3 : (skill.level || 3);
           
-          // Calculate width to accommodate both 1-5 numerical scale and legacy text strings
           let barWidth = 100;
           if (typeof level === 'number' || !isNaN(Number(level))) {
             barWidth = (Number(level) / 5) * 100;
@@ -170,125 +166,127 @@ export default function PrestigeIvory({
 
       </aside>
 
-      {/* RIGHT MAIN SIDE */}
-      <main className="w-[68%] p-10 flex flex-col gap-6 shrink-0">
+      {/* RIGHT MAIN SIDE - FLATTENED FOR PAGINATION */}
+      <main className="w-[68%] p-10 flex flex-col shrink-0">
         
         {/* Header Node */}
-        <div className="flex flex-col gap-2 pb-6 border-b-2 border-neutral-900 mb-2">
+        <div className="flex flex-col gap-2 pb-6 border-b-2 border-neutral-900 mb-6 w-full break-inside-avoid shrink-0">
           {info.fullName && <h1 className="text-5xl font-black tracking-tighter text-neutral-900 uppercase">{info.fullName}</h1>}
           {info.jobTitle && <p className="text-[14px] font-bold tracking-[0.25em] text-neutral-500 uppercase mt-1">{info.jobTitle}</p>}
         </div>
 
         {/* Summary Node */}
         {validSummary && (
-          <div className="text-[14px] leading-relaxed text-neutral-600 mb-2 font-medium text-justify whitespace-pre-wrap">
+          <div className="text-[14px] leading-relaxed text-neutral-600 mb-6 font-medium text-justify whitespace-pre-wrap w-full break-inside-avoid shrink-0">
             {validSummary}
           </div>
         )}
 
         {/* Experience Node */}
         {validExperience.length > 0 && (
-          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mt-2 mb-1">
+          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mb-4 w-full break-inside-avoid shrink-0">
             Experience
           </h2>
         )}
-        {validExperience.map((exp, index) => (
-          <div key={`exp-${index}`} className="flex flex-col gap-1 -mt-2 mb-4">
-            <div className="flex justify-between items-baseline">
-              <h3 className="text-[16px] font-bold text-neutral-900">{exp.role}</h3>
-              <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-widest">
-                {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
-              </span>
-            </div>
-            <div className="flex justify-between items-baseline">
-              <p className="text-[14px] font-semibold text-neutral-600 uppercase tracking-wide text-xs">{exp.company}</p>
-              {exp.location && <p className="text-[11px] font-medium text-neutral-400 uppercase">{exp.location}</p>}
-            </div>
-            {exp.description && (
-              <p className="text-[13.5px] text-neutral-600 leading-relaxed mt-1 whitespace-pre-wrap">{exp.description}</p>
-            )}
-            {exp.achievements && exp.achievements.length > 0 && (
-              <ul className="mt-2 list-none text-[13.5px] text-neutral-600 space-y-2 leading-relaxed">
-                {exp.achievements.map((ach, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="text-neutral-300 mt-1.5 text-[10px] shrink-0">■</span>
-                    <span>{ach}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
+        {validExperience.map((exp, index) => {
+          const hasDesc = !!exp.description;
+          const hasAch = exp.achievements && exp.achievements.length > 0;
+          return (
+            <React.Fragment key={`exp-${index}`}>
+              <div className="flex justify-between items-baseline w-full break-inside-avoid shrink-0">
+                <h3 className="text-[16px] font-bold text-neutral-900">{exp.role}</h3>
+                <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-widest shrink-0 ml-2">
+                  {formatDates(exp.startDate, exp.endDate, exp.isCurrent)}
+                </span>
+              </div>
+              <div className={`flex justify-between items-baseline mt-1 w-full break-inside-avoid shrink-0 ${(!hasDesc && !hasAch) ? 'mb-6' : ''}`}>
+                <p className="text-[14px] font-semibold text-neutral-600 uppercase tracking-wide text-xs">{exp.company}</p>
+                {exp.location && <p className="text-[11px] font-medium text-neutral-400 uppercase">{exp.location}</p>}
+              </div>
+              {hasDesc && (
+                <p className={`text-[13.5px] text-neutral-600 leading-relaxed mt-2 whitespace-pre-wrap w-full break-inside-avoid shrink-0 ${!hasAch ? 'mb-6' : ''}`}>
+                  {exp.description}
+                </p>
+              )}
+              {hasAch && exp.achievements.map((ach, i) => (
+                <div key={`ach-${i}`} className={`flex items-start gap-3 mt-2 text-[13.5px] text-neutral-600 leading-relaxed w-full break-inside-avoid shrink-0 ${i === exp.achievements.length - 1 ? 'mb-6' : ''}`}>
+                  <span className="text-neutral-300 mt-1.5 text-[10px] shrink-0">■</span>
+                  <span>{ach}</span>
+                </div>
+              ))}
+            </React.Fragment>
+          );
+        })}
 
-        {/* Projects Node - Added directly after Experience */}
+        {/* Projects Node */}
         {data.projects && data.projects.length > 0 && (
-          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mt-3 mb-1">
+          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mb-4 w-full break-inside-avoid shrink-0">
             Projects
           </h2>
         )}
         {data.projects && data.projects.map((proj, index) => (
-          <div key={`proj-${index}`} className="flex flex-col gap-1 -mt-2 mb-4">
-            <div className="flex justify-between items-baseline">
+          <React.Fragment key={`proj-${index}`}>
+            <div className={`flex justify-between items-baseline w-full break-inside-avoid shrink-0 ${!proj.description ? 'mb-6' : ''}`}>
               <h3 className="text-[15px] font-bold text-neutral-900">{proj.title}</h3>
-              {proj.date && <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest">{proj.date}</span>}
+              {proj.date && <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest shrink-0 ml-2">{proj.date}</span>}
             </div>
             {proj.description && (
-              <p className="text-[13.5px] text-neutral-600 leading-relaxed mt-1 whitespace-pre-wrap">{proj.description}</p>
+              <p className="text-[13.5px] text-neutral-600 leading-relaxed mt-1 mb-6 whitespace-pre-wrap w-full break-inside-avoid shrink-0">{proj.description}</p>
             )}
-          </div>
+          </React.Fragment>
         ))}
 
         {/* Education Node */}
         {validEducation.length > 0 && (
-          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mt-3 mb-1">
+          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mb-4 w-full break-inside-avoid shrink-0">
             Education
           </h2>
         )}
         {validEducation.map((edu, index) => (
-          <div key={`edu-${index}`} className="flex flex-col gap-1 -mt-2 mb-4">
-            <div className="flex justify-between items-baseline">
+          <React.Fragment key={`edu-${index}`}>
+            <div className="flex justify-between items-baseline w-full break-inside-avoid shrink-0">
               <h3 className="text-[15px] font-bold text-neutral-900">{edu.degree}</h3>
-              <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-widest">
+              <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-widest shrink-0 ml-2">
                 {formatDates(edu.startDate, edu.endDate, edu.isCurrent)}
               </span>
             </div>
-            <div className="flex justify-between items-baseline">
+            <div className={`flex justify-between items-baseline mt-1 w-full break-inside-avoid shrink-0 ${!edu.description ? 'mb-6' : ''}`}>
               <p className="text-[14px] text-neutral-600 font-medium">{edu.school}</p>
               {edu.location && <p className="text-[11px] font-medium text-neutral-400 uppercase">{edu.location}</p>}
             </div>
             {edu.description && (
-              <p className="text-[13.5px] text-neutral-600 leading-relaxed mt-1 whitespace-pre-wrap">{edu.description}</p>
+              <p className="text-[13.5px] text-neutral-600 leading-relaxed mt-1 mb-6 whitespace-pre-wrap w-full break-inside-avoid shrink-0">{edu.description}</p>
             )}
-          </div>
+          </React.Fragment>
         ))}
         
         {/* Certifications Node */}
         {validCertificates.length > 0 && (
-          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mt-3 mb-1">
+          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mb-4 w-full break-inside-avoid shrink-0">
             Certifications
           </h2>
         )}
         {validCertificates.map((cert, index) => (
-          <div key={`cert-${index}`} className="flex flex-col gap-0.5 -mt-2 mb-4">
-            <div className="flex justify-between items-baseline">
+          <React.Fragment key={`cert-${index}`}>
+            <div className="flex justify-between items-baseline w-full break-inside-avoid shrink-0">
               <h3 className="text-[14px] font-bold text-neutral-900">{cert.title}</h3>
-              <span className="text-[11px] font-bold text-neutral-500 tracking-widest">{cert.date}</span>
+              <span className="text-[11px] font-bold text-neutral-500 tracking-widest shrink-0 ml-2">{cert.date}</span>
             </div>
-            <p className="text-[13px] text-neutral-600">{cert.issuer}</p>
+            <p className={`text-[13px] text-neutral-600 mt-1 w-full break-inside-avoid shrink-0 ${!cert.description ? 'mb-6' : ''}`}>{cert.issuer}</p>
             {cert.description && (
-              <p className="text-[13.5px] text-neutral-600 leading-relaxed mt-1 whitespace-pre-wrap">{cert.description}</p>
+              <p className="text-[13.5px] text-neutral-600 leading-relaxed mt-1 mb-6 whitespace-pre-wrap w-full break-inside-avoid shrink-0">{cert.description}</p>
             )}
-          </div>
+          </React.Fragment>
         ))}
 
         {/* References Node */}
         {validReferences && validReferences.length > 0 && (
-          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mt-3 mb-1">
+          <h2 className="text-sm font-black text-neutral-900 uppercase tracking-[0.2em] mb-4 w-full break-inside-avoid shrink-0">
             References
           </h2>
         )}
         {validReferences && validReferences.length > 0 && (
-          <div className="grid grid-cols-2 gap-6 -mt-2">
+          <div className="grid grid-cols-2 gap-6 w-full break-inside-avoid shrink-0 mb-6">
             {validReferences.map((ref, index) => (
               <div key={`ref-${index}`} className="flex flex-col gap-0.5">
                 <h3 className="text-[14px] font-bold text-neutral-900">{ref.name}</h3>
