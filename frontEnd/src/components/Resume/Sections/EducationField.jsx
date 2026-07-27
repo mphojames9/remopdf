@@ -1,27 +1,105 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ModalAd from '../../../components/ModalAd'
 
-// Premium Standardized InputField
-const InputField = ({ label, placeholder, value, onChange, type = "text", disabled = false }) => (
-  <div className="flex flex-col group w-full">
-    <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
-      {label}
-    </label>
-    <div className="relative w-full">
-      <input 
-        type={type}
-        placeholder={placeholder} 
-        value={value || ''} 
-        onChange={onChange}
-        disabled={disabled}
-        className={`w-full border rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm outline-none shadow-sm transition-all font-medium placeholder:text-slate-400 ${
-          disabled 
-            ? 'bg-slate-100/50 border-slate-200/60 text-slate-400 cursor-not-allowed' 
-            : 'bg-slate-50/60 border-slate-200 text-slate-800 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10'
-        }`} 
-      />
+// Premium Standardized InputField (Debounced & Locked)
+const InputField = ({ label, placeholder, value, onChange, onBlur, type = "text", disabled = false }) => {
+  const [localValue, setLocalValue] = useState(value || '');
+  const [isFocused, setIsFocused] = useState(false);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  
+  useEffect(() => { 
+    if (!isFocused) setLocalValue(value || ''); 
+  }, [value, isFocused]);
+
+  const handleChange = (e) => setLocalValue(e.target.value);
+  const handleFocus = () => setIsFocused(true);
+  
+  const handleBlur = (e) => {
+    setIsFocused(false);
+    onChangeRef.current({ target: { value: localValue } });
+    if (onBlur) onBlur(e);
+  };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isFocused) onChangeRef.current({ target: { value: localValue } });
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [localValue, isFocused]);
+
+  return (
+    <div className="flex flex-col group w-full">
+      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
+        {label}
+      </label>
+      <div className="relative w-full">
+        <input 
+          type={type}
+          placeholder={placeholder} 
+          value={localValue} 
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          disabled={disabled}
+          className={`w-full border rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm outline-none shadow-sm transition-all font-medium placeholder:text-slate-400 ${
+            disabled 
+              ? 'bg-slate-100/50 border-slate-200/60 text-slate-400 cursor-not-allowed' 
+              : 'bg-slate-50/60 border-slate-200 text-slate-800 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10'
+          }`} 
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+// Premium Standardized TextAreaField (Debounced & Locked)
+const TextAreaField = ({ label, placeholder, value, onChange, rows = 2 }) => {
+  const [localValue, setLocalValue] = useState(value || '');
+  const [isFocused, setIsFocused] = useState(false);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  
+  useEffect(() => { 
+    if (!isFocused) setLocalValue(value || ''); 
+  }, [value, isFocused]);
+
+  const handleChange = (e) => setLocalValue(e.target.value);
+  const handleFocus = () => setIsFocused(true);
+  
+  const handleBlur = () => {
+    setIsFocused(false);
+    onChangeRef.current({ target: { value: localValue } });
+  };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isFocused) onChangeRef.current({ target: { value: localValue } });
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [localValue, isFocused]);
+
+  return (
+    <div className="flex flex-col group w-full mt-1">
+      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
+        {label}
+      </label>
+      <div className="relative w-full">
+        <textarea
+          rows={rows}
+          placeholder={placeholder}
+          value={localValue}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-relaxed font-medium placeholder:text-slate-400"
+        />
+      </div>
+    </div>
+  );
+};
 
 export default function EducationField({ data, setData, onNext, onPrev, nextLabel }) {
   const education = data.education?.length > 0 
@@ -63,10 +141,7 @@ export default function EducationField({ data, setData, onNext, onPrev, nextLabe
   return (
     <div className="w-full max-w-3xl mx-auto font-['Outfit',_sans-serif] animate-fade-in px-3 sm:px-6 h-[80vh] min-w-[320px] flex flex-col overflow-hidden bg-white selection:bg-orange-100 selection:text-orange-800">
       
-      {/* Scrollable Form Content */}
       <div className="flex-1 overflow-y-auto pr-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-4 pt-3">
-        
-        {/* Header Section */}
         <div className="mb-4 sm:mb-6">
           <span className="inline-block text-orange-600 text-[9px] font-bold uppercase tracking-widest bg-orange-50 border border-orange-100 px-2.5 py-0.5 rounded-full mb-1.5">
             Section 3
@@ -83,7 +158,6 @@ export default function EducationField({ data, setData, onNext, onPrev, nextLabe
           {education.map((edu, index) => (
             <div key={edu.id || index} className="p-3.5 sm:p-5 bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.12)] rounded-2xl relative group/card hover:border-slate-200 hover:shadow-[0_4px_24px_-2px_rgba(148,163,184,0.16)] transition-all duration-300">
               
-              {/* Top Header Controls */}
               <div className="flex justify-between items-center mb-3 sm:mb-0 sm:absolute sm:top-3.5 sm:right-3.5 w-full sm:w-auto">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider sm:hidden">
                   Education #{index + 1}
@@ -102,7 +176,6 @@ export default function EducationField({ data, setData, onNext, onPrev, nextLabe
                 )}
               </div>
 
-              {/* Row 1: Degree & School */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 mb-4 mt-1">
                 <InputField 
                   label="Degree / Certificate" 
@@ -117,7 +190,6 @@ export default function EducationField({ data, setData, onNext, onPrev, nextLabe
                   onChange={(e) => handleUpdate(index, 'school', e.target.value)} 
                 />
                 
-                {/* Row 2: Dates */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:col-span-2">
                   <InputField 
                     label="Start Date" 
@@ -155,27 +227,16 @@ export default function EducationField({ data, setData, onNext, onPrev, nextLabe
                 </div>
               </div>
 
-              {/* Row 3: Description / Honors */}
-              <div className="flex flex-col group w-full mt-1">
-                <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
-                  Description / Honors (Optional)
-                </label>
-                <div className="relative w-full">
-                  <textarea
-                    rows="2"
-                    placeholder="List relevant coursework, honors, GPA, or extracurricular activities..."
-                    value={edu.description || ''}
-                    onChange={(e) => handleUpdate(index, 'description', e.target.value)}
-                    className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-relaxed font-medium placeholder:text-slate-400"
-                  />
-                </div>
-              </div>
-
+              <TextAreaField 
+                label="Description / Honors (Optional)" 
+                placeholder="List relevant coursework, honors, GPA, or extracurricular activities..." 
+                value={edu.description || ''} 
+                onChange={(e) => handleUpdate(index, 'description', e.target.value)} 
+              />
             </div>
           ))}
         </div>
 
-        {/* Dynamic Add Button */}
         <button 
           onClick={handleAdd} 
           disabled={isAddDisabled}
@@ -191,8 +252,7 @@ export default function EducationField({ data, setData, onNext, onPrev, nextLabe
           {isAddDisabled ? 'Fill current details to add another' : 'Add Education'}
         </button>
       </div>
-
-      {/* Fixed Bottom Action Navigation Bar */}
+<ModalAd />
       <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
         <button 
           onClick={onPrev} 
@@ -210,7 +270,6 @@ export default function EducationField({ data, setData, onNext, onPrev, nextLabe
           {nextLabel || "Next: Skills"}
         </button>
       </div>
-
     </div>
   );
 }

@@ -1,9 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import useResumeSuggestions from '../../../hooks/useResumeSuggestions';
+import ModalAd from '../../../components/ModalAd'
 
-// Premium Standardized InputField 
+// 1. Bulletproof Debounced InputField
 const InputField = ({ label, placeholder, value, onChange, onBlur, type = "text", disabled }) => {
+  const inputRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const lastSentValue = useRef(value); // Tracks what we actually sent to the parent
   const [currentType, setCurrentType] = useState(type === 'date' && !value ? 'text' : type);
+
+  // Sync external state changes ONLY if they are forced overrides (like a dropdown click)
+  useEffect(() => {
+    if (value !== lastSentValue.current) {
+      if (inputRef.current) inputRef.current.value = value || '';
+      lastSentValue.current = value; // Sync it up
+      if (type === 'date') setCurrentType(value ? 'date' : 'text');
+    }
+  }, [value, type]);
+
+  const handleInput = (e) => {
+    const newValue = e.target.value;
+    
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      lastSentValue.current = newValue; // Remember what we are sending
+      onChange({ target: { value: newValue } });
+    }, 300);
+  };
 
   return (
     <div className="flex flex-col group w-full">
@@ -12,10 +35,11 @@ const InputField = ({ label, placeholder, value, onChange, onBlur, type = "text"
       </label>
       <div className="relative w-full">
         <input 
+          ref={inputRef}
           type={currentType}
           placeholder={placeholder} 
-          value={value || ''} 
-          onChange={onChange}
+          defaultValue={value || ''} 
+          onInput={handleInput}
           disabled={disabled}
           onFocus={(e) => {
             if (type === 'date' && !disabled) {
@@ -26,7 +50,10 @@ const InputField = ({ label, placeholder, value, onChange, onBlur, type = "text"
             }
           }}
           onBlur={(e) => {
-            if (type === 'date' && !value) setCurrentType('text'); 
+            if (type === 'date' && !e.target.value) setCurrentType('text'); 
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            lastSentValue.current = e.target.value; // Sync on blur just in case
+            onChange({ target: { value: e.target.value } });
             if (onBlur) onBlur(e);
           }}
           className={`w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium accent-orange-500 ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-100/50' : ''}`} 
@@ -36,14 +63,61 @@ const InputField = ({ label, placeholder, value, onChange, onBlur, type = "text"
   );
 };
 
+// 2. Bulletproof Debounced TextArea
+const DebouncedTextArea = ({ value, onChange, placeholder, className }) => {
+  const textareaRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const lastSentValue = useRef(value);
+
+  // Sync external overrides (like clicking an AI suggestion)
+  useEffect(() => {
+    if (value !== lastSentValue.current) {
+      if (textareaRef.current) {
+        textareaRef.current.value = value || '';
+        textareaRef.current.style.height = '42px';
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+      }
+      lastSentValue.current = value;
+    }
+  }, [value]);
+
+  const handleInput = (e) => {
+    const newValue = e.target.value;
+    
+    // Efficient auto-resize logic
+    e.target.style.height = '42px';
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      lastSentValue.current = newValue;
+      onChange({ target: { value: newValue } });
+    }, 300);
+  };
+
+  return (
+    <textarea
+      ref={textareaRef}
+      rows="1"
+      placeholder={placeholder}
+      defaultValue={value || ''}
+      onInput={handleInput}
+      onBlur={(e) => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        lastSentValue.current = e.target.value;
+        onChange({ target: { value: e.target.value } });
+      }}
+      className={className}
+    />
+  );
+};
+
 export default function ExperienceField({ data, setData, onNext, onPrev, nextLabel }) {
+  // Auto Suggestions Hooks & State
   const { suggestions, isSuggesting } = useResumeSuggestions(data);
   const [clickedSuggestions, setClickedSuggestions] = useState([]);
-  
   const [titleSuggestionsMap, setTitleSuggestionsMap] = useState({});
   const titleTimeoutRefs = useRef({});
-
-  // Drawer State
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(null);
 
   // Lock background scroll when the AI suggestion drawer is open
@@ -53,15 +127,39 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
     } else {
       document.body.style.overflow = 'unset';
     }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    return () => { document.body.style.overflow = 'unset'; };
   }, [activeSuggestionIndex]);
 
   const experiences = data.experience === undefined || data.experience.length === 0
     ? [{ id: Date.now(), company: '', role: '', startDate: '', endDate: '', isCurrent: false, achievements: [''] }]
     : data.experience;
+
+  // Pre-compute lowercased keys ONCE
+  const achievementsMapKeys = useMemo(() => {
+    if (!suggestions?.achievementsMap) return [];
+    return Object.keys(suggestions.achievementsMap).map((k) => ({
+      original: k,
+      lower: k.toLowerCase()
+    }));
+  }, [suggestions?.achievementsMap]);
+
+  // Memoize the search function
+  const getRoleAchievements = useCallback((role) => {
+    if (!role || !suggestions?.achievementsMap || achievementsMapKeys.length === 0) return [];
+    const cleanRole = role.trim().toLowerCase();
+    if (cleanRole.length < 2) return [];
+
+    const map = suggestions.achievementsMap;
+    const exactMatch = achievementsMapKeys.find((k) => k.lower === cleanRole);
+    if (exactMatch) return map[exactMatch.original] || [];
+
+    const partialMatch = achievementsMapKeys.find(
+      (k) => k.lower.includes(cleanRole) || cleanRole.includes(k.lower)
+    );
+    if (partialMatch) return map[partialMatch.original] || [];
+
+    return [];
+  }, [suggestions?.achievementsMap, achievementsMapKeys]);
 
   const updateExperience = (index, field, value) => {
     const newExp = experiences.map((exp, i) => {
@@ -78,19 +176,20 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
   const handleRoleChange = (index, value) => {
     updateExperience(index, 'role', value);
 
+    // ESCO API Fetching logic
     if (titleTimeoutRefs.current[index]) clearTimeout(titleTimeoutRefs.current[index]);
 
-    if (value.trim().length < 2) {
+    const query = value.trim().toLowerCase();
+    if (query.length < 2) {
       setTitleSuggestionsMap((prev) => ({ ...prev, [index]: [] }));
       return;
     }
 
     titleTimeoutRefs.current[index] = setTimeout(async () => {
       try {
-        const query = value.toLowerCase().trim();
         const cacheKey = `esco_job_titles_${query}`;
-        
         const cachedData = localStorage.getItem(cacheKey);
+        
         if (cachedData) {
           setTitleSuggestionsMap((prev) => ({ ...prev, [index]: JSON.parse(cachedData) }));
           return;
@@ -125,6 +224,23 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
     setData((prev) => ({ ...prev, experience: newExp }));
   };
 
+  const handleAddSuggestedAchievement = (expIndex, text) => {
+    const newExp = experiences.map((exp, i) => {
+      if (i === expIndex) {
+        const currentAchievements = [...(exp.achievements || [])];
+        if (currentAchievements.length > 0 && currentAchievements[currentAchievements.length - 1].trim() === '') {
+          currentAchievements[currentAchievements.length - 1] = text;
+        } else {
+          currentAchievements.push(text);
+        }
+        return { ...exp, achievements: currentAchievements };
+      }
+      return exp;
+    });
+    setData((prev) => ({ ...prev, experience: newExp }));
+    setClickedSuggestions((prev) => [...prev, text]);
+  };
+
   const addAchievement = (index) => {
     const newExp = experiences.map((exp, i) => {
       if (i === index) return { ...exp, achievements: [...(exp.achievements || []), ''] };
@@ -144,23 +260,6 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
     setData((prev) => ({ ...prev, experience: newExp }));
   };
 
-  const handleAddSuggestedAchievement = (expIndex, text) => {
-    const newExp = experiences.map((exp, i) => {
-      if (i === expIndex) {
-        const currentAchievements = [...(exp.achievements || [])];
-        if (currentAchievements.length > 0 && currentAchievements[currentAchievements.length - 1].trim() === '') {
-          currentAchievements[currentAchievements.length - 1] = text;
-        } else {
-          currentAchievements.push(text);
-        }
-        return { ...exp, achievements: currentAchievements };
-      }
-      return exp;
-    });
-    setData((prev) => ({ ...prev, experience: newExp }));
-    setClickedSuggestions((prev) => [...prev, text]);
-  };
-
   const addExperience = () => {
     setData((prev) => ({ ...prev, experience: [...experiences, { id: Date.now(), company: '', role: '', startDate: '', endDate: '', isCurrent: false, achievements: [''] }] }));
   };
@@ -170,9 +269,24 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
     setData((prev) => ({ ...prev, experience: newExp.length > 0 ? newExp : [{ id: Date.now(), company: '', role: '', startDate: '', endDate: '', isCurrent: false, achievements: [''] }] }));
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // If the click did not happen inside a job title container, clear the dropdowns
+      if (!event.target.closest('.job-title-container')) {
+        setTitleSuggestionsMap({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Active Drawer Data
   const activeExp = activeSuggestionIndex !== null ? experiences[activeSuggestionIndex] : null;
-  const activeRoleAchievements = activeExp ? (suggestions?.achievementsMap?.[activeExp.role] || []) : [];
+  const activeRoleAchievements = activeExp ? getRoleAchievements(activeExp.role) : [];
   const activeVisibleSuggestions = activeRoleAchievements.filter(ach => !clickedSuggestions.includes(ach));
 
   return (
@@ -195,8 +309,8 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
 
           <div className="space-y-5 sm:space-y-6">
             {experiences.map((exp, index) => {
-              const roleAchievements = suggestions?.achievementsMap?.[exp.role] || [];
-              const hasSuggestions = roleAchievements.length > 0 && exp.role.trim().length > 2;
+              const roleAchievements = getRoleAchievements(exp.role);
+              const hasSuggestions = roleAchievements.length > 0;
               const isAddAchievementDisabled = !exp.achievements || exp.achievements.length === 0 || exp.achievements[exp.achievements.length - 1].trim() === '';
 
               return (
@@ -222,7 +336,7 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 mb-5">
-                    <div className="relative flex flex-col w-full">
+                    <div className="relative flex flex-col w-full job-title-container">
                       <InputField 
                         label="Job Title" 
                         placeholder="e.g. Software Engineer" 
@@ -232,27 +346,38 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
                           setTimeout(() => setTitleSuggestionsMap(prev => ({...prev, [index]: []})), 150);
                         }}
                       />
-                      
+
+                      {/* Dropdown for ESCO Job Titles */}
                       {titleSuggestionsMap[index] && titleSuggestionsMap[index].length > 0 && (
                         <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-40 bg-white border border-slate-200 shadow-xl rounded-xl max-h-40 overflow-y-auto overscroll-contain backdrop-blur-xl bg-white/95 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
-                          {titleSuggestionsMap[index].map((t, i) => (
-                            <div 
-                              key={i} 
-                              onMouseDown={(e) => {
-                                e.preventDefault(); 
-                                updateExperience(index, 'role', t);
-                                setTitleSuggestionsMap((prev) => ({ ...prev, [index]: [] }));
-                              }}
-                              className="px-3.5 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-700 cursor-pointer transition-colors font-medium"
-                            >
-                              {t}
-                            </div>
-                          ))}
+                          {titleSuggestionsMap[index].map((t, i) => {
+                            // FORMATTING ADDED HERE: Capitalize the first letter of every word
+                            const formattedTitle = t.replace(/\b\w/g, char => char.toUpperCase());
+                            
+                            return (
+                              <div 
+                                key={i} 
+                                onMouseDown={(e) => {
+                                  e.preventDefault(); 
+                                  updateExperience(index, 'role', formattedTitle);
+                                  setTitleSuggestionsMap((prev) => ({ ...prev, [index]: [] }));
+                                }}
+                                className="px-3.5 py-2 text-xs text-slate-700 hover:bg-orange-50 hover:text-orange-700 cursor-pointer transition-colors font-medium"
+                              >
+                                {formattedTitle}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
 
-                    <InputField label="Company" placeholder="e.g. Google" value={exp.company} onChange={(e) => updateExperience(index, 'company', e.target.value)} />
+                    <InputField 
+                      label="Company" 
+                      placeholder="e.g. Google" 
+                      value={exp.company} 
+                      onChange={(e) => updateExperience(index, 'company', e.target.value)} 
+                    />
                     
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:col-span-2">
                       <InputField 
@@ -274,7 +399,12 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
                         />
                         <label className="flex items-center gap-2 mt-2 ml-0.5 cursor-pointer group/check w-max select-none">
                           <div className="relative flex items-center justify-center w-3.5 h-3.5">
-                            <input type="checkbox" checked={exp.isCurrent} onChange={(e) => updateExperience(index, 'isCurrent', e.target.checked)} className="peer appearance-none w-3.5 h-3.5 border border-slate-300 rounded checked:bg-orange-500 checked:border-orange-500 transition-all cursor-pointer shadow-sm group-hover/check:border-orange-400" />
+                            <input 
+                              type="checkbox" 
+                              checked={exp.isCurrent} 
+                              onChange={(e) => updateExperience(index, 'isCurrent', e.target.checked)} 
+                              className="peer appearance-none w-3.5 h-3.5 border border-slate-300 rounded checked:bg-orange-500 checked:border-orange-500 transition-all cursor-pointer shadow-sm group-hover/check:border-orange-400" 
+                            />
                             <svg className="absolute w-2.5 h-2.5 text-white pointer-events-none opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" /></svg>
                           </div>
                           <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 group-hover/check:text-slate-600 transition-colors uppercase tracking-wider">Presently Work Here</span>
@@ -285,11 +415,12 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
 
                   {/* Key Responsibilities & Achievements Textarea Container */}
                   <div className="space-y-2.5">
-                    {/* Header Row Container with dynamic, pulsing AI Suggestions action button */}
                     <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap ml-0.5 min-h-[26px]">
                       <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                         Key Responsibilities / Achievements
                       </label>
+                      
+                      {/* AI Suggestions Trigger Button */}
                       {hasSuggestions && (
                          <button 
                             onClick={() => setActiveSuggestionIndex(index)}
@@ -307,14 +438,9 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
                       <div key={aIndex} className="flex gap-2 items-start">
                         <div className="flex-1 relative">
                           <div className="absolute left-3 top-[15px] w-1.5 h-1.5 rounded-full bg-orange-400/80 shadow-[0_0_8px_rgba(251,146,60,0.6)]"></div>
-                          <textarea
-                            rows="1"
+                          <DebouncedTextArea
                             placeholder="Describe your structural metrics, impact, or key projects..."
                             value={ach}
-                            onInput={(e) => {
-                              e.target.style.height = '42px';
-                              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                            }}
                             onChange={(e) => handleAchievementChange(index, aIndex, e.target.value)}
                             className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl pl-7 pr-3 py-2.5 h-[42px] min-h-[42px] text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-tight font-medium placeholder:text-slate-400 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                           />
@@ -365,6 +491,73 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
           </button>
         </div>
 
+{/* AI Suggestion Drawer Overlay */}
+        {activeSuggestionIndex !== null && (
+          <div className="fixed inset-0 z-[99999] flex justify-start font-['Outfit',_sans-serif]">
+             <div 
+               className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+               onClick={() => setActiveSuggestionIndex(null)}
+             />
+             
+             <div className="relative w-[90%] sm:w-[480px] h-full bg-slate-50 border-r border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-left duration-300 ease-out z-[9999]">
+               <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-white border-b border-slate-200 shrink-0 shadow-[0_4px_12px_-4px_rgba(0,0,0,0.05)] relative z-10">
+                  <div>
+                    <h3 className="font-black text-slate-800 text-lg flex items-center gap-2">
+                       <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                       </svg>
+                       Tailored Suggestions
+                    </h3>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                       For <span className="text-slate-600">{activeExp?.role || 'this role'}</span>
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setActiveSuggestionIndex(null)}
+                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors active:scale-95"
+                  >
+                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                     </svg>
+                  </button>
+               </div>
+
+               <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                 {activeVisibleSuggestions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center px-4 mt-12 opacity-80">
+                      <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-bold text-slate-600 mb-1">You've added all suggestions!</p>
+                      <p className="text-xs text-slate-400">Great job building out your experience.</p>
+                    </div>
+                 ) : (
+                    activeVisibleSuggestions.map((ach, idx) => (
+                      <div 
+                        key={idx} 
+                        className="group flex items-start gap-3 p-4 bg-white border border-slate-200 hover:border-indigo-200 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
+                        onClick={() => handleAddSuggestedAchievement(activeSuggestionIndex, ach)}
+                      >
+                         <button className="shrink-0 mt-0.5 p-1 text-slate-300 group-hover:text-white group-hover:bg-indigo-500 rounded-lg border border-slate-200 group-hover:border-indigo-500 transition-colors shadow-sm active:scale-95">
+                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                           </svg>
+                         </button>
+                         <p className="text-xs sm:text-sm text-slate-600 group-hover:text-slate-800 leading-relaxed font-medium">
+                           {ach}
+                         </p>
+                      </div>
+                    ))
+                 )}
+               </div>
+
+               <div className="h-6 bg-gradient-to-t from-slate-50 to-transparent w-full absolute bottom-0 z-10 pointer-events-none"></div>
+             </div>
+          </div>
+        )}
+<ModalAd />
         {/* Fixed Bottom Action Navigation Bar */}
         <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
           <button 
@@ -383,90 +576,6 @@ export default function ExperienceField({ data, setData, onNext, onPrev, nextLab
             {nextLabel || "Next: Education"}
           </button>
         </div>
-
-        {/* --- PREMIUM AI SUGGESTIONS DRAWER (LEFT SLIDER) --- */}
-        
-        {/* Backdrop Overlay - Bumped z-index to 998 */}
-        <div 
-          className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[998] transition-opacity duration-300 ${
-            activeSuggestionIndex !== null ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-          onClick={() => setActiveSuggestionIndex(null)}
-        />
-
-        {/* Sliding Drawer Container - Bumped z-index to 999 */}
-        <div 
-          className={`fixed top-0 left-0 h-full w-[88vw] max-w-[340px] bg-white/95 backdrop-blur-2xl shadow-[24px_0_40px_rgba(0,0,0,0.08)] border-r border-slate-100 z-[999] transform transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) flex flex-col ${
-            activeSuggestionIndex !== null ? 'translate-x-0' : '-translate-x-full'
-          }`}
-        >
-          {/* Drawer Header */}
-          <div className="p-4 sm:p-5 border-b border-slate-100/60 bg-gradient-to-br from-indigo-50/40 to-white/50 flex justify-between items-start shrink-0">
-            <div>
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                </span>
-                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
-                  Smart Assistant
-                </span>
-              </div>
-              <h3 className="font-black text-slate-800 text-base sm:text-lg tracking-tight leading-tight">
-                Recommended Bullets
-              </h3>
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5 line-clamp-1">
-                For {activeExp?.role || 'your selected role'}
-              </p>
-            </div>
-            
-            <button 
-              onClick={() => setActiveSuggestionIndex(null)}
-              className="p-1.5 text-slate-400 cursor-pointer hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Drawer Content / List of Suggestions */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
-            {activeVisibleSuggestions.length === 0 ? (
-               <div className="text-center py-10 px-4">
-                  <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                     <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  </div>
-                  <p className="text-slate-500 text-xs font-medium">All suggestions have been added for this role.</p>
-               </div>
-            ) : (
-              activeVisibleSuggestions.map((ach, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleAddSuggestedAchievement(activeSuggestionIndex, ach)}
-                  className="w-full text-left p-3 bg-white cursor-pointer hover:bg-indigo-50/30 text-slate-600 hover:text-indigo-800 text-[11px] sm:text-xs rounded-xl border border-slate-200/80 hover:border-indigo-200 shadow-sm transition-all duration-200 flex items-start gap-2.5 active:scale-[0.98] group/btn"
-                >
-                  <span className="flex-shrink-0 w-5 h-5 rounded-md bg-indigo-50 text-indigo-500 flex items-center justify-center font-bold group-hover/btn:bg-indigo-500 group-hover/btn:text-white transition-colors">
-                    +
-                  </span>
-                  <span className="leading-relaxed mt-0.5">{ach}</span>
-                </button>
-              ))
-            )}
-          </div>
-          
-          {/* Drawer Footer */}
-          <div className="p-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
-             <button 
-                onClick={() => setActiveSuggestionIndex(null)}
-                className="w-full py-2.5 bg-white border cursor-pointer border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
-             >
-                Done
-             </button>
-          </div>
-        </div>
-
       </div>
     </>
   );

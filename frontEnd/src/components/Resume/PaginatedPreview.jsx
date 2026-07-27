@@ -18,7 +18,7 @@ export default function PaginatedPreview({ data, template }) {
       // Use deferredData so the preview renders behind the user's live typing
       const rawHtml = renderToString(<ResumePreview data={deferredData} template={template} />);
       await paginate(rawHtml, () => isCancelled);
-    }, 5000);
+    }, 1200);
 
     return () => {
       isCancelled = true;

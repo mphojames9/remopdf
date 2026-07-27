@@ -1,23 +1,99 @@
-import React from 'react';
+import React, { useState, useEffect, memo } from 'react';
+import ModalAd from '../../../components/ModalAd'
 
-// Premium Standardized InputField
-const InputField = ({ label, placeholder, value, onChange, onBlur, type = "text" }) => (
-  <div className="flex flex-col group w-full">
-    <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
-      {label}
-    </label>
-    <div className="relative w-full">
-      <input 
-        type={type}
-        placeholder={placeholder} 
-        value={value || ''} 
-        onChange={onChange}
-        onBlur={onBlur}
-        className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium" 
+// Fixed Input Component
+const InputField = memo(({ label, placeholder, value, onChange, type = "text" }) => {
+  const [localVal, setLocalVal] = useState(value || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalVal(value || '');
+    }
+  }, [value, isFocused]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localVal !== (value || '')) {
+        onChange({ target: { value: localVal } });
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [localVal]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (localVal !== (value || '')) {
+      onChange({ target: { value: localVal } });
+    }
+  };
+
+  return (
+    <div className="flex flex-col group w-full">
+      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
+        {label}
+      </label>
+      <div className="relative w-full">
+        <input 
+          type={type}
+          placeholder={placeholder} 
+          value={localVal} 
+          onChange={(e) => setLocalVal(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={handleBlur}
+          className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium" 
+        />
+      </div>
+    </div>
+  );
+});
+
+// Fixed Textarea Component
+const TextAreaField = memo(({ label, placeholder, value, onChange, rows = 3 }) => {
+  const [localVal, setLocalVal] = useState(value || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalVal(value || '');
+    }
+  }, [value, isFocused]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localVal !== (value || '')) {
+        onChange({ target: { value: localVal } });
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [localVal]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (localVal !== (value || '')) {
+      onChange({ target: { value: localVal } });
+    }
+  };
+
+  return (
+    <div className="flex flex-col group space-y-2.5">
+      {label && (
+        <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-0.5 block">
+          {label}
+        </label>
+      )}
+      <textarea
+        rows={rows}
+        placeholder={placeholder}
+        value={localVal}
+        onChange={(e) => setLocalVal(e.target.value)}
+        onFocus={() => setIsFocused(true)}
+        onBlur={handleBlur}
+        className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-relaxed font-medium placeholder:text-slate-400"
       />
     </div>
-  </div>
-);
+  );
+});
 
 export default function ProjectsField({ data, setData, onPrev, onNext, nextLabel }) {
   const projects = data.projects?.length > 0 
@@ -25,17 +101,24 @@ export default function ProjectsField({ data, setData, onPrev, onNext, nextLabel
     : [{ id: Date.now(), title: '', link: '', date: '', description: '' }];
 
   const handleUpdate = (index, field, value) => {
-    const updated = [...projects];
-    updated[index][field] = value;
+    const updated = projects.map((proj, i) => 
+      i === index ? { ...proj, [field]: value } : proj
+    );
     setData(prev => ({ ...prev, projects: updated }));
   };
 
   const handleAdd = () => {
-    setData(prev => ({ ...prev, projects: [...projects, { id: Date.now(), title: '', link: '', date: '', description: '' }] }));
+    setData(prev => ({ 
+      ...prev, 
+      projects: [...projects, { id: Date.now(), title: '', link: '', date: '', description: '' }] 
+    }));
   };
 
   const handleRemove = (indexToRemove) => {
-    setData(prev => ({ ...prev, projects: projects.filter((_, i) => i !== indexToRemove) }));
+    setData(prev => ({ 
+      ...prev, 
+      projects: projects.filter((_, i) => i !== indexToRemove) 
+    }));
   };
 
   const isAddDisabled = projects.length > 0 && (!projects[projects.length - 1].title.trim());
@@ -81,18 +164,13 @@ export default function ProjectsField({ data, setData, onPrev, onNext, nextLabel
                 </div>
               </div>
               
-              <div className="flex flex-col group space-y-2.5">
-                <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-0.5 block">
-                  Description & Technologies
-                </label>
-                <textarea
-                  rows="3"
-                  placeholder="Describe the project and technologies used..."
-                  value={proj.description || ''}
-                  onChange={(e) => handleUpdate(index, 'description', e.target.value)}
-                  className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-relaxed font-medium placeholder:text-slate-400"
-                />
-              </div>
+              <TextAreaField
+                label="Description & Technologies"
+                placeholder="Describe the project and technologies used..."
+                value={proj.description || ''}
+                onChange={(e) => handleUpdate(index, 'description', e.target.value)}
+                rows={3}
+              />
             </div>
           ))}
         </div>
@@ -108,7 +186,7 @@ export default function ProjectsField({ data, setData, onPrev, onNext, nextLabel
           {isAddDisabled ? 'Fill current details to add another' : 'Add Project'}
         </button>
       </div>
-
+<ModalAd />
       {/* Fixed Bottom Action Navigation Bar */}
       <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
         <button 

@@ -1,31 +1,121 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ModalAd from '../../../components/ModalAd'
 
 // ============================================================================
-// PREMIUM STANDARDIZED INPUT FIELD (Matched to ExperienceField)
+// PREMIUM STANDARDIZED INPUT FIELD (Fixed Keystroke Drops & Lag)
 // ============================================================================
-const InputField = ({ label, name, type = "text", placeholder, icon, value, onChange }) => (
-  <div className="flex flex-col group w-full">
-    <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
-      {label}
-    </label>
-    <div className="relative w-full">
-      {icon && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors z-10">
-          {icon}
-        </div>
-      )}
-      <input
-        type={type}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        className={`w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl py-2 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium ${icon ? 'pl-9 pr-3 sm:pr-4' : 'px-3 sm:px-4'}`}
-      />
+const InputField = ({ label, name, type = "text", placeholder, icon, value, onChange }) => {
+  const [localValue, setLocalValue] = useState(value || '');
+  
+  // Keep track of the last value we sent to the parent
+  const lastNotifiedValue = useRef(value || '');
+
+  // Only sync from parent if the parent sends a TRULY new value 
+  // (e.g., you click a "Clear Form" button). This ignores the delayed echoes.
+  useEffect(() => {
+    if (value !== lastNotifiedValue.current) {
+      setLocalValue(value || '');
+      lastNotifiedValue.current = value || '';
+    }
+  }, [value]);
+
+  // Debounce the typing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (localValue !== lastNotifiedValue.current) {
+        lastNotifiedValue.current = localValue;
+        onChange({ target: { name, value: localValue } });
+      }
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [localValue, name, onChange]);
+
+  // Ensure save on blur
+  const handleBlur = () => {
+    if (localValue !== lastNotifiedValue.current) {
+      lastNotifiedValue.current = localValue;
+      onChange({ target: { name, value: localValue } });
+    }
+  };
+
+  return (
+    <div className="flex flex-col group w-full">
+      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
+        {label}
+      </label>
+      <div className="relative w-full">
+        {icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors z-10">
+            {icon}
+          </div>
+        )}
+        <input
+          type={type}
+          name={name}
+          placeholder={placeholder}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          className={`w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl py-2 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium ${icon ? 'pl-9 pr-3 sm:pr-4' : 'px-3 sm:px-4'}`}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
+// ============================================================================
+// TEXT AREA FIELD (Fixed Keystroke Drops & Lag)
+// ============================================================================
+const TextAreaField = ({ name, placeholder, value, onChange, maxChars }) => {
+  const [localValue, setLocalValue] = useState(value || '');
+  const lastNotifiedValue = useRef(value || '');
+
+  useEffect(() => {
+    if (value !== lastNotifiedValue.current) {
+      setLocalValue(value || '');
+      lastNotifiedValue.current = value || '';
+    }
+  }, [value]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (localValue !== lastNotifiedValue.current) {
+        lastNotifiedValue.current = localValue;
+        onChange({ target: { name, value: localValue } });
+      }
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [localValue, name, onChange]);
+
+  const handleBlur = () => {
+    if (localValue !== lastNotifiedValue.current) {
+      lastNotifiedValue.current = localValue;
+      onChange({ target: { name, value: localValue } });
+    }
+  };
+
+  return (
+    <div className="relative">
+      <textarea
+        name={name}
+        rows="4"
+        maxLength={maxChars}
+        placeholder={placeholder}
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={handleBlur}
+        className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-relaxed font-medium placeholder:text-slate-400"
+      />
+      <div className="absolute bottom-2.5 right-3.5 text-[9px] font-bold text-slate-400 tracking-wider">
+        {localValue.length} / {maxChars}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
   const [showDemographics, setShowDemographics] = useState(false);
   
@@ -39,13 +129,14 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const maxSummaryChars = 600;
 
-  const handleChange = (e) => {
+  // Wrapped in useCallback to prevent child components from re-rendering unnecessarily
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setData(prev => ({
       ...prev,
       personalInfo: { ...prev.personalInfo, [name]: value }
     }));
-  };
+  }, [setData]);
 
   // --- Photo Upload & Crop Logic ---
   const handleFileChange = (e) => {
@@ -121,13 +212,11 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
 
   return (
     <>
-      {/* Container fully matched to ExperienceField */}
       <div className="w-full max-w-3xl mx-auto font-['Outfit',_sans-serif] animate-fade-in px-3 sm:px-6 h-[80vh] min-w-[320px] flex flex-col overflow-hidden bg-white selection:bg-orange-100 selection:text-orange-800">
         
         {/* Scrollable Form Content */}
         <div className="flex-1 overflow-y-auto pr-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-4 pt-3 space-y-5 sm:space-y-6">
           
-          {/* Matched Section Header */}
           <div className="mb-4 sm:mb-6">
             <span className="inline-block text-orange-600 text-[9px] font-bold uppercase tracking-widest bg-orange-50 border border-orange-100 px-2.5 py-0.5 rounded-full mb-1.5">
               Section 1
@@ -147,7 +236,6 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
             </h3>
             
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
-              {/* Premium Photo Avatar */}
               <div className="flex flex-col items-center gap-2 shrink-0">
                 <div 
                   onClick={() => !data.personalInfo.photo && fileInputRef.current.click()}
@@ -171,7 +259,6 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
                 <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
               </div>
 
-              {/* Form Fields */}
               <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                 <InputField label="Full Name" name="fullName" placeholder="e.g. Alexander Wright" value={data.personalInfo.fullName || ''} onChange={handleChange} />
                 <InputField label="Professional Title" name="jobTitle" placeholder="e.g. Product Designer" value={data.personalInfo.jobTitle || ''} onChange={handleChange} />
@@ -199,20 +286,13 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
             <h3 className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4 ml-0.5 border-b border-slate-50 pb-2">
               3. Professional Summary
             </h3>
-            <div className="relative">
-              <textarea
-                name="summary"
-                rows="4"
-                maxLength={maxSummaryChars}
-                placeholder="Design leader with 8+ years driving cross-platform projects..."
-                value={data.personalInfo.summary || ''}
-                onChange={handleChange}
-                className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-relaxed font-medium placeholder:text-slate-400"
-              />
-              <div className="absolute bottom-2.5 right-3.5 text-[9px] font-bold text-slate-400 tracking-wider">
-                {(data.personalInfo.summary || '').length} / {maxSummaryChars}
-              </div>
-            </div>
+            <TextAreaField
+              name="summary"
+              maxChars={maxSummaryChars}
+              placeholder="Design leader with 8+ years driving cross-platform projects..."
+              value={data.personalInfo.summary || ''}
+              onChange={handleChange}
+            />
           </div>
 
           {/* Card 4: Accordion Block: Legal & Demographics */}
@@ -256,8 +336,8 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
             )}
           </div>
         </div>
-
-        {/* Fixed Bottom Action Navigation Bar (Matched to ExperienceField) */}
+<ModalAd />
+        {/* Fixed Bottom Action Navigation Bar */}
         <div className="border-t border-slate-100 pt-3 pb-4 flex justify-end items-center gap-3 bg-white shrink-0">
           <button 
             onClick={onNext} 
@@ -273,7 +353,7 @@ export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
         </div>
       </div>
 
-      {/* PHOTO EDITOR MODAL (Premium matched overlay) */}
+      {/* PHOTO EDITOR MODAL */}
       {showPhotoModal && rawImage && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 font-['Outfit',_sans-serif]">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden border border-slate-200/50 max-h-[95vh] flex flex-col animate-in fade-in zoom-in duration-200">

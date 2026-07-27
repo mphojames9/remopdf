@@ -1,4 +1,80 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ModalAd from '../../../components/ModalAd'
+
+const LanguageItem = ({ lang, index, onUpdate, onRemove }) => {
+  const [localName, setLocalName] = useState(lang.name || '');
+  const [isFocused, setIsFocused] = useState(false);
+  const onUpdateRef = useRef(onUpdate);
+
+  useEffect(() => { onUpdateRef.current = onUpdate; }, [onUpdate]);
+  
+  useEffect(() => { 
+    if (!isFocused) setLocalName(lang.name || ''); 
+  }, [lang.name, isFocused]);
+
+  const handleNameChange = (e) => setLocalName(e.target.value);
+  const handleFocus = () => setIsFocused(true);
+  
+  const handleNameBlur = () => {
+    setIsFocused(false);
+    onUpdateRef.current(index, 'name', localName);
+  };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isFocused) onUpdateRef.current(index, 'name', localName);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [localName, isFocused, index]);
+
+  return (
+    <div className="p-3.5 sm:p-5 bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.12)] rounded-2xl relative group/card hover:border-slate-200 hover:shadow-[0_4px_24px_-2px_rgba(148,163,184,0.16)] transition-all duration-300 flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+      
+      <div className="flex-1 w-full relative">
+        <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 block transition-colors">
+          Language Name
+        </label>
+        <input
+          type="text"
+          placeholder="e.g. English, French..."
+          value={localName}
+          onChange={handleNameChange}
+          onFocus={handleFocus}
+          onBlur={handleNameBlur}
+          className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium"
+        />
+      </div>
+      
+      <div className="w-full sm:w-56 relative shrink-0">
+         <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 block transition-colors">
+          Proficiency Level
+         </label>
+         <select
+            value={lang.proficiency || 'Native / Bilingual'}
+            onChange={(e) => onUpdateRef.current(index, 'proficiency', e.target.value)}
+            className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all appearance-none cursor-pointer font-medium"
+         >
+            <option value="Native / Bilingual">Native / Bilingual</option>
+            <option value="Fluent">Fluent</option>
+            <option value="Proficient">Proficient</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Basic">Basic</option>
+         </select>
+         <div className="absolute right-4 bottom-2.5 sm:bottom-3.5 pointer-events-none text-slate-400">
+           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+         </div>
+      </div>
+
+      <button
+        onClick={() => onRemove(index)}
+        className="w-full sm:w-auto sm:self-end sm:mb-1 cursor-pointer px-3 py-2.5 sm:p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-xl transition-colors flex items-center justify-center shrink-0"
+        title="Remove Language"
+      >
+        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+      </button>
+    </div>
+  );
+};
 
 export default function LanguagesField({ data, setData, onNext, onPrev, nextLabel }) {
   const languages = data.languages || [];
@@ -22,7 +98,6 @@ export default function LanguagesField({ data, setData, onNext, onPrev, nextLabe
   return (
     <div className="w-full max-w-3xl mx-auto font-['Outfit',_sans-serif] animate-fade-in px-3 sm:px-6 h-[80vh] min-w-[320px] flex flex-col overflow-hidden bg-white selection:bg-orange-100 selection:text-orange-800">
       
-      {/* Scrollable Form Content */}
       <div className="flex-1 overflow-y-auto pr-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-4 pt-3">
         <div className="mb-4 sm:mb-6">
           <span className="inline-block text-orange-600 text-[9px] font-bold uppercase tracking-widest bg-orange-50 border border-orange-100 px-2.5 py-0.5 rounded-full mb-1.5">
@@ -34,49 +109,13 @@ export default function LanguagesField({ data, setData, onNext, onPrev, nextLabe
 
         <div className="space-y-4 sm:space-y-5">
           {languages.map((lang, index) => (
-            <div key={lang.id || index} className="p-3.5 sm:p-5 bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.12)] rounded-2xl relative group/card hover:border-slate-200 hover:shadow-[0_4px_24px_-2px_rgba(148,163,184,0.16)] transition-all duration-300 flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-              
-              <div className="flex-1 w-full relative">
-                <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 block transition-colors">
-                  Language Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. English, French..."
-                  value={lang.name}
-                  onChange={(e) => handleUpdate(index, 'name', e.target.value)}
-                  className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium"
-                />
-              </div>
-              
-              <div className="w-full sm:w-56 relative shrink-0">
-                 <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 block transition-colors">
-                  Proficiency Level
-                 </label>
-                 <select
-                    value={lang.proficiency || 'Native / Bilingual'}
-                    onChange={(e) => handleUpdate(index, 'proficiency', e.target.value)}
-                    className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all appearance-none cursor-pointer font-medium"
-                 >
-                    <option value="Native / Bilingual">Native / Bilingual</option>
-                    <option value="Fluent">Fluent</option>
-                    <option value="Proficient">Proficient</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Basic">Basic</option>
-                 </select>
-                 <div className="absolute right-4 bottom-2.5 sm:bottom-3.5 pointer-events-none text-slate-400">
-                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                 </div>
-              </div>
-
-              <button
-                onClick={() => handleRemove(index)}
-                className="w-full sm:w-auto sm:self-end sm:mb-1 cursor-pointer px-3 py-2.5 sm:p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-xl transition-colors flex items-center justify-center shrink-0"
-                title="Remove Language"
-              >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-              </button>
-            </div>
+            <LanguageItem 
+              key={lang.id || index} 
+              lang={lang} 
+              index={index} 
+              onUpdate={handleUpdate} 
+              onRemove={handleRemove} 
+            />
           ))}
         </div>
 
@@ -89,8 +128,7 @@ export default function LanguagesField({ data, setData, onNext, onPrev, nextLabe
           {isAddDisabled ? 'Enter language to add another' : 'Add Language'}
         </button>
       </div>
-
-      {/* Fixed Bottom Action Navigation Bar */}
+<ModalAd />
       <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
         <button 
           onClick={onPrev} 

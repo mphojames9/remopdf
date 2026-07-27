@@ -1,4 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ModalAd from '../../../components/ModalAd'
+
+// Sub-component isolates local state and locks during typing
+const HobbyItem = ({ hobby, index, onUpdate, onRemove }) => {
+  const [localValue, setLocalValue] = useState(hobby || '');
+  const [isFocused, setIsFocused] = useState(false);
+  const onUpdateRef = useRef(onUpdate);
+
+  useEffect(() => { onUpdateRef.current = onUpdate; }, [onUpdate]);
+  
+  useEffect(() => { 
+    if (!isFocused) setLocalValue(hobby || ''); 
+  }, [hobby, isFocused]);
+
+  const handleChange = (e) => setLocalValue(e.target.value);
+  const handleFocus = () => setIsFocused(true);
+  
+  const handleBlur = () => {
+    setIsFocused(false);
+    onUpdateRef.current(index, localValue);
+  };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isFocused) onUpdateRef.current(index, localValue);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [localValue, isFocused, index]);
+
+  return (
+    <div className="p-1.5 sm:p-2 bg-slate-50/40 border border-slate-200/70 rounded-xl hover:border-orange-300 hover:bg-white transition-all duration-200 flex items-center gap-2 group/item shadow-sm">
+      <div className="flex-shrink-0 ml-2 flex items-center justify-center">
+        <div className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover/item:bg-orange-500 transition-colors duration-200"></div>
+      </div>
+      <input 
+        type="text"
+        placeholder="e.g. Open Source, Chess, Photography..." 
+        value={localValue} 
+        onChange={handleChange} 
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        className="flex-1 bg-transparent text-slate-800 text-xs sm:text-sm outline-none font-medium placeholder:text-slate-400/70 px-1 py-1.5 focus:ring-0"
+      />
+      <button 
+        type="button"
+        onClick={() => onRemove(index)} 
+        className="text-slate-400 cursor-pointer hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all shrink-0 sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus:opacity-100"
+        title="Remove Hobby"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+    </div>
+  );
+};
 
 export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel }) {
   const hobbies = data.hobbies || [];
@@ -22,10 +78,8 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
   return (
     <div className="w-full max-w-3xl mx-auto font-['Outfit',_sans-serif] animate-fade-in px-3 sm:px-6 h-[80vh] min-w-[320px] flex flex-col overflow-hidden bg-white selection:bg-orange-100 selection:text-orange-800">
       
-      {/* Scrollable Form Content */}
       <div className="flex-1 overflow-y-auto pr-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-4 pt-3">
         
-        {/* Header Block */}
         <div className="mb-4 sm:mb-6">
           <span className="inline-block text-orange-600 text-[9px] font-bold uppercase tracking-widest bg-orange-50 border border-orange-100 px-2.5 py-0.5 rounded-full mb-1.5">
             Section 8
@@ -38,50 +92,24 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
           </p>
         </div>
 
-        {/* Minimalist Compact List Row Containers */}
         <div className="space-y-2">
           {hobbies.map((hobby, index) => (
-            <div 
+            <HobbyItem 
               key={index} 
-              className="p-1.5 sm:p-2 bg-slate-50/40 border border-slate-200/70 rounded-xl hover:border-orange-300 hover:bg-white transition-all duration-200 flex items-center gap-2 group/item shadow-sm"
-            >
-              {/* Dynamic bullet dot indicator */}
-              <div className="flex-shrink-0 ml-2 flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover/item:bg-orange-500 transition-colors duration-200"></div>
-              </div>
-
-              {/* Seamless Inline Input */}
-              <input 
-                type="text"
-                placeholder="e.g. Open Source, Chess, Photography..." 
-                value={hobby || ''} 
-                onChange={(e) => handleUpdate(index, e.target.value)} 
-                className="flex-1 bg-transparent text-slate-800 text-xs sm:text-sm outline-none font-medium placeholder:text-slate-400/70 px-1 py-1.5 focus:ring-0"
-              />
-
-              {/* Integrated modern delete control button */}
-              <button 
-                type="button"
-                onClick={() => handleRemove(index)} 
-                className="text-slate-400 cursor-pointer hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all shrink-0 sm:opacity-0 sm:group-hover/item:opacity-100 sm:focus:opacity-100"
-                title="Remove Hobby"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
+              hobby={hobby} 
+              index={index} 
+              onUpdate={handleUpdate} 
+              onRemove={handleRemove} 
+            />
           ))}
         </div>
 
-        {/* Empty State */}
         {hobbies.length === 0 && (
           <div className="text-center py-10 bg-slate-50/30 rounded-xl border-2 border-dashed border-slate-200/60 mt-2">
             <p className="text-slate-400 font-medium text-xs sm:text-sm">No hobbies listed yet.</p>
           </div>
         )}
 
-        {/* Compact Add Action Button */}
         <button 
           type="button"
           onClick={handleAdd} 
@@ -98,8 +126,7 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
           {isAddDisabled ? 'Enter hobby to add another' : 'Add Hobby'}
         </button>
       </div>
-
-      {/* Fixed Bottom Action Navigation Bar */}
+<ModalAd />
       <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
         <button 
           type="button"
@@ -119,7 +146,6 @@ export default function HobbiesField({ data, setData, onNext, onPrev, nextLabel 
           {nextLabel || "Next: References"}
         </button>
       </div>
-
     </div>
   );
 }

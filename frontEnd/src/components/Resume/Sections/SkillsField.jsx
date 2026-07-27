@@ -1,11 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import useResumeSuggestions from '../../../hooks/useResumeSuggestions';
+import ModalAd from '../../../components/ModalAd'
+
+// Fixed Skill Input Component
+const SkillInput = memo(({ value, onChange }) => {
+  const [localVal, setLocalVal] = useState(value || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalVal(value || '');
+    }
+  }, [value, isFocused]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localVal !== (value || '')) {
+        onChange({ target: { value: localVal } });
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [localVal]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (localVal !== (value || '')) {
+      onChange({ target: { value: localVal } });
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      placeholder="e.g., React.js, Project Management"
+      value={localVal}
+      onChange={(e) => setLocalVal(e.target.value)}
+      onFocus={() => setIsFocused(true)}
+      onBlur={handleBlur}
+      className="w-full bg-slate-50/50 border border-transparent hover:bg-slate-50 hover:border-slate-200 text-slate-800 rounded-lg px-3 py-2 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all placeholder:text-slate-400 font-medium"
+    />
+  );
+});
 
 export default function SkillsField({ data, setData, onNext, onPrev, nextLabel }) {
   const { suggestions, isSuggesting } = useResumeSuggestions(data);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Lock background scroll when the AI suggestion drawer is open
   useEffect(() => {
     if (isDrawerOpen) {
       document.body.style.overflow = 'hidden';
@@ -18,7 +58,7 @@ export default function SkillsField({ data, setData, onNext, onPrev, nextLabel }
     };
   }, [isDrawerOpen]);
 
-  const initializeSkills = () => {
+  const skills = useMemo(() => {
     if (!data.skills || data.skills.length === 0) {
       return [{ id: Date.now(), name: '', level: 3 }];
     }
@@ -26,9 +66,7 @@ export default function SkillsField({ data, setData, onNext, onPrev, nextLabel }
       if (typeof skill === 'string') return { id: Date.now() + index, name: skill, level: 3 };
       return skill;
     });
-  };
-
-  const skills = initializeSkills();
+  }, [data.skills]);
 
   const handleUpdate = (index, field, value) => {
     const updated = skills.map((skill, i) => 
@@ -111,7 +149,7 @@ export default function SkillsField({ data, setData, onNext, onPrev, nextLabel }
                   <svg className="w-3 h-3 text-indigo-500 group-hover/sparkle:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                   </svg>
-                  <span className="hidden sm:inline">AI </span>Suggestions
+                  <span className="hidden sm:inline">Suggestions</span>
                </button>
             )}
           </div>
@@ -123,12 +161,9 @@ export default function SkillsField({ data, setData, onNext, onPrev, nextLabel }
                 
                 {/* Input Field Area */}
                 <div className="flex-1 w-full relative">
-                  <input
-                    type="text"
-                    placeholder="e.g., React.js, Project Management"
+                  <SkillInput
                     value={skill.name}
                     onChange={(e) => handleUpdate(index, 'name', e.target.value)}
-                    className="w-full bg-slate-50/50 border border-transparent hover:bg-slate-50 hover:border-slate-200 text-slate-800 rounded-lg px-3 py-2 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all placeholder:text-slate-400 font-medium"
                   />
                 </div>
 
@@ -173,7 +208,7 @@ export default function SkillsField({ data, setData, onNext, onPrev, nextLabel }
             {isAddDisabled ? 'Enter a skill to add another' : 'Add Another Skill'}
           </button>
         </div>
-
+<ModalAd />
         {/* Fixed Bottom Action Navigation Bar */}
         <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
           <button 
@@ -195,8 +230,7 @@ export default function SkillsField({ data, setData, onNext, onPrev, nextLabel }
           </button>
         </div>
 
-        {/* --- PREMIUM AI SUGGESTIONS DRAWER (LEFT SLIDER) --- */}
-        {/* Backdrop overlay now bumped to z-[998] */}
+        {/* --- SMART ASSISTANT DRAWER --- */}
         <div 
           className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[998] transition-opacity duration-300 ${
             isDrawerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -204,7 +238,6 @@ export default function SkillsField({ data, setData, onNext, onPrev, nextLabel }
           onClick={() => setIsDrawerOpen(false)}
         />
 
-        {/* Drawer container now bumped to z-[999] */}
         <div 
           className={`fixed top-0 left-0 h-full w-[88vw] max-w-[340px] bg-white/95 backdrop-blur-2xl shadow-[24px_0_40px_rgba(0,0,0,0.08)] border-r border-slate-100 z-[999] transform transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) flex flex-col ${
             isDrawerOpen ? 'translate-x-0' : '-translate-x-full'

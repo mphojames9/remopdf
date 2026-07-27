@@ -1,23 +1,100 @@
-import React from 'react';
+import React, { useState, useEffect, memo } from 'react';
+import ModalAd from '../../../components/ModalAd'
 
-// Premium Standardized InputField
-const InputField = ({ label, placeholder, value, onChange, onBlur, type = "text" }) => (
-  <div className="flex flex-col group w-full">
-    <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
-      {label}
-    </label>
-    <div className="relative w-full">
-      <input 
-        type={type}
-        placeholder={placeholder} 
-        value={value || ''} 
-        onChange={onChange}
-        onBlur={onBlur}
-        className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium" 
+// Fixed Input Component - avoids dropping keystrokes while typing
+const InputField = memo(({ label, placeholder, value, onChange, type = "text" }) => {
+  const [localVal, setLocalVal] = useState(value || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Sync from parent ONLY when not actively typing
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalVal(value || '');
+    }
+  }, [value, isFocused]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localVal !== (value || '')) {
+        onChange({ target: { value: localVal } });
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [localVal]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (localVal !== (value || '')) {
+      onChange({ target: { value: localVal } });
+    }
+  };
+
+  return (
+    <div className="flex flex-col group w-full">
+      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
+        {label}
+      </label>
+      <div className="relative w-full">
+        <input 
+          type={type}
+          placeholder={placeholder} 
+          value={localVal} 
+          onChange={(e) => setLocalVal(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={handleBlur}
+          className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium" 
+        />
+      </div>
+    </div>
+  );
+});
+
+// Fixed Textarea Component
+const TextAreaField = memo(({ label, placeholder, value, onChange, rows = 2 }) => {
+  const [localVal, setLocalVal] = useState(value || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalVal(value || '');
+    }
+  }, [value, isFocused]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localVal !== (value || '')) {
+        onChange({ target: { value: localVal } });
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [localVal]);
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (localVal !== (value || '')) {
+      onChange({ target: { value: localVal } });
+    }
+  };
+
+  return (
+    <div className="flex flex-col group space-y-2.5">
+      {label && (
+        <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-0.5 block">
+          {label}
+        </label>
+      )}
+      <textarea
+        rows={rows}
+        placeholder={placeholder}
+        value={localVal}
+        onChange={(e) => setLocalVal(e.target.value)}
+        onFocus={() => setIsFocused(true)}
+        onBlur={handleBlur}
+        className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-relaxed font-medium placeholder:text-slate-400"
       />
     </div>
-  </div>
-);
+  );
+});
 
 export default function CertificatesField({ data, setData, onPrev, onNext, nextLabel }) {
   const certificates = data.certificates?.length > 0 
@@ -25,17 +102,24 @@ export default function CertificatesField({ data, setData, onPrev, onNext, nextL
     : [{ id: Date.now(), title: '', issuer: '', date: '', description: '' }];
 
   const handleUpdate = (index, field, value) => {
-    const updated = [...certificates];
-    updated[index][field] = value;
+    const updated = certificates.map((cert, i) => 
+      i === index ? { ...cert, [field]: value } : cert
+    );
     setData(prev => ({ ...prev, certificates: updated }));
   };
 
   const handleAdd = () => {
-    setData(prev => ({ ...prev, certificates: [...certificates, { id: Date.now(), title: '', issuer: '', date: '', description: '' }] }));
+    setData(prev => ({ 
+      ...prev, 
+      certificates: [...certificates, { id: Date.now(), title: '', issuer: '', date: '', description: '' }] 
+    }));
   };
 
   const handleRemove = (indexToRemove) => {
-    setData(prev => ({ ...prev, certificates: certificates.filter((_, i) => i !== indexToRemove) }));
+    setData(prev => ({ 
+      ...prev, 
+      certificates: certificates.filter((_, i) => i !== indexToRemove) 
+    }));
   };
 
   const isAddDisabled = certificates.length > 0 && (!certificates[certificates.length - 1].title.trim());
@@ -81,18 +165,13 @@ export default function CertificatesField({ data, setData, onPrev, onNext, nextL
                 </div>
               </div>
               
-              <div className="flex flex-col group space-y-2.5">
-                <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-0.5 block">
-                  Description / Skills Gained (Optional)
-                </label>
-                <textarea
-                  rows="2"
-                  placeholder="Briefly describe what this certification covered..."
-                  value={cert.description || ''}
-                  onChange={(e) => handleUpdate(index, 'description', e.target.value)}
-                  className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-relaxed font-medium placeholder:text-slate-400"
-                />
-              </div>
+              <TextAreaField
+                label="Description / Skills Gained (Optional)"
+                placeholder="Briefly describe what this certification covered..."
+                value={cert.description || ''}
+                onChange={(e) => handleUpdate(index, 'description', e.target.value)}
+                rows={2}
+              />
             </div>
           ))}
         </div>
@@ -108,7 +187,7 @@ export default function CertificatesField({ data, setData, onPrev, onNext, nextL
           {isAddDisabled ? 'Fill details to add another' : 'Add Certificate'}
         </button>
       </div>
-
+<ModalAd />
       {/* Fixed Bottom Action Navigation Bar */}
       <div className="border-t border-slate-100 pt-3 pb-4 flex justify-between items-center gap-3 bg-white shrink-0">
         <button 
@@ -120,6 +199,7 @@ export default function CertificatesField({ data, setData, onPrev, onNext, nextL
           </svg>
           Back
         </button>
+        
         <button 
           onClick={onNext} 
           className="px-4 sm:px-7 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 cursor-pointer hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
