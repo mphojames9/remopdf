@@ -361,70 +361,108 @@ const handleGalleryScroll = (e) => {
   }, [showOverlay]);
 
 const handleExport = async () => {
-    setIsExporting(true);
+  setIsExporting(true);
+  try {
+    const exportContainer = document.getElementById('premium-export-container');
+    if (!exportContainer) return;
+    
+    const rawHtml = exportContainer.innerHTML;
+    const fullHtmlPayload = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+          @page { margin: 0; size: A4; }
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .export-page { box-shadow: none !important; border: none !important; outline: none !important; margin: 0 !important; border-radius: 0 !important; page-break-after: always; width: 210mm !important; height: 297mm !important; min-height: 297mm !important; max-height: 297mm !important; box-sizing: border-box !important; }
+          .export-page:last-child { page-break-after: auto; }
+        </style>
+      </head>
+      <body>${rawHtml}</body>
+      </html>
+    `;
+
+    const response = await fetch("https://remopdf-backend.onrender.com/api/resume/download", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html_content: fullHtmlPayload }), 
+    });
+
+    if (!response.ok) {
+      const errorReason = await response.text();
+      console.error("🔴 CRITICAL BACKEND ERROR DETAILS:", errorReason);
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    // 1. Read the blob ONLY ONCE here
+    const blob = await response.blob();
+    
+    const currentProfile = savedResumes.find(r => r.id === activeId);
+    const userProvidedName = resumeData.personalInfo?.fullName;
+    const computedName = userProvidedName 
+      ? `${userProvidedName.trim().replace(/\s+/g, '_')}_Resume.pdf`
+      : `${currentProfile?.title.trim().replace(/\s+/g, '_') || 'Resume'}.pdf`;
+
+    const file = new File([blob], computedName, { type: 'application/pdf' });
+
+    // 2. Try Native Share Sheet (Best experience for Mobile browsers)
     try {
-      const exportContainer = document.getElementById('premium-export-container');
-      if (!exportContainer) return;
-      
-      const rawHtml = exportContainer.innerHTML;
-      const fullHtmlPayload = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            @page { margin: 0; size: A4; }
-            html, body { margin: 0 !important; padding: 0 !important; background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .export-page { box-shadow: none !important; border: none !important; outline: none !important; margin: 0 !important; border-radius: 0 !important; page-break-after: always; width: 210mm !important; height: 297mm !important; min-height: 297mm !important; max-height: 297mm !important; box-sizing: border-box !important; }
-            .export-page:last-child { page-break-after: auto; }
-          </style>
-        </head>
-        <body>${rawHtml}</body>
-        </html>
-      `;
-
-      //const response = await fetch("http://localhost:8000/api/resume/download", {
-const response = await fetch("https://remopdf-backend.onrender.com/api/resume/download", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  // 	 This matches the "html_content" field required by your backend
-  body: JSON.stringify({ html_content: fullHtmlPayload }), 
-});
-
-      // Catch and print backend errors explicitly to your browser console
-      if (!response.ok) {
-        const errorReason = await response.text();
-        console.error("🔴 CRITICAL BACKEND ERROR DETAILS:", errorReason);
-        throw new Error(`Server responded with status ${response.status}`);
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: computedName,
+        });
+        showToast('success', 'Resume generated successfully!');
+        return; // Execution stops here if share modal opens successfully
       }
+    } catch (shareError) {
+      console.log('Native share cancelled or failed, falling back...', shareError);
+    }
 
-      const blob = await response.blob();
+    // 3. Android WebView Detection
+    const isAndroidWebView = /wv/.test(navigator.userAgent) || /Android.*Version\/[0-9].[0-9]/.test(navigator.userAgent);
+
+    if (isAndroidWebView) {
+      // Android WebViews block blob: URLs, so convert to a Data URL (Base64)
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        const base64Data = reader.result;
+        const link = document.createElement("a");
+        link.href = base64Data;
+        link.download = computedName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('success', 'Resume generated successfully!');
+      };
+    } else {
+      // 4. Standard Browser Fallback (Windows, Mac, Standard Mobile Browsers)
+      // Safely create the Object URL from the original blob
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = url;
       
-      const currentProfile = savedResumes.find(r => r.id === activeId);
-      const userProvidedName = resumeData.personalInfo?.fullName;
-      const computedName = userProvidedName 
-        ? `${userProvidedName.trim().replace(/\s+/g, '_')}_Resume.pdf`
-        : `${currentProfile?.title.trim().replace(/\s+/g, '_') || 'Resume'}.pdf`;
-
+      link.href = url;
       link.download = computedName;
       document.body.appendChild(link);
       link.click();
       
+      // Clean up the URL to prevent memory leaks
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
       showToast('success', 'Resume generated successfully!');
-    } catch (error) {
-      console.error("Frontend export error execution trace:", error);
-      showToast('error', 'Failed to generate PDF. Check browser console for details.');
-    } finally {
-      setIsExporting(false); 
-      setIsMobileMenuOpen(false);
     }
-  }; 
+
+  } catch (error) {
+    console.error("Frontend export error execution trace:", error);
+    showToast('error', 'Failed to generate PDF. Check browser console for details.');
+  } finally {
+    setIsExporting(false); 
+    setIsMobileMenuOpen(false);
+  }
+};
 
   const templates = [
 
