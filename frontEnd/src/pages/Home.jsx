@@ -1104,11 +1104,15 @@ onClick={() => navigate('/Workspace')}
             if (e.dataTransfer.files?.length) setSelectedFiles(Array.from(e.dataTransfer.files));
           }}
         >
-          <input 
-            type="file" multiple accept=".pdf" id="pdf-merge-upload" className="hidden" 
-            onChange={(e) => { if (e.target.files?.length) setSelectedFiles(Array.from(e.target.files)); }} 
-            disabled={isProcessing}
-          />
+         <input 
+  type="file" 
+  multiple 
+  accept=".pdf,application/pdf" 
+  id="pdf-merge-upload" 
+  className="hidden" 
+  onChange={(e) => { if (e.target.files?.length) setSelectedFiles(Array.from(e.target.files)); }} 
+  disabled={isProcessing}
+/>
           <label htmlFor="pdf-merge-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             
             {selectedFiles.length > 0 ? (
@@ -1233,8 +1237,15 @@ onClick={() => navigate('/Workspace')}
             if (e.dataTransfer.files?.length) setSplitFile(e.dataTransfer.files[0]);
           }}
         >
-          <input type="file" accept=".pdf" id="pdf-split-upload" className="hidden" onChange={(e) => { if (e.target.files?.length) setSplitFile(e.target.files[0]); }} disabled={isProcessing}/>
-          <label htmlFor="pdf-split-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+<input 
+    type="file" 
+    accept=".pdf,application/pdf" 
+    id="pdf-split-upload" 
+    className="hidden" 
+    onChange={(e) => { if (e.target.files?.length) setSplitFile(e.target.files[0]); }} 
+    disabled={isProcessing}
+  />
+  <label htmlFor="pdf-split-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             {splitFile ? (
               <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100 transform transition-all">
                 <p className="font-black text-xs text-green-600 tracking-widest mb-3">Target File</p>
@@ -1326,30 +1337,37 @@ onClick={() => navigate('/Workspace')}
             if (e.dataTransfer.files?.length) setCompressFile(e.dataTransfer.files[0]);
           }}
         >
-          <input type="file" accept=".pdf" id="pdf-compress-upload" className="hidden" onChange={(e) => { if (e.target.files?.length) setCompressFile(e.target.files[0]); }} disabled={isProcessing}/>
-          <label htmlFor="pdf-compress-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-            {compressFile ? (
-              <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100">
-                <p className="font-black text-xs text-blue-600 tracking-widest mb-3">Target File</p>
-                <div className="bg-slate-50/80 p-3 rounded-xl flex items-center border border-slate-100 shadow-sm">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mr-3">
-                    <i className="fa-solid fa-file-pdf text-blue-600 text-sm"></i>
-                  </div>
-                  <p className="text-xs font-bold text-slate-700 truncate">{compressFile.name}</p>
-                </div>
-              </div>
-            ) : (
-              <div className={`transform transition-all duration-500 ${isCompressDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
-                <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
-                  ${isCompressDragActive ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white border-blue-400 scale-110 shadow-[0_20px_40px_-10px_rgba(59,130,246,0.4)]' : 'bg-white text-blue-500 border-slate-100'}
-                `}>
-                  <i className={`fa-solid fa-minimize text-3xl relative z-10 transition-all duration-500 ${isCompressDragActive ? 'text-white' : 'group-hover:text-white group-hover:scale-110'}`}></i>
-                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                </div>
-                <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">{isCompressDragActive ? 'Drop heavy file' : 'Select Heavy PDF'}</h3>
-              </div>
-            )}
-          </label>
+          <input 
+  type="file" 
+  accept=".pdf,application/pdf" 
+  id="pdf-compress-upload" 
+  className="hidden" 
+  onChange={(e) => { if (e.target.files?.length) setCompressFile(e.target.files[0]); }} 
+  disabled={isProcessing}
+/>
+<label htmlFor="pdf-compress-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+  {compressFile ? (
+    <div className="w-full text-left bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.04)] border border-slate-100">
+      <p className="font-black text-xs text-blue-600 tracking-widest mb-3">Target File</p>
+      <div className="bg-slate-50/80 p-3 rounded-xl flex items-center border border-slate-100 shadow-sm">
+        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mr-3">
+          <i className="fa-solid fa-file-pdf text-blue-600 text-sm"></i>
+        </div>
+        <p className="text-xs font-bold text-slate-700 truncate">{compressFile.name}</p>
+      </div>
+    </div>
+  ) : (
+    <div className={`transform transition-all duration-500 ${isCompressDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
+      <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
+        ${isCompressDragActive ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white border-blue-400 scale-110 shadow-[0_20px_40px_-10px_rgba(59,130,246,0.4)]' : 'bg-white text-blue-500 border-slate-100'}
+      `}>
+        <i className={`fa-solid fa-minimize text-3xl relative z-10 transition-all duration-500 ${isCompressDragActive ? 'text-white' : 'group-hover:text-white group-hover:scale-110'}`}></i>
+        <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      </div>
+      <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">{isCompressDragActive ? 'Drop heavy file' : 'Select Heavy PDF'}</h3>
+    </div>
+  )}
+</label>
         </div>
 
         {/* 3D Premium Slider Box */}
@@ -1438,7 +1456,7 @@ onClick={() => navigate('/Workspace')}
           }}
         >
           <input 
-            type="file" multiple accept="image/*" id="image-to-pdf-upload" className="hidden" 
+            type="file" multiple accept="image/*,.jpeg,.jpg,.png,.webp,image/jpeg,image/png,image/webp" id="image-to-pdf-upload" className="hidden" 
             onChange={(e) => { if (e.target.files?.length) setImageFiles(Array.from(e.target.files)); }} 
             disabled={isProcessing}
           />
@@ -1570,7 +1588,7 @@ onClick={() => navigate('/Workspace')}
                 }}
               >
                 <input 
-                  type="file" multiple accept=".pdf" id="pdf-to-img-upload" className="hidden" 
+                  type="file" multiple accept=".pdf,application/pdf" id="pdf-to-img-upload" className="hidden" 
                   onChange={(e) => {
                     if (e.target.files) {
                       setPdfToImgFiles(Array.from(e.target.files));
@@ -1708,7 +1726,7 @@ onClick={() => navigate('/Workspace')}
             if (e.dataTransfer.files?.length) handleRemovePagesFileChange({ target: { files: e.dataTransfer.files } });
           }}
         >
-          <input type="file" multiple accept=".pdf" id="remove-pages-upload" className="hidden" onChange={handleRemovePagesFileChange} disabled={isProcessing || isLoadingPreviews}/>
+          <input type="file" multiple accept=".pdf,application/pdf" id="remove-pages-upload" className="hidden" onChange={handleRemovePagesFileChange} disabled={isProcessing || isLoadingPreviews}/>
           <label htmlFor="remove-pages-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             <div className={`transform transition-all duration-500 ${isRemovePagesDragActive ? '-translate-y-2' : 'group-hover:-translate-y-2'}`}>
               <div className={`w-20 h-20 mx-auto rounded-2.5xl shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] flex items-center justify-center mb-5 border relative transition-all duration-500 overflow-hidden
@@ -1920,10 +1938,14 @@ onClick={() => navigate('/Workspace')}
           }}
         >
           <input 
-            type="file" multiple accept="image/*" id="img-compress-upload" className="hidden" 
-            onChange={(e) => { if (e.target.files?.length) setImgCompressFiles(Array.from(e.target.files)); }} 
-            disabled={isProcessing}
-          />
+  type="file" 
+  multiple 
+  accept="image/*,.jpeg,.jpg,.png,.webp,image/jpeg,image/png,image/webp" 
+  id="img-compress-upload" 
+  className="hidden" 
+  onChange={(e) => { if (e.target.files?.length) setImgCompressFiles(Array.from(e.target.files)); }} 
+  disabled={isProcessing}
+/>
           <label htmlFor="img-compress-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
             
             {imgCompressFiles.length > 0 ? (
@@ -2080,7 +2102,7 @@ onClick={() => navigate('/Workspace')}
           }}
         >
           <input 
-            type="file" multiple accept=".pdf" id="pdf-to-word-upload" className="hidden" 
+            type="file" multiple accept=".pdf,application/pdf" id="pdf-to-word-upload" className="hidden" 
             onChange={(e) => { if (e.target.files?.length) setPdfToWordFiles(Array.from(e.target.files)); }} 
             disabled={isProcessing}
           />
@@ -2256,7 +2278,7 @@ onClick={() => navigate('/Workspace')}
           }}
         >
           <input 
-            type="file" multiple accept=".pdf" id="pdf-to-excel-upload" className="hidden" 
+            type="file" multiple accept=".pdf,application/pdf" id="pdf-to-excel-upload" className="hidden" 
             onChange={(e) => {
               if (e.target.files) {
                 setPdfToExcelFiles(Array.from(e.target.files));
@@ -2382,7 +2404,7 @@ onClick={() => navigate('/Workspace')}
           }}
         >
           <input 
-            type="file" accept=".pdf" id="pdf-protect-upload" className="hidden" 
+            type="file" accept=".pdf,application/pdf" id="pdf-protect-upload" className="hidden" 
             onChange={(e) => {
               if (e.target.files && e.target.files[0]) {
                 setProtectFile(e.target.files[0]);
@@ -2531,7 +2553,7 @@ onClick={() => navigate('/Workspace')}
             }}
           >
             <input 
-              type="file" accept=".pdf" id="pdf-unlock-upload" className="hidden" 
+              type="file" accept=".pdf,application/pdf" id="pdf-unlock-upload" className="hidden" 
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
                   setUnlockFile(e.target.files[0]);
@@ -2723,7 +2745,7 @@ onClick={() => navigate('/Workspace')}
             }}
           >
             <input 
-              type="file" accept=".pdf" id="pdf-change-upload" className="hidden" 
+              type="file" accept=".pdf,application/pdf" id="pdf-change-upload" className="hidden" 
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
                   setChangeFile(e.target.files[0]);
@@ -2938,7 +2960,7 @@ onClick={() => navigate('/Workspace')}
                 if (e.dataTransfer.files?.length) setPdfToPptFiles(Array.from(e.dataTransfer.files));
               }}
             >
-              <input type="file" multiple accept=".pdf" id="pdf-to-ppt-upload" className="hidden" onChange={(e) => { if (e.target.files?.length) setPdfToPptFiles(Array.from(e.target.files)); }} disabled={isProcessing}/>
+              <input type="file" multiple accept=".pdf,application/pdf" id="pdf-to-ppt-upload" className="hidden" onChange={(e) => { if (e.target.files?.length) setPdfToPptFiles(Array.from(e.target.files)); }} disabled={isProcessing}/>
               <label htmlFor="pdf-to-ppt-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
                 {pdfToPptFiles.length > 0 ? (
                   <div className="w-full text-left bg-white/90 p-5 rounded-2xl shadow-sm border border-slate-100">
