@@ -1,16 +1,24 @@
 import axios from 'axios';
 
+
 //const API_URL = 'http://localhost:8000/api';
 const API_URL = 'https://remopdf-backend.onrender.com/api';
 const downloadBlob = (blob, filename) => {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    let dataUrl = reader.result;
+    
+    // Inject the filename into the Base64 URL so Android can extract it
+    dataUrl = dataUrl.replace(';base64,', `;name=${encodeURIComponent(filename)};base64,`);
+
+    const link = document.createElement('a');
+    link.href = dataUrl; 
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  reader.readAsDataURL(blob);
 };
 
 export const mergePdfs = async (files, onProgress) => {
@@ -282,4 +290,34 @@ export const pdfToPpt = async (files, onProgress) => {
     }
     throw error;
   }
+};
+
+export const processEditedPdf = async (file, editsJson, onProgress) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('edits_json', JSON.stringify(editsJson));
+
+  const response = await axios.post(`${API_URL}/process-pdf`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    responseType: 'blob',
+    onUploadProgress: (progressEvent) => {
+      const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+      if (onProgress) onProgress(percentCompleted);
+    }
+  });
+
+  const baseName = file.name.rsplit ? file.name.rsplit('.', 1)[0] : file.name.split('.').slice(0, -1).join('.');
+  downloadBlob(new Blob([response.data], { type: 'application/pdf' }), `${baseName}_edited.pdf`);
+  return true;
+};
+
+export const scanQrCode = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await axios.post(`${API_URL}/tools/scan-qr`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  
+  return response.data;
 };
