@@ -22,6 +22,8 @@ from adobe.pdfservices.operation.pdfjobs.params.export_pdf.export_pdf_target_for
 from adobe.pdfservices.operation.pdfjobs.result.export_pdf_result import ExportPDFResult
 from dotenv import load_dotenv
 
+import cv2
+import numpy as np
 load_dotenv()
 
 router = APIRouter(
@@ -740,3 +742,31 @@ async def convert_pdf_to_ppt(files: List[UploadFile] = File(...)):
     except Exception as e:
         print(f"PPT Conversion Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"PDF to PPT conversion failed: {str(e)}")
+
+@router.post("/scan-qr")
+async def scan_qr_code(file: UploadFile = File(...)):
+    try:
+        # Read the uploaded image bytes
+        file_bytes = await file.read()
+        
+        # Convert bytes to a numpy array, then decode into an OpenCV image
+        np_arr = np.frombuffer(file_bytes, np.uint8)
+        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        
+        if img is None:
+            raise HTTPException(status_code=400, detail="Invalid or unsupported image file.")
+            
+        # Initialize the QR Code detector
+        detector = cv2.QRCodeDetector()
+        data, bbox, straight_qrcode = detector.detectAndDecode(img)
+        
+        if not data:
+            raise HTTPException(status_code=400, detail="No QR code could be detected in the provided image.")
+            
+        return {"success": True, "result": data}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"QR Scan Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process QR code: {str(e)}")
