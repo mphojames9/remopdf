@@ -7,6 +7,8 @@ WORKDIR /app
 # (Adjust the path if your requirements file is named or located differently)
 COPY backEnd/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y libzbar0 && rm -rf /var/lib/apt/lists/*
+RUN pip install -r requirements.txt
 
 # Copy the rest of your application code into the container
 COPY . .
