@@ -30,5 +30,3 @@ numpy
 # --- Image Processing ---
 Pillow
 pdfservices-sdk
-
-pyzbar

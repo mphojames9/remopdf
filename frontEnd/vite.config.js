@@ -1,30 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator'
 
+// https://vite.dev/config/
 export default defineConfig({
-  //base: '/', // <-- Moved this OUTSIDE the plugins array
   plugins: [
-    react(),
+    react(), 
     tailwindcss(),
-    obfuscatorPlugin({
-      apply: 'build', 
-      include: ['src/**/*.jsx', 'src/**/*.js', 'src/**/*.ts', 'src/**/*.tsx'],
-      exclude: [/node_modules/],
-      options: {
-        compact: true,
-        // Turn this OFF to stop the freezing
-        controlFlowFlattening: false, 
-        stringArray: true,
-        stringArrayEncoding: ['base64'],
-        disableConsoleOutput: true,
-        // Turn this OFF to stop the freezing
-        selfDefending: false, 
-      }
-    })
   ],
-  build: {
-    sourcemap: false, 
+  base: '/',
+  server: {
+    proxy: {
+      // Forwards all /api requests to your Python backend
+      '/api': {
+        target: 'https://remopdf-backend.onrender.com/api', // <-- Change 8000 if your Python server uses a different port (like 5000)
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   }
 })

@@ -174,7 +174,7 @@ export default function TrustCenter() {
 <div className="flex flex-col gap-5 border-b border-slate-100 pb-6 mb-6">
   {[
     { name: 'About Us', path: '/about' },
-    { name: 'Trust Center', path: '/trustcenter' },
+    { name: 'Trust Center', path: '/PrivacyPolicy' },
     { name: 'Contact', path: '/contact' }
   ].map((item, idx) => (
     <Link 

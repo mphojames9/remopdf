@@ -205,7 +205,7 @@ export default function Contact() {
         />
         
         <div 
-          className={`absolute top-0 right-0 w-full max-w-[310px] h-full bg-white/95 backdrop-blur-3xl shadow-[-25px_0_50px_-15px_rgba(15,23,42,0.06)] border-l border-slate-200/60 p-6 flex flex-col justify-between transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`absolute top-0 right-0 w-full max-w-[250px] h-full bg-white/95 backdrop-blur-3xl shadow-[-25px_0_50px_-15px_rgba(15,23,42,0.06)] border-l border-slate-200/60 p-6 flex flex-col justify-between transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
@@ -234,7 +234,7 @@ export default function Contact() {
             
             {/* ULTRA PREMIUM Mobile Build Resume Button */}
             <Link 
-              to="/resume-builder" 
+              to="/ResumeBuilder" 
               onClick={() => setIsMobileMenuOpen(false)}
               className="group relative flex items-center justify-center gap-2.5 w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white text-[15px] font-bold tracking-wide shadow-[0_8px_25px_-8px_rgba(249,115,22,0.7)] active:scale-[0.98] transition-all overflow-hidden isolate"
             >
@@ -278,7 +278,7 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 mb-1">Email Us directly</h3>
-                <p className="text-sm text-slate-500">hello@remopdf.com</p>
+                <p className="text-sm text-slate-500">remopdf@outlook.com</p>
               </div>
             </div>
             

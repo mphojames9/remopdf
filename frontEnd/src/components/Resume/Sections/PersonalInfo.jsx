@@ -1,432 +1,808 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import ModalAd from '../../../components/ModalAd';
+import React, { useEffect, useRef, useState } from 'react';
+import ResumePhoto, {
+  PHOTO_ACCEPT,
+  PHOTO_BORDERS,
+  PHOTO_DEFAULTS,
+  PHOTO_SHAPES,
+  PHOTO_SIZES,
+  PHOTO_ZOOM_MAX,
+  PHOTO_ZOOM_MIN,
+  normalizePhotoStyle,
+  readPhotoFile,
+} from './ResumePhoto';
 
-// ============================================================================
-// PREMIUM STANDARDIZED INPUT FIELD
-// ============================================================================
-const InputField = ({ label, name, type = "text", placeholder, icon, value, onChange }) => {
-  const [localValue, setLocalValue] = useState(value || '');
-  const lastNotifiedValue = useRef(value || '');
+const LICENCE_CODES = ['A1', 'A', 'B', 'C1', 'C', 'EB', 'EC1', 'EC'];
+const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
+const MARITAL_OPTIONS = ['Single', 'Married', 'Divorced', 'Widowed'];
+const MAX_WEBSITES = 5;
 
-  useEffect(() => {
-    if (value !== lastNotifiedValue.current) {
-      setLocalValue(value || '');
-      lastNotifiedValue.current = value || '';
-    }
-  }, [value]);
+// Reduced font sizes (text-xs) and reduced border radius (rounded-sm)
+const fieldClass = (value) =>
+  `w-full bg-white border ${
+    value ? 'border-[#d9856b]/50 text-slate-900 font-medium' : 'border-slate-200 text-slate-500'
+  } rounded-sm py-2 px-3 text-xs focus:outline-none focus:border-[#d9856b] transition-all shadow-none`;
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (localValue !== lastNotifiedValue.current) {
-        lastNotifiedValue.current = localValue;
-        onChange({ target: { name, value: localValue } });
-      }
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [localValue, name, onChange]);
+const FieldLabel = ({ children, optional, htmlFor }) => (
+  <label htmlFor={htmlFor} className="text-xs font-semibold text-slate-800 mb-1.5 flex items-center">
+    {children}
+    {optional && <span className="ml-1.5 text-[10px] font-medium text-slate-400">Optional</span>}
+  </label>
+);
 
-  const handleBlur = () => {
-    if (localValue !== lastNotifiedValue.current) {
-      lastNotifiedValue.current = localValue;
-      onChange({ target: { name, value: localValue } });
-    }
-  };
+const CheckMark = () => (
+  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#d9856b] pointer-events-none">
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+    </svg>
+  </span>
+);
 
-  return (
-    <div className="flex flex-col group w-full">
-      <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors group-focus-within:text-orange-500">
-        {label}
-      </label>
-      <div className="relative w-full">
-        {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors z-10">
-            {icon}
-          </div>
-        )}
-        <input
-          type={type}
-          name={name}
-          placeholder={placeholder}
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={handleBlur}
-          className={`w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl py-2 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all placeholder:text-slate-400 font-medium ${icon ? 'pl-9 pr-3 sm:pr-4' : 'px-3 sm:px-4'}`}
-        />
-      </div>
-    </div>
-  );
-};
-
-// ============================================================================
-// TEXT AREA FIELD
-// ============================================================================
-const TextAreaField = ({ name, placeholder, value, onChange, maxChars }) => {
-  const [localValue, setLocalValue] = useState(value || '');
-  const lastNotifiedValue = useRef(value || '');
-
-  useEffect(() => {
-    if (value !== lastNotifiedValue.current) {
-      setLocalValue(value || '');
-      lastNotifiedValue.current = value || '';
-    }
-  }, [value]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (localValue !== lastNotifiedValue.current) {
-        lastNotifiedValue.current = localValue;
-        onChange({ target: { name, value: localValue } });
-      }
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [localValue, name, onChange]);
-
-  const handleBlur = () => {
-    if (localValue !== lastNotifiedValue.current) {
-      lastNotifiedValue.current = localValue;
-      onChange({ target: { name, value: localValue } });
-    }
-  };
-
-  return (
+const InputField = ({ label, value, onChange, placeholder, checked, optional, type = 'text', id, ...rest }) => (
+  <div className="flex flex-col w-full relative">
+    <FieldLabel optional={optional} htmlFor={id}>{label}</FieldLabel>
     <div className="relative">
-      <textarea
-        name={name}
-        rows="4"
-        maxLength={maxChars}
+      <input
+        id={id}
+        type={type}
+        value={value || ''}
+        onChange={onChange}
         placeholder={placeholder}
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={handleBlur}
-        className="w-full bg-slate-50/60 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all resize-none leading-relaxed font-medium placeholder:text-slate-400"
+        className={fieldClass(value)}
+        {...rest}
       />
-      <div className="absolute bottom-2.5 right-3.5 text-[9px] font-bold text-slate-400 tracking-wider">
-        {localValue.length} / {maxChars}
-      </div>
+      {checked && value && <CheckMark />}
     </div>
-  );
+  </div>
+);
+
+// Shared by the custom pickers: close on outside click or Escape
+const useDismiss = (open, setOpen, wrapRef, triggerRef) => {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open, setOpen, wrapRef, triggerRef]);
 };
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-export default function PersonalInfo({ data, setData, onNext, nextLabel }) {
-  const [showDemographics, setShowDemographics] = useState(false);
-  
-  // Photo Uploader State
-  const fileInputRef = useRef(null);
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [rawImage, setRawImage] = useState(null);
-  const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const maxSummaryChars = 600;
+// ---------- Styled date picker (replaces the native browser calendar) ----------
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
-  const handleChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setData(prev => ({
-      ...prev,
-      personalInfo: { ...prev.personalInfo, [name]: value }
-    }));
-  }, [setData]);
+const pad2 = (n) => String(n).padStart(2, '0');
+const toISO = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;
+const todayISO = () => {
+  const t = new Date();
+  return toISO(t.getFullYear(), t.getMonth(), t.getDate());
+};
 
-  // --- Photo Upload & Crop Logic ---
-  const handleFileChange = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setRawImage(event.target.result);
-        setZoom(1);
-        setOffset({ x: 0, y: 0 });
-        setShowPhotoModal(true);
-      };
-      reader.readAsDataURL(file);
-    }
-    e.target.value = null;
+const parseISO = (s) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+  return match ? { y: +match[1], m: +match[2] - 1, d: +match[3] } : null;
+};
+const formatDisplay = (s) => {
+  const p = parseISO(s);
+  return p ? `${p.d} ${MONTHS[p.m].slice(0, 3)} ${p.y}` : '';
+};
+
+const CalendarIcon = () => (
+  <svg className="w-4 h-4 shrink-0 text-[#d9856b]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+    <path strokeLinecap="round" d="M3.5 9.5h17M8 3v4M16 3v4" />
+  </svg>
+);
+
+const Chevron = ({ dir }) => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d={dir === 'left' ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} />
+  </svg>
+);
+
+const navBtnClass =
+  'h-7 w-7 flex items-center justify-center rounded-sm border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#d9856b] hover:text-[#d9856b] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50';
+
+const headerSelectClass =
+  'rounded-sm border border-slate-200 bg-white py-1 px-1.5 text-xs font-semibold text-slate-800 cursor-pointer hover:border-[#d9856b] focus:outline-none focus:border-[#d9856b]';
+
+const DateField = ({ label, value, onChange, optional, id, min, max, placeholder = 'Select date' }) => {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  const today = todayISO();
+  const selected = parseISO(value);
+  const minP = parseISO(min);
+  const maxP = parseISO(max);
+
+  const maxYear = maxP ? maxP.y : new Date().getFullYear() + 10;
+  const minYear = minP ? minP.y : maxYear - 100;
+  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
+
+  const anchor = selected || parseISO(max && max < today ? max : today);
+  const [view, setView] = useState({ y: anchor.y, m: anchor.m });
+
+  useDismiss(open, setOpen, wrapRef, triggerRef);
+
+  const togglePicker = () => {
+    if (!open) setView({ y: anchor.y, m: anchor.m });
+    setOpen((o) => !o);
   };
 
-  const handleDragStart = (e) => {
-    setIsDragging(true);
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    setDragStart({ x: clientX - offset.x, y: clientY - offset.y });
+  const emit = (iso) => onChange({ target: { value: iso } });
+
+  const pick = (day) => {
+    emit(toISO(view.y, view.m, day));
+    setOpen(false);
+    triggerRef.current?.focus();
   };
 
-  const handleDragMove = (e) => {
-    if (!isDragging) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    setOffset({ x: clientX - dragStart.x, y: clientY - dragStart.y });
+  const clear = () => {
+    emit('');
+    setOpen(false);
+    triggerRef.current?.focus();
   };
 
-  const handleDragEnd = () => {
-    setIsDragging(false);
+  const ym = view.y * 12 + view.m;
+  const lowYM = minP ? minP.y * 12 + minP.m : minYear * 12;
+  const highYM = maxP ? maxP.y * 12 + maxP.m : maxYear * 12 + 11;
+  const shift = (delta) => {
+    const n = ym + delta;
+    setView({ y: Math.floor(n / 12), m: n % 12 });
   };
 
-  const handleSavePhoto = () => {
-    const canvas = document.createElement('canvas');
-    const size = 256;
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    
-    const img = new Image();
-    img.src = rawImage;
-    img.onload = () => {
-      const ratio = Math.max(size / img.width, size / img.height);
-      const width = img.width * ratio * zoom;
-      const height = img.height * ratio * zoom;
-      const cx = (size - width) / 2 + offset.x;
-      const cy = (size - height) / 2 + offset.y;
-
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, cx, cy, width, height);
-      
-      const croppedBase64 = canvas.toDataURL('image/jpeg', 0.9);
-      
-      setData(prev => ({
-        ...prev,
-        personalInfo: { ...prev.personalInfo, photo: croppedBase64 }
-      }));
-      
-      setShowPhotoModal(false);
-    };
-  };
-
-  const handleRemovePhoto = () => {
-    setData(prev => ({
-      ...prev,
-      personalInfo: { ...prev.personalInfo, photo: null }
-    }));
-  };
-
-  const triggerFileInput = (e) => {
-    if (e) e.stopPropagation();
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
+  const firstDow = (new Date(view.y, view.m, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(view.y, view.m + 1, 0).getDate();
+  const cells = [
+    ...Array(firstDow).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length < 42) cells.push(null);
 
   return (
-    <>
-      <div className="w-full max-w-3xl mx-auto font-['Outfit',_sans-serif] animate-fade-in px-3 sm:px-6 h-[80vh] min-w-[320px] flex flex-col overflow-hidden bg-white selection:bg-orange-100 selection:text-orange-800">
-        
-        {/* Scrollable Form Content */}
-        <div className="flex-1 overflow-y-auto pr-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-4 pt-3 space-y-5 sm:space-y-6">
-          
-          <div className="mb-4 sm:mb-6">
-            <span className="inline-block text-orange-600 text-[9px] font-bold uppercase tracking-widest bg-orange-50 border border-orange-100 px-2.5 py-0.5 rounded-full mb-1.5">
-              Section 1
-            </span>
-            <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-              Header Profile
-            </h2>
-            <p className="text-[11px] sm:text-sm text-slate-400 font-medium mt-0.5">
-              Fill out your primary details to establish your premium brand identity.
-            </p>
-          </div>
-          
-          {/* Card 1: Identity & Avatar */}
-          <div className="p-3.5 sm:p-5 bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.12)] rounded-2xl relative group/card hover:border-slate-200 hover:shadow-[0_4px_24px_-2px_rgba(148,163,184,0.16)] transition-all duration-300">
-            <h3 className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4 ml-0.5 border-b border-slate-50 pb-2">
-              1. Identity
-            </h3>
-            
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
-              <div className="flex flex-col items-center gap-2 shrink-0">
-                <div 
-                  onClick={(e) => !data.personalInfo.photo && triggerFileInput(e)}
-                  className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-slate-50 shadow-md bg-slate-50/60 flex items-center justify-center group overflow-hidden cursor-pointer transition-all hover:border-orange-100"
-                >
-                  {data.personalInfo.photo ? (
-                    <>
-                      <img src={data.personalInfo.photo} alt="Profile" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          type="button" 
-                          onClick={(e) => triggerFileInput(e)} 
-                          className="text-white cursor-pointer text-[9px] font-bold uppercase tracking-wider mb-1 hover:text-orange-400"
-                        >
-                          Change
-                        </button>
-                        <button 
-                          type="button" 
-                          onClick={(e) => { e.stopPropagation(); handleRemovePhoto(); }} 
-                          className="text-white cursor-pointer text-[9px] font-bold uppercase tracking-wider hover:text-red-400"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-slate-400 group-hover:text-orange-500 transition-colors flex flex-col items-center">
-                      <svg className="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      <span className="text-[9px] font-bold uppercase tracking-widest mt-1">Upload</span>
-                    </div>
-                  )}
-                </div>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  className="hidden" 
-                />
-              </div>
+    <div className="flex flex-col w-full relative" ref={wrapRef}>
+      <FieldLabel optional={optional} htmlFor={id}>{label}</FieldLabel>
+      <button
+        type="button"
+        id={id}
+        ref={triggerRef}
+        onClick={togglePicker}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className={`${fieldClass(value)} flex items-center justify-between text-left ${open ? 'border-[#d9856b]' : ''}`}
+      >
+        <span className={value ? '' : 'text-slate-400'}>{value ? formatDisplay(value) : placeholder}</span>
+        <CalendarIcon />
+      </button>
 
-              <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                <InputField label="Full Name" name="fullName" placeholder="e.g. Alexander Wright" value={data.personalInfo.fullName || ''} onChange={handleChange} />
-                <InputField label="Professional Title" name="jobTitle" placeholder="e.g. Product Designer" value={data.personalInfo.jobTitle || ''} onChange={handleChange} />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Contact & Social Links */}
-          <div className="p-3.5 sm:p-5 bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.12)] rounded-2xl relative group/card hover:border-slate-200 hover:shadow-[0_4px_24px_-2px_rgba(148,163,184,0.16)] transition-all duration-300">
-            <h3 className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4 ml-0.5 border-b border-slate-50 pb-2">
-              2. Communication & Socials
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-              <InputField label="Email Address" name="email" type="email" placeholder="alexander@domain.com" value={data.personalInfo.email || ''} onChange={handleChange} icon={<svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>} />
-              <InputField label="Phone Number" name="phone" type="tel" placeholder="+1 (555) 019-2834" value={data.personalInfo.phone || ''} onChange={handleChange} icon={<svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>} />
-              <InputField label="Location / City" name="location" placeholder="e.g. San Francisco, CA" value={data.personalInfo.location || ''} onChange={handleChange} icon={<svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>} />
-              <InputField label="Personal Website" name="website" placeholder="e.g. wrightdesign.co" value={data.personalInfo.website || ''} onChange={handleChange} icon={<svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>} />
-              <InputField label="LinkedIn URL" name="linkedin" placeholder="linkedin.com/in/username" value={data.personalInfo.linkedin || ''} onChange={handleChange} icon={<svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.68a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>} />
-              <InputField label="GitHub / Dribbble" name="secondarySocial" placeholder="github.com/username" value={data.personalInfo.secondarySocial || ''} onChange={handleChange} icon={<svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>} />
-            </div>
-          </div>
-
-          {/* Card 3: Professional Summary */}
-          <div className="p-3.5 sm:p-5 bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.12)] rounded-2xl relative group/card hover:border-slate-200 hover:shadow-[0_4px_24px_-2px_rgba(148,163,184,0.16)] transition-all duration-300">
-            <h3 className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4 ml-0.5 border-b border-slate-50 pb-2">
-              3. Professional Summary
-            </h3>
-            <TextAreaField
-              name="summary"
-              maxChars={maxSummaryChars}
-              placeholder="Design leader with 8+ years driving cross-platform projects..."
-              value={data.personalInfo.summary || ''}
-              onChange={handleChange}
-            />
-          </div>
-
-          {/* Card 4: Accordion Block */}
-          <div className="bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.12)] rounded-2xl relative group/card hover:border-slate-200 hover:shadow-[0_4px_24px_-2px_rgba(148,163,184,0.16)] transition-all duration-300 overflow-hidden">
-            <button type="button" onClick={() => setShowDemographics(!showDemographics)} className="w-full p-3.5 sm:p-5 flex cursor-pointer justify-between items-center hover:bg-slate-50/50 transition-colors text-left">
-              <div>
-                <h3 className="text-[10px] sm:text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                  4. Verifications & Demographics
-                </h3>
-                <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5">
-                  Optional compliance, local standards, or driver licenses.
-                </p>
-              </div>
-              <div className={`text-slate-400 transform transition-transform duration-200 ${showDemographics ? 'rotate-180' : ''}`}>
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-              </div>
+      {open && (
+        <div
+          role="dialog"
+          aria-label={`Choose ${label.toLowerCase()}`}
+          className="absolute left-0 top-full z-30 mt-1 w-[272px] max-w-[calc(100vw-2rem)] rounded-sm border border-slate-200 bg-white p-3 shadow-lg"
+        >
+          <div className="flex items-center justify-between gap-1.5 mb-2">
+            <button type="button" onClick={() => shift(-1)} disabled={ym <= lowYM} aria-label="Previous month" className={navBtnClass}>
+              <Chevron dir="left" />
             </button>
-            {showDemographics && (
-              <div className="p-3.5 sm:p-5 pt-1 border-t border-slate-50 grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 bg-slate-50/20">
-                <InputField label="Date of Birth" name="dob" type="date" value={data.personalInfo.dob || ''} onChange={handleChange} />
-                <div className="flex flex-col w-full">
-                  <label className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5 transition-colors">
-                    Gender Identity
-                  </label>
-                  <div className="relative w-full">
-                    <select name="gender" value={data.personalInfo.gender || ''} onChange={handleChange} className="w-full bg-slate-50/60 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none shadow-sm transition-all font-medium appearance-none cursor-pointer">
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Non-binary">Non-binary</option>
-                      <option value="Prefer not to say">Prefer not to say</option>
-                    </select>
-                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </div>
-                  </div>
-                </div>
-                <InputField label="Driver's License Class" name="drivingLicense" placeholder="e.g. Code B" value={data.personalInfo.drivingLicense || ''} onChange={handleChange} />
-                <InputField label="Nationality / Citizenship" name="nationality" placeholder="e.g. South African" value={data.personalInfo.nationality || ''} onChange={handleChange} />
-              </div>
-            )}
-          </div>
-        </div>
-
-        <ModalAd />
-
-        {/* Fixed Bottom Action Navigation Bar */}
-        <div className="border-t border-slate-100 pt-3 pb-4 flex justify-end items-center gap-3 bg-white shrink-0">
-          <button 
-            type="button"
-            onClick={onNext} 
-            className="px-4 sm:px-7 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 cursor-pointer hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] hover:shadow-[0_6px_20px_rgba(249,115,22,0.4)] transition-all flex items-center gap-1.5 text-xs sm:text-sm tracking-wide active:scale-[0.98]"
-          >
-            {nextLabel || "Next: Experience"}
-            {nextLabel?.includes('Finish') ? (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* PHOTO EDITOR MODAL */}
-      {showPhotoModal && rawImage && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 font-['Outfit',_sans-serif]">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden border border-slate-200/50 max-h-[95vh] flex flex-col animate-in fade-in zoom-in duration-200">
-            <div className="p-4 text-center border-b border-slate-100 shrink-0">
-              <h3 className="text-sm font-black text-slate-900 tracking-tight">Perfect Your Photo</h3>
-            </div>
-            
-            <div className="p-4 flex flex-col items-center bg-slate-50/50 relative overflow-hidden flex-1 justify-center min-h-[220px]">
-              <div 
-                className="relative w-44 h-44 rounded-full border-4 border-white shadow-[0_4px_20px_-4px_rgba(148,163,184,0.3)] overflow-hidden bg-slate-200 cursor-move touch-none z-10 hover:border-orange-100 transition-colors"
-                onMouseDown={handleDragStart}
-                onMouseMove={handleDragMove}
-                onMouseUp={handleDragEnd}
-                onMouseLeave={handleDragEnd}
-                onTouchStart={handleDragStart}
-                onTouchMove={handleDragMove}
-                onTouchEnd={handleDragEnd}
+            <div className="flex items-center gap-1 min-w-0">
+              <select
+                aria-label="Month"
+                value={view.m}
+                onChange={(e) => setView((v) => ({ ...v, m: +e.target.value }))}
+                className={headerSelectClass}
               >
-                <img 
-                  src={rawImage} 
-                  alt="Preview" 
-                  draggable={false}
-                  style={{
-                    transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-                    transformOrigin: 'center',
-                    maxWidth: 'none'
-                  }}
-                  className="absolute top-0 left-0 w-full h-full object-cover pointer-events-none" 
-                />
-              </div>
-
-              <div className="w-full mt-5 flex items-center gap-3 px-2 z-10">
-                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
-                <input 
-                  type="range" 
-                  min="1" 
-                  max="3" 
-                  step="0.05" 
-                  value={zoom} 
-                  onChange={(e) => setZoom(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-200 rounded-full appearance-none accent-orange-500 outline-none"
-                />
-              </div>
+                {MONTHS.map((name, i) => (
+                  <option
+                    key={name}
+                    value={i}
+                    disabled={view.y * 12 + i < lowYM || view.y * 12 + i > highYM}
+                  >
+                    {name.slice(0, 3)}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Year"
+                value={view.y}
+                onChange={(e) => setView((v) => ({ ...v, y: +e.target.value }))}
+                className={headerSelectClass}
+              >
+                {years.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
+            <button type="button" onClick={() => shift(1)} disabled={ym >= highYM} aria-label="Next month" className={navBtnClass}>
+              <Chevron dir="right" />
+            </button>
+          </div>
 
-            <div className="p-3.5 flex gap-2.5 bg-white border-t border-slate-100 shrink-0">
-              <button type="button" onClick={() => setShowPhotoModal(false)} className="flex-1 px-3 py-2.5 cursor-pointer border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-bold rounded-xl text-xs transition-all">Cancel</button>
-              <button type="button" onClick={handleSavePhoto} className="flex-1 px-3 py-2.5 bg-slate-900 cursor-pointer hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-md transition-all">Apply Photo</button>
-            </div>
+          <div className="grid grid-cols-7 mb-1">
+            {WEEKDAYS.map((d) => (
+              <div key={d} className="h-6 flex items-center justify-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                {d}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-0.5" role="grid">
+            {cells.map((day, i) => {
+              if (!day) return <div key={`e-${i}`} className="h-8" />;
+              const iso = toISO(view.y, view.m, day);
+              const isSelected = value === iso;
+              const isToday = iso === today;
+              const disabled = (min && iso < min) || (max && iso > max);
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => pick(day)}
+                  aria-label={formatDisplay(iso)}
+                  aria-pressed={isSelected}
+                  className={`h-8 w-full rounded-sm text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 ${
+                    isSelected
+                      ? 'bg-[#d9856b] text-white font-bold'
+                      : disabled
+                        ? 'text-slate-300 cursor-not-allowed'
+                        : isToday
+                          ? 'border border-[#d9856b] font-semibold text-[#d9856b] hover:bg-[#d9856b]/10'
+                          : 'font-medium text-slate-700 hover:bg-[#d9856b]/10 hover:text-[#d9856b]'
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={clear}
+              disabled={!value}
+              className="text-[11px] font-semibold text-slate-500 transition-colors hover:text-red-600 disabled:opacity-40 disabled:hover:text-slate-500 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 rounded-sm px-1"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-[11px] font-semibold text-slate-500 transition-colors hover:text-[#d9856b] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 rounded-sm px-1"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
-}
+};
+
+// ---------- Styled dropdown (replaces the native <select> popup) ----------
+const ChevronDown = ({ open }) => (
+  <svg
+    className={`w-4 h-4 shrink-0 text-[#d9856b] transition-transform ${open ? 'rotate-180' : ''}`}
+    fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" aria-hidden="true"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+  </svg>
+);
+
+const SelectField = ({ label, value, onChange, options, optional, id, placeholder = 'Select' }) => {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const wrapRef = useRef(null);
+  const triggerRef = useRef(null);
+  const listRef = useRef(null);
+
+  useDismiss(open, setOpen, wrapRef, triggerRef);
+
+  const selectedIndex = options.indexOf(value);
+
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    listRef.current.querySelector(`[data-idx="${active}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [open, active]);
+
+  const openList = () => {
+    setActive(selectedIndex >= 0 ? selectedIndex : 0);
+    setOpen(true);
+  };
+
+  const emit = (next) => onChange({ target: { value: next } });
+
+  const choose = (option) => {
+    emit(option);
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const clear = () => {
+    emit('');
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const onKeyDown = (e) => {
+    if (!open) {
+      if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) {
+        e.preventDefault();
+        openList();
+      }
+      return;
+    }
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActive((i) => Math.min(i + 1, options.length - 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActive((i) => Math.max(i - 1, 0));
+        break;
+      case 'Home':
+        e.preventDefault();
+        setActive(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        setActive(options.length - 1);
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        choose(options[active]);
+        break;
+      case 'Tab':
+        setOpen(false);
+        break;
+      default:
+    }
+  };
+
+  return (
+    <div className="flex flex-col w-full relative" ref={wrapRef}>
+      <FieldLabel optional={optional} htmlFor={id}>{label}</FieldLabel>
+      <button
+        type="button"
+        id={id}
+        ref={triggerRef}
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? `${id}-list` : undefined}
+        aria-activedescendant={open ? `${id}-opt-${active}` : undefined}
+        onClick={() => (open ? setOpen(false) : openList())}
+        onKeyDown={onKeyDown}
+        onKeyUp={(e) => { if (e.key === ' ') e.preventDefault(); }}
+        className={`${fieldClass(value)} flex items-center justify-between text-left ${open ? 'border-[#d9856b]' : ''}`}
+      >
+        <span className={value ? '' : 'text-slate-400'}>{value || placeholder}</span>
+        <ChevronDown open={open} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-sm border border-slate-200 bg-white py-1 shadow-lg">
+          <div ref={listRef} id={`${id}-list`} role="listbox" aria-label={label} className="max-h-56 overflow-y-auto">
+            {options.map((option, i) => {
+              const isSelected = option === value;
+              return (
+                <div
+                  key={option}
+                  id={`${id}-opt-${i}`}
+                  data-idx={i}
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseEnter={() => setActive(i)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => choose(option)}
+                  className={`flex items-center justify-between px-3 py-2 text-xs cursor-pointer transition-colors ${
+                    isSelected ? 'font-bold text-[#d9856b]' : 'font-medium text-slate-700'
+                  } ${i === active ? 'bg-[#d9856b]/10' : ''}`}
+                >
+                  <span>{option}</span>
+                  {isSelected && (
+                    <svg className="w-3.5 h-3.5 text-[#d9856b]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {value && (
+            <div className="mt-1 pt-1 border-t border-slate-100 px-2">
+              <button
+                type="button"
+                onClick={clear}
+                className="w-full text-left px-1 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 rounded-sm"
+              >
+                Clear selection
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SectionHeading = ({ title, hint }) => (
+  <div className="pt-2 pb-3">
+    <h2 className="text-base font-bold text-slate-900 tracking-tight">{title}</h2>
+    {hint && <p className="text-[11px] text-slate-500 mt-0.5">{hint}</p>}
+  </div>
+);
+
+/* ------------------------------ Profile photo ------------------------------ */
+
+const CameraIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
+    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+  </svg>
+);
+
+const pillClass = (selected) =>
+  `min-h-[32px] min-w-[40px] px-3 rounded-sm border text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 ${
+    selected
+      ? 'bg-[#d9856b] border-[#d9856b] text-white'
+      : 'bg-white border-slate-300 text-slate-700 hover:border-[#d9856b]'
+  }`;
+
+const ChoiceGroup = ({ label, options, value, onChange, note }) => (
+  <div>
+    <div className="text-xs font-semibold text-slate-800 mb-1.5">{label}</div>
+    <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          aria-pressed={value === option.value}
+          onClick={() => onChange(option.value)}
+          className={pillClass(value === option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+    {note && <p className="text-[10px] font-medium text-slate-400 mt-1.5">{note}</p>}
+  </div>
+);
+
+const SliderField = ({ id, label, value, min, max, step, onChange, format }) => (
+  <div>
+    <div className="flex items-center justify-between mb-1">
+      <label htmlFor={id} className="text-xs font-semibold text-slate-800">{label}</label>
+      <span className="text-[11px] font-medium text-slate-500">{format(value)}</span>
+    </div>
+    <input
+      id={id}
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="w-full h-6 accent-[#d9856b] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 rounded"
+    />
+  </div>
+);
+
+const smallButtonClass =
+  'inline-flex items-center justify-center min-h-[32px] px-3 rounded-sm border border-slate-300 bg-white text-xs font-semibold text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 hover:border-[#d9856b] hover:text-[#d9856b]';
+
+const PhotoSection = ({ photo, photoStyle, updateData }) => {
+  const inputRef = useRef(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const look = normalizePhotoStyle(photoStyle);
+
+  const setLook = (patch) => updateData('personal', 'photoStyle', { ...look, ...patch });
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    setError('');
+    setBusy(true);
+    try {
+      const dataUrl = await readPhotoFile(file);
+      updateData('personal', 'photo', dataUrl);
+      updateData('personal', 'photoStyle', { ...look, zoom: PHOTO_DEFAULTS.zoom, x: PHOTO_DEFAULTS.x, y: PHOTO_DEFAULTS.y });
+    } catch (err) {
+      setError(err && err.message ? err.message : "We couldn't use that file. Please try a different photo.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openPicker = () => inputRef.current && inputRef.current.click();
+  const onPick = (e) => {
+    handleFile(e.target.files && e.target.files[0]);
+    e.target.value = '';
+  };
+  const dropProps = {
+    onDragOver: (e) => { e.preventDefault(); setDragging(true); },
+    onDragLeave: () => setDragging(false),
+    onDrop: (e) => {
+      e.preventDefault();
+      setDragging(false);
+      handleFile(e.dataTransfer.files && e.dataTransfer.files[0]);
+    },
+  };
+  const removePhoto = () => {
+    updateData('personal', 'photo', '');
+    setError('');
+  };
+  const resetFraming = () => setLook({ zoom: PHOTO_DEFAULTS.zoom, x: PHOTO_DEFAULTS.x, y: PHOTO_DEFAULTS.y });
+
+  return (
+    <div className="rounded-sm border border-slate-200 bg-white p-3 sm:p-4 mb-4">
+      <input
+        ref={inputRef}
+        type="file"
+        accept={PHOTO_ACCEPT}
+        onChange={onPick}
+        className="hidden"
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+
+      {!photo ? (
+        <button
+          type="button"
+          onClick={openPicker}
+          disabled={busy}
+          {...dropProps}
+          className={`w-full flex flex-col items-center justify-center gap-1.5 rounded-sm border-2 border-dashed px-3 py-6 text-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 ${
+            dragging ? 'border-[#d9856b] bg-[#d9856b]/10' : 'border-slate-300 bg-slate-50 hover:border-[#d9856b]'
+          }`}
+        >
+          <span className="text-[#d9856b] mb-1"><CameraIcon /></span>
+          <span className="text-xs font-bold text-slate-800">{busy ? 'Preparing...' : 'Upload profile photo'}</span>
+          <span className="text-[11px] font-medium text-slate-500">Drag & drop or click. JPG, PNG, WebP.</span>
+        </button>
+      ) : (
+        <div className="flex flex-col sm:flex-row gap-5">
+          <div className="flex flex-col items-center gap-2 sm:w-[140px] shrink-0">
+            <div
+              {...dropProps}
+              className={`w-[130px] h-[130px] rounded-sm border flex items-center justify-center transition-colors ${
+                dragging ? 'border-[#d9856b] bg-[#d9856b]/10' : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <ResumePhoto src={photo} style={look} />
+            </div>
+            <div className="flex gap-2 w-full justify-center">
+              <button type="button" onClick={openPicker} disabled={busy} className={`${smallButtonClass} w-full`}>
+                {busy ? '...' : 'Replace'}
+              </button>
+              <button type="button" onClick={removePhoto} className={`${smallButtonClass} w-full hover:border-red-200 hover:text-red-600`}>
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0 space-y-4">
+            <ChoiceGroup label="Shape" options={PHOTO_SHAPES} value={look.shape} onChange={(shape) => setLook({ shape })} />
+            <ChoiceGroup label="Size" options={PHOTO_SIZES} value={look.size} onChange={(size) => setLook({ size })} />
+            <ChoiceGroup
+              label="Border"
+              options={PHOTO_BORDERS}
+              value={look.border}
+              onChange={(border) => setLook({ border })}
+            />
+            <SliderField id="pi-photo-zoom" label="Zoom" min={PHOTO_ZOOM_MIN} max={PHOTO_ZOOM_MAX} step={0.05} value={look.zoom} onChange={(zoom) => setLook({ zoom })} format={(v) => `${Math.round(v * 100)}%`} />
+            <SliderField id="pi-photo-x" label="Move left / right" min={0} max={100} step={1} value={look.x} onChange={(x) => setLook({ x })} format={(v) => `${Math.round(v)}%`} />
+            <SliderField id="pi-photo-y" label="Move up / down" min={0} max={100} step={1} value={look.y} onChange={(y) => setLook({ y })} format={(v) => `${Math.round(v)}%`} />
+            <button type="button" onClick={resetFraming} className={smallButtonClass}>
+              Reset zoom and position
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <p role="alert" className="mt-2 text-[11px] font-medium text-red-600">{error}</p>}
+    </div>
+  );
+};
+
+const PersonalInfo = ({ data, updateData }) => {
+  if (!data) return null;
+  const pData = data.personal;
+
+  const handleChange = (field) => (e) => {
+    updateData('personal', field, e.target.value);
+  };
+
+  const websites =
+    Array.isArray(pData.websites) && pData.websites.length > 0
+      ? pData.websites
+      : [{ id: 'website-0', url: '' }];
+
+  const setWebsites = (list) => updateData('personal', 'websites', list);
+  const changeWebsite = (id, url) => setWebsites(websites.map((w) => (w.id === id ? { ...w, url } : w)));
+  const hasEmptyWebsite = websites.some((w) => !(w.url || '').trim());
+  const addWebsite = () => {
+    if (hasEmptyWebsite) return;
+    setWebsites([...websites, { id: `website-${Date.now()}`, url: '' }]);
+  };
+  const removeWebsite = (id) => setWebsites(websites.filter((w) => w.id !== id));
+
+  const hasLicence = !!pData.hasLicence;
+  const licenceCode = pData.licenceCode || '';
+
+  return (
+    <div className="relative w-full pb-[100px] min-h-screen">
+      <div className="max-w-3xl mx-auto w-full px-4">
+        <div className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight mb-1 tracking-tight">
+            Personal Information
+          </h1>
+          <p className="text-xs text-slate-500 font-medium">Add your core details and how employers can reach you.</p>
+        </div>
+
+        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <div>
+            <SectionHeading title="Profile Photo" hint="A clear headshot makes your resume more personable." />
+            <PhotoSection photo={pData.photo} photoStyle={pData.photoStyle} updateData={updateData} />
+          </div>
+
+          <hr className="border-slate-100" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <InputField id="pi-first-name" label="First Name" value={pData.firstName} onChange={handleChange('firstName')} placeholder="e.g. Alex" checked />
+            <InputField id="pi-last-name" label="Last Name" value={pData.lastName} onChange={handleChange('lastName')} placeholder="e.g. Morgan" checked />
+            <div className="sm:col-span-2">
+              <InputField id="pi-profession" label="Profession/Title" value={pData.profession} onChange={handleChange('profession')} placeholder="e.g. Software Engineer" />
+            </div>
+            <InputField id="pi-email" label="Email Address *" value={pData.email} onChange={handleChange('email')} placeholder="e.g. alex@example.com" type="email" />
+            <InputField id="pi-phone" label="Phone" value={pData.phone} onChange={handleChange('phone')} placeholder="e.g. +27 82 123 4567" checked type="tel" />
+          </div>
+
+          <div>
+            <SectionHeading title="Location" />
+            <div className="space-y-4">
+              <InputField id="pi-street" label="Street address" optional value={pData.streetAddress} onChange={handleChange('streetAddress')} placeholder="e.g. 12 Main Road, Sandton" autoComplete="street-address" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <InputField id="pi-city" label="City" value={pData.city} onChange={handleChange('city')} placeholder="e.g. Johannesburg" checked />
+                <InputField id="pi-province" label="Province/State" value={pData.province} onChange={handleChange('province')} placeholder="e.g. Gauteng" />
+                <InputField id="pi-postal" label="Postal Code" value={pData.postalCode} onChange={handleChange('postalCode')} placeholder="e.g. 2196" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <SectionHeading title="Links" hint="Add your LinkedIn, portfolio, or GitHub." />
+            <div className="space-y-3">
+              {websites.map((site, index) => (
+                <div key={site.id} className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <InputField
+                      id={`pi-website-${site.id}`}
+                      label={index === 0 ? 'Website' : `Website ${index + 1}`}
+                      optional
+                      value={site.url}
+                      onChange={(e) => changeWebsite(site.id, e.target.value)}
+                      placeholder={index === 0 ? 'linkedin.com/in/yourname' : 'github.com/yourname'}
+                      inputMode="url"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                    />
+                  </div>
+                  {websites.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeWebsite(site.id)}
+                      aria-label={`Remove website ${index + 1}`}
+                      className="shrink-0 h-[36px] w-[36px] flex items-center justify-center rounded-sm border border-slate-200 bg-white text-slate-500 hover:text-red-600 hover:border-red-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+              {websites.length < MAX_WEBSITES && (
+                <button
+                  type="button"
+                  onClick={addWebsite}
+                  disabled={hasEmptyWebsite}
+                  title={hasEmptyWebsite ? 'Fill in the current link first' : undefined}
+                  className="inline-flex items-center gap-1.5 min-h-[32px] px-4 rounded-sm border border-dashed border-slate-300 bg-white text-xs font-semibold text-slate-600 hover:border-[#d9856b] hover:text-[#d9856b] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-slate-300 disabled:hover:text-slate-600"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 5v14M5 12h14" />
+                  </svg>
+                  Add another link
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <SectionHeading title="More about you" hint="All optional." />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <DateField id="pi-dob" label="Date of birth" optional value={pData.dateOfBirth} onChange={handleChange('dateOfBirth')} max={todayISO()} />
+              <InputField id="pi-nationality" label="Nationality" optional value={pData.nationality} onChange={handleChange('nationality')} placeholder="e.g. South African" />
+              <SelectField id="pi-gender" label="Gender" optional value={pData.gender} onChange={handleChange('gender')} options={GENDER_OPTIONS} />
+              <SelectField id="pi-marital" label="Marital status" optional value={pData.maritalStatus} onChange={handleChange('maritalStatus')} options={MARITAL_OPTIONS} />
+            </div>
+          </div>
+
+          <div className="rounded-sm border border-slate-200 bg-white p-3 sm:p-4">
+            <label className="flex items-center gap-2 cursor-pointer select-none min-h-[24px]">
+              <input
+                type="checkbox"
+                checked={hasLicence}
+                onChange={(e) => updateData('personal', 'hasLicence', e.target.checked)}
+                className="h-4 w-4 shrink-0 rounded-sm border-slate-300 accent-[#d9856b] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50"
+              />
+              <span className="text-xs font-semibold text-slate-800">
+                I have a driver's licence
+                <span className="ml-1.5 text-[10px] font-medium text-slate-400">Optional</span>
+              </span>
+            </label>
+
+            {hasLicence && (
+              <div className="mt-3 sm:max-w-xs">
+                <InputField
+                  id="pi-licence-code"
+                  label="Licence code"
+                  value={licenceCode}
+                  onChange={(e) => updateData('personal', 'licenceCode', e.target.value.toUpperCase())}
+                  placeholder="e.g. B"
+                  maxLength={8}
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                />
+                <div className="flex flex-wrap gap-2 mt-2" role="group" aria-label="Common licence codes">
+                  {LICENCE_CODES.map((code) => {
+                    const selected = licenceCode.trim().toUpperCase() === code;
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => updateData('personal', 'licenceCode', code)}
+                        className={`min-h-[28px] min-w-[36px] px-2 rounded-sm border text-[11px] font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 ${
+                          selected
+                            ? 'bg-[#d9856b] border-[#d9856b] text-white'
+                            : 'bg-white border-slate-300 text-slate-600 hover:border-[#d9856b]'
+                        }`}
+                      >
+                        {code}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default PersonalInfo;

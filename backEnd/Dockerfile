@@ -14,8 +14,8 @@ COPY . .
 # Expose the default Render port
 EXPOSE 10000
 
-# Run your application from inside backEnd/, since main.py's own imports
-# (e.g. `from routers.editor import ...`) expect backEnd/ to be the working
-# directory rather than running as a package from /app.
-WORKDIR /app/backEnd
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
+# Run your application
+# (Note: If your current start command is 'uvicorn main:app', make sure your 
+# working directory or PYTHONPATH is configured properly. If main.py is in backEnd,
+# you might need "uvicorn backEnd.main:app")
+CMD ["uvicorn", "backEnd.main:app", "--host", "0.0.0.0", "--port", "10000"]

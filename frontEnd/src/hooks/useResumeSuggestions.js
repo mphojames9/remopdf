@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { fetchEscoSuggestions } from '../utils/escoService'; 
+// Ensure dataset is imported alongside fetchEscoSuggestions
+import { fetchEscoSuggestions, dataset } from '../utils/escoService'; 
 
 export default function useResumeSuggestions(data) {
   const [suggestions, setSuggestions] = useState({ skills: [], achievementsMap: {} });
@@ -24,8 +25,8 @@ export default function useResumeSuggestions(data) {
       .map(exp => extractTitle(exp.role || exp.jobTitle))
       .filter(Boolean);
 
-    // 3. Combine them all into one unique array
-    const allTitles = [...new Set([...currentRoles, jobTitle].filter(t => t.trim().length > 2))];
+    // 3. Combine into unique array of titles
+    const allTitles = [...new Set([...currentRoles, jobTitle].filter(t => t.trim().length > 0))];
 
     if (allTitles.length === 0) {
       setSuggestions({ skills: [], achievementsMap: {} });
@@ -35,22 +36,35 @@ export default function useResumeSuggestions(data) {
 
     async function fetchAllSuggestions() {
       setIsSuggesting(true);
+      
       try {
-        const { skills, achievementsMap } = await fetchEscoSuggestions(allTitles);
+        // --- NEW MAPPING LOGIC ---
+        // Normalize function to strip spaces/symbols and lowercase
+        const normalize = (str) => (str ? str.toLowerCase().replace(/[^a-z0-9]/g, '') : '');
+        const availableKeys = dataset ? Object.keys(dataset) : [];
+        
+        // Map formatted titles (e.g. "Software Engineer") back to exact dataset keys (e.g. "SoftwareEngineer")
+        const exactKeysToFetch = allTitles.map(title => {
+          const cleanTitle = normalize(title);
+          const matchedKey = availableKeys.find(k => normalize(k) === cleanTitle);
+          return matchedKey || title; // Use exact key if found, else fallback
+        });
+
+        // Remove duplicates and pass the correct unspaced keys to the fetcher
+        const uniqueKeys = [...new Set(exactKeysToFetch)];
+        const { skills, achievementsMap } = await fetchEscoSuggestions(uniqueKeys);
+        // ---------------------------
         
         if (isMounted) {
-          // --- NEW: Bulletproof Capitalization Helper ---
           const capitalizeFirstLetter = (str) => {
             if (!str) return '';
             return str.charAt(0).toUpperCase() + str.slice(1);
           };
 
-          // Capitalize every single skill
           const finalSkills = Array.isArray(skills) 
             ? skills.slice(0, 30).map(capitalizeFirstLetter) 
             : [];
 
-          // Capitalize every single achievement bullet point
           const finalAchievementsMap = {};
           if (achievementsMap) {
             Object.keys(achievementsMap).forEach(role => {
@@ -64,7 +78,7 @@ export default function useResumeSuggestions(data) {
           });
         }
       } catch (error) {
-        console.error("ESCO API connection error:", error);
+        console.error("Dataset lookup error:", error);
         if (isMounted) {
           setSuggestions({ skills: [], achievementsMap: {} });
         }
@@ -73,10 +87,9 @@ export default function useResumeSuggestions(data) {
       }
     }
 
-    const timeoutId = setTimeout(() => fetchAllSuggestions(), 1000);
+    fetchAllSuggestions();
 
     return () => {
-      clearTimeout(timeoutId);
       isMounted = false;
     };
   }, [data]);

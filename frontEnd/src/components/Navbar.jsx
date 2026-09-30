@@ -18,19 +18,27 @@ export default function Navbar() {
 
   // Full Suite of Premium Tools mapped to your Home.jsx handlers
   const documentTools = [
-    { name: "Edit PDF", id: "edit", icon: "fa-pen-to-square", desc: "Modify text and elements directly" },
     { name: "Merge PDFs", id: "merge", icon: "fa-layer-group", desc: "Combine multiple files into one" },
     { name: "Split PDF", id: "split", icon: "fa-scissors", desc: "Extract pages or separate files" },
     { name: "Compress PDF", id: "compress", icon: "fa-file-zipper", desc: "Reduce file footprint instantly" },
     { name: "PDF to Word", id: "pdfToWord", icon: "fa-file-word", desc: "Convert to editable DOCX format" },
-    { name: "Sign Document", id: "sign", icon: "fa-signature", desc: "Apply e-signatures securely" },
     { name: "Protect PDF", id: "protect", icon: "fa-shield-halved", desc: "Add robust password protection" },
     { name: "Unlock PDF", id: "unlock", icon: "fa-lock-open", desc: "Remove encryption restrictions" },
     { name: "Change Password", id: "changePwd", icon: "fa-key", desc: "Update access authorizations" },
     { name: "PDF to Excel", id: "pdfToExcel", icon: "fa-file-excel", desc: "Export sheets to clear tables" },
     { name: "PDF to Image", id: "pdfToImg", icon: "fa-file-image", desc: "Turn pages into sharp JPEG/PNG" },
     { name: "Image to PDF", id: "imageToPdf", icon: "fa-image", desc: "Compile screenshots to document" },
-    { name: "PDF to PowerPoint", id: "pdfToPpt", icon: "fa-file-powerpoint", desc: "Convert pages into presentation slides" }
+    { name: "PDF to PowerPoint", id: "pdfToPpt", icon: "fa-file-powerpoint", desc: "Convert pages into presentation slides" },
+    { name: "Page Manager", id: "pageManager", icon: "fa-file-lines", desc: "Remove, reorder or extract pages" },
+    { name: "Image Compressor", id: "imgCompress", icon: "fa-compress", desc: "Shrink image file size fast" }
+  ];
+
+  // Scan & Share tools — mix of in-app modals and dedicated routes
+  const scanShareTools = [
+    { name: "QR Scanner", id: "qrScanner", type: "modal", icon: "fa-qrcode", desc: "Scan a QR code with your camera" },
+    { name: "QR Generator", id: "qrGenerator", type: "modal", icon: "fa-circle-nodes", desc: "Create a custom QR code" },
+    { name: "Extract ZIP", path: "/ZipTool", type: "link", icon: "fa-file-zipper", desc: "Unpack archive contents" },
+    { name: "Open Workspace", path: "/Workspace", type: "link", icon: "fa-folder-open", desc: "Go to your saved files" }
   ];
 
   const companyLinks = [
@@ -88,10 +96,6 @@ export default function Navbar() {
 
   // Dispatches actions straight to Home.jsx custom triggers
   const handleOpenTool = (toolId) => {
-    console.log(toolId)
-    if (toolId === 'edit' || toolId === 'sign') {
-      navigate('/Workspace')
-    }
     if (location.pathname !== '/') {
       navigate('/');
       setTimeout(() => {
@@ -178,10 +182,45 @@ export default function Navbar() {
               Resume Builder
             </Link>
 
-            {/* Added Workspace Editor Link */}
-            <Link to="/Workspace" className="transition-colors duration-200 hover:text-slate-900 relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-px after:bg-red-600 after:transition-all hover:after:w-full">
-              Editor
-            </Link>
+            {/* Scan & Share Dropdown */}
+            <div
+              className="relative py-2"
+              onMouseEnter={() => setActiveDesktopDropdown('scanShare')}
+              onMouseLeave={() => setActiveDesktopDropdown(null)}
+            >
+              <button className={`flex items-center gap-1.5 transition-colors duration-200 outline-none ${activeDesktopDropdown === 'scanShare' ? 'text-emerald-600' : 'hover:text-slate-900'}`}>
+                Scan & Share
+                <i className={`fa-solid fa-chevron-down text-[10px] transition-transform duration-300 ${activeDesktopDropdown === 'scanShare' ? '-rotate-180 text-emerald-600' : 'text-slate-400'}`}></i>
+              </button>
+
+              <div className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 w-[260px] transition-all duration-300 transform origin-top-center ${activeDesktopDropdown === 'scanShare' ? 'opacity-100 visible scale-y-100 translate-y-0' : 'opacity-0 invisible scale-y-95 translate-y-2'}`}>
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] p-2 relative overflow-hidden">
+                  <div className="absolute top-0 inset-x-0 h-1 bg-emerald-500"></div>
+                  {scanShareTools.map((tool) =>
+                    tool.type === 'link' ? (
+                      <Link
+                        key={tool.name}
+                        to={tool.path}
+                        onClick={() => setActiveDesktopDropdown(null)}
+                        className="group flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all duration-200"
+                      >
+                        <i className={`fa-solid ${tool.icon} text-slate-400 group-hover:text-emerald-600 text-sm`}></i>
+                        <span className="text-sm font-semibold text-slate-700 group-hover:text-emerald-600 transition-colors">{tool.name}</span>
+                      </Link>
+                    ) : (
+                      <button
+                        key={tool.name}
+                        onClick={() => handleOpenTool(tool.id)}
+                        className="group flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all duration-200"
+                      >
+                        <i className={`fa-solid ${tool.icon} text-slate-400 group-hover:text-emerald-600 text-sm`}></i>
+                        <span className="text-sm font-semibold text-slate-700 group-hover:text-emerald-600 transition-colors">{tool.name}</span>
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Company Link Dropdown */}
             <div 
@@ -245,15 +284,7 @@ export default function Navbar() {
 
           {/* Right Action buttons */}
           <div className="flex items-center gap-4 shrink-0 relative z-[70]">
-            <button 
-              onClick={() => handleOpenTool('pricing')} 
-              className="hidden cursor-pointer lg:inline-flex relative items-center justify-center px-6 py-2.5 overflow-hidden font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-full shadow-[0_8px_20px_rgba(245,158,11,0.25)] hover:shadow-[0_8px_25px_rgba(245,158,11,0.4)] hover:-translate-y-0.5 transition-all duration-300 group"
-            >
-              <span className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></span>
-              <span className="relative tracking-wide text-xs uppercase z-10 flex items-center gap-2">
-                <i className="fa-solid fa-crown text-amber-100"></i> Get Premium
-              </span>
-            </button>
+            
 
             {/* Hamburger Handle Icon Toggle Button */}
             <button 
@@ -292,17 +323,6 @@ export default function Navbar() {
             Resume Builder
           </Link>
 
-          {/* Added Workspace Editor Link for Mobile Layout */}
-          <Link 
-            to="/Workspace" 
-            onClick={closeMobileMenu} 
-            className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 text-slate-800 font-bold hover:border-red-200 hover:shadow-md transition-all shadow-sm"
-          >
-            <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100">
-              <i className="fa-solid fa-pen-to-square text-sm"></i>
-            </div>
-            Workspace Editor
-          </Link>
 
           {/* Accordion Block 1: Tools */}
           <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden transition-all shadow-sm">
@@ -336,6 +356,50 @@ export default function Navbar() {
             </div>
           </div>
 
+          {/* Accordion Block: Scan & Share */}
+          <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden transition-all shadow-sm">
+            <button
+              onClick={() => toggleMobileAccordion('scanShare')}
+              className="flex items-center justify-between w-full p-4 text-left font-bold text-slate-800 outline-none hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 border border-slate-200">
+                  <i className="fa-solid fa-qrcode text-xs"></i>
+                </div>
+                Scan & Share
+              </div>
+              <i className={`fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-300 ${activeMobileAccordion === 'scanShare' ? '-rotate-180 text-emerald-600' : ''}`}></i>
+            </button>
+            <div
+              className={`transition-all duration-300 ease-in-out overflow-hidden ${activeMobileAccordion === 'scanShare' ? 'max-h-[400px] opacity-100 border-t border-slate-100' : 'max-h-0 opacity-0 pointer-events-none'}`}
+            >
+              <div className="p-3 grid grid-cols-1 gap-2 bg-slate-50/50">
+                {scanShareTools.map((tool) =>
+                  tool.type === 'link' ? (
+                    <Link
+                      key={tool.name}
+                      to={tool.path}
+                      onClick={closeMobileMenu}
+                      className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-emerald-600 hover:bg-white hover:shadow-sm rounded-xl border border-transparent hover:border-slate-200 transition-all"
+                    >
+                      <i className={`fa-solid ${tool.icon} w-5 text-center text-slate-400`}></i>
+                      {tool.name}
+                    </Link>
+                  ) : (
+                    <button
+                      key={tool.name}
+                      onClick={() => handleOpenTool(tool.id)}
+                      className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-emerald-600 hover:bg-white hover:shadow-sm rounded-xl border border-transparent hover:border-slate-200 transition-all"
+                    >
+                      <i className={`fa-solid ${tool.icon} w-5 text-center text-slate-400`}></i>
+                      {tool.name}
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Accordion Block 2: Company */}
           <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden transition-all shadow-sm">
             <button 
@@ -346,7 +410,7 @@ export default function Navbar() {
                 <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 border border-slate-200">
                   <i className="fa-solid fa-building text-xs"></i>
                 </div>
-                Company Hub
+                RemoPDF Hub
               </div>
               <i className={`fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-300 ${activeMobileAccordion === 'company' ? '-rotate-180 text-amber-600' : ''}`}></i>
             </button>
@@ -402,16 +466,6 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Mobile Pricing CTA */}
-          <div className="pt-6">
-            <button 
-              onClick={() => handleOpenTool('pricing')} 
-              className="w-full relative flex items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold shadow-[0_8px_20px_rgba(245,158,11,0.25)] hover:shadow-[0_8px_25px_rgba(245,158,11,0.4)] active:scale-[0.98] transition-all"
-            >
-              <i className="fa-solid fa-crown text-amber-100"></i>
-              <span>Upgrade to Premium Plan</span>
-            </button>
-          </div>
 
         </div>
       </div>

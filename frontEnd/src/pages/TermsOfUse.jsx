@@ -38,7 +38,7 @@ export default function Terms() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY, isMobileMenuOpen]);
 
-// Bulletproof mobile scroll lock
+  // Mobile scroll lock
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -133,16 +133,14 @@ export default function Terms() {
         </div>
       </nav>
 
-{/* Drawer Overlay for Mobile Interfaces */}
-<div 
-  className={`fixed inset-0 z-50 lg:hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-    isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-  }`}
->
-  {/* Add touch-none here */}
-  <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-sm transition-opacity duration-500 touch-none" onClick={() => setIsMobileMenuOpen(false)} />
-        <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-sm transition-opacity duration-500" onClick={() => setIsMobileMenuOpen(false)} />
-        <div className={`absolute top-0 right-0 w-full max-w-[310px] h-full bg-white/95 backdrop-blur-3xl shadow-[-25px_0_50px_-15px_rgba(15,23,42,0.06)] border-l border-slate-200/60 p-6 flex flex-col justify-between transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      {/* Drawer Overlay for Mobile Interfaces */}
+      <div 
+        className={`fixed inset-0 z-50 lg:hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-sm transition-opacity duration-500 touch-none" onClick={() => setIsMobileMenuOpen(false)} />
+        <div className={`absolute top-0 right-0 w-full max-w-[250px] h-full bg-white/95 backdrop-blur-3xl shadow-[-25px_0_50px_-15px_rgba(15,23,42,0.06)] border-l border-slate-200/60 p-6 flex flex-col justify-between transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="flex flex-col pt-16">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400 mb-6 px-1">Navigation</p>
             <div className="flex flex-col gap-1">
@@ -166,14 +164,13 @@ export default function Terms() {
             <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-slate-900 mb-6">Table of Contents</h3>
             <div className="flex flex-col gap-3 text-[13px] font-medium max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
               {[
-                { id: 'important-notice', title: 'Important Notice' },
                 { id: 'binding-arbitration', title: 'Binding Arbitration' },
                 { id: 'acceptance', title: '1. Acceptance of Terms' },
-                { id: 'account', title: '2. Account Registration' },
-                { id: 'use', title: '3. Use of the Service' },
-                { id: 'third-party', title: '4. Third-Party Services' },
-                { id: 'fees', title: '5. Subscription Fees' },
-                { id: 'representation', title: '6. User Representation' },
+                { id: 'no-signup', title: '2. No Sign-up & Data Privacy' },
+                { id: 'adobe-api', title: '3. Document Processing (Adobe API)' },
+                { id: 'admob-ads', title: '4. Advertising & Google AdMob' },
+                { id: 'use-limits', title: '5. Acceptable Use & Limits' },
+                { id: 'intellectual-property', title: '6. Intellectual Property' },
                 { id: 'warranties', title: '7. Disclaimer of Warranties' },
                 { id: 'liability', title: '8. Limitation of Liability' },
                 { id: 'indemnification', title: '9. Indemnification' },
@@ -182,7 +179,7 @@ export default function Terms() {
                 { id: 'opt-out', title: '12. Opting Out' },
                 { id: 'governing-law', title: '13. Governing Law' },
                 { id: 'claims', title: '14. Limitation on Claims' },
-                { id: 'misc', title: '15. Miscellaneous Provisions' }
+                { id: 'misc', title: '15. Contact & Miscellaneous' }
               ].map((item) => (
                 <a 
                   key={item.id}
@@ -202,28 +199,10 @@ export default function Terms() {
           
           <div className="mb-12 border-b border-slate-200 pb-8">
             <h1 className="text-3xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-4">Terms and Conditions of Use</h1>
-            <p className="text-sm text-slate-500 font-medium">Last updated: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p className="text-sm text-slate-500 font-medium">Last updated: August 14, 2026</p>
           </div>
 
           <div className="prose prose-slate prose-orange max-w-none text-[15px] leading-relaxed text-slate-600 space-y-10">
-
-            <section id="important-notice" className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <i className="fa-solid fa-circle-exclamation text-orange-500 text-lg"></i> Important Notice Regarding Automatic Renewals
-              </h2>
-              <p>
-                This service includes subscriptions that automatically renew. Please read these terms and conditions of use (the "Terms") carefully (in particular, Section 5) before starting a trial or completing a purchase for our website's auto-renewing subscription service.
-              </p>
-              <p>
-                To avoid being charged, you must cancel your subscription at least 24 hours before the end of your trial or current billing cycle. By purchasing an automatically renewing subscription, you acknowledge and agree to its recurring nature, as explained near the point of purchase. If you do not cancel in time, your subscription will automatically renew, and the applicable charges will be applied. Please contact our support team at <a href="mailto:support@remopdf.com" className="text-orange-600 font-semibold hover:underline">support@remopdf.com</a> for assistance.
-              </p>
-              <p>
-                If you intend to cancel, ensure you follow the appropriate cancellation process for your platform. You may also wish to take a screenshot of this notice for future reference. More details can be found in our Subscription Terms.
-              </p>
-              <p>
-                Our privacy practices are described in detail in our Privacy Policy. Please review it to understand how we collect, use, and share your personal information.
-              </p>
-            </section>
 
             <section id="binding-arbitration" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -245,183 +224,151 @@ export default function Terms() {
             <section id="acceptance" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4">1. Acceptance of Terms</h2>
               <p>
-                The provisions of the “Terms” govern the relationship between you and RemoPDF (“we”, “us”, “our” or the “Company”) regarding your use of the Company’s websites, devices and related services (the “Service”), including all information, text, graphics, software, and services available for your use (the “Content”).
+                The provisions of these Terms govern the relationship between you and RemoPDF (“we”, “us”, “our”, or the “Company”) regarding your access to and use of our web application, tools, and associated services (collectively, the “Service”).
               </p>
               <p>
-                By accessing or using any part of the Service, you acknowledge that you have read, understood, and agree to be bound by these Terms, forming a legally binding agreement between you and the Company. If you do not agree to these Terms, you must immediately stop using the Service, delete your account, and cancel any active subscriptions.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Additional Terms and Policies</h3>
-              <p>
-                Our Privacy Policy forms an integral part of these Terms and describes how we collect, use, and protect your personal data. We may also post additional policies, supplemental terms, or notices on the Service from time to time. Such terms are hereby incorporated by reference and will apply to your use of the Service.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Changes to these Terms</h3>
-              <p>
-                We may update, modify, or remove portions of these Terms at our sole discretion, to the extent permitted by applicable law. This may occur when we introduce or discontinue features, technologies, or services, to comply with legal, regulatory, or contractual requirements, or in response to exceptional or unforeseen circumstances. Where required by law, we will notify you of such changes.
+                By accessing, browsing, or using any portion of the Service, you confirm that you have read, understood, and agreed to be legally bound by these Terms. If you do not agree with any part of these Terms, you must immediately discontinue using the Service.
               </p>
             </section>
 
-            <section id="account" className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">2. Account Registration</h2>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Creating an Account</h3>
+            <section id="no-signup" className="scroll-mt-32">
+              <h2 className="text-xl font-bold text-slate-900 mb-4">2. Zero Registration & Strict Privacy Guarantee</h2>
               <p>
-                To access certain features of the Service, you may be required to register an account ("Account") and provide accurate and complete information during the registration process.
+                At RemoPDF, we prioritize user anonymity and seamless utility. 
               </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Your Responsibilities</h3>
-              <p>
-                By creating an Account, you represent and warrant that: (1) the information you provide is truthful, accurate, and up to date; (2) you will update your Account information as needed to keep it accurate; (3) your use of the Service complies with all applicable laws, regulations, and these Terms.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Age Restriction</h3>
-              <p>
-                The Service is intended for users aged 18 and older. By creating an Account, you confirm that you are at least 18 years old and have the legal authority to enter into and comply with these Terms. If you are under 18, you are prohibited from using the Service.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Account Security</h3>
-              <p>
-                You are responsible for maintaining the confidentiality of your Account credentials, including login details and passwords, and for all activity conducted under your Account. You should not share your login information with anyone, as you assume full responsibility for any actions taken through your Account. If you suspect unauthorized access or a security breach, you must notify us immediately at <a href="mailto:support@remopdf.com" className="text-orange-600 hover:underline">support@remopdf.com</a>.
-              </p>
-            </section>
-
-            <section id="use" className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">3. Use of the Service</h2>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Ownership and Intellectual Property</h3>
-              <p>
-                The Service, including its software, content, logos, trademarks, and any associated materials, remains the exclusive property of the Company or its licensors. Accessing or using the Service does not grant you ownership of any intellectual property rights beyond what is explicitly stated in these Terms. You may not copy, modify, distribute, sell, or reverse-engineer any portion of the Service unless expressly permitted.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">User-Generated Content</h3>
-              <p>
-                The Service may allow you to submit, upload, or share text, images, messages, feedback, and other materials ("User Content"). By submitting User Content, you grant the Company, its sublicensees, successors, and assigns a royalty-free, perpetual, irrevocable, sublicensable, assignable, worldwide license to use, reproduce, modify, adapt, translate, publish, distribute, publicly display, and create derivative works from your content in any form, media, or technology, whether now known or later developed.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Prohibited Conduct</h3>
-              <p>
-                You agree not to use the Service to distribute illegal, deceptive, or harmful content, impersonate another individual or misrepresent your affiliation, reverse-engineer, extract, or manipulate any part of the Service, or interfere with the security, availability, or integrity of the Service. Violation of these Terms may result in the immediate suspension or termination of your account, as well as legal consequences.
-              </p>
-            </section>
-
-            <section id="third-party" className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">4. Third-Party Services, Materials, and Advertising</h2>
-              <p>
-                The Service may integrate, provide access to, or display content from third-party services, websites, software, advertisements, and other materials ("Third-Party Services" and "Third-Party Materials"). This includes external links, embedded content, and user-generated materials contributed by third parties. While these features may be accessible through the Service, the Company does not control or assume responsibility for the content, functionality, or policies of any Third-Party Services.
-              </p>
-              <p>
-                By using the Service, you acknowledge that the Company does not endorse, verify, or assume responsibility for the accuracy, legality, quality, or reliability of any Third-Party Services or Third-Party Materials. Some of this content may be objectionable, offensive, or misleading, and the Company is not liable for any exposure to such material.
-              </p>
-            </section>
-
-            <section id="fees" className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">5. Subscription Fees and Payment</h2>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Subscription Options and Purchases</h3>
-              <p>
-                The Service offers subscription-based access to its features and content, which may be purchased either directly from the Company through the Website ("Web Purchase"). All applicable subscription fees, billing terms, and durations (e.g., weekly, monthly, quarterly, annually) will be displayed on the payment screen or at checkout before payment authorization.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Auto-Renewal and Subscription Continuity</h3>
-              <p>
-                All subscriptions automatically renew unless canceled. The renewal period matches the initial subscription term unless otherwise disclosed at the time of purchase. To avoid renewal, you must cancel your subscription at least 24 hours before the renewal date.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Refunds</h3>
-              <p>
-                When you make the Web Purchase, you acknowledge and agree that all Web Purchases are non-refundable or exchangeable. Notwithstanding anything to the contrary in the foregoing, the Company will provide refunds and/or Purchase cancellations in cases and to the extent required by mandatory provisions of the applicable law.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Right of Withdrawal for EU and UK Residents</h3>
-              <p>
-                If you are a resident of the European Union, you have the legal right to withdraw from a contract for the purchase of digital services within 14 days of your purchase, without providing any reason and without incurring any additional costs. To exercise your right of withdrawal, you must notify us by email at <a href="mailto:support@remopdf.com" className="text-orange-600 hover:underline">support@remopdf.com</a> stating your decision to withdraw from the contract.
-              </p>
-            </section>
-
-            <section id="representation" className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">6. User Representation and Restrictions</h2>
-              <p>By accessing or using the Service, you confirm that:</p>
               <ul className="list-disc pl-5 space-y-2 marker:text-orange-500">
-                <li>You have the legal capacity to enter into and comply with these Terms.</li>
-                <li>You are at least 18 years old and legally permitted to use the Service.</li>
-                <li>You will not access the Service through automated or non-human means, including bots, scripts, or similar methods.</li>
-                <li>You will not use the Service for any unlawful, fraudulent, or unauthorized purpose.</li>
-                <li>Your use of the Service complies with all applicable laws and regulations.</li>
+                <li><strong>No Sign-ups Required:</strong> You do not need to create an account, register an email, or provide any personal identification credentials to access our tools.</li>
+                <li><strong>Zero File Retention:</strong> We do not permanently store, archive, inspect, or build profiles from any files or documents you upload to the Service.</li>
+                <li><strong>Transient Session Lifecycle:</strong> Uploaded documents exist only during the active rendering/conversion session and are purged immediately after processing.</li>
               </ul>
+            </section>
+
+            <section id="adobe-api" className="scroll-mt-32">
+              <h2 className="text-xl font-bold text-slate-900 mb-4">3. Document Processing via Adobe API</h2>
+              <p>
+                RemoPDF leverages industry-grade document processing technology powered exclusively by the <strong>Adobe Services API</strong>.
+              </p>
+              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Security and Transmission</h3>
+              <p>
+                All file transfers between your browser and the processing engines are secured using end-to-end HTTPS/TLS encryption. We do not utilize secondary or untrusted third-party document processing vendors.
+              </p>
+              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Stateless Architecture</h3>
+              <p>
+                Document transformations performed via the Adobe API are strictly stateless. Once your PDF operations (such as conversion, compression, or editing) complete and the output file is delivered to your browser, all source and generated files are automatically deleted from temporary memory.
+              </p>
+            </section>
+
+            <section id="admob-ads" className="scroll-mt-32">
+              <h2 className="text-xl font-bold text-slate-900 mb-4">4. Advertising and Google AdMob Integration</h2>
+              <p>
+                To maintain RemoPDF as a completely free web service without charging subscriptions or fees, we partner with <strong>Google AdMob</strong> to display online advertisements.
+              </p>
+              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">AdMob Data Collection</h3>
+              <p>
+                While RemoPDF itself collects no user data or documents, Google AdMob independently collects and processes telemetry and device identifiers (such as Advertising IDs, IP addresses, cookie data, and device information) to serve personalized or non-personalized advertisements, prevent fraud, and measure ad performance.
+              </p>
+              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Third-Party Privacy Information</h3>
+              <p>
+                We have no direct control over the data practices of Google AdMob. For detailed information regarding how Google AdMob collects and processes your data, please visit the official <a href="https://admob.google.com" target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold hover:underline">Google AdMob Website</a> and read <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold hover:underline">Google's Privacy & Terms</a>.
+              </p>
+            </section>
+
+            <section id="use-limits" className="scroll-mt-32">
+              <h2 className="text-xl font-bold text-slate-900 mb-4">5. Acceptable Use and Technical Restrictions</h2>
+              <p>By using RemoPDF, you agree to adhere to the following acceptable use standards:</p>
+              <ul className="list-disc pl-5 space-y-2 marker:text-orange-500">
+                <li>You will not upload documents containing malicious code, viruses, trojans, or unauthorized scripts.</li>
+                <li>You will not use automated scripts, bots, spiders, or scrapers to access or overload our infrastructure.</li>
+                <li>You will not attempt to probe, bypass, or reverse-engineer the API endpoints or security features implemented by RemoPDF or the Adobe API.</li>
+                <li>You confirm that you possess all legal rights, ownership, or licenses for any document you submit for processing.</li>
+              </ul>
+            </section>
+
+            <section id="intellectual-property" className="scroll-mt-32">
+              <h2 className="text-xl font-bold text-slate-900 mb-4">6. Intellectual Property Rights</h2>
+              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Your Content</h3>
+              <p>
+                You retain 100% ownership of all intellectual property rights in the documents and files you upload to RemoPDF. We acquire no ownership, copyright, or moral rights over your Content.
+              </p>
+              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Service Intellectual Property</h3>
+              <p>
+                The RemoPDF trademark, logo, website design, UI layout, custom frontend codebase, and graphics are the exclusive property of RemoPDF. Adobe, Adobe API, and related logos are registered trademarks of Adobe Inc. Google and Google AdMob are registered trademarks of Google LLC.
+              </p>
             </section>
 
             <section id="warranties" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4">7. Disclaimer of Warranties</h2>
-              <p className="font-semibold uppercase tracking-wide text-slate-700">General Disclaimers</p>
               <p>
-                Except to the extent prohibited by law or otherwise inapplicable, you expressly acknowledge and agree that your use of the service is at your own risk. The service and any products or content provided through it are made available "as is" and "as available," without any warranties or guarantees of any kind, express or implied.
+                The Service is provided on an <strong>"AS IS"</strong> and <strong>"AS AVAILABLE"</strong> basis without warranties of any kind, whether express, implied, or statutory. 
               </p>
               <p>
-                In particular, we do not warrant that the service will meet your expectations or requirements, or that it will be uninterrupted, secure, error-free, or free from technical issues.
+                Without limiting the foregoing, RemoPDF does not warrant that the document conversions will be error-free, uninterrupted, 100% accurate in formatting fidelity, or compatible with all operating systems or PDF viewers. You assume full responsibility for verifying converted document outputs.
               </p>
             </section>
 
             <section id="liability" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4">8. Limitation of Liability</h2>
               <p>
-                To the maximum extent permitted by law, we (including our affiliates, officers, employees, agents, partners, and licensors) shall not be liable to you or any third party for any indirect, incidental, consequential, exemplary, special, or punitive damages, including but not limited to lost profits, lost data, business interruption, or any other losses arising from your use of or inability to use the service.
-              </p>
-              <p>
-                Notwithstanding anything to the contrary herein, our total liability to you for any claims arising out of or related to your use of the service, products, or content shall be limited to the total amount paid by you to us for access to the service during the twelve (12) months immediately preceding the event giving rise to the claim.
+                To the maximum extent permitted by applicable law, RemoPDF and its operators, affiliates, licensors, or API providers shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of data, business disruption, or corrupted files arising from your use of or inability to use the Service.
               </p>
             </section>
 
             <section id="indemnification" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4">9. Indemnification</h2>
               <p>
-                You agree to defend, indemnify, and hold harmless the Company, along with its affiliates, officers, employees, and agents, from and against any losses, damages, liabilities, claims, demands, judgments, settlements, penalties, fines, costs, and expenses of any kind arising directly or indirectly from your User Content, your breach of these Terms, or your violation of any applicable law or third-party rights.
+                You agree to defend, indemnify, and hold harmless RemoPDF and its operators from and against any claims, liabilities, damages, losses, and expenses (including legal fees) arising out of or in any way connected with your violation of these Terms or your upload of unlawful or unauthorized document content.
               </p>
             </section>
 
             <section id="international" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4">10. International Use</h2>
               <p>
-                The Company makes no representation that the Service is accessible, appropriate or legally available for use in your jurisdiction, and accessing and using the Service is prohibited from territories where doing so would be illegal. You access the Service at your own initiative and are responsible for compliance with local laws.
+                We make no representation that the Service is compliant with the laws of every jurisdiction worldwide. If you access RemoPDF from outside your home country, you do so on your own initiative and are solely responsible for compliance with local data protection and usage laws.
               </p>
             </section>
 
             <section id="dispute" className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">11. Informal Dispute Resolution Procedures</h2>
+              <h2 className="text-xl font-bold text-slate-900 mb-4">11. Binding Arbitration & Informal Dispute Resolution</h2>
               <p>
-                Please read this provision carefully to ensure that you understand—this section controls how disputes between you and the company will be addressed. By agreeing to this provision, you are waiving your right to participate in a class action lawsuit and you are waiving your right to a jury trial.
-              </p>
-              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Mandatory Pre-Filing Notice Procedure</h3>
-              <p>
-                You and we agree that good faith, informal efforts to resolve disputes often result in a faster, inexpensive outcome. Therefore, if you intend to assert a claim for any Dispute against the Company, you must first send the Company a written notice of the Dispute (“Notice”) that gives the Company some basic information about you and the Dispute.
+                In the event of any concern or dispute arising out of these Terms or your use of the Service, you agree to first contact us informally to attempt to reach an amicable resolution.
               </p>
               <p>
-                You must send the Notice to the Company via email at: <a href="mailto:legal@remopdf.com" className="text-orange-600 hover:underline">legal@remopdf.com</a>
+                Formal claims must be initiated by providing a written notice detailing the issue to <a href="mailto:remopdf@outlook.com" className="text-orange-600 font-semibold hover:underline">remopdf@outlook.com</a>. Unresolved disputes shall be settled by binding individual arbitration rather than court proceedings, waiving any rights to participate in class action suits.
               </p>
             </section>
 
             <section id="opt-out" className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">12. Opting Out of this Arbitration Agreement</h2>
+              <h2 className="text-xl font-bold text-slate-900 mb-4">12. Opting Out of Arbitration</h2>
               <p>
-                New Users who create an account with the Company for the first time may opt out of this Arbitration Agreement. You may opt out by sending written notice of your decision to <a href="mailto:support@remopdf.com" className="text-orange-600 hover:underline">support@remopdf.com</a> within 31 days after the Arbitration Agreement became effective or upon your first use of the Services.
+                You may opt out of the binding arbitration provision set forth in Section 11 by sending a written opt-out notice to <a href="mailto:remopdf@outlook.com" className="text-orange-600 font-semibold hover:underline">remopdf@outlook.com</a> within thirty (30) days of your first use of the Service.
               </p>
             </section>
 
             <section id="governing-law" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4">13. Governing Law</h2>
               <p>
-                The laws of the jurisdiction where RemoPDF operates, excluding its body of law governing conflicts of law principles, govern these Terms. To the extent that any action relating to any dispute hereunder is permitted to be brought in a court of law, such action will be subject to the exclusive jurisdiction of the competent courts determined by RemoPDF.
+                These Terms shall be governed by and construed in accordance with applicable general laws, without giving effect to any principles of conflicts of law.
               </p>
             </section>
 
             <section id="claims" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4">14. Limitation on Claims Period</h2>
               <p>
-                You agree that, regardless of any statute or law to the contrary or any applicable dispute resolution process, any claim or cause of action arising from or related to the use of the Service or these Terms must be filed within one (1) year from the date the claim or cause of action first arose. Failure to do so will result in your claim being permanently barred.
+                Any cause of action or claim you may have arising out of or relating to these Terms or the Service must be commenced within one (1) year after the cause of action accrues; otherwise, such cause of action or claim is permanently barred.
               </p>
             </section>
 
             <section id="misc" className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">15. Miscellaneous Provisions</h2>
+              <h2 className="text-xl font-bold text-slate-900 mb-4">15. Contact & Miscellaneous Provisions</h2>
               <p>
-                No failure or delay by the Company in exercising any of its rights under these Terms shall be deemed a waiver of such rights. If any provision of these Terms is found to be invalid, illegal, or unenforceable, the remainder of these Terms shall remain in full force and effect.
-              </p>
-              <p>
-                These Terms constitute the entire agreement between you and the Company regarding the subject matter herein and supersede all prior agreements, understandings, and representations, whether written or oral.
+                If any provision of these Terms is deemed unlawful, void, or unenforceable, that provision shall be deemed severable and shall not affect the validity and enforceability of any remaining provisions.
               </p>
               
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mt-8">
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Contact Information</h3>
-                <p className="mb-2">For any inquiries, support, or to exercise your legal rights, please contact us at:</p>
-                <a href="mailto:support@remopdf.com" className="text-lg font-bold text-orange-600 hover:text-orange-700 transition-colors">
-                  support@remopdf.com
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Contact Support & Legal Enquiries</h3>
+                <p className="mb-2">If you have any questions, feedback, or legal inquiries regarding these Terms and Conditions, please contact us directly at:</p>
+                <a href="mailto:remopdf@outlook.com" className="text-lg font-bold text-orange-600 hover:text-orange-700 transition-colors">
+                  remopdf@outlook.com
                 </a>
               </div>
             </section>
