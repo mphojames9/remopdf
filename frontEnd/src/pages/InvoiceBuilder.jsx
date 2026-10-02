@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import navLogo from '../assets/logo.png';
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const emptyItem = () => ({ id: uid(), description: '', qty: 1, rate: 0 });
@@ -287,41 +288,57 @@ export default function InvoiceBuilder() {
   return (
     <div style={{ fontFamily: '"Outfit", sans-serif' }} className="min-h-screen bg-slate-50/50 pb-24">
       {/* Top bar */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-semibold">
-            <i className="fa-solid fa-arrow-left text-xs"></i>
-            Home
-          </Link>
-          <h1 className="text-sm font-bold text-slate-900 tracking-tight">Invoice Builder</h1>
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+          {/* Brand: the logo goes home, followed by the page title */}
+          <div className="flex items-center gap-4 min-w-0">
+            <Link
+              to="/"
+              aria-label="RemoPDF home"
+              className="group shrink-0 flex items-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300"
+            >
+              <img
+                src={navLogo}
+                alt="RemoPDF"
+                draggable={false}
+                className="h-8 w-auto block transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+              />
+            </Link>
+            <span aria-hidden="true" className="hidden sm:block h-6 w-px bg-white/15" />
+            <h1 className="sr-only sm:not-sr-only truncate text-sm font-semibold tracking-tight text-white/90">Invoice Builder</h1>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={() => setShowPreview(true)}
-              className="flex items-center gap-2 h-10 px-5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 hover:border-slate-300 transition-colors"
+              aria-label="Preview invoice"
+              className="flex items-center justify-center gap-2 h-10 px-3.5 sm:px-5 rounded-full border border-white/15 bg-white/5 text-white/90 text-xs font-semibold hover:bg-white/10 hover:border-white/30 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
             >
-              <i className="fa-solid fa-eye text-slate-400"></i>
-              Preview
+              <i className="fa-solid fa-eye text-slate-300"></i>
+              <span className="hidden sm:inline">Preview</span>
             </button>
             <button
               onClick={generatePDF}
               disabled={isGenerating}
-              className="flex items-center gap-2 h-10 px-5 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 text-white text-xs font-bold shadow-[0_10px_30px_-10px_rgba(15,23,42,0.5)] hover:shadow-[0_10px_30px_-5px_rgba(15,23,42,0.7)] hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:hover:translate-y-0"
+              className="flex items-center justify-center gap-2 h-10 px-4 sm:px-5 rounded-full bg-gradient-to-r from-amber-300 to-amber-400 text-slate-900 text-xs font-bold hover:from-amber-200 hover:to-amber-300 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:hover:translate-y-0 motion-reduce:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
             >
               {isGenerating ? (
                 <>
-                  <i className="fa-solid fa-circle-notch animate-spin text-amber-400"></i>
-                  Generating…
+                  <i className="fa-solid fa-circle-notch animate-spin"></i>
+                  <span className="hidden sm:inline">Generating…</span>
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-download text-amber-400"></i>
-                  Download PDF
+                  <i className="fa-solid fa-download"></i>
+                  <span>Download<span className="hidden sm:inline"> PDF</span></span>
                 </>
               )}
             </button>
           </div>
         </div>
-      </div>
+        {/* Fine amber hairline along the bottom edge */}
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+      </header>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 animate-in fade-in duration-700 ease-out">
         {/* From / Bill To */}

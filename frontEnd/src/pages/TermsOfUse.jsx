@@ -1,11 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import navLogo from '../assets/logo1.png';        // logo for the light navigation bar
+import footerLogo from '../assets/logo.png';  // logo for the dark footer
 
 const NAV_LINKS = [
   { label: 'About Us', path: '/about' },
   { label: 'Trust Center', path: '/PrivacyPolicy' },
   { label: 'Contact Support', path: '/contact' }
 ];
+
+const PDF_EDITOR_ROUTE = '/Workspace';
+
+const FOOTER_BLURB = 'Edit, organize, convert and share PDFs, or build an ATS-friendly resume from a template.';
+
+// kind: 'route' = router link, 'anchor' = link to a section on the home page
+const FOOTER_COLS = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'PDF editor', to: PDF_EDITOR_ROUTE, kind: 'route' },
+      { label: 'Resume builder', to: '/ResumeBuilder', kind: 'route' },
+      { label: 'Templates', to: '/#templates', kind: 'anchor' },
+    ],
+  },
+  {
+    title: 'Learn',
+    links: [
+      { label: 'PDF editor', to: '/#tools', kind: 'anchor' },
+      { label: 'ATS scan', to: '/#ats', kind: 'anchor' },
+      { label: 'How it works', to: '/#how-it-works', kind: 'anchor' },
+      { label: 'FAQ', to: '/#faq', kind: 'anchor' },
+    ],
+  },
+  {
+    title: 'Support',
+    links: [
+      { label: 'About us', to: '/about', kind: 'route' },
+      { label: 'Contact us', to: '/contact', kind: 'route' },
+      { label: 'Privacy policy', to: '/PrivacyPolicy', kind: 'route' },
+      { label: 'Terms of use', to: '/terms-of-use', kind: 'route' },
+    ],
+  },
+];
+
+const FOOTER_LINK =
+  'inline-block rounded bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 text-[0.9375rem] text-slate-300 transition-[color,background-size] duration-300 hover:bg-[length:100%_1px] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white';
+
+function FooterLink({ link }) {
+  if (link.kind === 'route')
+    return <Link to={link.to} className={FOOTER_LINK}>{link.label}</Link>;
+  return <a href={link.to} className={FOOTER_LINK}>{link.label}</a>;
+}
 
 export default function Terms() {
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -76,23 +121,21 @@ export default function Terms() {
 
   return (
     <div 
-      className="min-h-screen w-full flex flex-col bg-[#FAFAFA] overflow-x-hidden antialiased relative selection:bg-orange-500/30 min-w-[330px]"
+      className="min-h-screen w-full flex flex-col bg-[#FAFAFA] overflow-x-hidden antialiased relative selection:bg-[#d9856b]/30 min-w-[330px]"
       style={{ fontFamily: "'Outfit', 'Metropolis', sans-serif" }}
     >
       {/* Ambient Background Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[140vw] lg:max-w-7xl h-[600px] bg-gradient-to-b from-orange-400/10 via-red-400/5 to-transparent rounded-full filter blur-[120px] lg:blur-[160px] pointer-events-none"></div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[140vw] lg:max-w-7xl h-[600px] bg-gradient-to-b from-[#d9856b]/10 via-[#d9856b]/5 to-transparent rounded-full filter blur-[120px] lg:blur-[160px] pointer-events-none"></div>
 
       {/* Premium Sticky Navigation */}
       <nav 
-        className={`w-full flex justify-between items-center py-3 lg:py-4 px-4 lg:px-12 z-50 fixed top-0 transition-all duration-500 ease-out border-b border-slate-200/50 bg-white/70 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.03)] ${
+        className={`w-full flex justify-between items-center py-3 lg:py-4 px-4 lg:px-12 z-50 fixed top-0 transition-all duration-500 ease-out border-b border-[#d9856b]/20 bg-[#fbf3f0]/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.03)] ${
           isNavVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
         <div className="nav-logo shrink-0 relative z-50">
-          <Link to="/" className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg">
-            <span className="font-black text-[1.25rem] text-slate-800 tracking-tight">
-                Remo<span className="text-red-600">PDF</span>
-              </span>
+          <Link to="/" aria-label="RemoPDF home" className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b] rounded-lg">
+            <img src={navLogo} alt="RemoPDF" draggable={false} className="h-8 lg:h-9 w-auto block" />
           </Link>
         </div>
   
@@ -111,9 +154,9 @@ export default function Terms() {
         <div className="flex items-center gap-4 shrink-0 relative z-50">
           <Link 
             to="/ResumeBuilder" 
-            className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(249,115,22,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(249,115,22,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
+            className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-[#d9856b] text-[#0e1726] text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(217,133,107,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(217,133,107,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
           >
-            <div className="absolute inset-0 z-[-1] bg-gradient-to-r from-red-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 z-[-1] bg-[#c9735a] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="absolute top-0 left-0 w-full h-full -translate-x-full group-hover:translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 transition-transform duration-1000 ease-in-out z-[-1]" />
             <div className="absolute inset-0 rounded-full border border-white/20 mix-blend-overlay"></div>
             <span className="relative z-10 drop-shadow-sm">Build Resume</span>
@@ -145,7 +188,7 @@ export default function Terms() {
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400 mb-6 px-1">Navigation</p>
             <div className="flex flex-col gap-1">
               {NAV_LINKS.map((link, idx) => (
-                <Link key={idx} to={link.path} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between text-[1.15rem] font-medium tracking-wide py-3.5 px-2 rounded-xl text-slate-800 hover:text-orange-500 hover:bg-slate-50/60 transition-all duration-200">
+                <Link key={idx} to={link.path} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between text-[1.15rem] font-medium tracking-wide py-3.5 px-2 rounded-xl text-slate-800 hover:text-[#c4694e] hover:bg-slate-50/60 transition-all duration-200">
                   <span>{link.label}</span>
                   <i className="fa-solid fa-chevron-right text-[10px] text-slate-300 mr-1"></i>
                 </Link>
@@ -185,7 +228,7 @@ export default function Terms() {
                   key={item.id}
                   href={`#${item.id}`}
                   onClick={(e) => scrollToSection(e, item.id)}
-                  className={`transition-colors duration-200 line-clamp-1 ${activeSection === item.id ? 'text-orange-600 font-bold' : 'text-slate-500 hover:text-slate-900'}`}
+                  className={`transition-colors duration-200 line-clamp-1 ${activeSection === item.id ? 'text-[#b85a40] font-bold' : 'text-slate-500 hover:text-slate-900'}`}
                 >
                   {item.title}
                 </a>
@@ -202,16 +245,16 @@ export default function Terms() {
             <p className="text-sm text-slate-500 font-medium">Last updated: August 14, 2026</p>
           </div>
 
-          <div className="prose prose-slate prose-orange max-w-none text-[15px] leading-relaxed text-slate-600 space-y-10">
+          <div className="prose prose-slate max-w-none text-[15px] leading-relaxed text-slate-600 space-y-10">
 
             <section id="binding-arbitration" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <i className="fa-solid fa-gavel text-orange-500 text-lg"></i> Binding Arbitration & Dispute Resolution
+                <i className="fa-solid fa-gavel text-[#d9856b] text-lg"></i> Binding Arbitration & Dispute Resolution
               </h2>
               <p>
                 Section 11 of these Terms governs how disputes between you and RemoPDF are resolved. In particular, it includes a binding arbitration agreement, which means:
               </p>
-              <ul className="list-disc pl-5 space-y-2 marker:text-orange-500">
+              <ul className="list-disc pl-5 space-y-2 marker:text-[#d9856b]">
                 <li>You agree to resolve disputes with us through final and binding arbitration, rather than in court, except for certain limited exceptions.</li>
                 <li>You waive your right to file a lawsuit or participate in a class action lawsuit against us.</li>
                 <li>You may opt out of the arbitration agreement by following the process outlined in Section 12.</li>
@@ -236,7 +279,7 @@ export default function Terms() {
               <p>
                 At RemoPDF, we prioritize user anonymity and seamless utility. 
               </p>
-              <ul className="list-disc pl-5 space-y-2 marker:text-orange-500">
+              <ul className="list-disc pl-5 space-y-2 marker:text-[#d9856b]">
                 <li><strong>No Sign-ups Required:</strong> You do not need to create an account, register an email, or provide any personal identification credentials to access our tools.</li>
                 <li><strong>Zero File Retention:</strong> We do not permanently store, archive, inspect, or build profiles from any files or documents you upload to the Service.</li>
                 <li><strong>Transient Session Lifecycle:</strong> Uploaded documents exist only during the active rendering/conversion session and are purged immediately after processing.</li>
@@ -269,14 +312,14 @@ export default function Terms() {
               </p>
               <h3 className="text-lg font-bold text-slate-800 mt-6 mb-3">Third-Party Privacy Information</h3>
               <p>
-                We have no direct control over the data practices of Google AdMob. For detailed information regarding how Google AdMob collects and processes your data, please visit the official <a href="https://admob.google.com" target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold hover:underline">Google AdMob Website</a> and read <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-orange-600 font-semibold hover:underline">Google's Privacy & Terms</a>.
+                We have no direct control over the data practices of Google AdMob. For detailed information regarding how Google AdMob collects and processes your data, please visit the official <a href="https://admob.google.com" target="_blank" rel="noopener noreferrer" className="text-[#b85a40] font-semibold hover:underline">Google AdMob Website</a> and read <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-[#b85a40] font-semibold hover:underline">Google's Privacy & Terms</a>.
               </p>
             </section>
 
             <section id="use-limits" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4">5. Acceptable Use and Technical Restrictions</h2>
               <p>By using RemoPDF, you agree to adhere to the following acceptable use standards:</p>
-              <ul className="list-disc pl-5 space-y-2 marker:text-orange-500">
+              <ul className="list-disc pl-5 space-y-2 marker:text-[#d9856b]">
                 <li>You will not upload documents containing malicious code, viruses, trojans, or unauthorized scripts.</li>
                 <li>You will not use automated scripts, bots, spiders, or scrapers to access or overload our infrastructure.</li>
                 <li>You will not attempt to probe, bypass, or reverse-engineer the API endpoints or security features implemented by RemoPDF or the Adobe API.</li>
@@ -333,14 +376,14 @@ export default function Terms() {
                 In the event of any concern or dispute arising out of these Terms or your use of the Service, you agree to first contact us informally to attempt to reach an amicable resolution.
               </p>
               <p>
-                Formal claims must be initiated by providing a written notice detailing the issue to <a href="mailto:remopdf@outlook.com" className="text-orange-600 font-semibold hover:underline">remopdf@outlook.com</a>. Unresolved disputes shall be settled by binding individual arbitration rather than court proceedings, waiving any rights to participate in class action suits.
+                Formal claims must be initiated by providing a written notice detailing the issue to <a href="mailto:remopdf@outlook.com" className="text-[#b85a40] font-semibold hover:underline">remopdf@outlook.com</a>. Unresolved disputes shall be settled by binding individual arbitration rather than court proceedings, waiving any rights to participate in class action suits.
               </p>
             </section>
 
             <section id="opt-out" className="scroll-mt-32">
               <h2 className="text-xl font-bold text-slate-900 mb-4">12. Opting Out of Arbitration</h2>
               <p>
-                You may opt out of the binding arbitration provision set forth in Section 11 by sending a written opt-out notice to <a href="mailto:remopdf@outlook.com" className="text-orange-600 font-semibold hover:underline">remopdf@outlook.com</a> within thirty (30) days of your first use of the Service.
+                You may opt out of the binding arbitration provision set forth in Section 11 by sending a written opt-out notice to <a href="mailto:remopdf@outlook.com" className="text-[#b85a40] font-semibold hover:underline">remopdf@outlook.com</a> within thirty (30) days of your first use of the Service.
               </p>
             </section>
 
@@ -367,7 +410,7 @@ export default function Terms() {
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mt-8">
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Contact Support & Legal Enquiries</h3>
                 <p className="mb-2">If you have any questions, feedback, or legal inquiries regarding these Terms and Conditions, please contact us directly at:</p>
-                <a href="mailto:remopdf@outlook.com" className="text-lg font-bold text-orange-600 hover:text-orange-700 transition-colors">
+                <a href="mailto:remopdf@outlook.com" className="text-lg font-bold text-[#b85a40] hover:text-[#9c4630] transition-colors">
                   remopdf@outlook.com
                 </a>
               </div>
@@ -377,19 +420,95 @@ export default function Terms() {
         </article>
       </main>
 
-      {/* Modern Technical Footer */}
-      <footer className="w-full bg-white border-t border-slate-200/60 py-6 px-4 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-400 shrink-0">
-        <div>
-          &copy; {new Date().getFullYear()} RemoPDF. All Rights Reserved.
-        </div>
-        <div className="flex items-center gap-6">
-          {NAV_LINKS.map((link, idx) => (
-            <Link key={idx} to={link.path} className="hover:text-slate-800 transition-colors">
-              {link.label}
+      {/* Call to action band (same as the home page) */}
+      <section className="relative z-10 bg-gradient-to-br from-[#e9a38e] to-[#d9856b]">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-4 py-14 sm:px-6 sm:py-16 lg:flex-row lg:items-center lg:px-8">
+          <h2 className="max-w-xl text-3xl font-bold leading-tight tracking-tight text-[#0e1726] [text-wrap:balance] sm:text-4xl">
+            Your next PDF or resume is a few minutes away.
+          </h2>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              to={PDF_EDITOR_ROUTE}
+              className="inline-flex items-center justify-center rounded-lg bg-[#0e1726] px-6 py-3 text-[15px] font-bold text-white transition-colors hover:bg-[#1f2e49] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726]"
+            >
+              Open PDF editor
             </Link>
-          ))}
+            <Link
+              to="/ResumeBuilder"
+              className="inline-flex items-center justify-center rounded-lg border border-[#0e1726]/10 bg-white px-6 py-3 text-[15px] font-bold text-[#0e1726] transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726]"
+            >
+              Build a resume
+            </Link>
+          </div>
         </div>
-      </footer>
+      </section>
+
+      {/* Footer: the coral wrapper shows through the folded corner so the band above seems to continue under it */}
+      <div className="relative z-10 bg-[#d9856b]">
+        <style>{`
+          .site-fold { clip-path: polygon(0 0, calc(100% - 3.5rem) 0, 100% 3.5rem, 100% 100%, 0 100%); }
+          .site-fold-flap { position: absolute; top: 0; right: 0; z-index: 10; width: 3.5rem; height: 3.5rem; background: linear-gradient(to bottom left, #3d5078, #1f2e49 65%); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+          @media (min-width: 1024px) {
+            .site-fold { clip-path: polygon(0 0, calc(100% - 5rem) 0, 100% 5rem, 100% 100%, 0 100%); }
+            .site-fold-flap { width: 5rem; height: 5rem; }
+          }
+        `}</style>
+        <footer className="site-fold relative isolate overflow-hidden bg-[#0e1726] text-slate-300">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,#000,transparent_75%)]"
+            style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '22px 22px' }}
+          />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -left-32 h-[26rem] w-[26rem] rounded-full bg-[#d9856b]/15 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-1/3 h-80 w-80 rounded-full bg-[#3d5078]/40 blur-3xl" />
+          <div aria-hidden="true" className="site-fold-flap" />
+
+          <div className="relative z-10 mx-auto max-w-7xl px-4 pb-8 pt-16 sm:px-6 sm:pt-20 lg:px-8">
+            <div className="grid gap-14 lg:grid-cols-[1.3fr_2fr] lg:gap-20">
+              <div className="max-w-sm">
+                <Link
+                  to="/"
+                  aria-label="RemoPDF home"
+                  className="inline-flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                >
+                  <img src={footerLogo} alt="RemoPDF" draggable={false} className="h-10 w-auto block" />
+                </Link>
+                <p className="mt-5 leading-relaxed text-slate-300">{FOOTER_BLURB}</p>
+              </div>
+
+              <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
+                {FOOTER_COLS.map((col) => (
+                  <div key={col.title}>
+                    <h2 className="text-base font-bold text-white">{col.title}</h2>
+                    <ul className="mt-4 space-y-3">
+                      {col.links.map((link) => (
+                        <li key={link.label}>
+                          <FooterLink link={link} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </nav>
+            </div>
+
+            <span aria-hidden="true" className="mt-16 block h-px bg-white/15" />
+            <div className="flex items-center justify-between gap-4 pt-6 text-sm text-slate-400">
+              <p>© {new Date().getFullYear()} RemoPDF</p>
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="group inline-flex items-center gap-3 rounded-full py-1 pl-2 text-slate-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              >
+                Back to top
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 transition-colors group-hover:border-white/40 group-hover:bg-white/10">
+                  <i className="fa-solid fa-arrow-up text-xs transition-transform duration-200 group-hover:-translate-y-0.5"></i>
+                </span>
+              </button>
+            </div>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

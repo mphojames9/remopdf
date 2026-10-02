@@ -9,6 +9,7 @@ import BuilderSidebar from '../components/Resume/Sections/BuilderSidebar';
 import AdditionalSections from '../components/Resume/Sections/AdditionalSections';
 import { DEFAULT_LANGUAGE_LEVEL } from '../components/Resume/Sections/LanguageLevelSelect';
 import { PHOTO_DEFAULTS } from '../components/Resume/Sections/ResumePhoto';
+import demoPhoto from '../assets/profile.png';
 import {
   TEMPLATE_COMPONENTS,
   TEMPLATE_IDS,
@@ -103,6 +104,140 @@ const normalizeSectionOrder = (saved) => {
     ? saved.filter((key, i) => DEFAULT_SECTION_ORDER.includes(key) && saved.indexOf(key) === i)
     : [];
   return [...kept, ...DEFAULT_SECTION_ORDER.filter((key) => !kept.includes(key))];
+};
+
+// Demo resume for the "All templates" thumbnails. It is only shown while the user's own resume is
+// still empty, so every template previews with real-looking content in every section instead of
+// "Nothing entered yet". It is already in the shape the templates receive (same as templateProps),
+// and createJob() / createEducation() supply any field this file does not set, so a template never
+// reads an undefined field. Plain text only (no rich-text markup) so it renders the same everywhere.
+const DEMO_PERSONAL = {
+  firstName: 'Alex',
+  lastName: 'Morgan',
+  profession: 'Senior Marketing Manager',
+  streetAddress: '24 Garden Avenue',
+  city: 'Riverside',
+  province: 'Central',
+  postalCode: '1200',
+  phone: '(555) 010-2030',
+  email: 'alex.morgan@example.com',
+  dateOfBirth: '',
+  nationality: 'British',
+  gender: '',
+  maritalStatus: '',
+  hasLicence: true,
+  licenceCode: 'B',
+  websites: [{ url: 'linkedin.com/in/alexmorgan' }],
+  photo: demoPhoto,
+  photoStyle: { ...PHOTO_DEFAULTS },
+};
+
+const DEMO_TEMPLATE_PROPS = {
+  fullName: 'Alex Morgan',
+  personal: DEMO_PERSONAL,
+  contactList: [
+    'alex.morgan@example.com',
+    '(555) 010-2030',
+    '24 Garden Avenue, Riverside, Central',
+    'linkedin.com/in/alexmorgan',
+    'Nationality: British',
+    "Driver's licence: Code B",
+  ],
+  summary: 'Results-driven marketing manager with 8+ years of experience leading brand, digital and content teams. Known for turning data into clear strategy, growing qualified leads and mentoring high-performing teams.',
+  jobs: [
+    {
+      ...createJob(),
+      id: 'demo-job-1',
+      title: 'Senior Marketing Manager',
+      employer: 'Brightwave Media',
+      location: 'Riverside',
+      city: 'Riverside',
+      startMonth: 'Mar',
+      startYear: '2021',
+      endMonth: '',
+      endYear: '',
+      current: true,
+      startDate: 'Mar 2021',
+      endDate: 'Present',
+      description: 'Lead a team of 7 across brand, performance and content. Grew qualified leads by 64% in two years and cut cost per acquisition by 28%. Launched a new customer newsletter that reached 40,000 subscribers.',
+      achievements: 'Lead a team of 7 across brand, performance and content. Grew qualified leads by 64% in two years and cut cost per acquisition by 28%. Launched a new customer newsletter that reached 40,000 subscribers.',
+    },
+    {
+      ...createJob(),
+      id: 'demo-job-2',
+      title: 'Digital Marketing Specialist',
+      employer: 'Northfield Group',
+      location: 'Riverside',
+      city: 'Riverside',
+      startMonth: 'Jun',
+      startYear: '2017',
+      endMonth: 'Feb',
+      endYear: '2021',
+      current: false,
+      startDate: 'Jun 2017',
+      endDate: 'Feb 2021',
+      description: 'Managed paid search and social campaigns with a yearly budget of 1.2M. Introduced weekly reporting dashboards that sped up decisions across the sales and product teams.',
+      achievements: 'Managed paid search and social campaigns with a yearly budget of 1.2M. Introduced weekly reporting dashboards that sped up decisions across the sales and product teams.',
+    },
+  ],
+  educations: [
+    {
+      ...createEducation(),
+      id: 'demo-edu-1',
+      institution: 'Riverside University',
+      degree: 'BCom in Marketing Management',
+      gradMonth: 'Nov',
+      gradYear: '2016',
+      date: 'Nov 2016',
+    },
+    {
+      ...createEducation(),
+      id: 'demo-edu-2',
+      institution: 'Central Business College',
+      degree: 'Diploma in Digital Marketing',
+      gradMonth: 'Dec',
+      gradYear: '2014',
+      date: 'Dec 2014',
+    },
+  ],
+  namedSkills: [
+    { id: 'demo-skill-1', text: 'Brand Strategy', rating: 5 },
+    { id: 'demo-skill-2', text: 'SEO & Content Marketing', rating: 4 },
+    { id: 'demo-skill-3', text: 'Google Analytics', rating: 4 },
+    { id: 'demo-skill-4', text: 'Team Leadership', rating: 5 },
+    { id: 'demo-skill-5', text: 'Campaign Budgeting', rating: 3 },
+  ],
+  certificates: {
+    enabled: true,
+    items: [
+      { id: 'demo-cert-1', name: 'Google Analytics Certification', issuer: 'Google', year: '2023', date: '2023' },
+      { id: 'demo-cert-2', name: 'Professional Certified Marketer', issuer: 'AMA', year: '2021', date: '2021' },
+    ],
+  },
+  projects: {
+    enabled: true,
+    items: [
+      { id: 'demo-proj-1', title: 'Brand Relaunch 2024', description: 'Led the rebrand of a 15-year-old product line, from research to launch, lifting brand recall by 35%.' },
+      { id: 'demo-proj-2', title: 'Customer Newsletter', description: 'Built a monthly newsletter from scratch that now reaches 40,000 subscribers.' },
+    ],
+  },
+  languages: {
+    enabled: true,
+    items: [
+      { id: 'demo-lang-1', name: 'English', level: 'Native' },
+      { id: 'demo-lang-2', name: 'French', level: DEFAULT_LANGUAGE_LEVEL },
+      { id: 'demo-lang-3', name: 'Spanish', level: 'Intermediate' },
+    ],
+  },
+  hobbies: { enabled: true, text: 'Trail running, photography, volunteer mentoring and cooking.' },
+  references: {
+    enabled: true,
+    availableUponRequest: false,
+    items: [
+      { id: 'demo-ref-1', name: 'Jordan Ellis', company: 'Brightwave Media', title: 'Chief Marketing Officer', phone: '(555) 010-4455', email: 'jordan.ellis@example.com' },
+    ],
+  },
+  isEmpty: false,
 };
 
 // Slim, rounded scrollbars. `.pro-scroll` suits light surfaces; add `.pro-scroll-dark` on dark ones.
@@ -547,6 +682,13 @@ ${headMarkup}
   };
 
   const templateProps = { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, accentColor, sectionOrder: visibleOrder, edit };
+
+  // The "All templates" thumbnails show the demo resume (every section filled in) while the user's
+  // own resume is empty, and switch to their real resume as soon as they enter something. The demo
+  // ignores hidden sections so every section is visible in the thumbnails. To always show the demo,
+  // change this to `const thumbProps = demoProps;`.
+  const demoProps = { ...DEMO_TEMPLATE_PROPS, sectionOrder };
+  const thumbProps = isEmpty ? demoProps : templateProps;
 
   const renderActiveTemplate = () => {
     const Template = TEMPLATE_COMPONENTS[template] || TEMPLATE_COMPONENTS[DEFAULT_TEMPLATE];
@@ -1084,7 +1226,7 @@ ${headMarkup}
                     <TemplateThumb>
                       <div className="pointer-events-none select-none" aria-hidden="true">
                         <Template
-                          {...templateProps}
+                          {...thumbProps}
                           accentColor={color || DEFAULT_ACCENT[id]}
                           edit={{ enabled: false }}
                         />
@@ -1489,7 +1631,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
       {/* Mobile Bar */}
       <div className="flex lg:hidden items-center justify-between bg-slate-900 text-white px-5 py-4 shrink-0 z-30">
         <span className="text-base font-medium tracking-tight text-white">
-          Remo<span className="text-red-500">PDF</span>
+          
         </span>
         <button
           onClick={() => setMenuOpen(true)}

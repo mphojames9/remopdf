@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import image1 from '../assets/image1.png';
 import image2 from '../assets/image2.png';
 import editorShot from '../assets/editor-preview.png';
+import brandLogo from '../assets/logo.png';
 import TemplateShowcase from '../components/TemplateShowcase';
 import Navbar from '../components/Navbar';
 
@@ -867,12 +868,14 @@ function SiteFooter() {
               <Link
                 to="/"
                 style={{ '--i': 0 }}
-                className="f-rise group inline-flex items-center gap-2.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                aria-label={BRAND}
+                className="f-rise group inline-flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#d9856b] text-[#0e1726] transition-transform duration-500 ease-out group-hover:rotate-90">
-                  <Icon name="grid" />
-                </span>
-                <span className="font-display text-xl font-bold tracking-tight text-white">{BRAND}</span>
+                <img
+                  src={brandLogo}
+                  alt={BRAND}
+                  className="h-10 w-auto transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                />
               </Link>
               <p className="mt-5 leading-relaxed text-slate-300">
                 {BLURB.split(' ').map((w, i) => (

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import navLogo from '../assets/logo1.png';        // logo for the light navigation bar
+import footerLogo from '../assets/logo.png';  // logo for the dark footer
 
 // --- Configuration & Data ---
 const LEGAL_SECTIONS = [
@@ -10,6 +12,48 @@ const LEGAL_SECTIONS = [
   { id: 'third-party', title: 'Analytics', icon: 'fa-cookie-bite' },
   { id: 'user-rights', title: 'User Rights', icon: 'fa-scale-balanced' },
 ];
+
+const PDF_EDITOR_ROUTE = '/Workspace';
+
+const FOOTER_BLURB = 'Edit, organize, convert and share PDFs, or build an ATS-friendly resume from a template.';
+
+// kind: 'route' = router link, 'anchor' = link to a section on the home page
+const FOOTER_COLS = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'PDF editor', to: PDF_EDITOR_ROUTE, kind: 'route' },
+      { label: 'Resume builder', to: '/ResumeBuilder', kind: 'route' },
+      { label: 'Templates', to: '/#templates', kind: 'anchor' },
+    ],
+  },
+  {
+    title: 'Learn',
+    links: [
+      { label: 'PDF editor', to: '/#tools', kind: 'anchor' },
+      { label: 'ATS scan', to: '/#ats', kind: 'anchor' },
+      { label: 'How it works', to: '/#how-it-works', kind: 'anchor' },
+      { label: 'FAQ', to: '/#faq', kind: 'anchor' },
+    ],
+  },
+  {
+    title: 'Support',
+    links: [
+      { label: 'Contact us', to: '/contact', kind: 'route' },
+      { label: 'Privacy policy', to: '/PrivacyPolicy', kind: 'route' },
+      { label: 'Terms of use', to: '/terms-of-use', kind: 'route' },
+    ],
+  },
+];
+
+const FOOTER_LINK =
+  'inline-block rounded bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 text-[0.9375rem] text-slate-300 transition-[color,background-size] duration-300 hover:bg-[length:100%_1px] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white';
+
+function FooterLink({ link }) {
+  if (link.kind === 'route')
+    return <Link to={link.to} className={FOOTER_LINK}>{link.label}</Link>;
+  return <a href={link.to} className={FOOTER_LINK}>{link.label}</a>;
+}
 
 export default function TrustCenter() {
   const [activeSection, setActiveSection] = useState(LEGAL_SECTIONS[0].id);
@@ -83,27 +127,25 @@ export default function TrustCenter() {
 
   return (
     <div 
-      className="min-h-screen w-full flex flex-col bg-[#FAFAFA] overflow-hidden antialiased relative selection:bg-orange-500/30"
+      className="min-h-screen w-full flex flex-col bg-[#FAFAFA] overflow-hidden antialiased relative selection:bg-[#d9856b]/30"
       style={{ fontFamily: "'Outfit', 'Metropolis', sans-serif" }}
     >
       
       {/* --- Ambient Background Glows --- */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[120vw] lg:max-w-4xl h-[400px] lg:h-[500px] bg-orange-400/20 rounded-full mix-blend-multiply filter blur-[100px] lg:blur-[140px] pointer-events-none animate-[pulse_6s_ease-in-out_infinite]"></div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[120vw] lg:max-w-4xl h-[400px] lg:h-[500px] bg-[#d9856b]/15 rounded-full mix-blend-multiply filter blur-[100px] lg:blur-[140px] pointer-events-none animate-[pulse_6s_ease-in-out_infinite]"></div>
       <div className="absolute top-[20%] right-[-10%] w-64 lg:w-96 h-64 lg:h-96 bg-blue-400/15 rounded-full mix-blend-multiply filter blur-[90px] lg:blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite_alternate]"></div>
 
       {/* --- Global Navigation --- */}
       <nav 
-        className={`w-full flex justify-between items-center py-3 lg:py-4 px-4 lg:px-12 z-[70] fixed top-0 transition-all duration-500 ease-out border-b border-slate-200/50 ${
-          isMobileMenuOpen ? 'bg-white/95 backdrop-blur-3xl shadow-none' : 'bg-white/70 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.03)]'
+        className={`w-full flex justify-between items-center py-3 lg:py-4 px-4 lg:px-12 z-[70] fixed top-0 transition-all duration-500 ease-out border-b border-[#d9856b]/20 ${
+          isMobileMenuOpen ? 'bg-white/95 backdrop-blur-3xl shadow-none' : 'bg-[#fbf3f0]/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.03)]'
         } ${
           isNavVisible || isMobileMenuOpen ? 'translate-y-0' : '-translate-y-full'
         }`}
       >
         <div className="nav-logo shrink-0 relative z-[70]">
-          <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg">
-            <span className="font-black text-[1.25rem] text-slate-800 tracking-tight">
-                Remo<span className="text-red-600">PDF</span>
-              </span>
+          <Link to="/" aria-label="RemoPDF home" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b] rounded-lg">
+            <img src={navLogo} alt="RemoPDF" draggable={false} className="h-8 lg:h-9 w-auto block" />
           </Link>
         </div>
   
@@ -128,9 +170,9 @@ export default function TrustCenter() {
           {/* Premium Contact Us Button (Hidden on Mobile) */}
             <Link 
             to="/ResumeBuilder"
-            className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(249,115,22,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(249,115,22,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
+            className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-[#d9856b] text-[#0e1726] text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(217,133,107,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(217,133,107,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
           >
-            <div className="absolute inset-0 z-[-1] bg-gradient-to-r from-red-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 z-[-1] bg-[#c9735a] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="absolute top-0 left-0 w-full h-full -translate-x-full group-hover:translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 transition-transform duration-1000 ease-in-out z-[-1]" />
             <div className="absolute inset-0 rounded-full border border-white/20 mix-blend-overlay"></div>
             <span className="relative z-10 drop-shadow-sm">Build Resume</span>
@@ -181,7 +223,7 @@ export default function TrustCenter() {
       key={idx}
       to={item.path} 
       onClick={() => setIsMobileMenuOpen(false)}
-      className={`text-[1.35rem] font-medium tracking-wide transition-colors ${item.name === 'Trust Center' ? 'text-orange-500' : 'text-slate-800 hover:text-orange-500'}`}
+      className={`text-[1.35rem] font-medium tracking-wide transition-colors ${item.name === 'Trust Center' ? 'text-[#c4694e]' : 'text-slate-800 hover:text-[#c4694e]'}`}
     >
       {item.name}
     </Link>
@@ -199,7 +241,7 @@ export default function TrustCenter() {
                 style={{ transitionDelay: `${idx * 50}ms` }}
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors ${
-                  activeSection === section.id ? 'bg-orange-50 border-orange-100 text-orange-500' : 'bg-white border-slate-200 text-slate-400 group-hover:border-orange-200 group-hover:text-orange-400'
+                  activeSection === section.id ? 'bg-[#d9856b]/10 border-[#d9856b]/30 text-[#c4694e]' : 'bg-white border-slate-200 text-slate-400 group-hover:border-[#d9856b]/40 group-hover:text-[#d9856b]'
                 }`}>
                   <i className={`fa-solid ${section.icon} text-[13px]`}></i>
                 </div>
@@ -212,9 +254,9 @@ export default function TrustCenter() {
 
           <Link 
             to="/ResumeBuilder" onClick={() => setIsMobileMenuOpen(false)}
-            className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(249,115,22,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(249,115,22,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
+            className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-[#d9856b] text-[#0e1726] text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(217,133,107,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(217,133,107,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
           >
-            <div className="absolute inset-0 z-[-1] bg-gradient-to-r from-red-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 z-[-1] bg-[#c9735a] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="absolute top-0 left-0 w-full h-full -translate-x-full group-hover:translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 transition-transform duration-1000 ease-in-out z-[-1]" />
             <div className="absolute inset-0 rounded-full border border-white/20 mix-blend-overlay"></div>
             <span className="relative z-10 drop-shadow-sm">Build Resume</span>
@@ -237,11 +279,11 @@ export default function TrustCenter() {
                   onClick={() => scrollToSection(section.id)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 text-left w-full ${
                     activeSection === section.id 
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20 translate-x-1' 
+                      ? 'bg-[#d9856b] text-[#0e1726] shadow-md shadow-[#d9856b]/20 translate-x-1' 
                       : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-slate-900'
                   }`}
                 >
-                  <i className={`fa-solid ${section.icon} w-5 text-center ${activeSection === section.id ? 'text-white/90' : 'text-slate-400'}`}></i>
+                  <i className={`fa-solid ${section.icon} w-5 text-center ${activeSection === section.id ? 'text-[#0e1726]/80' : 'text-slate-400'}`}></i>
                   {section.title}
                 </button>
               ))}
@@ -254,16 +296,16 @@ export default function TrustCenter() {
           
           {/* Header */}
           <header className="mb-12 lg:mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="inline-flex items-center gap-2 px-3 lg:px-4 py-1.5 mb-5 lg:mb-6 text-[10px] lg:text-xs font-medium tracking-[0.2em] uppercase text-orange-600 bg-orange-50/80 backdrop-blur-md border border-orange-200/60 rounded-full shadow-sm">
+            <div className="inline-flex items-center gap-2 px-3 lg:px-4 py-1.5 mb-5 lg:mb-6 text-[10px] lg:text-xs font-medium tracking-[0.2em] uppercase text-[#b85a40] bg-[#d9856b]/10 backdrop-blur-md border border-[#d9856b]/30 rounded-full shadow-sm">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d9856b] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#d9856b]"></span>
               </span>
               Trust & Transparency
             </div>
             
             <h1 className="text-[2.2rem] leading-[1.1] sm:text-5xl lg:text-6xl font-light text-slate-900 tracking-tight mb-4 lg:mb-6">
-              Privacy by <br className="hidden sm:block"/> <span className="font-normal text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-red-500 to-amber-500">Design.</span>
+              Privacy by <br className="hidden sm:block"/> <span className="font-normal text-[#d9856b]">Design.</span>
             </h1>
             <p className="text-[15px] sm:text-lg text-slate-500 font-normal max-w-2xl leading-relaxed">
               We engineer document utilities, not tracking networks. Read exactly how our architecture ensures your PDFs and personal data remain entirely your own.
@@ -276,8 +318,8 @@ export default function TrustCenter() {
             {/* Section 1: Zero Knowledge */}
             <section id="zero-knowledge" className="scroll-mt-24 lg:scroll-mt-32">
               <h2 className="text-xl lg:text-3xl font-medium text-slate-900 mb-4 flex items-center gap-3">
-                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-orange-50 flex items-center justify-center border border-orange-100 shrink-0">
-                  <i className="fa-solid fa-eye-slash text-[14px] lg:text-[18px] text-orange-500"></i>
+                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-[#d9856b]/10 flex items-center justify-center border border-[#d9856b]/30 shrink-0">
+                  <i className="fa-solid fa-eye-slash text-[14px] lg:text-[18px] text-[#d9856b]"></i>
                 </div>
                 The "Zero-Knowledge" Promise
               </h2>
@@ -358,12 +400,12 @@ export default function TrustCenter() {
             {/* Section 5: Third-Party */}
             <section id="third-party" className="scroll-mt-24 lg:scroll-mt-32">
               <h2 className="text-xl lg:text-3xl font-medium text-slate-900 mb-4 flex items-center gap-3">
-                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100 shrink-0">
-                  <i className="fa-solid fa-cookie-bite text-[14px] lg:text-[18px] text-amber-600"></i>
+                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-[#d9856b]/10 flex items-center justify-center border border-[#d9856b]/30 shrink-0">
+                  <i className="fa-solid fa-cookie-bite text-[14px] lg:text-[18px] text-[#d9856b]"></i>
                 </div>
                 Ad Networks
               </h2>
-              <div className="bg-amber-50/50 border border-amber-200/50 rounded-[1.5rem] lg:rounded-2xl p-5 lg:p-8">
+              <div className="bg-[#d9856b]/5 border border-[#d9856b]/25 rounded-[1.5rem] lg:rounded-2xl p-5 lg:p-8">
                 <p className="text-[14px] lg:text-base text-slate-700 font-medium mb-3">
                   To offset massive server computational costs, we utilize Google AdSense. 
                 </p>
@@ -397,6 +439,97 @@ export default function TrustCenter() {
         </div>
       </main>
 
+      {/* --- Call to action band (same as the home page) --- */}
+      <section className="relative z-10 bg-gradient-to-br from-[#e9a38e] to-[#d9856b]">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-4 py-14 sm:px-6 sm:py-16 lg:flex-row lg:items-center lg:px-8">
+          <h2 className="max-w-xl text-3xl font-bold leading-tight tracking-tight text-[#0e1726] [text-wrap:balance] sm:text-4xl">
+            Your next PDF or resume is a few minutes away.
+          </h2>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              to={PDF_EDITOR_ROUTE}
+              className="inline-flex items-center justify-center rounded-lg bg-[#0e1726] px-6 py-3 text-[15px] font-bold text-white transition-colors hover:bg-[#1f2e49] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726]"
+            >
+              Open PDF editor
+            </Link>
+            <Link
+              to="/ResumeBuilder"
+              className="inline-flex items-center justify-center rounded-lg border border-[#0e1726]/10 bg-white px-6 py-3 text-[15px] font-bold text-[#0e1726] transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726]"
+            >
+              Build a resume
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* --- Footer: the coral wrapper shows through the folded corner so the band above seems to continue under it --- */}
+      <div className="relative z-10 bg-[#d9856b]">
+        <style>{`
+          .site-fold { clip-path: polygon(0 0, calc(100% - 3.5rem) 0, 100% 3.5rem, 100% 100%, 0 100%); }
+          .site-fold-flap { position: absolute; top: 0; right: 0; z-index: 10; width: 3.5rem; height: 3.5rem; background: linear-gradient(to bottom left, #3d5078, #1f2e49 65%); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+          @media (min-width: 1024px) {
+            .site-fold { clip-path: polygon(0 0, calc(100% - 5rem) 0, 100% 5rem, 100% 100%, 0 100%); }
+            .site-fold-flap { width: 5rem; height: 5rem; }
+          }
+        `}</style>
+        <footer className="site-fold relative isolate overflow-hidden bg-[#0e1726] text-slate-300">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,#000,transparent_75%)]"
+            style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '22px 22px' }}
+          />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -left-32 h-[26rem] w-[26rem] rounded-full bg-[#d9856b]/15 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-1/3 h-80 w-80 rounded-full bg-[#3d5078]/40 blur-3xl" />
+          <div aria-hidden="true" className="site-fold-flap" />
+
+          {/* Extra bottom padding on small screens so the floating section bar never covers the last row */}
+          <div className="relative z-10 mx-auto max-w-7xl px-4 pb-28 pt-16 sm:px-6 sm:pt-20 lg:px-8 lg:pb-8">
+            <div className="grid gap-14 lg:grid-cols-[1.3fr_2fr] lg:gap-20">
+              <div className="max-w-sm">
+                <Link
+                  to="/"
+                  aria-label="RemoPDF home"
+                  className="inline-flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                >
+                  <img src={footerLogo} alt="RemoPDF" draggable={false} className="h-10 w-auto block" />
+                </Link>
+                <p className="mt-5 leading-relaxed text-slate-300">{FOOTER_BLURB}</p>
+              </div>
+
+              <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
+                {FOOTER_COLS.map((col) => (
+                  <div key={col.title}>
+                    <h2 className="text-base font-bold text-white">{col.title}</h2>
+                    <ul className="mt-4 space-y-3">
+                      {col.links.map((link) => (
+                        <li key={link.label}>
+                          <FooterLink link={link} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </nav>
+            </div>
+
+            <span aria-hidden="true" className="mt-16 block h-px bg-white/15" />
+            <div className="flex items-center justify-between gap-4 pt-6 text-sm text-slate-400">
+              <p>© {new Date().getFullYear()} RemoPDF</p>
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="group inline-flex items-center gap-3 rounded-full py-1 pl-2 text-slate-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              >
+                Back to top
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 transition-colors group-hover:border-white/40 group-hover:bg-white/10">
+                  <i className="fa-solid fa-arrow-up text-xs transition-transform duration-200 group-hover:-translate-y-0.5"></i>
+                </span>
+              </button>
+            </div>
+          </div>
+        </footer>
+      </div>
+
       {/* --- Mobile Floating Glass Navigation (< 1024px) --- */}
       <div 
         className={`lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-40 transition-transform duration-500 ${isMobileMenuOpen ? 'translate-y-24' : 'translate-y-0'}`}
@@ -421,7 +554,7 @@ export default function TrustCenter() {
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <i className={`fa-solid ${section.icon} text-[12px] ${activeSection === section.id ? 'text-orange-400' : 'text-slate-400'}`}></i>
+              <i className={`fa-solid ${section.icon} text-[12px] ${activeSection === section.id ? 'text-[#d9856b]' : 'text-slate-400'}`}></i>
               {section.title}
             </button>
           ))}

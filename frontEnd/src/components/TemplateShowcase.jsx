@@ -7,18 +7,44 @@ import BlueSidebarTemplate from './Resume/Templates/BlueSidebarTemplate';
 import GreenHeaderTemplate from './Resume/Templates/GreenHeaderTemplate';
 import PinkHeaderTemplate from './Resume/Templates/PinkHeaderTemplate';
 import DarkTopTemplate from './Resume/Templates/DarkTopTemplate';
+import TealTimelineTemplate from './Resume/Templates/TealTimelineTemplate';
+import BurgundyExecutiveTemplate from './Resume/Templates/BurgundyExecutiveTemplate';
+import SteelMinimalTemplate from './Resume/Templates/SteelMinimalTemplate';
+import ForestClassicTemplate from './Resume/Templates/ForestClassicTemplate';
+import CharcoalCompactTemplate from './Resume/Templates/CharcoalCompactTemplate';
+import IndigoCreativeTemplate from './Resume/Templates/IndigoCreativeTemplate';
+import PlumElegantTemplate from './Resume/Templates/PlumElegantTemplate';
+import CrimsonBoldTemplate from './Resume/Templates/CrimsonBoldTemplate';
+import CobaltContemporaryTemplate from './Resume/Templates/CobaltContemporaryTemplate';
+import CopperStudioTemplate from './Resume/Templates/CopperStudioTemplate';
+import CyanMetroTemplate from './Resume/Templates/CyanMetroTemplate';
+import OliveHeritageTemplate from './Resume/Templates/OliveHeritageTemplate';
+import SkyNordicTemplate from './Resume/Templates/SkyNordicTemplate';
+import MagentaVividTemplate from './Resume/Templates/MagentaVividTemplate';
+import GoldPrestigeTemplate from './Resume/Templates/GoldPrestigeTemplate';
+import KhakiPioneerTemplate from './Resume/Templates/KhakiPioneerTemplate';
+import SlateRefinedTemplate from './Resume/Templates/SlateRefinedTemplate';
+import MidnightCorporateTemplate from './Resume/Templates/MidnightCorporateTemplate';
+import EmeraldFreshTemplate from './Resume/Templates/EmeraldFreshTemplate';
+import UmberScholarTemplate from './Resume/Templates/UmberScholarTemplate';
+import StoneJournalTemplate from './Resume/Templates/StoneJournalTemplate';
+import RoseGracefulTemplate from './Resume/Templates/RoseGracefulTemplate';
+import VioletGalleryTemplate from './Resume/Templates/VioletGalleryTemplate';
+import SageSereneTemplate from './Resume/Templates/SageSereneTemplate';
+import DenimEditorialTemplate from './Resume/Templates/DenimEditorialTemplate';
+import OrchidBoutiqueTemplate from './Resume/Templates/OrchidBoutiqueTemplate';
+import { DEFAULT_ACCENT } from './Resume/Templates/templateShared';
 
 
 const STORAGE_KEY_TEMPLATE = 'resumeBuilder:selectedTemplate';
 const STORAGE_KEY_COLOR = 'resumeBuilder:selectedColor';
-const TEMPLATE_IDS = ['blue-sidebar', 'green-header', 'pink-header', 'dark-top'];
 const DEFAULT_TEMPLATE = 'blue-sidebar';
 const GRAYSCALE = '#475569';
 const HEX_RE = /^#[0-9a-f]{6}$/i;
 
 const COPY = {
   title: 'Pick a layout, then make it yours',
-  subtitle: 'Four layouts, any accent colour. Choose one and watch it update before you start.',
+  subtitle: 'Pick any layout and any accent colour, and watch it update before you start.',
   colors: 'Accent colour',
   templates: 'Layouts',
   preview: 'Preview full size',
@@ -94,13 +120,6 @@ const useInView = (threshold = 0.1) => {
   }, [threshold]);
 
   return [ref, seen];
-};
-
-const DEFAULT_ACCENT = {
-  'blue-sidebar': '#1e3a8a',
-  'green-header': '#15803d',
-  'pink-header': '#be185d',
-  'dark-top': '#334155',
 };
 
 const ACCENT_SWATCHES = [
@@ -303,7 +322,35 @@ const TEMPLATE_CARDS = [
   { id: 'green-header', label: 'Accent', note: 'A colour header over a clean single column.', Template: GreenHeaderTemplate },
   { id: 'pink-header', label: 'Modern', note: 'Bold header with generous spacing.', Template: PinkHeaderTemplate },
   { id: 'dark-top', label: 'Professional', note: 'A dark banner for a formal tone.', Template: DarkTopTemplate },
+  { id: 'teal-timeline', label: 'Timeline', note: 'Experience and education on a vertical timeline.', Template: TealTimelineTemplate },
+  { id: 'burgundy-executive', label: 'Executive', note: 'Clean single column with burgundy accents.', Template: BurgundyExecutiveTemplate },
+  { id: 'steel-minimal', label: 'Minimal', note: 'Clean single column with steel accents.', Template: SteelMinimalTemplate },
+  { id: 'forest-classic', label: 'Classic', note: 'Clean single column with forest accents.', Template: ForestClassicTemplate },
+  { id: 'charcoal-compact', label: 'Compact', note: 'Clean single column with charcoal accents.', Template: CharcoalCompactTemplate },
+  { id: 'indigo-creative', label: 'Creative', note: 'Clean single column with indigo accents.', Template: IndigoCreativeTemplate },
+  { id: 'plum-elegant', label: 'Elegant', note: 'Clean single column with plum accents.', Template: PlumElegantTemplate },
+  { id: 'crimson-bold', label: 'Bold', note: 'Clean single column with crimson accents.', Template: CrimsonBoldTemplate },
+  { id: 'cobalt-contemporary', label: 'Contemporary', note: 'Clean single column with cobalt accents.', Template: CobaltContemporaryTemplate },
+  { id: 'copper-studio', label: 'Studio', note: 'Clean single column with copper accents.', Template: CopperStudioTemplate },
+  { id: 'cyan-metro', label: 'Metro', note: 'Clean single column with cyan accents.', Template: CyanMetroTemplate },
+  { id: 'olive-heritage', label: 'Heritage', note: 'Clean single column with olive accents.', Template: OliveHeritageTemplate },
+  { id: 'sky-nordic', label: 'Nordic', note: 'Clean single column with sky accents.', Template: SkyNordicTemplate },
+  { id: 'magenta-vivid', label: 'Vivid', note: 'Clean single column with magenta accents.', Template: MagentaVividTemplate },
+  { id: 'gold-prestige', label: 'Prestige', note: 'Clean single column with gold accents.', Template: GoldPrestigeTemplate },
+  { id: 'khaki-pioneer', label: 'Pioneer', note: 'Clean single column with khaki accents.', Template: KhakiPioneerTemplate },
+  { id: 'slate-refined', label: 'Refined', note: 'Clean single column with slate accents.', Template: SlateRefinedTemplate },
+  { id: 'midnight-corporate', label: 'Corporate', note: 'Clean single column with midnight accents.', Template: MidnightCorporateTemplate },
+  { id: 'emerald-fresh', label: 'Fresh', note: 'Clean single column with emerald accents.', Template: EmeraldFreshTemplate },
+  { id: 'umber-scholar', label: 'Scholar', note: 'Clean single column with umber accents.', Template: UmberScholarTemplate },
+  { id: 'stone-journal', label: 'Journal', note: 'Clean single column with stone accents.', Template: StoneJournalTemplate },
+  { id: 'rose-graceful', label: 'Graceful', note: 'Clean single column with rose accents.', Template: RoseGracefulTemplate },
+  { id: 'violet-gallery', label: 'Gallery', note: 'Clean single column with violet accents.', Template: VioletGalleryTemplate },
+  { id: 'sage-serene', label: 'Serene', note: 'Clean single column with sage accents.', Template: SageSereneTemplate },
+  { id: 'denim-editorial', label: 'Editorial', note: 'Clean single column with denim accents.', Template: DenimEditorialTemplate },
+  { id: 'orchid-boutique', label: 'Boutique', note: 'Clean single column with orchid accents.', Template: OrchidBoutiqueTemplate },
 ];
+
+const TEMPLATE_IDS = TEMPLATE_CARDS.map((c) => c.id);
 
 const readTemplate = () => {
   try {
@@ -425,18 +472,20 @@ const TemplateRow = ({ card, color, selected, featured, featuredLabel, onSelect 
   const { id, label, note, Template } = card;
   const accent = color || DEFAULT_ACCENT[id];
   const props = useMemo(() => getTemplateProps(accent), [accent]);
+  const [rowRef, seen] = useInView(0.01);
 
   return (
     <button
+      ref={rowRef}
       type="button"
       aria-pressed={selected}
       onClick={() => onSelect(id)}
-      className={`flex w-full items-center gap-4 rounded-2xl p-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 ${
+      className={`flex w-full shrink-0 items-center gap-4 rounded-2xl p-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 ${
         selected ? 'bg-slate-900 text-white' : 'text-slate-900 hover:bg-slate-100'
       }`}
     >
       <TemplateThumb className="w-14 shrink-0 rounded-[3px] shadow-md ring-1 ring-black/10">
-        <Template {...props} />
+        {seen && <Template {...props} />}
       </TemplateThumb>
 
       <span className="min-w-0 flex-1">
@@ -550,6 +599,7 @@ export default function TemplateShowcase({
   const [selected, setSelected] = useState(DEFAULT_TEMPLATE);
   const [color, setColor] = useState(null);
   const [previewId, setPreviewId] = useState(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
     setSelected(readTemplate());
@@ -564,6 +614,17 @@ export default function TemplateShowcase({
     [color, onUseTemplate],
   );
   const closePreview = useCallback(() => setPreviewId(null), []);
+
+  // Keep the chosen row visible inside the list (scrolls the list only, never the page).
+  useEffect(() => {
+    const list = listRef.current;
+    const row = list && list.querySelector('[aria-pressed="true"]');
+    if (!list || !row) return;
+    const top = row.offsetTop;
+    const bottom = top + row.offsetHeight;
+    if (top < list.scrollTop) list.scrollTop = Math.max(0, top - 4);
+    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight + 4;
+  }, [selected]);
 
   const card = TEMPLATE_CARDS.find((c) => c.id === selected) || TEMPLATE_CARDS[0];
   const accent = color || DEFAULT_ACCENT[card.id];
@@ -587,7 +648,12 @@ export default function TemplateShowcase({
           </div>
 
           <div className="flex flex-col gap-8 lg:col-start-1 lg:row-start-2">
-            <div role="group" aria-label={COPY.templates} className="-mx-3 flex flex-col gap-1.5">
+            <div
+              ref={listRef}
+              role="group"
+              aria-label={COPY.templates}
+              className="pro-scroll relative -mx-4 flex max-h-[24rem] flex-col gap-1.5 overflow-y-auto overscroll-contain px-1 py-1"
+            >
               {TEMPLATE_CARDS.map((c) => (
                 <TemplateRow
                   key={c.id}

@@ -4,6 +4,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import "pdfjs-dist/build/pdf.worker.mjs";
 import { Link } from 'react-router-dom';
 import image1 from '../assets/remopdf.png';
+import navLogo from '../assets/logo.png';
 import { addPasswordToPdf, pdfToImages } from "../api/client"; // adjust the path if client.js lives elsewhere
 
 
@@ -3793,10 +3794,8 @@ export default function PdfFillerApp() {
         </button>
 
                 <div className="text-lg sm:text-xl font-bold flex items-center gap-2 z-[70]">
-  <Link to="/" className="flex items-center gap-2 outline-none rounded-lg group">
-    <span className="text-[1.25rem] text-white tracking-tight">
-      Remo <span className="text-red-600">PDF</span>
-    </span>
+  <Link to="/" aria-label="RemoPDF" className="flex items-center gap-2 outline-none rounded-lg group">
+    <img src={navLogo} alt="RemoPDF" draggable={false} className="h-7 sm:h-8 w-auto block" />
   </Link>
 </div>
 
