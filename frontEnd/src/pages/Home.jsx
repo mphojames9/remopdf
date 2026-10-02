@@ -320,6 +320,91 @@ function ToolArt({ type }) {
   );
 }
 
+// The editor feature list. From sm up it is the plain grid. On a phone each item becomes a card that sticks
+// near the top while the next one slides up over it, so the cards pile onto each other one by one. The sticky
+// part is pure CSS (.ec-* rules below); this effect only measures how far each card has been covered and
+// sets --sc (scale) and --dim (shade) so the older cards sink back as the stack grows.
+function EditorCards() {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const list = ref.current;
+    if (!list) return undefined;
+    const small = window.matchMedia('(max-width: 639px)');
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const items = Array.from(list.children);
+    let raf = 0;
+
+    const clear = () =>
+      items.forEach((el) => {
+        el.style.removeProperty('--sc');
+        el.style.removeProperty('--dim');
+      });
+
+    const update = () => {
+      raf = 0;
+      if (!small.matches || calm.matches) {
+        clear();
+        return;
+      }
+      const box = list.getBoundingClientRect();
+      if (box.bottom < -200 || box.top > window.innerHeight + 200) return;
+
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const peek = rem * 0.625; // keep in step with the .625rem sticky offset in the CSS
+      const gap = rem; // margin between cards
+
+      // progress[i] = 0 while card i + 1 is still below it, 1 once card i + 1 has settled on top of it
+      const progress = items.map((el, i) => {
+        const next = items[i + 1];
+        if (!next) return 0;
+        const rest = el.offsetHeight + gap;
+        const now = next.getBoundingClientRect().top - el.getBoundingClientRect().top;
+        return Math.min(1, Math.max(0, (rest - now) / (rest - peek)));
+      });
+
+      // a card sinks back for every card stacked on top of it, not just the one right above
+      let depth = 0;
+      for (let i = items.length - 1; i >= 0; i -= 1) {
+        depth += progress[i];
+        items[i].style.setProperty('--sc', (1 - Math.min(depth * 0.035, 0.14)).toFixed(4));
+        items[i].style.setProperty('--dim', Math.min(depth * 0.07, 0.35).toFixed(3));
+      }
+    };
+
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    onScroll();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+      clear();
+    };
+  }, []);
+
+  return (
+    <ul ref={ref} className="ec-list mt-14 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+      {editorPoints.map((pt, i) => (
+        <li key={pt.title} style={{ '--i': i % 4, '--n': i }} className="ec-item reveal">
+          <div className="ec-card">
+            <span className="ec-count" aria-hidden="true">
+              {String(i + 1).padStart(2, '0')} / {String(editorPoints.length).padStart(2, '0')}
+            </span>
+            <ToolArt type={pt.art} />
+            <h3 className="mt-5 font-display text-lg font-bold">{pt.title}</h3>
+            <p className="mt-1.5 text-slate-600">{pt.desc}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Hero resume stack                                                  */
 /* ------------------------------------------------------------------ */
@@ -679,48 +764,6 @@ function KinPill({ children }) {
   );
 }
 
-function Kinetic() {
-  const copy = (key, children) => <div key={key} className="kin-copy">{children}</div>;
-  const verbs = (key) =>
-    copy(key, KIN_VERBS.map((v) => (
-      <Fragment key={v.word}>
-        <span>{v.word}</span>
-        <KinPill>{v.icon}</KinPill>
-      </Fragment>
-    )));
-  const tools = (key) =>
-    copy(key, KIN_TOOLS.map((t) => (
-      <Fragment key={t}>
-        <span>{t}</span>
-        <span className="h-[0.07em] w-[0.5em] shrink-0 rounded-full bg-[#d9856b]" />
-      </Fragment>
-    )));
-
-  return (
-    <section aria-label="Edit text, highlight, sign, split, compress and lock PDFs, and build ATS-friendly resumes" className="select-none overflow-hidden border-t border-[#0e1726]/10 py-14 sm:py-20">
-      <div aria-hidden="true" className="space-y-5 [mask-image:linear-gradient(90deg,transparent,#000_7%,#000_93%,transparent)] sm:space-y-8">
-        <div className="kin-track font-display text-[clamp(3.5rem,11vw,10rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-[#0e1726]" style={{ '--kin-t': '100s' }}>
-          {verbs('a')}
-          {verbs('b')}
-        </div>
-        <div className="kin-track rev font-display text-[clamp(2.25rem,5vw,5rem)] font-medium leading-[1.1] tracking-[-0.02em] text-[#0e1726]/45" style={{ '--kin-t': '110s' }}>
-          {tools('a')}
-          {tools('b')}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Page                                                               */
-/* ------------------------------------------------------------------ */
-
-/* ------------------------------------------------------------------ */
-/*  Footer                                                             */
-/* ------------------------------------------------------------------ */
-
-const CONTACT_EMAIL = 'hello@remopdf.site';
 
 const footerCols = [
   {
@@ -743,7 +786,7 @@ const footerCols = [
   {
     title: 'Support',
     links: [
-      { label: 'Contact us', to: `mailto:${CONTACT_EMAIL}`, kind: 'anchor' },
+      { label: 'Contact us', to: ``, kind: 'anchor' },
       { label: 'Privacy policy', to: '/PrivacyPolicy', kind: 'route' },
       { label: 'Terms of use', to: '/terms-of-use', kind: 'route' },
     ],
@@ -838,17 +881,6 @@ function SiteFooter() {
                   </span>
                 ))}
               </p>
-              <p className="f-rise mt-9 text-sm text-slate-400" style={{ '--i': 5 }}>Questions? Write to us.</p>
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                onPointerMove={magnet}
-                onPointerLeave={unmagnet}
-                style={{ '--i': 6 }}
-                className="f-rise magnet group mt-1 inline-flex items-center gap-2 rounded font-display text-xl font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-              >
-                {CONTACT_EMAIL}
-                <Icon name="arrowUpRight" className="h-5 w-5 text-[#d9856b] transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-              </a>
             </div>
 
             <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
@@ -929,10 +961,6 @@ function Faq() {
                   );
                 })}
               </div>
-              <a href={`mailto:${CONTACT_EMAIL}`} className="btn btn-ink reveal mt-8" style={{ '--i': 3 }}>
-                <Icon name="mail" className="h-4 w-4" />
-                Email {CONTACT_EMAIL}
-              </a>
             </div>
 
             <div className="faq-sheet-wrap reveal" style={{ '--i': 1 }}>
@@ -1129,6 +1157,23 @@ export default function Home() {
             .layer { animation: layer-scroll linear both; animation-timeline: scroll(root); animation-range: 0 100vh; }
           }
         }
+        .ec-count { display: none; }
+        @media (max-width: 639px) {
+          /* --ec-top = how far below the top of the screen the first card sticks (raise it if the navbar is taller) */
+          ul.ec-list { display: block; --ec-top: 5rem; }
+          .ec-item { position: sticky; top: calc(var(--ec-top) + var(--n, 0) * .625rem); margin-bottom: 1rem; }
+          .ec-item:last-child { margin-bottom: 0; }
+          .ec-item.reveal { animation: none; }
+          .ec-card { position: relative; overflow: hidden; border: 1px solid rgba(14,23,38,.14); border-radius: 1.25rem; background: #fafafb; padding: 1.25rem; transform: scale(var(--sc, 1)); transform-origin: 50% 0; will-change: transform; }
+          .ec-card::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: #0e1726; opacity: var(--dim, 0); }
+          .ec-count { display: block; margin-bottom: .875rem; font-size: .75rem; font-weight: 600; letter-spacing: .08em; color: #64748b; }
+        }
+        @media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+          @supports (animation-timeline: view()) {
+            @keyframes ec-in { from { opacity: 0; translate: 0 56px; scale: .96; } }
+            .ec-card { animation: ec-in linear both; animation-timeline: view(); animation-range: entry 0% entry 75%; }
+          }
+        }
         .faq-sheet-wrap { filter: drop-shadow(0 18px 28px rgba(14,23,38,.14)); }
         .faq-sheet { border-radius: .875rem; clip-path: polygon(0 0, calc(100% - 2.25rem) 0, 100% 2.25rem, 100% 100%, 0 100%); }
         .faq-flap { position: absolute; top: 0; right: 0; width: 2.25rem; height: 2.25rem; background: linear-gradient(to bottom left, #f1ddd3, #d4b1a0 90%); clip-path: polygon(0 0, 100% 100%, 0 100%); }
@@ -1234,15 +1279,7 @@ export default function Home() {
               </span>
             </div>
 
-            <ul className="mt-14 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-              {editorPoints.map((pt, i) => (
-                <li key={pt.title} style={{ '--i': i % 4 }} className="reveal">
-                  <ToolArt type={pt.art} />
-                  <h3 className="mt-5 font-display text-lg font-bold">{pt.title}</h3>
-                  <p className="mt-1.5 text-slate-600">{pt.desc}</p>
-                </li>
-              ))}
-            </ul>
+            <EditorCards />
           </div>
         </section>
 
@@ -1322,8 +1359,6 @@ export default function Home() {
 
         {/* FAQ */}
         <Faq />
-
-        <Kinetic />
 
         {/* Final call to action */}
         <section className="cta-band bg-[#d9856b]">
