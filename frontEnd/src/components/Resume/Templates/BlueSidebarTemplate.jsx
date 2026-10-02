@@ -14,6 +14,7 @@ import {
   markSection,
   renderExtraSections,
 } from './templateShared';
+import renderCertificates from '../Sections/renderCertificates';
 
 /* ------------------------------ Design tokens ------------------------------ */
 const INK = '#1F2D3A';      // headings, names, main text
@@ -28,6 +29,8 @@ const SIDE_CONTENT_W = 198;
 // pagination maths (column height, block measuring) stays exactly as it was.
 const HEADER_SPACER_H = HEADER_H - 32 + 24;
 const SERIF = '"Cormorant Garamond", "Playfair Display", Georgia, "Times New Roman", serif';
+// Sections that live in the left sidebar. Every other section goes in the main column on the right.
+const SIDEBAR_KEYS = ['skills', 'languages', 'hobbies'];
 
 /* --------------------------------- Icons ---------------------------------- */
 const Svg = ({ size = 16, children }) => (
@@ -66,7 +69,7 @@ const contactIcon = (c) => {
 };
 
 const BlueSidebarTemplate = (props) => {
-  const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, isEmpty, accentColor, sectionOrder, edit } = props;
+  const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, accentColor, sectionOrder, edit } = props;
 
   const lineColor = tint(accentColor, 0.5);      // hairlines
   const sidebarBg = tint(accentColor, 0.86);     // soft tint of the accent behind the sidebar
@@ -96,7 +99,7 @@ const BlueSidebarTemplate = (props) => {
     if (!React.isValidElement(first) || first.props.className !== headingClass) return blocks;
     return [React.cloneElement(first, undefined, headingIcon(Icon), <span key="text">{first.props.children}</span>), ...rest];
   };
-  const extraIcons = { projects: CodeIcon, hobbies: TargetIcon, references: UserIcon };
+  const extraIcons = { projects: CodeIcon, references: UserIcon, certificates: AwardIcon };
 
   const mainMap = {
     summary: summary ? endGroup([
@@ -123,13 +126,40 @@ const BlueSidebarTemplate = (props) => {
         ], 'mb-4');
       }),
     ]) : [],
+    education: educations.length > 0 ? endGroup([
+      heading('education', 'Education', CapIcon),
+      ...educations.flatMap((ed) => {
+        const degree = [ed.degree, ed.field].filter(Boolean).join(', ');
+        const title = degree || ed.institution;
+        const school = degree ? ed.institution : '';
+        const hasMeta = Boolean(school || ed.location);
+        return padLast([
+          <div key={`education-${ed.id}-title`} className={`flex justify-between items-baseline gap-3 ${hasMeta ? 'mb-0.5' : 'mb-2'}`}>
+            <p className="font-bold text-[13px] leading-snug" style={{ color: INK }}>{title}</p>
+            {ed.date && <p className="text-[11px] whitespace-nowrap" style={{ color: INK }}>{ed.date}</p>}
+          </div>,
+          hasMeta && (
+            <div key={`education-${ed.id}-meta`} className="flex justify-between items-baseline gap-3 mb-2">
+              <p className="text-xs" style={{ color: MUTED }}>{school}</p>
+              {ed.location && <p className="text-[11px] italic whitespace-nowrap" style={{ color: MUTED }}>{ed.location}</p>}
+            </div>
+          ),
+          ...renderAchievements(ed.achievements, `education-${ed.id}-ach`),
+        ], 'mb-4');
+      }),
+    ]) : [],
   };
 
-  // Languages live in the sidebar (sideMap), so they are not passed in here.
-  const extras = renderExtraSections({ projects, hobbies, references, headingClass, headingStyle });
+  // Skills, Languages and Hobbies live in the sidebar (sideMap), so they are not passed in here.
+  const extras = {
+    ...renderExtraSections({ projects, references, headingClass, headingStyle }),
+    ...renderCertificates({ certificates, headingClass, headingStyle }),
+  };
+  const mainOrder = sectionOrder.filter((key) => !SIDEBAR_KEYS.includes(key));
+  const sideOrder = sectionOrder.filter((key) => SIDEBAR_KEYS.includes(key));
   const mainBlocks = [
     spacer(),
-    ...sectionOrder.flatMap((key) => markSection(
+    ...mainOrder.flatMap((key) => markSection(
       edit,
       key,
       mainMap[key] || (extras[key] ? withHeadingIcon(extras[key], extraIcons[key] || AwardIcon) : []),
@@ -139,9 +169,10 @@ const BlueSidebarTemplate = (props) => {
   /* ----------------------------- SIDEBAR column ---------------------------- */
   const languageItems = (languages?.items || []).filter((l) => l.name);
   const hasLanguages = Boolean(languages?.enabled && languageItems.length > 0);
+  const hasHobbies = Boolean(hobbies?.enabled && hobbies.text && String(hobbies.text).trim());
   // The first sidebar section has no divider above it; every later one does.
-  const sideHas = { education: educations.length > 0, skills: namedSkills.length > 0, languages: hasLanguages };
-  const firstSideKey = sectionOrder.find((k) => sideHas[k]);
+  const sideHas = { skills: namedSkills.length > 0, languages: hasLanguages, hobbies: hasHobbies };
+  const firstSideKey = sideOrder.find((k) => sideHas[k]);
 
   const sideHeading = (key, text, Icon) => (
     <h3
@@ -180,23 +211,6 @@ const BlueSidebarTemplate = (props) => {
   ]) : [];
 
   const sideMap = {
-    education: educations.length > 0 ? endGroup([
-      sideHeading('education', 'Education', CapIcon),
-      ...educations.flatMap((ed) => padLast([
-        <p key={`education-${ed.id}-title`} className="font-bold text-[11.5px] leading-snug">
-          {[ed.degree, ed.field].filter(Boolean).join(', ')}
-        </p>,
-        ed.institution && (
-          <p key={`education-${ed.id}-school`} className="text-[10.5px] font-semibold mt-0.5" style={{ color: MUTED }}>{ed.institution}</p>
-        ),
-        (ed.date || ed.location) && (
-          <p key={`education-${ed.id}-meta`} className="text-[10px] mt-0.5" style={{ color: MUTED }}>
-            {[ed.date, ed.location].filter(Boolean).join(' · ')}
-          </p>
-        ),
-        ...sideRichText(ed.achievements, `education-${ed.id}-ach`),
-      ], 'mb-3')),
-    ]) : [],
     skills: namedSkills.length > 0 ? endGroup([
       sideHeading('skills', 'Skills', GearIcon),
       ...namedSkills.map((s) => {
@@ -214,11 +228,15 @@ const BlueSidebarTemplate = (props) => {
       }),
     ]) : [],
     languages: languageBlocks,
+    hobbies: hasHobbies ? endGroup([
+      sideHeading('hobbies', 'Hobbies & Interests', TargetIcon),
+      ...sideRichText(hobbies.text, 'hobbies'),
+    ]) : [],
   };
 
   const sideBlocks = [
     spacer(),
-    ...sectionOrder.flatMap((key) => markSection(edit, key, sideMap[key] || [])),
+    ...sideOrder.flatMap((key) => markSection(edit, key, sideMap[key] || [])),
   ];
 
 /* ------------------------------- Page header ------------------------------ */

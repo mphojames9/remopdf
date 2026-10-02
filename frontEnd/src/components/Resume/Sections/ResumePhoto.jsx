@@ -4,26 +4,34 @@ import React from 'react';
 /*  Profile photo: options, renderer and file reader.                         */
 /*  Used by the Personal info form (live preview) and by every resume         */
 /*  template, so the photo looks the same everywhere.                         */
+/*                                                                            */
+/*  Every export from the previous version is kept with the same shape, so    */
+/*  existing imports and saved resumes keep working. New options (squircle,   */
+/*  arch, ring) appear automatically wherever the form maps over the lists.   */
 /* -------------------------------------------------------------------------- */
 
 export const PHOTO_SHAPES = [
   { value: 'circle', label: 'Circle', radius: '50%' },
-  // Reduced from 18% to 12% for a sharper, modern "squircle"
+  // Softer, app-icon style corners
+  { value: 'squircle', label: 'Squircle', radius: '28%' },
   { value: 'rounded', label: 'Rounded', radius: '12%' },
-  // Added a very subtle 2px rounding to the square so it isn't completely harsh
+  // Round top, nearly square bottom
+  { value: 'arch', label: 'Arch', radius: '50% 50% 8% 8%' },
   { value: 'square', label: 'Square', radius: '2px' },
 ];
 
 export const PHOTO_SIZES = [
-  { value: 'small', label: 'Small', px: 72 },    // Reduced from 88px
-  { value: 'medium', label: 'Medium', px: 96 },   // Reduced from 112px
-  { value: 'large', label: 'Large', px: 128 },    // Reduced from 140px
+  { value: 'small', label: 'Small', px: 72 },
+  { value: 'medium', label: 'Medium', px: 96 },
+  { value: 'large', label: 'Large', px: 128 },
 ];
 
 export const PHOTO_BORDERS = [
   { value: 'none', label: 'None', px: 0 },
-  { value: 'thin', label: 'Thin', px: 1 },        // Reduced from 2px for a cleaner stroke
-  { value: 'thick', label: 'Thick', px: 3 },      // Reduced from 4px
+  { value: 'thin', label: 'Thin', px: 1 },
+  { value: 'thick', label: 'Thick', px: 3 },
+  // A thin line floating just outside the photo, with a gap between
+  { value: 'ring', label: 'Ring', px: 2 },
 ];
 
 export const PHOTO_ZOOM_MIN = 1;
@@ -37,6 +45,8 @@ export const PHOTO_DEFAULTS = {
   x: 50, // focus point, 0 = left edge, 100 = right edge
   y: 50, // focus point, 0 = top edge, 100 = bottom edge
 };
+
+const RING_GAP_PX = 3;
 
 const clampNumber = (value, min, max, fallback) => {
   const n = Number(value);
@@ -75,17 +85,23 @@ const ResumePhoto = ({ src, style, borderColor = '#334155', sizePx, className = 
   const radius = findOption(PHOTO_SHAPES, look.shape, PHOTO_DEFAULTS.shape).radius;
   const borderPx = findOption(PHOTO_BORDERS, look.border, PHOTO_DEFAULTS.border).px;
   const focus = `${look.x}% ${look.y}%`;
+  const isRing = look.border === 'ring';
+
+  // "Ring" is drawn as an outline so the photo keeps its full size and the
+  // gap shows whatever colour sits behind it (works on any template).
+  const edgeStyle = isRing
+    ? { outline: `${borderPx}px solid ${borderColor}`, outlineOffset: RING_GAP_PX }
+    : { border: borderPx ? `${borderPx}px solid ${borderColor}` : 'none' };
 
   return (
     <div
-      // Changed fallback background to slate-100 for lower contrast and softer UI
       className={`relative shrink-0 overflow-hidden bg-slate-100 ${className}`.trim()}
       style={{
         width: size,
         height: size,
         borderRadius: radius,
         boxSizing: 'border-box',
-        border: borderPx ? `${borderPx}px solid ${borderColor}` : 'none',
+        ...edgeStyle,
       }}
     >
       <img
@@ -100,6 +116,17 @@ const ResumePhoto = ({ src, style, borderColor = '#334155', sizePx, className = 
           objectPosition: focus,
           transform: `scale(${look.zoom})`,
           transformOrigin: focus,
+        }}
+      />
+      {/* Hairline inner edge keeps light or white-background photos crisp */}
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 'inherit',
+          boxShadow: 'inset 0 0 0 1px rgba(15, 23, 42, 0.08)',
+          pointerEvents: 'none',
         }}
       />
     </div>

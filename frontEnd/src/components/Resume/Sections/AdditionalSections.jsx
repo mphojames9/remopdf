@@ -1,6 +1,7 @@
 import React from 'react';
 import LanguageLevelSelect from './LanguageLevelSelect';
 import AchievementsField from './AchievementsField';
+import SpellCheckPanel from './SpellCheckPanel';
 
 /* Icons */
 const IconPlus = () => (
@@ -72,17 +73,36 @@ const Row = ({ onRemove, children }) => (
   </div>
 );
 
-const AddRowButton = ({ onClick, label }) => (
+const AddRowButton = ({ onClick, label, disabled = false, disabledHint }) => (
   <button
     type="button"
     onClick={onClick}
-    className="self-start flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 text-xs font-semibold text-slate-700 rounded-sm hover:border-[#d9856b] transition-colors"
+    disabled={disabled}
+    title={disabled ? disabledHint : undefined}
+    className="self-start flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 text-xs font-semibold text-slate-700 rounded-sm hover:border-[#d9856b] transition-colors disabled:bg-slate-50 disabled:text-slate-300 disabled:hover:border-slate-200 disabled:cursor-not-allowed"
   >
     <IconPlus /> {label}
   </button>
 );
 
+const hasEmptyRow = (items, field) => items.some((item) => !String(item[field] || '').trim());
+
 const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+/* A rich-text field with the live spelling and grammar panel underneath it.
+   The panel stays mounted but hidden while the field is empty, so it keeps its state and does not
+   flash a "loading" notice when the first character is typed. */
+const CheckedField = ({ value, onChange, ...fieldProps }) => {
+  const text = typeof value === 'string' ? value : '';
+  return (
+    <div className="flex flex-col gap-3">
+      <AchievementsField {...fieldProps} value={text} onChange={onChange} />
+      <div className={text.trim() ? '[&>div]:rounded-sm' : 'hidden'}>
+        <SpellCheckPanel text={text} onChange={onChange} />
+      </div>
+    </div>
+  );
+};
 
 const AdditionalSections = ({ data, updateData, updateItems }) => {
   if (!data) return null;
@@ -91,10 +111,12 @@ const AdditionalSections = ({ data, updateData, updateItems }) => {
   const languages = data.languages || { enabled: false, items: [] };
   const projects = data.projects || { enabled: false, items: [] };
   const references = data.references || { enabled: false, availableUponRequest: false, items: [] };
+  const certificates = data.certificates || { enabled: false, items: [] };
 
   const languageItems = languages.items || [];
   const projectItems = projects.items || [];
   const referenceItems = references.items || [];
+  const certificateItems = certificates.items || [];
 
   const setItem = (section, items, index, field, value) => {
     const next = items.map((item, i) => (i === index ? { ...item, [field]: value } : item));
@@ -119,7 +141,7 @@ const AdditionalSections = ({ data, updateData, updateItems }) => {
           enabled={!!hobbies.enabled}
           onToggle={(val) => updateData('hobbies', 'enabled', val)}
         >
-          <AchievementsField
+          <CheckedField
             id="hobbies-text"
             label="Your interests"
             placeholder="e.g. Rock climbing, chess, oil painting..."
@@ -154,7 +176,12 @@ const AdditionalSections = ({ data, updateData, updateItems }) => {
               </div>
             </Row>
           ))}
-          <AddRowButton label="Add language" onClick={() => addItem('languages', languageItems, { name: '', level: '' })} />
+          <AddRowButton
+            label="Add language"
+            disabled={hasEmptyRow(languageItems, 'name')}
+            disabledHint="Enter a language before adding another"
+            onClick={() => addItem('languages', languageItems, { name: '', level: '' })}
+          />
         </SectionCard>
 
         {/* Projects */}
@@ -182,7 +209,7 @@ const AdditionalSections = ({ data, updateData, updateItems }) => {
                   className={`${textInputClass} sm:w-1/3`}
                 />
               </div>
-              <AchievementsField
+              <CheckedField
                 id={`project-desc-${item.id}`}
                 label="Description"
                 placeholder="What did you build, and what was the impact?"
@@ -193,7 +220,72 @@ const AdditionalSections = ({ data, updateData, updateItems }) => {
               />
             </Row>
           ))}
-          <AddRowButton label="Add project" onClick={() => addItem('projects', projectItems, { title: '', link: '', description: '' })} />
+          <AddRowButton
+            label="Add project"
+            disabled={hasEmptyRow(projectItems, 'title')}
+            disabledHint="Enter a project title before adding another"
+            onClick={() => addItem('projects', projectItems, { title: '', link: '', description: '' })}
+          />
+        </SectionCard>
+
+        {/* Certificates */}
+        <SectionCard
+          title="Certificates"
+          description="Certifications, licences and courses you've completed."
+          enabled={!!certificates.enabled}
+          onToggle={(val) => updateData('certificates', 'enabled', val)}
+        >
+          {certificateItems.map((item, index) => (
+            <Row key={item.id} onRemove={() => removeItem('certificates', certificateItems, index)}>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={item.name || ''}
+                  onChange={(e) => setItem('certificates', certificateItems, index, 'name', e.target.value)}
+                  placeholder="Certificate name"
+                  className={`${textInputClass} sm:w-2/3`}
+                />
+                <input
+                  type="text"
+                  value={item.date || ''}
+                  onChange={(e) => setItem('certificates', certificateItems, index, 'date', e.target.value)}
+                  placeholder="Date earned"
+                  className={`${textInputClass} sm:w-1/3`}
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={item.issuer || ''}
+                  onChange={(e) => setItem('certificates', certificateItems, index, 'issuer', e.target.value)}
+                  placeholder="Issued by (e.g., Google, Microsoft)"
+                  className={`${textInputClass} sm:w-2/3`}
+                />
+                <input
+                  type="text"
+                  value={item.link || ''}
+                  onChange={(e) => setItem('certificates', certificateItems, index, 'link', e.target.value)}
+                  placeholder="Link (optional)"
+                  className={`${textInputClass} sm:w-1/3`}
+                />
+              </div>
+              <CheckedField
+                id={`certificate-desc-${item.id}`}
+                label="Description"
+                placeholder="What did this certificate cover, or what skills did it prove?"
+                rows={4}
+                minHeightClass="min-h-[100px]"
+                value={item.description || ''}
+                onChange={(value) => setItem('certificates', certificateItems, index, 'description', value)}
+              />
+            </Row>
+          ))}
+          <AddRowButton
+            label="Add certificate"
+            disabled={hasEmptyRow(certificateItems, 'name')}
+            disabledHint="Enter a certificate name before adding another"
+            onClick={() => addItem('certificates', certificateItems, { name: '', issuer: '', date: '', link: '', description: '' })}
+          />
         </SectionCard>
 
         {/* References */}
@@ -242,7 +334,12 @@ const AdditionalSections = ({ data, updateData, updateItems }) => {
                   </div>
                 </Row>
               ))}
-              <AddRowButton label="Add reference" onClick={() => addItem('references', referenceItems, { name: '', relationship: '', contact: '' })} />
+              <AddRowButton
+                label="Add reference"
+                disabled={hasEmptyRow(referenceItems, 'name')}
+                disabledHint="Enter a name before adding another"
+                onClick={() => addItem('references', referenceItems, { name: '', relationship: '', contact: '' })}
+              />
             </>
           )}
         </SectionCard>

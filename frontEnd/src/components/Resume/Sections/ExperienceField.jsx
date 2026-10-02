@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AchievementsField from './AchievementsField';
+import SpellCheckPanel from './SpellCheckPanel';
 import MonthYearPicker from './MonthYearPicker';
+import { skillNames, achievementLines, hasAchievement, appendAchievement } from './aiSuggestions';
+import { suggestTitles, suggestAchievements } from './datasetSuggestions';
 
 /* -------------------------------------------------------------------------- */
 /*                                 Job helpers                                */
@@ -70,10 +73,398 @@ const Checkbox = ({ label, checked, onChange }) => (
 );
 
 /* -------------------------------------------------------------------------- */
+/*                       Suggestions from the dataset                         */
+/* -------------------------------------------------------------------------- */
+
+const SparkleIcon = ({ className = 'w-3.5 h-3.5' }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zm7 12l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9L19 14z" />
+  </svg>
+);
+
+/* -------------------------------------------------------------------------- */
+/*                     "Slide into the field" animation                       */
+/* -------------------------------------------------------------------------- */
+
+const FLY_MS = 560;
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  !!window.matchMedia &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Slides a copy of the picked idea from its row up into the achievements field, then calls onLand.
+// The copy lives on <body>, so no panel can clip it and it still finishes if the job panel closes.
+// With reduced motion (or no Web Animations support) the idea is added straight away.
+const flyIdeaToField = ({ text, sourceEl, targetEl, toEnd, onLand }) => {
+  if (!sourceEl || !targetEl || !sourceEl.animate || prefersReducedMotion()) {
+    onLand();
+    return;
+  }
+
+  const from = sourceEl.getBoundingClientRect();
+  const to = targetEl.getBoundingClientRect();
+  const look = window.getComputedStyle(sourceEl);
+
+  const ghost = document.createElement('div');
+  ghost.textContent = text;
+  ghost.setAttribute('aria-hidden', 'true');
+  Object.assign(ghost.style, {
+    position: 'fixed',
+    left: `${from.left - 8}px`,
+    top: `${from.top}px`,
+    width: `${from.width + 16}px`,
+    boxSizing: 'border-box',
+    padding: '4px 8px',
+    background: '#fff',
+    color: '#334155',
+    fontFamily: look.fontFamily,
+    fontSize: look.fontSize,
+    lineHeight: look.lineHeight,
+    borderRadius: '2px',
+    boxShadow: '0 0 0 1px #d9856b, 0 8px 20px rgba(15, 23, 42, 0.16)',
+    pointerEvents: 'none',
+    zIndex: '9999',
+    willChange: 'transform, opacity',
+  });
+  document.body.appendChild(ghost);
+
+  // Land at the end of the field when it already has text (that is where the new line goes),
+  // otherwise at the top. Kept inside the viewport so it never flies off-screen.
+  const startLeft = from.left - 8;
+  const startTop = from.top;
+  const endLeft = to.left + 4;
+  const wanted = toEnd ? to.bottom - ghost.offsetHeight - 10 : to.top + 10;
+  const endTop = Math.min(Math.max(wanted, 8), window.innerHeight - ghost.offsetHeight - 8);
+  const dx = endLeft - startLeft;
+  const dy = endTop - startTop;
+
+  let finished = false;
+  const done = () => {
+    if (finished) return;
+    finished = true;
+    ghost.remove();
+    onLand();
+  };
+
+  const anim = ghost.animate(
+    [
+      { transform: 'translate(0px, 0px) scale(1)', opacity: 1 },
+      { transform: `translate(${dx * 0.6}px, ${dy * 0.6}px) scale(1.03)`, opacity: 1, offset: 0.65 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.97)`, opacity: 0 },
+    ],
+    { duration: FLY_MS, easing: 'cubic-bezier(0.22, 0.8, 0.28, 1)', fill: 'forwards' }
+  );
+  anim.onfinish = done;
+  anim.oncancel = done;
+};
+
+// A short orange ring around the field when a new idea lands in it.
+const flashField = (el) => {
+  if (!el || !el.animate) return;
+  el.animate(
+    [{ boxShadow: '0 0 0 3px rgba(217, 133, 107, 0.5)' }, { boxShadow: '0 0 0 3px rgba(217, 133, 107, 0)' }],
+    { duration: 800, easing: 'ease-out' }
+  );
+  const r = el.getBoundingClientRect();
+  if (r.top < 0 || r.bottom > window.innerHeight) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+// Title input with a suggestions dropdown fed by the job-title dataset. Suggestions come from the
+// typed text, the skills the user picked and their other job titles, and open instantly.
+const TitleSuggestField = ({ label, value, onChange, placeholder, skills, previousTitles }) => {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const wrapRef = useRef(null);
+  const listId = useRef(`title-suggestions-${Math.random().toString(36).slice(2, 7)}`).current;
+  const skillsKey = skills.join('|');
+  const previousKey = previousTitles.join('|');
+
+  const items = useMemo(() => {
+    if (!open) return [];
+    const typed = (value || '').trim().toLowerCase();
+    return suggestTitles({ query: value, skills, previousTitles, limit: 8 }).suggestions.filter(
+      (s) => s.toLowerCase() !== typed
+    );
+  }, [open, value, skillsKey, previousKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const showList = open && items.length > 0;
+
+  const pick = (title) => {
+    onChange(title);
+    setOpen(false);
+    setActive(-1);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown' && items.length) {
+      e.preventDefault();
+      setOpen(true);
+      setActive((i) => (i + 1) % items.length);
+    } else if (e.key === 'ArrowUp' && items.length) {
+      e.preventDefault();
+      setOpen(true);
+      setActive((i) => (i < 0 ? items.length - 1 : (i - 1 + items.length) % items.length));
+    } else if (e.key === 'Enter' && showList && active >= 0 && items[active]) {
+      e.preventDefault();
+      pick(items[active]);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      className="flex flex-col w-full relative"
+      onBlur={(e) => {
+        if (!wrapRef.current || !wrapRef.current.contains(e.relatedTarget)) setOpen(false);
+      }}
+    >
+      {label && (
+        <label htmlFor={`${listId}-input`} className="text-xs font-bold text-slate-800 mb-1.5">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <input
+          id={`${listId}-input`}
+          type="text"
+          role="combobox"
+          aria-expanded={showList}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={showList && active >= 0 ? `${listId}-opt-${active}` : undefined}
+          autoComplete="off"
+          value={value || ''}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setActive(-1);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full bg-white border border-[#d9856b] text-slate-900 rounded-sm py-2 pl-3 pr-8 text-xs focus:outline-none transition-all shadow-none placeholder-slate-400"
+        />
+        <SparkleIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#d9856b] pointer-events-none" />
+      </div>
+
+      {showList && (
+        <div
+          id={listId}
+          role="listbox"
+          aria-label="Suggested job titles"
+          className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-sm max-h-56 overflow-y-auto"
+        >
+          <p className="px-3 py-1.5 text-[10px] font-medium text-slate-400 border-b border-slate-100">Suggested titles</p>
+          {items.map((title, i) => (
+            <button
+              key={title}
+              id={`${listId}-opt-${i}`}
+              type="button"
+              role="option"
+              aria-selected={i === active}
+              tabIndex={-1}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => pick(title)}
+              onMouseEnter={() => setActive(i)}
+              className={`block w-full text-left px-3 py-2 text-xs transition-colors ${
+                i === active ? 'bg-slate-50 text-[#d9856b] font-semibold' : 'text-slate-700'
+              }`}
+            >
+              {title}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const IDEAS_PER_PAGE = 5;
+const NO_IDEAS = { suggestions: [], total: 0, roleLabel: '', forTitle: '' };
+
+// Achievement ideas for one job, taken from the dataset role that matches the job title. They
+// appear as soon as a title is entered. Each idea has an add button that puts it into the
+// achievements field; ideas already in the field show a check instead.
+const AchievementSuggestions = ({ job, skills, onAdd, pending = [] }) => {
+  const [round, setRound] = useState(0);
+  const [result, setResult] = useState(NO_IDEAS);
+  const achievementsRef = useRef(job.achievements);
+  achievementsRef.current = job.achievements;
+  const title = (job.title || '').trim();
+  const skillsKey = skills.join('|');
+
+  // Back to the first batch of ideas when the title or skills change.
+  useEffect(() => {
+    setRound(0);
+  }, [title, skillsKey]);
+
+  // Look the ideas up (short delay so it does not run on every keystroke).
+  useEffect(() => {
+    if (!title) {
+      setResult(NO_IDEAS);
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      const found = suggestAchievements({
+        title,
+        skills,
+        existing: achievementLines(achievementsRef.current),
+        round,
+        limit: IDEAS_PER_PAGE,
+      });
+      setResult({ ...found, forTitle: title });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [title, skillsKey, round]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { suggestions: items, total, roleLabel } = result;
+  const settled = result.forTitle === title;
+  // An idea leaves the list once it is in the field (it comes back if that line is deleted).
+  // Ideas still sliding in stay mounted so their row can fold away smoothly.
+  const visible = items.filter((text) => pending.includes(text) || !hasAchievement(job.achievements, text));
+
+  return (
+    <div className="border border-slate-200 rounded-sm bg-slate-50/60 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-slate-800">Achievement ideas</p>
+          <p className="text-[11px] text-slate-500">
+            {title && roleLabel
+              ? `Ready-made ideas for ${roleLabel}. Tap + to add one.`
+              : 'Add a job title to see ready-made ideas.'}
+          </p>
+        </div>
+        {total > IDEAS_PER_PAGE && (
+          <button
+            type="button"
+            onClick={() => setRound((r) => r + 1)}
+            className="shrink-0 inline-flex items-center gap-1.5 min-h-[32px] px-3 rounded-sm border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-[#d9856b] hover:text-[#d9856b] transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b]"
+          >
+            <SparkleIcon />
+            Show new ideas
+          </button>
+        )}
+      </div>
+
+      {title && settled && items.length === 0 && (
+        <p className="mt-3 text-xs text-slate-500">
+          No ready-made ideas for this title yet. Try a more common title, such as "Project Manager".
+        </p>
+      )}
+
+      {title && settled && items.length > 0 && visible.length === 0 && (
+        <p className="mt-3 text-xs text-slate-500">
+          You've added all of these ideas.{total > IDEAS_PER_PAGE ? ' Tap "Show new ideas" for more.' : ''}
+        </p>
+      )}
+
+      {visible.length > 0 && (
+        <>
+          {/* Each row is a one-row grid that folds to 0 height when its idea is picked, so the
+              ideas below glide up. The bottom spacing lives inside the row (pb-2) so it folds too. */}
+          <ul className="mt-3 -mb-2 flex flex-col">
+            {visible.map((text) => {
+              const sending = pending.includes(text); // sliding into the field
+              return (
+                <li
+                  key={text}
+                  className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+                    sending ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
+                  }`}
+                >
+                  <div className="min-h-0 overflow-hidden -mx-1 px-1">
+                    <div className="flex items-start gap-2.5 pb-2">
+                      <button
+                        type="button"
+                        onClick={(e) => onAdd(text, e.currentTarget.closest('li').querySelector('[data-idea-text]'))}
+                        disabled={sending}
+                        aria-label={sending ? 'Added' : `Add: ${text}`}
+                        className={`mt-0.5 w-6 h-6 shrink-0 rounded-sm border flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b] ${
+                          sending
+                            ? 'bg-[#d9856b] border-[#d9856b] text-white cursor-default'
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-[#d9856b] hover:text-[#d9856b]'
+                        }`}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2.5"
+                            d={sending ? 'M5 13l4 4L19 7' : 'M12 5v14M5 12h14'}
+                          />
+                        </svg>
+                      </button>
+                      <span data-idea-text className="text-xs text-slate-700 leading-relaxed pt-1">
+                        {text}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {visible.some((t) => /\[[^\]]+\]/.test(t)) && (
+            <p className="mt-3 text-[11px] text-slate-500">
+              Replace the [brackets] with your real numbers and details before you download.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+/* A rich-text field with the live spelling and grammar panel underneath it.
+   The panel stays mounted but hidden while the field is empty, so it keeps its state and does not
+   flash a "loading" notice when the first character is typed. */
+const CheckedField = ({ value, onChange, fieldRef, ...fieldProps }) => {
+  const text = typeof value === 'string' ? value : '';
+  return (
+    <div className="flex flex-col gap-3">
+      <div ref={fieldRef} className="rounded-sm">
+        <AchievementsField {...fieldProps} value={text} onChange={onChange} />
+      </div>
+      <div className={text.trim() ? '[&>div]:rounded-sm' : 'hidden'}>
+        <SpellCheckPanel text={text} onChange={onChange} />
+      </div>
+    </div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
 /*                                  One job                                   */
 /* -------------------------------------------------------------------------- */
 
-const JobFields = ({ job, onChange }) => {
+const JobFields = ({ job, onChange, skills, previousTitles }) => {
+  const [pending, setPending] = useState([]); // ideas currently sliding into the field
+  const fieldRef = useRef(null);
+  // Refs keep the landing step on the latest values, since it runs ~half a second after the click.
+  const achievementsRef = useRef(job.achievements);
+  const onChangeRef = useRef(onChange);
+  achievementsRef.current = job.achievements;
+  onChangeRef.current = onChange;
+
+  // The idea slides up into the field first, and is added to the text when it lands.
+  const addAchievement = (text, sourceEl) => {
+    if (pending.includes(text)) return;
+    setPending((p) => [...p, text]);
+    const fieldEl = fieldRef.current;
+    flyIdeaToField({
+      text,
+      sourceEl,
+      targetEl: fieldEl,
+      toEnd: !!(achievementsRef.current || '').trim(),
+      onLand: () => {
+        onChangeRef.current('achievements', appendAchievement(achievementsRef.current, text));
+        setPending((p) => p.filter((t) => t !== text));
+        flashField(fieldEl);
+      },
+    });
+  };
+
   const handleChange = (field) => (e) => {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     onChange(field, val);
@@ -93,7 +484,14 @@ const JobFields = ({ job, onChange }) => {
     <div className="flex flex-col gap-5">
       {/* Restructured Layout: Tighter Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <InputField label="Title *" value={job.title} onChange={handleChange('title')} placeholder="Sales Manager" focused={true} />
+        <TitleSuggestField
+          label="Title *"
+          value={job.title}
+          onChange={(v) => onChange('title', v)}
+          placeholder="Sales Manager"
+          skills={skills}
+          previousTitles={previousTitles}
+        />
         <InputField label="Employer *" value={job.employer} onChange={handleChange('employer')} placeholder="Company Name" />
       </div>
 
@@ -137,7 +535,13 @@ const JobFields = ({ job, onChange }) => {
         </div>
       </div>
 
-      <AchievementsField id={`achievements-${job.id}`} value={job.achievements} onChange={(v) => onChange('achievements', v)} />
+      <CheckedField
+        id={`achievements-${job.id}`}
+        fieldRef={fieldRef}
+        value={job.achievements}
+        onChange={(v) => onChange('achievements', v)}
+      />
+      <AchievementSuggestions job={job} skills={skills} onAdd={addAchievement} pending={pending} />
     </div>
   );
 };
@@ -169,6 +573,7 @@ const WorkHistory = ({ data, updateExperiences }) => {
 
   if (!data) return null;
   const jobs = Array.isArray(data.experiences) ? data.experiences : [];
+  const skills = skillNames(data.skills);
   const activeId = openId === undefined ? jobs[0] && jobs[0].id : openId;
 
   // "Add another job" waits until every job has a Title and an Employer, so empty jobs can't pile up.
@@ -250,7 +655,12 @@ const WorkHistory = ({ data, updateExperiences }) => {
 
                 {open && (
                   <div id={`job-body-${job.id}`} className="border-t border-slate-100 px-4 py-5 bg-white">
-                    <JobFields job={job} onChange={(field, value) => updateJob(job.id, field, value)} />
+                    <JobFields
+                      job={job}
+                      skills={skills}
+                      previousTitles={jobs.filter((j) => j.id !== job.id).map((j) => j.title).filter(Boolean)}
+                      onChange={(field, value) => updateJob(job.id, field, value)}
+                    />
                   </div>
                 )}
               </div>

@@ -1,474 +1,365 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import logo1 from '../assets/logo1.png';
 
-export default function Navbar() {
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  
-  // Desktop Dropdown State ('tools', 'company', 'legal', or null)
-  const [activeDesktopDropdown, setActiveDesktopDropdown] = useState(null);
-  
-  // Mobile Menu & Accordion States
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeMobileAccordion, setActiveMobileAccordion] = useState(null);
-  
-  const navRef = useRef(null);
-  const location = useLocation();
-  const navigate = useNavigate();
+const BRAND = 'RemoPDF';
 
-  // Full Suite of Premium Tools mapped to your Home.jsx handlers
-  const documentTools = [
-    { name: "Merge PDFs", id: "merge", icon: "fa-layer-group", desc: "Combine multiple files into one" },
-    { name: "Split PDF", id: "split", icon: "fa-scissors", desc: "Extract pages or separate files" },
-    { name: "Compress PDF", id: "compress", icon: "fa-file-zipper", desc: "Reduce file footprint instantly" },
-    { name: "PDF to Word", id: "pdfToWord", icon: "fa-file-word", desc: "Convert to editable DOCX format" },
-    { name: "Protect PDF", id: "protect", icon: "fa-shield-halved", desc: "Add robust password protection" },
-    { name: "Unlock PDF", id: "unlock", icon: "fa-lock-open", desc: "Remove encryption restrictions" },
-    { name: "Change Password", id: "changePwd", icon: "fa-key", desc: "Update access authorizations" },
-    { name: "PDF to Excel", id: "pdfToExcel", icon: "fa-file-excel", desc: "Export sheets to clear tables" },
-    { name: "PDF to Image", id: "pdfToImg", icon: "fa-file-image", desc: "Turn pages into sharp JPEG/PNG" },
-    { name: "Image to PDF", id: "imageToPdf", icon: "fa-image", desc: "Compile screenshots to document" },
-    { name: "PDF to PowerPoint", id: "pdfToPpt", icon: "fa-file-powerpoint", desc: "Convert pages into presentation slides" },
-    { name: "Page Manager", id: "pageManager", icon: "fa-file-lines", desc: "Remove, reorder or extract pages" },
-    { name: "Image Compressor", id: "imgCompress", icon: "fa-compress", desc: "Shrink image file size fast" }
-  ];
+/* Routes where the editor needs the whole screen. Remove a path to show the nav there. */
+const HIDE_ON = ['/workspace', '/resumebuilder'];
 
-  // Scan & Share tools — mix of in-app modals and dedicated routes
-  const scanShareTools = [
-    { name: "QR Scanner", id: "qrScanner", type: "modal", icon: "fa-qrcode", desc: "Scan a QR code with your camera" },
-    { name: "QR Generator", id: "qrGenerator", type: "modal", icon: "fa-circle-nodes", desc: "Create a custom QR code" },
-    { name: "Extract ZIP", path: "/ZipTool", type: "link", icon: "fa-file-zipper", desc: "Unpack archive contents" },
-    { name: "Open Workspace", path: "/Workspace", type: "link", icon: "fa-folder-open", desc: "Go to your saved files" }
-  ];
+/* ------------------------------------------------------------------ */
+/*  Icons                                                              */
+/* ------------------------------------------------------------------ */
 
-  const companyLinks = [
-    { name: "About Us", path: "/about", icon: "fa-building" },
-    { name: "Contact Support", path: "/contact", icon: "fa-headset" }
-  ];
+const PATHS = {
+  menu: ['M4 7h16M4 12h16M4 17h16'],
+  close: ['M6 6l12 12M18 6 6 18'],
+  chevron: ['m6 9 6 6 6-6'],
+  edit: ['M4 20h4L19 9l-4-4L4 16v4Z', 'm13.5 6.5 4 4'],
+  resume: ['M7 3h8l4 4v14H7z', 'M15 3v4h4', 'M10 12h6M10 16h6'],
+  zip: ['M5 4h14v16H5z', 'M12 4v3m0 3v3m0 3v3', 'M10.5 7h3'],
+  invoice: ['M6 3h12v18l-3-2-3 2-3-2-3 2z', 'M9 8h6M9 12h6'],
+  arrow: ['M5 12h14', 'm13 6 6 6-6 6'],
+};
 
-  const legalLinks = [
-    { name: "Privacy Policy", path: "/PrivacyPolicy", icon: "fa-user-shield" },
-    { name: "Terms & Conditions", path: "/terms-of-use", icon: "fa-scale-balanced" }
-  ];
+function Icon({ name, className = 'h-5 w-5' }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      {PATHS[name].map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  );
+}
 
-  // Auto-hide navbar on scroll down, show on scroll up
+/* ------------------------------------------------------------------ */
+/*  Content: edit these to change the menu                             */
+/* ------------------------------------------------------------------ */
+
+const TOOLS = [
+  { label: 'PDF editor', desc: 'Edit text, highlight, sign, split, lock and compress.', to: '/Workspace', icon: 'edit' },
+  { label: 'Resume builder', desc: 'ATS-friendly resumes from a template.', to: '/ResumeBuilder', icon: 'resume' },
+  { label: 'Zip tool', desc: 'Bundle or extract files in your browser.', to: '/ZipTool', icon: 'zip' },
+  { label: 'Invoice builder', desc: 'Create a clean invoice and download it as a PDF.', to: '/InvoiceBuilder', icon: 'invoice' },
+];
+
+// Section links live on the home page. From any other page they go to "/#id" and scroll after navigating.
+const LINKS = [
+  { label: 'Templates', hash: 'templates' },
+  { label: 'How it works', hash: 'how-it-works' },
+  { label: 'FAQ', hash: 'faq' },
+  { label: 'About', to: '/about' },
+  { label: 'Contact', to: '/Contact' },
+];
+
+const SECTION_IDS = LINKS.filter((l) => l.hash).map((l) => l.hash);
+
+/* ------------------------------------------------------------------ */
+/*  Hooks                                                              */
+/* ------------------------------------------------------------------ */
+
+// Scrolls to #hash after navigation. Home is lazy-loaded, so retry briefly until the section exists.
+function useHashScroll() {
+  const { pathname, hash } = useLocation();
   useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 60) {
-        setIsVisible(false);
-        setActiveDesktopDropdown(null);
-      } else {
-        setIsVisible(true);
+    if (!hash) return undefined;
+    const id = decodeURIComponent(hash.slice(1));
+    let tries = 0;
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timer = setInterval(() => {
+      const el = document.getElementById(id);
+      tries += 1;
+      if (el) {
+        el.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+        clearInterval(timer);
+      } else if (tries > 20) {
+        clearInterval(timer);
       }
-      setLastScrollY(currentScrollY);
-    };
+    }, 100);
+    return () => clearInterval(timer);
+  }, [pathname, hash]);
+}
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
-
-  // Click outside to close desktop menus
+// Which home-page section is on screen, so its link can be highlighted.
+function useSectionSpy(enabled) {
+  const [active, setActive] = useState('');
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (navRef.current && !navRef.current.contains(event.target)) {
-        setActiveDesktopDropdown(null);
+    if (!enabled || typeof IntersectionObserver === 'undefined') {
+      setActive('');
+      return undefined;
+    }
+    const seen = new Map();
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => seen.set(e.target.id, e.isIntersecting));
+        const current = SECTION_IDS.find((id) => seen.get(id));
+        setActive(current || '');
+      },
+      { rootMargin: '-35% 0px -55% 0px' },
+    );
+    const attach = setInterval(() => {
+      const els = SECTION_IDS.map((id) => document.getElementById(id)).filter(Boolean);
+      if (els.length) {
+        els.forEach((el) => io.observe(el));
+        clearInterval(attach);
       }
+    }, 300);
+    return () => {
+      clearInterval(attach);
+      io.disconnect();
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [enabled]);
+  return active;
+}
 
-  // Lock scroll & contain overscroll when mobile menu is active
+/* ------------------------------------------------------------------ */
+/*  Pieces                                                             */
+/* ------------------------------------------------------------------ */
+
+const DESKTOP_ITEM = 'rounded-lg px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e1726]';
+const MOBILE_ITEM = 'flex items-center justify-between rounded-lg px-3 py-3 text-base font-medium transition-colors';
+
+function SectionOrRouteLink({ link, onClick, mobile, activeHash, onHome }) {
+  const base = mobile ? MOBILE_ITEM : DESKTOP_ITEM;
+  const idle = 'text-slate-600 hover:bg-[#0e1726]/[0.04] hover:text-[#0e1726]';
+  const on = 'bg-[#0e1726]/[0.06] text-[#0e1726]';
+
+  if (link.to) {
+    return (
+      <NavLink to={link.to} onClick={onClick} className={({ isActive }) => `${base} ${isActive ? on : idle}`}>
+        {link.label}
+      </NavLink>
+    );
+  }
+  const isActive = onHome && activeHash === link.hash;
+  return (
+    <Link to={{ pathname: '/', hash: `#${link.hash}` }} onClick={onClick} className={`${base} ${isActive ? on : idle}`}>
+      {link.label}
+    </Link>
+  );
+}
+
+function ToolsMenu({ pathname }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef(null);
+  const closeTimer = useRef(null);
+  const anyActive = TOOLS.some((t) => pathname.toLowerCase() === t.to.toLowerCase());
+
+  useEffect(() => setOpen(false), [pathname]);
+
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.overscrollBehavior = 'contain';
-    } else {
-      document.body.style.overflow = 'unset';
-      document.body.style.overscrollBehavior = 'unset';
-    }
-    return () => { 
-      document.body.style.overflow = 'unset'; 
-      document.body.style.overscrollBehavior = 'unset';
+    if (!open) return undefined;
+    const onDown = (e) => wrap.current && !wrap.current.contains(e.target) && setOpen(false);
+    const onKey = (e) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
     };
-  }, [isMobileMenuOpen]);
+  }, [open]);
 
-  // Dispatches actions straight to Home.jsx custom triggers
-  const handleOpenTool = (toolId) => {
-    if (location.pathname !== '/') {
-      navigate('/');
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('openToolModal', { detail: toolId }));
-      }, 300);
-    } else {
-      window.dispatchEvent(new CustomEvent('openToolModal', { detail: toolId }));
-    }
-    setActiveDesktopDropdown(null);
-    setIsMobileMenuOpen(false);
-    setActiveMobileAccordion(null);
+  // Hover opens it for mouse users; touch and keyboard use the button.
+  const enter = (e) => {
+    if (e.pointerType !== 'mouse') return;
+    clearTimeout(closeTimer.current);
+    setOpen(true);
   };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-    setActiveMobileAccordion(null);
-  };
-
-  const toggleMobileAccordion = (section) => {
-    setActiveMobileAccordion(activeMobileAccordion === section ? null : section);
+  const leave = (e) => {
+    if (e.pointerType !== 'mouse') return;
+    closeTimer.current = setTimeout(() => setOpen(false), 140);
   };
 
   return (
-    <>
-      {/* --- DESKTOP HEADER BAR --- */}
-      <nav 
-        ref={navRef}
-        className={`fixed top-0 inset-x-0 py-3.5 px-4 lg:px-8 xl:px-12 bg-white/90 backdrop-blur-2xl border-b border-slate-200/70 shadow-[0_4px_30px_rgba(0,0,0,0.04)] z-40 transition-all duration-500 ease-out ${
-          isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
-        }`}
+    <div ref={wrap} className="relative" onPointerEnter={enter} onPointerLeave={leave}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="true"
+        onClick={() => setOpen((v) => !v)}
+        className={`${DESKTOP_ITEM} inline-flex items-center gap-1.5 ${open || anyActive ? 'bg-[#0e1726]/[0.06] text-[#0e1726]' : 'text-slate-600 hover:bg-[#0e1726]/[0.04] hover:text-[#0e1726]'}`}
       >
-        <div className="max-w-[1440px] mx-auto flex justify-between items-center relative">
-          
-          {/* Logo Brand Title */}
-          <div className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2 z-[70]">
-            <Link to="/" onClick={closeMobileMenu} className="flex items-center gap-2 outline-none rounded-lg group">
-              <span className="font-black text-[1.25rem] text-slate-800 tracking-tight">
-                Remo<span className="text-red-600">PDF</span>
+        Tools
+        <Icon name="chevron" className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      <div
+        className={`absolute left-1/2 top-full z-50 w-[26rem] -translate-x-1/2 pt-3 transition duration-200 ${open ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'}`}
+      >
+        <div className="rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-[#0e1726]/10">
+          {TOOLS.map((t) => (
+            <NavLink
+              key={t.to}
+              to={t.to}
+              tabIndex={open ? 0 : -1}
+              className={({ isActive }) =>
+                `group flex items-start gap-3.5 rounded-xl p-3 transition-colors hover:bg-[#fafafb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0e1726] ${isActive ? 'bg-[#f3dbd1]/50' : ''}`
+              }
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0e1726] text-[#d9856b] transition-transform duration-300 group-hover:scale-105">
+                <Icon name={t.icon} />
               </span>
-            </Link>
-          </div>
-
-          {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center gap-8 xl:gap-10 font-semibold text-slate-600 text-sm">
-            
-            {/* Tools Grid Dynamic Flyout */}
-            <div 
-              className="relative py-2" 
-              onMouseEnter={() => setActiveDesktopDropdown('tools')}
-              onMouseLeave={() => setActiveDesktopDropdown(null)}
-            >
-              <button className={`flex items-center gap-1.5 transition-colors duration-200 outline-none ${activeDesktopDropdown === 'tools' ? 'text-red-600' : 'hover:text-slate-900'}`}>
-                Tools
-                <i className={`fa-solid fa-chevron-down text-[10px] transition-transform duration-300 ${activeDesktopDropdown === 'tools' ? '-rotate-180 text-red-600' : 'text-slate-400'}`}></i>
-              </button>
-              
-              <div className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 w-[580px] transition-all duration-300 transform origin-top-center ${activeDesktopDropdown === 'tools' ? 'opacity-100 visible scale-y-100 translate-y-0' : 'opacity-0 invisible scale-y-95 translate-y-2'}`}>
-                <div className="bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] p-5 relative overflow-hidden">
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Document Core Suite</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {documentTools.map((tool) => (
-                      <button
-                        key={tool.name}
-                        onClick={() => handleOpenTool(tool.id)}
-                        className="group flex items-start gap-3.5 w-full text-left px-3 py-2.5 rounded-2xl hover:bg-slate-50 transition-all duration-200"
-                      >
-                        <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-red-600 group-hover:bg-red-50 group-hover:border-red-100 transition-colors shrink-0 shadow-sm">
-                          <i className={`fa-solid ${tool.icon} text-xs`}></i>
-                        </div>
-                        <div>
-                          <span className="block text-slate-800 text-sm font-bold group-hover:text-red-600 transition-colors">{tool.name}</span>
-                          <span className="block text-xs font-medium text-slate-500 line-clamp-1 mt-0.5">{tool.desc}</span>
-                        </div>
-                      </button>
-                    ))}
-                    
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <Link to="/ResumeBuilder" className="transition-colors duration-200 hover:text-slate-900 relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-px after:bg-red-600 after:transition-all hover:after:w-full">
-              Resume Builder
-            </Link>
-
-            {/* Scan & Share Dropdown */}
-            <div
-              className="relative py-2"
-              onMouseEnter={() => setActiveDesktopDropdown('scanShare')}
-              onMouseLeave={() => setActiveDesktopDropdown(null)}
-            >
-              <button className={`flex items-center gap-1.5 transition-colors duration-200 outline-none ${activeDesktopDropdown === 'scanShare' ? 'text-emerald-600' : 'hover:text-slate-900'}`}>
-                Scan & Share
-                <i className={`fa-solid fa-chevron-down text-[10px] transition-transform duration-300 ${activeDesktopDropdown === 'scanShare' ? '-rotate-180 text-emerald-600' : 'text-slate-400'}`}></i>
-              </button>
-
-              <div className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 w-[260px] transition-all duration-300 transform origin-top-center ${activeDesktopDropdown === 'scanShare' ? 'opacity-100 visible scale-y-100 translate-y-0' : 'opacity-0 invisible scale-y-95 translate-y-2'}`}>
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] p-2 relative overflow-hidden">
-                  <div className="absolute top-0 inset-x-0 h-1 bg-emerald-500"></div>
-                  {scanShareTools.map((tool) =>
-                    tool.type === 'link' ? (
-                      <Link
-                        key={tool.name}
-                        to={tool.path}
-                        onClick={() => setActiveDesktopDropdown(null)}
-                        className="group flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                      >
-                        <i className={`fa-solid ${tool.icon} text-slate-400 group-hover:text-emerald-600 text-sm`}></i>
-                        <span className="text-sm font-semibold text-slate-700 group-hover:text-emerald-600 transition-colors">{tool.name}</span>
-                      </Link>
-                    ) : (
-                      <button
-                        key={tool.name}
-                        onClick={() => handleOpenTool(tool.id)}
-                        className="group flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                      >
-                        <i className={`fa-solid ${tool.icon} text-slate-400 group-hover:text-emerald-600 text-sm`}></i>
-                        <span className="text-sm font-semibold text-slate-700 group-hover:text-emerald-600 transition-colors">{tool.name}</span>
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Company Link Dropdown */}
-            <div 
-              className="relative py-2" 
-              onMouseEnter={() => setActiveDesktopDropdown('company')}
-              onMouseLeave={() => setActiveDesktopDropdown(null)}
-            >
-              <button className={`flex items-center gap-1.5 transition-colors duration-200 outline-none ${activeDesktopDropdown === 'company' ? 'text-amber-600' : 'hover:text-slate-900'}`}>
-                Company
-                <i className={`fa-solid fa-chevron-down text-[10px] transition-transform duration-300 ${activeDesktopDropdown === 'company' ? '-rotate-180 text-amber-600' : 'text-slate-400'}`}></i>
-              </button>
-              
-              <div className={`absolute top-full left-0 pt-2 w-[220px] transition-all duration-300 transform origin-top-center ${activeDesktopDropdown === 'company' ? 'opacity-100 visible scale-y-100 translate-y-0' : 'opacity-0 invisible scale-y-95 translate-y-2'}`}>
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] p-2 relative overflow-hidden">
-                  <div className="absolute top-0 inset-x-0 h-1 bg-amber-400"></div>
-                  {companyLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      to={link.path}
-                      onClick={() => setActiveDesktopDropdown(null)}
-                      className="group flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                    >
-                      <i className={`fa-solid ${link.icon} text-slate-400 group-hover:text-amber-600 text-sm`}></i>
-                      <span className="text-sm font-semibold text-slate-700 group-hover:text-amber-600 transition-colors">{link.name}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Legal Dropdown (Privacy & Terms) */}
-            <div 
-              className="relative py-2" 
-              onMouseEnter={() => setActiveDesktopDropdown('legal')}
-              onMouseLeave={() => setActiveDesktopDropdown(null)}
-            >
-              <button className={`flex items-center gap-1.5 transition-colors duration-200 outline-none ${activeDesktopDropdown === 'legal' ? 'text-blue-600' : 'hover:text-slate-900'}`}>
-                Legal
-                <i className={`fa-solid fa-chevron-down text-[10px] transition-transform duration-300 ${activeDesktopDropdown === 'legal' ? '-rotate-180 text-blue-600' : 'text-slate-400'}`}></i>
-              </button>
-              
-              <div className={`absolute top-full right-0 pt-2 w-[240px] transition-all duration-300 transform origin-top-center ${activeDesktopDropdown === 'legal' ? 'opacity-100 visible scale-y-100 translate-y-0' : 'opacity-0 invisible scale-y-95 translate-y-2'}`}>
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] p-2 relative overflow-hidden">
-                  <div className="absolute top-0 inset-x-0 h-1 bg-blue-500"></div>
-                  {legalLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      to={link.path}
-                      onClick={() => setActiveDesktopDropdown(null)}
-                      className="group flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all duration-200"
-                    >
-                      <i className={`fa-solid ${link.icon} text-slate-400 group-hover:text-blue-600 text-sm`}></i>
-                      <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">{link.name}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Right Action buttons */}
-          <div className="flex items-center gap-4 shrink-0 relative z-[70]">
-            
-
-            {/* Hamburger Handle Icon Toggle Button */}
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all active:scale-95 shadow-sm focus:outline-none"
-              aria-label="Toggle Menu"
-            >
-              <div className="w-4 h-3.5 flex flex-col justify-between relative">
-                <span className={`block h-[2px] w-full bg-current transform transition-all duration-300 ease-in-out ${isMobileMenuOpen ? 'rotate-45 translate-y-[6px] text-red-600' : ''}`} />
-                <span className={`block h-[2px] w-full bg-current transition-all duration-200 ease-in-out ${isMobileMenuOpen ? 'opacity-0 translate-x-2' : 'opacity-100'}`} />
-                <span className={`block h-[2px] w-full bg-current transform transition-all duration-300 ease-in-out ${isMobileMenuOpen ? '-rotate-45 -translate-y-[6px] text-red-600' : ''}`} />
-              </div>
-            </button>
-          </div>
-
-        </div>
-      </nav>
-
-      {/* --- PREMIUM MOBILE FULL-SCREEN DRAWER OVERLAY --- */}
-      <div 
-        className={`lg:hidden fixed inset-0 bg-white/98 backdrop-blur-3xl pt-20 sm:pt-24 px-4 overflow-y-auto overscroll-contain transition-all duration-500 ease-in-out z-[39] ${
-          isMobileMenuOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 -translate-y-4 invisible'
-        }`}
-      >
-        <div className="flex flex-col space-y-4 pb-28 max-w-md mx-auto mt-2">
-          
-          {/* Resume Link */}
-          <Link 
-            to="/ResumeBuilder" 
-            onClick={closeMobileMenu} 
-            className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 text-slate-800 font-bold hover:border-red-200 hover:shadow-md transition-all shadow-sm"
-          >
-            <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100">
-              <i className="fa-solid fa-file-invoice text-sm"></i>
-            </div>
-            Resume Builder
-          </Link>
-
-
-          {/* Accordion Block 1: Tools */}
-          <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden transition-all shadow-sm">
-            <button 
-              onClick={() => toggleMobileAccordion('tools')}
-              className="flex items-center justify-between w-full p-4 text-left font-bold text-slate-800 outline-none hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 border border-slate-200">
-                  <i className="fa-solid fa-screwdriver-wrench text-xs"></i>
-                </div>
-                PDF Processing Tools
-              </div>
-              <i className={`fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-300 ${activeMobileAccordion === 'tools' ? '-rotate-180 text-red-600' : ''}`}></i>
-            </button>
-            <div 
-              className={`transition-all duration-300 ease-in-out overflow-hidden ${activeMobileAccordion === 'tools' ? 'max-h-[1200px] opacity-100 border-t border-slate-100' : 'max-h-0 opacity-0 pointer-events-none'}`}
-            >
-              <div className="p-3 grid grid-cols-1 gap-2 bg-slate-50/50">
-                {documentTools.map((tool) => (
-                  <button
-                    key={tool.name}
-                    onClick={() => handleOpenTool(tool.id)}
-                    className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-xl border border-transparent hover:border-slate-200 transition-all"
-                  >
-                    <i className={`fa-solid ${tool.icon} w-5 text-center text-slate-400`}></i>
-                    {tool.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Accordion Block: Scan & Share */}
-          <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden transition-all shadow-sm">
-            <button
-              onClick={() => toggleMobileAccordion('scanShare')}
-              className="flex items-center justify-between w-full p-4 text-left font-bold text-slate-800 outline-none hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 border border-slate-200">
-                  <i className="fa-solid fa-qrcode text-xs"></i>
-                </div>
-                Scan & Share
-              </div>
-              <i className={`fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-300 ${activeMobileAccordion === 'scanShare' ? '-rotate-180 text-emerald-600' : ''}`}></i>
-            </button>
-            <div
-              className={`transition-all duration-300 ease-in-out overflow-hidden ${activeMobileAccordion === 'scanShare' ? 'max-h-[400px] opacity-100 border-t border-slate-100' : 'max-h-0 opacity-0 pointer-events-none'}`}
-            >
-              <div className="p-3 grid grid-cols-1 gap-2 bg-slate-50/50">
-                {scanShareTools.map((tool) =>
-                  tool.type === 'link' ? (
-                    <Link
-                      key={tool.name}
-                      to={tool.path}
-                      onClick={closeMobileMenu}
-                      className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-emerald-600 hover:bg-white hover:shadow-sm rounded-xl border border-transparent hover:border-slate-200 transition-all"
-                    >
-                      <i className={`fa-solid ${tool.icon} w-5 text-center text-slate-400`}></i>
-                      {tool.name}
-                    </Link>
-                  ) : (
-                    <button
-                      key={tool.name}
-                      onClick={() => handleOpenTool(tool.id)}
-                      className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-emerald-600 hover:bg-white hover:shadow-sm rounded-xl border border-transparent hover:border-slate-200 transition-all"
-                    >
-                      <i className={`fa-solid ${tool.icon} w-5 text-center text-slate-400`}></i>
-                      {tool.name}
-                    </button>
-                  )
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Accordion Block 2: Company */}
-          <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden transition-all shadow-sm">
-            <button 
-              onClick={() => toggleMobileAccordion('company')}
-              className="flex items-center justify-between w-full p-4 text-left font-bold text-slate-800 outline-none hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 border border-slate-200">
-                  <i className="fa-solid fa-building text-xs"></i>
-                </div>
-                RemoPDF Hub
-              </div>
-              <i className={`fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-300 ${activeMobileAccordion === 'company' ? '-rotate-180 text-amber-600' : ''}`}></i>
-            </button>
-            <div 
-              className={`transition-all duration-300 ease-in-out overflow-hidden ${activeMobileAccordion === 'company' ? 'max-h-[250px] opacity-100 border-t border-slate-100' : 'max-h-0 opacity-0 pointer-events-none'}`}
-            >
-              <div className="p-3 flex flex-col gap-2 bg-slate-50/50">
-                {companyLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    to={link.path}
-                    onClick={closeMobileMenu}
-                    className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-amber-600 hover:bg-white hover:shadow-sm rounded-xl border border-transparent hover:border-slate-200 transition-all"
-                  >
-                    <i className={`fa-solid ${link.icon} w-5 text-center text-slate-400`}></i>
-                    {link.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Accordion Block 3: Legal */}
-          <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden transition-all shadow-sm">
-            <button 
-              onClick={() => toggleMobileAccordion('legal')}
-              className="flex items-center justify-between w-full p-4 text-left font-bold text-slate-800 outline-none hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 border border-slate-200">
-                  <i className="fa-solid fa-scale-balanced text-xs"></i>
-                </div>
-                Legal Compliance
-              </div>
-              <i className={`fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-300 ${activeMobileAccordion === 'legal' ? '-rotate-180 text-blue-600' : ''}`}></i>
-            </button>
-            <div 
-              className={`transition-all duration-300 ease-in-out overflow-hidden ${activeMobileAccordion === 'legal' ? 'max-h-[250px] opacity-100 border-t border-slate-100' : 'max-h-0 opacity-0 pointer-events-none'}`}
-            >
-              <div className="p-3 flex flex-col gap-2 bg-slate-50/50">
-                {legalLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    to={link.path}
-                    onClick={closeMobileMenu}
-                    className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-xl border border-transparent hover:border-slate-200 transition-all"
-                  >
-                    <i className={`fa-solid ${link.icon} w-5 text-center text-slate-400`}></i>
-                    {link.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-
-
+              <span className="min-w-0">
+                <span className="block font-display text-[0.95rem] font-bold text-[#0e1726]">{t.label}</span>
+                <span className="mt-0.5 block text-sm leading-snug text-slate-600">{t.desc}</span>
+              </span>
+            </NavLink>
+          ))}
         </div>
       </div>
-    </>
+    </div>
+  );
+}
+
+function MobileMenu({ open, pathname, onClose, activeHash, onHome }) {
+  const [toolsOpen, setToolsOpen] = useState(true);
+
+  return (
+    <div
+      id="mobile-menu"
+      className={`lg:hidden grid transition-[grid-template-rows] duration-300 ease-out ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+      aria-hidden={!open}
+    >
+      <div className="overflow-hidden">
+        <nav aria-label="Mobile" className="max-h-[calc(100dvh-4.5rem)] overflow-y-auto border-t border-[#0e1726]/10 px-4 pb-6 pt-3 sm:px-6">
+          <button
+            type="button"
+            tabIndex={open ? 0 : -1}
+            aria-expanded={toolsOpen}
+            onClick={() => setToolsOpen((v) => !v)}
+            className={`${MOBILE_ITEM} w-full text-slate-600 hover:bg-[#0e1726]/[0.04]`}
+          >
+            Tools
+            <Icon name="chevron" className={`h-4 w-4 transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {toolsOpen && (
+            <ul className="mb-2 ml-2 space-y-1 border-l border-[#0e1726]/10 pl-3">
+              {TOOLS.map((t) => (
+                <li key={t.to}>
+                  <NavLink
+                    to={t.to}
+                    tabIndex={open ? 0 : -1}
+                    onClick={onClose}
+                    className={({ isActive }) => `flex items-center gap-3 rounded-lg px-2.5 py-2.5 ${isActive ? 'bg-[#f3dbd1]/60' : 'hover:bg-[#0e1726]/[0.04]'}`}
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0e1726] text-[#d9856b]">
+                      <Icon name={t.icon} className="h-[1.1rem] w-[1.1rem]" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[0.95rem] font-semibold text-[#0e1726]">{t.label}</span>
+                      <span className="block text-xs leading-snug text-slate-500">{t.desc}</span>
+                    </span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-1 flex flex-col gap-0.5">
+            {LINKS.map((l) => (
+              <SectionOrRouteLink key={l.label} link={l} mobile onClick={onClose} activeHash={activeHash} onHome={onHome} />
+            ))}
+          </div>
+
+          <Link to="/Workspace" onClick={onClose} tabIndex={open ? 0 : -1} className="nav-cta mt-5 w-full">
+            Open editor
+            <Icon name="arrow" className="h-4 w-4" />
+          </Link>
+        </nav>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Navbar                                                             */
+/* ------------------------------------------------------------------ */
+
+export default function Navbar() {
+  const { pathname } = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
+  const onHome = pathname === '/';
+
+  useHashScroll();
+  const activeHash = useSectionSpy(onHome);
+  const close = useCallback(() => setOpen(false), []);
+
+  // Scroll state drives the glass background.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Close the drawer on navigation, Escape, or when the screen grows to desktop width.
+  useEffect(() => close(), [pathname, close]);
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && close();
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => mq.matches && close();
+    window.addEventListener('keydown', onKey);
+    mq.addEventListener('change', onChange);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      mq.removeEventListener('change', onChange);
+    };
+  }, [close]);
+
+  // Stop the page scrolling behind the open drawer.
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  if (HIDE_ON.includes(pathname.toLowerCase())) return null;
+
+  return (
+    <header
+      className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
+        scrolled || open ? 'border-[#0e1726]/10 bg-[#fafafb]/90 backdrop-blur-xl' : 'border-transparent bg-[#fafafb]/60 backdrop-blur-md'
+      }`}
+    >
+      <style>{`
+        .nav-cta { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: .625rem; background: #d9856b; color: #0e1726; padding: .7rem 1.25rem; font-size: .9375rem; font-weight: 600; line-height: 1.2; transition: background-color .2s, transform .15s; }
+        .nav-cta:hover { background: #e29a83; }
+        .nav-cta:active { transform: translateY(1px); }
+        .nav-cta:focus-visible { outline: 2px solid #0e1726; outline-offset: 3px; }
+        @media (prefers-reduced-motion: reduce) { #mobile-menu, .nav-cta { transition: none; } }
+      `}</style>
+
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <Link to="/" onClick={close} className="flex min-w-0 items-center rounded transition-opacity hover:opacity-85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726]">
+          <img src={logo1} alt={BRAND} draggable={false} className="h-10 w-auto max-w-[60vw] select-none object-contain object-left" />
+        </Link>
+
+        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+          <ToolsMenu pathname={pathname} />
+          {LINKS.map((l) => (
+            <SectionOrRouteLink key={l.label} link={l} activeHash={activeHash} onHome={onHome} />
+          ))}
+        </nav>
+
+        <Link to="/Workspace" className="nav-cta hidden lg:inline-flex">
+          Open editor
+        </Link>
+
+        <button
+          type="button"
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          aria-expanded={open}
+          aria-controls="mobile-menu"
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex items-center justify-center rounded-[0.625rem] border border-[#cbd2dc] bg-white p-2.5 text-[#0e1726] transition-colors hover:border-[#0e1726] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e1726] lg:hidden"
+        >
+          <Icon name={open ? 'close' : 'menu'} />
+        </button>
+      </div>
+
+      <MobileMenu open={open} pathname={pathname} onClose={close} activeHash={activeHash} onHome={onHome} />
+    </header>
   );
 }

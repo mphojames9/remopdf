@@ -1,6 +1,5 @@
 import React, { Suspense, Component, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import Navbar from './components/Navbar';
 import ResumeBuilder from './pages/ResumeBuilder';
 import PremiumToastProvider from './components/PremiumToast';
 import PrivacyPolicy from './pages/Privacy';
@@ -234,6 +233,7 @@ const MainLayout = () => {
       color: 'var(--text, #121525)',
       fontFamily: '"Outfit", sans-serif'
     }}>
+
       <Suspense fallback={<PageLoader />}>
         <div style={{ flex: '1 0 auto' }}>
           <Routes>

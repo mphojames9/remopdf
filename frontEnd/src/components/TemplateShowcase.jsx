@@ -1,24 +1,13 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-// This file lives in src/components/ (Home.jsx imports it from '../components/TemplateShowcase').
-// If ResumePhoto sits somewhere else in your project, adjust the first path.
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import ResumePhoto, { PHOTO_DEFAULTS } from './Resume/Sections/ResumePhoto';
 import profile2 from '../assets/profile2.png';
 
-/**
- * TemplateShowcase - home page section that previews the resume templates.
- *
- * - Click a card to select a template, "Preview" opens a large preview.
- * - The colour bar recolours every thumbnail live, on the page and in the preview.
- * - The choice is saved to the same localStorage keys the builder uses
- *   (template) plus one new key for the colour, so it carries into the builder.
- *
- * Props
- *   onUseTemplate({ template, color })  called when "Get started" / "Build my resume" is pressed
- *                                       (color is null for the template default)
- *   featuredTemplate, featuredLabel     optional: put a gold tag (default "Recommended")
- *                                       on one card, e.g. featuredTemplate="blue-sidebar"
- *   title, subtitle, className          optional
- */
+// Import actual templates
+import BlueSidebarTemplate from './Resume/Templates/BlueSidebarTemplate';
+import GreenHeaderTemplate from './Resume/Templates/GreenHeaderTemplate';
+import PinkHeaderTemplate from './Resume/Templates/PinkHeaderTemplate';
+import DarkTopTemplate from './Resume/Templates/DarkTopTemplate';
+
 
 const STORAGE_KEY_TEMPLATE = 'resumeBuilder:selectedTemplate';
 const STORAGE_KEY_COLOR = 'resumeBuilder:selectedColor';
@@ -27,93 +16,47 @@ const DEFAULT_TEMPLATE = 'blue-sidebar';
 const GRAYSCALE = '#475569';
 const HEX_RE = /^#[0-9a-f]{6}$/i;
 
-// All visible wording lives here so it is easy to tweak.
 const COPY = {
-  title: 'Designed to get you noticed',
-  subtitle: 'Choose a polished template, add your signature color, and have a standout resume in minutes.',
-  colors: 'Signature color',
-  preview: 'Preview',
-  use: 'Get started',
-  useInPreview: 'Build my resume',
+  title: 'Pick a layout, then make it yours',
+  subtitle: 'Four layouts, any accent colour. Choose one and watch it update before you start.',
+  colors: 'Accent colour',
+  templates: 'Layouts',
+  preview: 'Preview full size',
+  use: 'Start with this template',
   closePreview: 'Close preview',
+  back: 'Back',
   featured: 'Recommended',
 };
 
-// Exact A4 Dimensions at 96 DPI (210mm x 297mm)
 const PAGE_WIDTH_PX = 794;
 const PAGE_HEIGHT_PX = 1123;
 
-// All motion lives here so the component stays drop-in (no tailwind.config edits).
-// Everything sits inside a no-preference query, so people who ask their OS for
-// reduced motion get the static version.
 const SHOWCASE_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap');
+.ts-display { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
+.ts-stage { background: var(--ts-accent); background: color-mix(in srgb, var(--ts-accent) 50%, #05080f); }
+.ts-spot { position: relative; isolation: isolate; }
+.ts-spot::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(ellipse 70% 55% at 50% 38%, rgba(255,255,255,.16), transparent 70%);
+}
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes ts-rise { from { opacity: 0; transform: translateY(28px) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes ts-settle { from { opacity: 0; transform: translateY(26px) rotate(-1.4deg); } to { opacity: 1; transform: none; } }
   @keyframes ts-fade { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes ts-modal { from { opacity: 0; transform: translateY(18px) scale(.95); } to { opacity: 1; transform: none; } }
-  @keyframes ts-swap { from { opacity: 0; transform: translateY(6px) scale(.96); } to { opacity: 1; transform: none; } }
-  @keyframes ts-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-  @keyframes ts-glow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,.5), 0 10px 28px -10px rgba(59,130,246,.5); }
-    50% { box-shadow: 0 0 0 7px rgba(59,130,246,0), 0 14px 34px -8px rgba(59,130,246,.85); }
-  }
-  @keyframes ts-pop { 0% { transform: scale(0) rotate(-60deg); } 60% { transform: scale(1.3) rotate(10deg); } 100% { transform: scale(1) rotate(0); } }
-  @keyframes ts-ripple { from { transform: scale(1); opacity: .55; } to { transform: scale(2.4); opacity: 0; } }
-  @keyframes ts-sheen { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
-  @keyframes ts-bounce { 0% { transform: scale(1); } 40% { transform: scale(1.4); } 100% { transform: scale(1); } }
+  @keyframes ts-modal { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes ts-bounce { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
 
-  /* entrances */
-  .ts-reveal { opacity: 0; }
-  .ts-reveal.ts-in { opacity: 1; animation: ts-rise .75s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: var(--ts-d, 0ms); }
+  .ts-paper { opacity: 0; }
+  .ts-paper.ts-in { opacity: 1; animation: ts-settle .7s cubic-bezier(.2,.8,.2,1) both; }
   .ts-fade { animation: ts-fade .25s ease-out; }
-  .ts-modal { animation: ts-modal .4s cubic-bezier(.2,.9,.25,1.1); }
-  .ts-swap { animation: ts-swap .4s cubic-bezier(.2,.8,.2,1); }
+  .ts-modal { animation: ts-modal .35s cubic-bezier(.2,.9,.25,1.05); }
+  .ts-bounce { animation: ts-bounce .35s ease-out; }
 
-  /* idle life */
-  .ts-float { animation: ts-float 6s ease-in-out infinite; }
-  .ts-float:hover { animation-play-state: paused; }
-
-  /* small confirmations */
-  .ts-pop { animation: ts-pop .5s cubic-bezier(.34,1.56,.64,1); }
-  .ts-ripple { animation: ts-ripple .9s ease-out; }
-  .ts-bounce { animation: ts-bounce .4s ease-out; }
-
-  /* colour changes glide instead of snapping, on every thumbnail */
+  .ts-stage { transition: background-color .6s ease; }
   .ts-thumb, .ts-thumb * { transition: background-color .45s ease, color .45s ease, border-color .45s ease; }
-
-  /* card: lifts, tilts towards the pointer, catches the light */
-  .ts-card {
-    transform: perspective(900px) rotateX(var(--ts-rx, 0deg)) rotateY(var(--ts-ry, 0deg)) translateY(var(--ts-lift, 0px));
-    transition: transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease;
-    will-change: transform;
-  }
-  .ts-card:hover, .ts-card:focus-visible {
-    --ts-lift: -8px;
-    box-shadow: 0 26px 44px -18px rgba(2,6,23,.6);
-    transition: transform .12s ease-out, box-shadow .35s ease;
-  }
-  .ts-card::after {
-    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s ease;
-    background: radial-gradient(circle at var(--ts-mx, 50%) var(--ts-my, 30%), rgba(255,255,255,.3), transparent 55%);
-  }
-  .ts-card:hover::after { opacity: 1; }
-  .ts-card[aria-pressed="true"] { animation: ts-glow 2.6s ease-in-out infinite; }
-
-  /* accent buttons: a sheen sweeps across on hover */
-  .ts-cta { position: relative; overflow: hidden; }
-  .ts-cta::before {
-    content: ''; position: absolute; inset: 0; pointer-events: none; transform: translateX(-120%);
-    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.5) 50%, transparent 70%);
-  }
-  .ts-cta:hover::before { transform: translateX(120%); transition: transform .7s ease; }
-  .ts-cta-attn::before { animation: ts-sheen 3.4s ease-in-out infinite; }
 }
 `;
 
-// Slim, rounded scrollbars. `.pro-scroll` suits light surfaces; add `.pro-scroll-dark` on dark ones.
-// The thumb is drawn inside a transparent border so it looks thin and floats off the edge,
-// then thickens on hover and while dragging. Firefox has no ::-webkit-scrollbar, so it gets
-// the standard properties instead (Chrome ignores the webkit rules if those are set, hence @supports).
 const SCROLLBAR_CSS = `
 .pro-scroll { --sb-thumb: #cbd5e1; --sb-thumb-hover: #94a3b8; --sb-thumb-active: #64748b; }
 .pro-scroll-dark { --sb-thumb: rgba(255,255,255,.16); --sb-thumb-hover: rgba(255,255,255,.3); --sb-thumb-active: rgba(255,255,255,.45); }
@@ -127,8 +70,6 @@ const SCROLLBAR_CSS = `
 }
 `;
 
-// True once the element has scrolled into view (and stays true), so entrances
-// play when the person actually gets to the section.
 const useInView = (threshold = 0.1) => {
   const ref = useRef(null);
   const [seen, setSeen] = useState(false);
@@ -155,25 +96,6 @@ const useInView = (threshold = 0.1) => {
   return [ref, seen];
 };
 
-const tint = (hex, amount) => {
-  if (!hex) return hex;
-  const num = parseInt(hex.replace('#', ''), 16);
-  let r = (num >> 16) & 0xff;
-  let g = (num >> 8) & 0xff;
-  let b = num & 0xff;
-  if (amount >= 0) {
-    r += (255 - r) * amount;
-    g += (255 - g) * amount;
-    b += (255 - b) * amount;
-  } else {
-    r += r * amount;
-    g += g * amount;
-    b += b * amount;
-  }
-  const toHex = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-};
-
 const DEFAULT_ACCENT = {
   'blue-sidebar': '#1e3a8a',
   'green-header': '#15803d',
@@ -181,8 +103,6 @@ const DEFAULT_ACCENT = {
   'dark-top': '#334155',
 };
 
-// Deep, muted tones that read as professional. Each is dark enough to carry white
-// text, because the accent is used as a background in the sidebar/header templates.
 const ACCENT_SWATCHES = [
   { hex: '#1e3a8a', label: 'Navy' },
   { hex: '#2b6cb0', label: 'Steel blue' },
@@ -192,84 +112,167 @@ const ACCENT_SWATCHES = [
   { hex: '#1f2937', label: 'Charcoal' },
 ];
 
-// Sample résumé used only by the template picker, so every thumbnail looks like
-// a real page. Nothing here is read from the user's own data.
 const DEMO_RESUME = {
-  name: 'Alex Morgan',
-  title: 'Frontend Developer',
-  email: 'alex.morgan@email.com',
+  name: 'Mpho James Matli',
+  title: 'Software Engineer & Founder',
+  email: 'hello@remopdf.site',
   phone: '+27 82 123 4567',
-  location: 'Cape Town, South Africa',
-  website: 'alexmorgan.dev',
-  linkedin: 'linkedin.com/in/alexmorgan',
+  location: 'Gauteng, South Africa',
+  website: 'www.remopdf.site',
+  linkedin: 'github.com/mphojames9',
+  highlights: [
+    { label: 'Platform Reach', value: '100K+ Files Processed' },
+    { label: 'Core Expertise', value: 'Full-Stack & Mobile' },
+    { label: 'Leadership', value: 'Senior Operational Mgmt' },
+  ],
   summary:
-    'Frontend developer with 5+ years of experience building fast, accessible web apps with React and TypeScript. Focused on clean interfaces, smooth user experiences and close collaboration with designers.',
+    'Full-stack software engineer and founder with a proven track record of architecting web document utilities, native Android mobile software, and high-throughput Python backends. Combines deep technical proficiency in React, FastAPI, PyMuPDF, and Capacitor with multi-year senior management experience leading operational excellence.',
   jobs: [
     {
-      title: 'Senior Frontend Developer',
-      employer: 'BrightWave Software',
-      dates: '2022 – Present',
+      title: 'Founder & Lead Software Engineer',
+      employer: 'RemoPDF',
+      dates: '2026 – Present',
       points: [
-        'Led a redesign that cut page load time by 40%.',
-        'Mentored four junior developers.',
-        'Introduced automated testing, cutting production bugs by 30%.',
+        'Engineered an AI-driven resume builder and digital document utility suite utilizing React, Vite, Tailwind CSS, FastAPI, and MongoDB.',
+        'Integrated PyMuPDF & pdf2docx engines to process complex document transformations with sub-second backend response times.',
+        'Monetized web & native app channels via Google AdSense and native Android Google Mobile Ads (AdMob) SDK integrations.',
+        'Organized and hosted the official product launch event in Braamfontein featuring guest keynote collaboration with ALX leadership.',
       ],
     },
     {
-      title: 'Frontend Developer',
-      employer: 'Pixel & Co',
-      dates: '2019 – 2022',
+      title: 'Web Developer Intern',
+      employer: 'Sandtech',
+      dates: 'Oct 2024 – Nov 2024',
       points: [
-        'Built a reusable component library.',
-        'Shipped 15+ client websites.',
-        'Worked with designers to deliver pixel-perfect interfaces.',
+        'Collaborated remotely across offshore development sprints, optimizing client-side rendering speed by 35%.',
+        'Implemented responsive cross-browser interface components and resolved complex cross-platform UI state bugs.',
       ],
     },
     {
-      title: 'Junior Web Developer',
-      employer: 'Nova Digital',
-      dates: '2017 – 2019',
+      title: 'Senior Manager & Quality Controller',
+      employer: 'Beekman Super Canopies',
+      dates: '2014 – 2023',
       points: [
-        'Converted designs into responsive pages.',
-        'Fixed bugs and improved accessibility.',
-        'Supported senior developers on live client projects.',
+        'Promoted through Quality Controller and Assistant Manager roles to Senior Manager, overseeing multi-team assembly lines.',
+        'Streamlined quality assurance protocols, reducing production defects and improving overall throughput reliability.',
       ],
     },
   ],
-  education: {
-    degree: 'BSc Computer Science',
-    school: 'University of Cape Town',
-    dates: '2015 – 2018',
-    detail: 'Graduated with distinction',
-  },
+  education: [
+    {
+      degree: 'Software Engineering Certificate (Back-End)',
+      school: 'ALX & MasterCard Foundation',
+      dates: '2023 – 2024',
+      detail: 'Specialized in distributed systems, back-end web architecture, and Python API microservices.',
+    },
+    {
+      degree: 'Diploma in Management',
+      school: 'Intec College SA',
+      dates: 'Feb 2018',
+      detail: 'Focus on strategic planning, operational workflows, and team leadership.',
+    },
+  ],
   projects: [
-    { name: 'TaskFlow', detail: 'Drag-and-drop kanban app used by 2,000+ people.' },
-    { name: 'Pixel UI Kit', detail: 'Open-source React components with 1.2k GitHub stars.' },
+    { name: 'Word Fun Adventure', category: 'Android Native', detail: 'Casual word puzzle app built with Capacitor, Java, Gradle, and AdMob integration.' },
+    { name: 'Nexus Defense', category: 'Web Graphics', detail: 'Interactive 2D HTML5 Canvas space shooter game with high-performance collision physics.' },
+    { name: 'Fall Detection System', category: 'IoT / Smartwatch', detail: 'Smartwatch fall detection algorithm engineered during senior smartwatch internship.' },
   ],
   certifications: [
-    { name: 'Meta Front-End Developer Certificate', year: '2021' },
-    { name: 'Google UX Design Certificate', year: '2020' },
+    { name: 'Skyscanner Front-End Engineering Job Simulation', year: 'May 2026' },
+    { name: 'ALX AI Starter Kit Certificate', year: 'Mar 2025' },
+    { name: 'ALX Ventures Gig-at-a-Startup Certificate', year: 'Nov 2024' },
+    { name: 'Google Hardware Hackathon Participant', year: 'Nov 2024' },
   ],
   skills: [
-    { text: 'React', rating: 5 },
-    { text: 'TypeScript', rating: 4 },
-    { text: 'Tailwind CSS', rating: 5 },
-    { text: 'Next.js', rating: 4 },
-    { text: 'Node.js', rating: 3 },
-    { text: 'Figma', rating: 4 },
-    { text: 'Git', rating: 5 },
+    { text: 'React & Vite', rating: 5, category: 'Frontend' },
+    { text: 'Python (FastAPI)', rating: 5, category: 'Backend' },
+    { text: 'Tailwind CSS', rating: 5, category: 'Design' },
+    { text: 'MongoDB & PyMuPDF', rating: 5, category: 'Data' },
+    { text: 'Java & Capacitor', rating: 4, category: 'Mobile' },
+    { text: 'Node.js & Render', rating: 4, category: 'Cloud' },
   ],
   languages: [
-    { name: 'English', level: 'Fluent' },
-    { name: 'Afrikaans', level: 'Good' },
-    { name: 'Zulu', level: 'Basic' },
+    { name: 'English', level: 'Fluent / Professional' },
+    { name: 'Setswana', level: 'Fluent / Native' },
   ],
-  interests: ['Photography', 'Trail running', 'Open source'],
+  interests: ['Native Android Apps', 'Game Development', 'Music Composition', 'Hardware Hackathons'],
 };
 
-// Draws its children on a full A4 page (794 x 1123) and scales that page down
-// to whatever width the card has, so the tiny text keeps the real proportions.
-const TemplateThumb = ({ children }) => {
+// Generates correct props formatting for the actual Template components
+const getTemplateProps = (accentColor) => {
+  const D = DEMO_RESUME;
+  return {
+    fullName: D.name,
+    contactList: [D.email, D.phone, D.location, D.website, D.linkedin].filter(Boolean),
+    personal: {
+      profession: D.title,
+      photo: profile2,
+      photoStyle: PHOTO_DEFAULTS,
+    },
+    summary: [D.summary],
+    jobs: D.jobs.map((j, i) => ({
+      id: `job-${i}`,
+      title: j.title,
+      employer: j.employer,
+      date: j.dates,
+      achievements: j.points,
+    })),
+    educations: [
+      ...D.education.map((e, i) => ({
+        id: `edu-${i}`,
+        degree: e.degree,
+        institution: e.school,
+        date: e.dates,
+        achievements: e.detail ? [e.detail] : [],
+      })),
+      // Merge certifications into education array seamlessly for standard render formatting
+      ...D.certifications.map((c, i) => ({
+        id: `cert-${i}`,
+        degree: c.name,
+        date: c.year,
+        achievements: [],
+      }))
+    ],
+    namedSkills: D.skills.map((s, i) => ({
+      id: `skill-${i}`,
+      text: s.text,
+      rating: s.rating,
+    })),
+    projects: D.projects.map((p, i) => ({
+      id: `proj-${i}`,
+      title: p.name,
+      employer: p.category, 
+      achievements: [p.detail],
+    })),
+    languages: {
+      enabled: true,
+      items: D.languages.map((l, i) => ({
+        id: `lang-${i}`,
+        name: l.name,
+        level: l.level,
+      })),
+    },
+    hobbies: D.interests.map((h, i) => ({
+      id: `hob-${i}`,
+      text: h,
+    })),
+    references: [],
+    isEmpty: false,
+    accentColor,
+    sectionOrder: [
+      'summary',
+      'experience',
+      'education',
+      'skills',
+      'projects',
+      'languages',
+      'hobbies'
+    ],
+    edit: { sections: {} },
+  };
+};
+
+const TemplateThumb = ({ children, className = 'w-full' }) => {
   const ref = useRef(null);
   const [scale, setScale] = useState(0.24);
 
@@ -284,7 +287,7 @@ const TemplateThumb = ({ children }) => {
   }, []);
 
   return (
-    <div ref={ref} className="ts-thumb relative w-full aspect-[1/1.414] overflow-hidden bg-white pointer-events-none select-none" aria-hidden="true">
+    <div ref={ref} className={`ts-thumb relative aspect-[1/1.414] overflow-hidden bg-white pointer-events-none select-none ${className}`} aria-hidden="true">
       <div
         className="absolute top-0 left-0 origin-top-left"
         style={{ width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX, transform: `scale(${scale})` }}
@@ -295,312 +298,11 @@ const TemplateThumb = ({ children }) => {
   );
 };
 
-// Same component and default look as the real templates, so a thumbnail shows
-// the photo exactly where (and how) the finished resume will.
-const ThumbPhoto = ({ borderColor }) => (
-  <ResumePhoto src={profile2} style={PHOTO_DEFAULTS} borderColor={borderColor} />
-);
-
-const ThumbHeading = ({ className = '', style, children }) => (
-  <div className={`text-[15px] font-extrabold uppercase tracking-wider mb-3 ${className}`} style={style}>
-    {children}
-  </div>
-);
-
-const ThumbJob = ({ job, employerColor = '#475569', stacked = false, maxPoints = 3 }) => (
-  <div className="mb-5">
-    <div className={stacked ? '' : 'flex justify-between items-baseline gap-3'}>
-      <div className="text-[18px] font-bold text-slate-900 leading-tight">{job.title}</div>
-      {!stacked && <div className="text-[13px] text-slate-500 whitespace-nowrap">{job.dates}</div>}
-    </div>
-    <div className="text-[15px] font-semibold mt-0.5" style={{ color: employerColor }}>{job.employer}</div>
-    {stacked && <div className="text-[13px] text-slate-400">{job.dates}</div>}
-    <div className="mt-1.5 space-y-1">
-      {job.points.slice(0, maxPoints).map((p) => (
-        <div key={p} className="flex gap-2 text-[14px] leading-snug text-slate-600">
-          <span>•</span>
-          <span>{p}</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-/* Sidebar ------------------------------------------------------------------ */
-const SidebarThumb = ({ accent }) => {
-  const D = DEMO_RESUME;
-  const soft = tint(accent, 0.75);
-  const sideHeading = (text) => (
-    <ThumbHeading className="text-white pb-1 border-b" style={{ borderColor: 'rgba(255,255,255,0.3)' }}>{text}</ThumbHeading>
-  );
-
-  return (
-    <div className="flex w-full h-full text-slate-800">
-      <div className="w-[35%] h-full px-6 py-10 text-white overflow-hidden" style={{ backgroundColor: accent }}>
-        <div className="mb-9"><ThumbPhoto borderColor="#ffffff" /></div>
-
-        {sideHeading('Contact')}
-        <div className="space-y-2 mb-8 text-[13px] break-words" style={{ color: soft }}>
-          <div>{D.email}</div>
-          <div>{D.phone}</div>
-          <div>{D.location}</div>
-          <div>{D.website}</div>
-          <div>{D.linkedin}</div>
-        </div>
-
-        {sideHeading('Skills')}
-        <div className="mb-8">
-          {D.skills.map((s) => (
-            <div key={s.text} className="mb-3">
-              <div className="text-[14px] font-semibold">{s.text}</div>
-              <div className="flex gap-1 mt-1">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <span
-                    key={i}
-                    className="h-[4px] flex-1 rounded-full"
-                    style={{ backgroundColor: i <= s.rating ? '#ffffff' : 'rgba(255,255,255,0.25)' }}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {sideHeading('Languages')}
-        <div className="mb-8">
-          {D.languages.map((l) => (
-            <div key={l.name} className="flex justify-between items-baseline mb-2 text-[14px]">
-              <span className="font-semibold">{l.name}</span>
-              <span className="text-[12px]" style={{ color: soft }}>{l.level}</span>
-            </div>
-          ))}
-        </div>
-
-        {sideHeading('Interests')}
-        <div className="text-[13px] leading-relaxed" style={{ color: soft }}>{D.interests.join(' · ')}</div>
-      </div>
-
-      <div className="w-[65%] h-full px-9 py-10 overflow-hidden">
-        <div className="text-[46px] leading-none font-extrabold text-slate-900 mb-2">{D.name}</div>
-        <div className="text-[22px] font-semibold mb-8" style={{ color: accent }}>{D.title}</div>
-
-        <ThumbHeading className="border-b border-slate-200 pb-1" style={{ color: accent }}>Summary</ThumbHeading>
-        <p className="text-[15px] leading-relaxed text-slate-600 mb-7">{D.summary}</p>
-
-        <ThumbHeading className="border-b border-slate-200 pb-1" style={{ color: accent }}>Experience</ThumbHeading>
-        {D.jobs.map((job) => <ThumbJob key={job.title} job={job} />)}
-
-        <ThumbHeading className="border-b border-slate-200 pb-1" style={{ color: accent }}>Education</ThumbHeading>
-        <div className="mb-7">
-          <div className="text-[18px] font-bold text-slate-900">{D.education.degree}</div>
-          <div className="text-[15px] text-slate-600">{D.education.school} · {D.education.dates}</div>
-          <div className="text-[13px] text-slate-400 mt-0.5">{D.education.detail}</div>
-        </div>
-
-        <ThumbHeading className="border-b border-slate-200 pb-1" style={{ color: accent }}>Projects</ThumbHeading>
-        {D.projects.map((p) => (
-          <div key={p.name} className="mb-2.5">
-            <div className="text-[15px] font-bold text-slate-900 leading-tight">{p.name}</div>
-            <div className="text-[14px] leading-snug text-slate-600">{p.detail}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-/* Green header ("Accent") --------------------------------------------------- */
-const GreenHeaderThumb = ({ accent }) => {
-  const D = DEMO_RESUME;
-  const heading = (text) => <ThumbHeading style={{ color: accent }}>{text}</ThumbHeading>;
-
-  return (
-    <div className="w-full h-full flex flex-col text-slate-800 bg-white">
-      <div className="px-10 py-8 bg-slate-50 border-b-[6px] flex items-center gap-7" style={{ borderColor: tint(accent, 0.35) }}>
-        <ThumbPhoto borderColor={accent} />
-        <div className="min-w-0">
-          <div className="text-[46px] leading-none font-extrabold text-slate-900 mb-2">{D.name}</div>
-          <div className="text-[22px] font-semibold" style={{ color: accent }}>{D.title}</div>
-          <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-[13px] font-medium text-slate-600">
-            <span>{D.email}</span>
-            <span>{D.phone}</span>
-            <span>{D.website}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex gap-7 px-10 py-8 overflow-hidden">
-        <div className="w-[33%] border-r border-slate-100 pr-6">
-          {heading('Skills')}
-          <div className="mb-6">
-            {D.skills.map((s) => (
-              <span key={s.text} className="inline-block mr-2 mb-2 px-2 py-1 text-[13px] font-semibold text-slate-700 border border-slate-200 rounded">
-                {s.text}
-              </span>
-            ))}
-          </div>
-
-          {heading('Languages')}
-          <div className="mb-6">
-            {D.languages.map((l) => (
-              <div key={l.name} className="flex justify-between text-[14px] mb-1.5">
-                <span className="font-semibold text-slate-700">{l.name}</span>
-                <span className="text-slate-500">{l.level}</span>
-              </div>
-            ))}
-          </div>
-
-          {heading('Education')}
-          <div className="text-[16px] font-bold text-slate-900 leading-tight">{D.education.degree}</div>
-          <div className="text-[14px] font-semibold mt-0.5" style={{ color: accent }}>{D.education.school}</div>
-          <div className="text-[13px] text-slate-500 mb-6">{D.education.dates}</div>
-
-          {heading('Certificates')}
-          {D.certifications.map((c) => (
-            <div key={c.name} className="mb-2">
-              <div className="text-[14px] font-semibold text-slate-800 leading-snug">{c.name}</div>
-              <div className="text-[13px] text-slate-500">{c.year}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="w-[67%]">
-          {heading('Summary')}
-          <p className="text-[15px] leading-relaxed text-slate-600 mb-7">{D.summary}</p>
-          {heading('Experience')}
-          {D.jobs.map((job) => <ThumbJob key={job.title} job={job} employerColor={accent} />)}
-          {heading('Projects')}
-          {D.projects.map((p) => (
-            <div key={p.name} className="mb-2.5">
-              <div className="text-[15px] font-bold text-slate-900 leading-tight">{p.name}</div>
-              <div className="text-[14px] leading-snug text-slate-600">{p.detail}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* Pink header ("Modern") ---------------------------------------------------- */
-const PinkHeaderThumb = ({ accent }) => {
-  const D = DEMO_RESUME;
-  const heading = (text) => (
-    <ThumbHeading className="border-b-2 pb-1 tracking-widest" style={{ color: accent, borderColor: tint(accent, 0.9) }}>{text}</ThumbHeading>
-  );
-
-  return (
-    <div className="w-full h-full flex flex-col text-slate-800" style={{ backgroundColor: tint(accent, 0.92) }}>
-      <div className="px-10 py-8 text-white flex items-center justify-between gap-6" style={{ backgroundColor: accent }}>
-        <div className="min-w-0 flex-1">
-          <div className="text-[46px] leading-none font-extrabold mb-2">{D.name}</div>
-          <div className="text-[22px] mb-4" style={{ color: tint(accent, 0.55) }}>{D.title}</div>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[13px]" style={{ color: tint(accent, 0.85) }}>
-            <span>{D.email}</span>
-            <span>{D.phone}</span>
-            <span>{D.website}</span>
-          </div>
-        </div>
-        <ThumbPhoto borderColor="#ffffff" />
-      </div>
-
-      <div
-        className="flex-1 flex gap-8 m-6 mt-0 px-8 py-7 bg-white rounded-b-md shadow-sm border overflow-hidden"
-        style={{ borderColor: tint(accent, 0.82) }}
-      >
-        <div className="w-1/2">
-          {heading('Summary')}
-          <p className="text-[14px] leading-relaxed text-slate-600 mb-6">{D.summary}</p>
-          {heading('Experience')}
-          {D.jobs.map((job) => <ThumbJob key={job.title} job={job} stacked maxPoints={2} />)}
-        </div>
-
-        <div className="w-1/2">
-          {heading('Skills')}
-          <div className="mb-6">
-            {D.skills.map((s) => (
-              <div key={s.text} className="flex items-center gap-2 text-[14px] text-slate-600 mb-1">
-                <span>•</span>
-                <span>{s.text}</span>
-              </div>
-            ))}
-          </div>
-          {heading('Education')}
-          <div className="text-[16px] font-bold text-slate-900 leading-tight">{D.education.degree}</div>
-          <div className="text-[14px] font-semibold text-slate-600">{D.education.school}</div>
-          <div className="text-[13px] text-slate-400 mb-6">{D.education.dates}</div>
-
-          {heading('Languages')}
-          <div className="mb-6">
-            {D.languages.map((l) => (
-              <div key={l.name} className="flex justify-between text-[14px] text-slate-600 mb-1">
-                <span>{l.name}</span>
-                <span className="text-slate-400">{l.level}</span>
-              </div>
-            ))}
-          </div>
-
-          {heading('Interests')}
-          <div className="text-[14px] text-slate-600">{D.interests.join(' · ')}</div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* Dark top ("Professional") ------------------------------------------------- */
-const DarkTopThumb = ({ accent }) => {
-  const D = DEMO_RESUME;
-  const heading = (text, plain = false) => (
-    <ThumbHeading className={`text-slate-400 tracking-widest ${plain ? '' : 'border-b border-slate-100 pb-1'}`}>{text}</ThumbHeading>
-  );
-
-  return (
-    <div className="w-full h-full flex flex-col px-9 py-9 text-slate-800" style={{ backgroundColor: accent }}>
-      <div className="flex items-center gap-6 mb-7 text-white">
-        <ThumbPhoto borderColor="#ffffff" />
-        <div className="flex-1 min-w-0">
-          <div className="text-[46px] leading-none font-extrabold mb-2">{D.name}</div>
-          <div className="text-[22px] font-medium text-slate-300">{D.title}</div>
-          <div className="mt-3 text-[13px] text-slate-300">{D.email} · {D.phone}</div>
-        </div>
-      </div>
-
-      <div className="flex-1 bg-white rounded-md shadow-sm px-8 py-7 overflow-hidden">
-        {heading('Summary', true)}
-        <p className="text-[15px] leading-relaxed text-slate-700 mb-7">{D.summary}</p>
-
-        {heading('Experience')}
-        {D.jobs.map((job) => <ThumbJob key={job.title} job={job} employerColor="#334155" />)}
-
-        {heading('Education')}
-        <div className="mb-6">
-          <div className="text-[18px] font-bold text-slate-900">{D.education.degree}</div>
-          <div className="text-[15px] text-slate-600">{D.education.school} · {D.education.dates}</div>
-        </div>
-
-        {heading('Skills')}
-        <div>
-          {D.skills.map((s) => (
-            <span key={s.text} className="inline-block mr-2 mb-2 px-3 py-1 text-[13px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded">
-              {s.text}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* -------------------------------------------------------------------------- */
-/*                         Home page template showcase                        */
-/* -------------------------------------------------------------------------- */
-
 const TEMPLATE_CARDS = [
-  { id: 'blue-sidebar', label: 'Sidebar', Thumb: SidebarThumb },
-  { id: 'green-header', label: 'Accent', Thumb: GreenHeaderThumb },
-  { id: 'pink-header', label: 'Modern', Thumb: PinkHeaderThumb },
-  { id: 'dark-top', label: 'Professional', Thumb: DarkTopThumb },
+  { id: 'blue-sidebar', label: 'Sidebar', note: 'Contact details and skills in a side column.', Template: BlueSidebarTemplate },
+  { id: 'green-header', label: 'Accent', note: 'A colour header over a clean single column.', Template: GreenHeaderTemplate },
+  { id: 'pink-header', label: 'Modern', note: 'Bold header with generous spacing.', Template: PinkHeaderTemplate },
+  { id: 'dark-top', label: 'Professional', note: 'A dark banner for a formal tone.', Template: DarkTopTemplate },
 ];
 
 const readTemplate = () => {
@@ -643,26 +345,34 @@ const IconClose = () => (
 );
 
 const IconReset = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
     <path d="M3 3v5h5" />
   </svg>
 );
 
-// Same swatches and behaviour as the "Colors" bar in the builder's preview.
+const colorName = (color) => {
+  if (color == null) return 'Template default';
+  if (color === GRAYSCALE) return 'Grayscale';
+  const hit = ACCENT_SWATCHES.find((s) => s.hex === color);
+  return hit ? hit.label : `Custom ${color.toUpperCase()}`;
+};
+
+const SWATCH = 'h-8 w-8 rounded-full transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2';
+const SWATCH_ON = 'ring-2 ring-offset-2 ring-slate-900 ts-bounce';
+
 const ColorBar = ({ color, onChange }) => {
   const isCustom = !!color && color !== GRAYSCALE && !ACCENT_SWATCHES.some((s) => s.hex === color);
-  const ring = 'ring-2 ring-offset-2 ring-slate-400 ts-bounce';
 
   return (
-    <div className="flex flex-wrap items-center gap-2.5" role="group" aria-label="Resume colour">
+    <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Resume colour">
       <button
         type="button"
         onClick={() => onChange(null)}
         title="Template default"
         aria-label="Template default colour"
         aria-pressed={color === null}
-        className={`w-6 h-6 rounded-full border border-slate-300 bg-white text-slate-500 flex items-center justify-center hover:scale-110 transition-transform focus:outline-none ${color === null ? ring : ''}`}
+        className={`${SWATCH} flex items-center justify-center border border-slate-300 bg-white text-slate-500 ${color === null ? SWATCH_ON : ''}`}
       >
         <IconReset />
       </button>
@@ -676,7 +386,7 @@ const ColorBar = ({ color, onChange }) => {
           aria-label={swatch.label}
           aria-pressed={color === swatch.hex}
           style={{ backgroundColor: swatch.hex }}
-          className={`w-6 h-6 rounded-full shadow-sm hover:scale-110 transition-transform focus:outline-none ${color === swatch.hex ? ring : ''}`}
+          className={`${SWATCH} ${color === swatch.hex ? SWATCH_ON : ''}`}
         />
       ))}
 
@@ -686,15 +396,15 @@ const ColorBar = ({ color, onChange }) => {
         title="Grayscale"
         aria-label="Grayscale"
         aria-pressed={color === GRAYSCALE}
-        className={`w-6 h-6 rounded-full border border-slate-300 bg-white relative flex items-center justify-center hover:scale-110 transition-transform focus:outline-none ${color === GRAYSCALE ? ring : ''}`}
+        className={`${SWATCH} relative flex items-center justify-center border border-slate-300 bg-white ${color === GRAYSCALE ? SWATCH_ON : ''}`}
       >
-        <span className="absolute w-[22px] h-[1px] bg-slate-400 rotate-45" />
+        <span className="absolute h-px w-[28px] rotate-45 bg-slate-400" />
       </button>
 
       <label
-        title="Custom color"
-        className={`relative w-6 h-6 rounded-full border border-dashed border-slate-300 flex items-center justify-center text-[16px] font-bold leading-none cursor-pointer hover:scale-110 transition-transform ${
-          isCustom ? `${ring} text-white border-transparent` : 'text-slate-600 hover:bg-slate-100'
+        title="Custom colour"
+        className={`${SWATCH} relative flex cursor-pointer items-center justify-center border border-dashed text-base font-bold leading-none focus-within:ring-2 focus-within:ring-slate-900 focus-within:ring-offset-2 ${
+          isCustom ? `${SWATCH_ON} border-transparent text-white` : 'border-slate-400 text-slate-600 hover:bg-slate-100'
         }`}
         style={isCustom ? { backgroundColor: color } : undefined}
       >
@@ -704,190 +414,124 @@ const ColorBar = ({ color, onChange }) => {
           aria-label="Custom colour"
           value={isCustom ? color : '#000000'}
           onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         />
       </label>
     </div>
   );
 };
 
-const TemplateCard = ({ card, color, selected, onSelect, onPreview, onUse, index = 0, visible = true, featured = false, featuredLabel = COPY.featured }) => {
-  const { id, label, Thumb } = card;
+const TemplateRow = ({ card, color, selected, featured, featuredLabel, onSelect }) => {
+  const { id, label, note, Template } = card;
   const accent = color || DEFAULT_ACCENT[id];
-  const cardRef = useRef(null);
+  const props = useMemo(() => getTemplateProps(accent), [accent]);
 
-  // Tilts the card towards the pointer and moves the light spot with it.
-  const handlePointerMove = (e) => {
-    const el = cardRef.current;
-    if (!el || e.pointerType === 'touch') return;
-    const r = el.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width;
-    const py = (e.clientY - r.top) / r.height;
-    el.style.setProperty('--ts-ry', `${((px - 0.5) * 12).toFixed(2)}deg`);
-    el.style.setProperty('--ts-rx', `${((0.5 - py) * 12).toFixed(2)}deg`);
-    el.style.setProperty('--ts-mx', `${(px * 100).toFixed(1)}%`);
-    el.style.setProperty('--ts-my', `${(py * 100).toFixed(1)}%`);
-  };
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={() => onSelect(id)}
+      className={`flex w-full items-center gap-4 rounded-2xl p-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 ${
+        selected ? 'bg-slate-900 text-white' : 'text-slate-900 hover:bg-slate-100'
+      }`}
+    >
+      <TemplateThumb className="w-14 shrink-0 rounded-[3px] shadow-md ring-1 ring-black/10">
+        <Template {...props} />
+      </TemplateThumb>
 
-  const handlePointerLeave = () => {
-    const el = cardRef.current;
-    if (!el) return;
-    el.style.removeProperty('--ts-rx');
-    el.style.removeProperty('--ts-ry');
-  };
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-semibold">{label}</span>
+          {featured && (
+            <span className="rounded-full bg-amber-300 px-2 py-0.5 text-xs font-semibold text-slate-900">{featuredLabel}</span>
+          )}
+        </span>
+        <span className={`mt-0.5 block text-sm ${selected ? 'text-slate-300' : 'text-slate-500'}`}>{note}</span>
+      </span>
+
+      {selected && (
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-slate-900">
+          <IconCheck />
+        </span>
+      )}
+    </button>
+  );
+};
+
+const Stage = ({ card, accent, visible }) => {
+  const props = useMemo(() => getTemplateProps(accent), [accent]);
+  const { Template } = card;
 
   return (
     <div
-      className={`flex flex-col gap-2.5 ts-reveal ${visible ? 'ts-in' : ''}`}
-      style={{ '--ts-d': `${200 + index * 110}ms` }}
+      className="ts-stage ts-spot flex h-full items-center justify-center rounded-[28px] px-6 py-10 sm:px-14 sm:py-14"
+      style={{ '--ts-accent': accent }}
     >
-      <div className="ts-float" style={{ animationDelay: `${index * -1.5}s` }}>
-        <div
-          ref={cardRef}
-          role="button"
-          tabIndex={0}
-          aria-pressed={selected}
-          aria-label={`Select the ${label} template`}
-          onClick={() => onSelect(id)}
-          onPointerMove={handlePointerMove}
-          onPointerLeave={handlePointerLeave}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onSelect(id);
-            }
-          }}
-          className="ts-card relative group cursor-pointer overflow-hidden bg-slate-800 border-2 border-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]"
-        >
-          <TemplateThumb>
-            <Thumb accent={accent} />
-          </TemplateThumb>
-
-          <div className="absolute inset-x-0 bottom-0 w-full bg-slate-900/40 group-hover:bg-slate-900/55 backdrop-blur-md text-white text-[9px] font-extrabold text-center py-1 uppercase tracking-wide transition-colors duration-300">
-            {label}
-          </div>
-
-          {featured && (
-            <span className="absolute top-2 left-2 bg-amber-300 text-slate-900 text-[9px] font-extrabold uppercase tracking-wide px-2 py-1 shadow">
-              {featuredLabel}
-            </span>
-          )}
-
-          {selected && (
-            <span className="ts-pop absolute top-2 right-2 w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center shadow">
-              <span className="ts-ripple pointer-events-none absolute inset-0 rounded-full bg-blue-500" />
-              <span className="relative">
-                <IconCheck />
-              </span>
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => onPreview(id)}
-          className="flex-1 px-3 py-2 rounded-full border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]"
-        >
-          {COPY.preview}
-        </button>
-        <button
-          type="button"
-          onClick={() => onUse(id)}
-          className={`ts-cta ${selected ? 'ts-cta-attn' : ''} flex-1 px-3 py-2 rounded-full bg-[#d9856b] text-white text-xs font-bold shadow-md shadow-[#d9856b]/25 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ae6a56]`}
-        >
-          {COPY.use}
-        </button>
+      <div key={card.id} className={`ts-paper w-full max-w-[460px] ${visible ? 'ts-in' : ''}`}>
+        <TemplateThumb className="w-full rounded-[3px] shadow-[0_40px_80px_-24px_rgba(0,0,0,.65),0_8px_20px_-8px_rgba(0,0,0,.4)]">
+          <Template {...props} />
+        </TemplateThumb>
       </div>
     </div>
   );
 };
 
-const TemplatePreviewModal = ({ templateId, setTemplateId, color, setColor, onUse, onClose }) => {
+const BTN_PRIMARY =
+  'inline-flex items-center justify-center rounded-full bg-[#d9856b] px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-[#e39478] active:scale-[.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2';
+const BTN_SECONDARY =
+  'inline-flex items-center justify-center rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 active:scale-[.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2';
+
+const PreviewModal = ({ templateId, color, onClose, onUse }) => {
+  const card = TEMPLATE_CARDS.find((c) => c.id === templateId);
+  const startRef = useRef(null);
+
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    const previousOverflow = document.body.style.overflow;
+    const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
     document.body.style.overflow = 'hidden';
+    startRef.current?.focus();
     return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleEsc);
+      document.body.style.overflow = '';
     };
   }, [onClose]);
 
-  const card = TEMPLATE_CARDS.find((c) => c.id === templateId) || TEMPLATE_CARDS[0];
-  const { Thumb } = card;
+  if (!card) return null;
+
   const accent = color || DEFAULT_ACCENT[card.id];
+  const { Template } = card;
+  const templateProps = getTemplateProps(accent);
 
   return (
-    <div
-      className="ts-fade fixed inset-0 z-[60] bg-slate-950/70 flex items-center justify-center p-3 sm:p-6"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${card.label} template preview`}
-    >
-      <div
-        className="ts-modal bg-white rounded-lg shadow-2xl w-full max-w-[720px] max-h-full flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 py-3 flex items-center justify-between gap-3 border-b border-slate-200 shrink-0">
-          <div className="flex flex-wrap gap-2">
-            {TEMPLATE_CARDS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setTemplateId(c.id)}
-                aria-pressed={c.id === card.id}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors focus:outline-none ${
-                  c.id === card.id ? 'bg-slate-900 text-white' : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={`Preview of ${card.label}`}>
+      <div className="ts-fade absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+
+      <div className="ts-modal relative flex max-h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between px-6 py-4">
+          <div>
+            <h2 className="ts-display text-xl font-extrabold text-slate-900">{card.label}</h2>
+            <p className="text-sm text-slate-500">{card.note}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close preview"
-            className="p-1.5 rounded-full text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none"
+            aria-label={COPY.closePreview}
+            className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
           >
             <IconClose />
           </button>
         </div>
 
-        <div className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 shrink-0">
-          <span className="text-[13px] font-extrabold text-slate-800">{COPY.colors}</span>
-          <ColorBar color={color} onChange={setColor} />
-        </div>
-
-        <div className="pro-scroll pro-scroll-dark flex-1 min-h-0 overflow-y-auto bg-[#091122] p-4 sm:p-6">
-          <div key={card.id} className="ts-swap mx-auto w-full max-w-[520px] shadow-2xl">
-            <TemplateThumb>
-              <Thumb accent={accent} />
-            </TemplateThumb>
+        <div className="ts-stage pro-scroll pro-scroll-dark flex-1 overflow-auto p-4 sm:p-10" style={{ '--ts-accent': accent }}>
+          {/* Templates render multiple pages; stack them at true page width and let the area scroll */}
+          <div className="mx-auto flex select-none flex-col gap-6" style={{ width: PAGE_WIDTH_PX }}>
+            <Template {...templateProps} />
           </div>
         </div>
 
-        <div className="px-5 py-3 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-slate-200 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2.5 rounded-full border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors focus:outline-none"
-          >
-            {COPY.closePreview}
-          </button>
-          <button
-            type="button"
-            onClick={() => onUse(card.id)}
-            className="ts-cta px-8 py-2.5 rounded-full bg-[#d9856b] text-white text-xs font-bold shadow-md shadow-[#d9856b]/25 hover:shadow-lg active:scale-95 transition-all focus:outline-none"
-          >
-            {COPY.useInPreview}
-          </button>
+        <div className="flex shrink-0 items-center justify-between px-6 py-4">
+          <button type="button" onClick={onClose} className={BTN_SECONDARY}>{COPY.back}</button>
+          <button type="button" ref={startRef} onClick={() => onUse(card.id)} className={BTN_PRIMARY}>{COPY.use}</button>
         </div>
       </div>
     </div>
@@ -896,76 +540,89 @@ const TemplatePreviewModal = ({ templateId, setTemplateId, color, setColor, onUs
 
 export default function TemplateShowcase({
   onUseTemplate,
-  featuredTemplate = null,
+  featuredTemplate,
   featuredLabel = COPY.featured,
   title = COPY.title,
   subtitle = COPY.subtitle,
   className = '',
 }) {
-  const [template, setTemplate] = useState(readTemplate);
-  const [color, setColor] = useState(readColor);
+  const [ref, seen] = useInView(0.15);
+  const [selected, setSelected] = useState(DEFAULT_TEMPLATE);
+  const [color, setColor] = useState(null);
   const [previewId, setPreviewId] = useState(null);
-  const [sectionRef, seen] = useInView(0.1);
 
   useEffect(() => {
-    saveChoice(template, color);
-  }, [template, color]);
+    setSelected(readTemplate());
+    setColor(readColor());
+  }, []);
 
+  const handleUse = useCallback(
+    (templateId) => {
+      saveChoice(templateId, color);
+      onUseTemplate({ template: templateId, color });
+    },
+    [color, onUseTemplate],
+  );
   const closePreview = useCallback(() => setPreviewId(null), []);
 
-  const handleUse = (id) => {
-    setTemplate(id);
-    saveChoice(id, color); // written now so the builder sees it even if we navigate right away
-    setPreviewId(null);
-    if (onUseTemplate) onUseTemplate({ template: id, color });
-  };
+  const card = TEMPLATE_CARDS.find((c) => c.id === selected) || TEMPLATE_CARDS[0];
+  const accent = color || DEFAULT_ACCENT[card.id];
 
   return (
-    <section ref={sectionRef} className={`w-full ${className}`}>
-      <style>{SHOWCASE_CSS + SCROLLBAR_CSS}</style>
-      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
-        <div className={`ts-reveal ${seen ? 'ts-in' : ''}`}>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">{title}</h2>
-          <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
-        </div>
+    <section ref={ref} className={`py-12 sm:py-20 ${className}`}>
+      <style>{SHOWCASE_CSS}</style>
+      <style>{SCROLLBAR_CSS}</style>
 
-        <div
-          className={`flex flex-wrap items-center gap-x-4 gap-y-2 bg-white border border-slate-200 rounded-2xl px-4 py-2.5 self-start lg:self-auto ts-reveal ${seen ? 'ts-in' : ''}`}
-          style={{ '--ts-d': '140ms' }}
-        >
-          <span className="text-[13px] font-extrabold text-slate-800">{COPY.colors}</span>
-          <ColorBar color={color} onChange={setColor} />
-        </div>
-      </div>
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-14 lg:gap-y-8">
+          <header className="lg:col-start-1 lg:row-start-1">
+            <h2 className="ts-display text-4xl font-extrabold leading-[1.03] tracking-tight text-slate-900 sm:text-5xl" style={{ textWrap: 'balance' }}>
+              {title}
+            </h2>
+            <p className="mt-4 max-w-md text-lg leading-relaxed text-slate-600">{subtitle}</p>
+          </header>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {TEMPLATE_CARDS.map((card, index) => (
-          <TemplateCard
-            key={card.id}
-            card={card}
-            index={index}
-            visible={seen}
-            featured={card.id === featuredTemplate}
-            featuredLabel={featuredLabel}
-            color={color}
-            selected={template === card.id}
-            onSelect={setTemplate}
-            onPreview={setPreviewId}
-            onUse={handleUse}
-          />
-        ))}
+          <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
+            <Stage card={card} accent={accent} visible={seen} />
+          </div>
+
+          <div className="flex flex-col gap-8 lg:col-start-1 lg:row-start-2">
+            <div role="group" aria-label={COPY.templates} className="-mx-3 flex flex-col gap-1.5">
+              {TEMPLATE_CARDS.map((c) => (
+                <TemplateRow
+                  key={c.id}
+                  card={c}
+                  color={color}
+                  selected={selected === c.id}
+                  onSelect={setSelected}
+                  featured={featuredTemplate === c.id}
+                  featuredLabel={featuredLabel}
+                />
+              ))}
+            </div>
+
+            <div>
+              <div className="mb-3 flex items-baseline justify-between gap-4">
+                <h3 className="text-sm font-semibold text-slate-900">{COPY.colors}</h3>
+                <span className="text-sm text-slate-500">{colorName(color)}</span>
+              </div>
+              <ColorBar color={color} onChange={setColor} />
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={() => handleUse(card.id)} className={BTN_PRIMARY}>{COPY.use}</button>
+              <button type="button" onClick={() => setPreviewId(card.id)} className={BTN_SECONDARY}>{COPY.preview}</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {previewId && (
-        <TemplatePreviewModal
-          templateId={previewId}
-          setTemplateId={setPreviewId}
-          color={color}
-          setColor={setColor}
-          onUse={handleUse}
-          onClose={closePreview}
-        />
+        <PreviewModal templateId={previewId} color={color} onClose={closePreview} onUse={handleUse} />
       )}
     </section>
   );
 }
+
+// Shared with TemplateSlideshow.jsx
+export { TEMPLATE_CARDS, DEFAULT_ACCENT, TemplateThumb, getTemplateProps, saveChoice, readColor };

@@ -5,6 +5,7 @@ import EducationField, { createEducation, normalizeEducation } from '../componen
 import SkillsField from '../components/Resume/Sections/SkillsField';
 import Summary from '../components/Resume/Sections/Summary';
 import ResumeUpload from '../components/Resume/Sections/ResumeUpload';
+import BuilderSidebar from '../components/Resume/Sections/BuilderSidebar';
 import AdditionalSections from '../components/Resume/Sections/AdditionalSections';
 import { DEFAULT_LANGUAGE_LEVEL } from '../components/Resume/Sections/LanguageLevelSelect';
 import { PHOTO_DEFAULTS } from '../components/Resume/Sections/ResumePhoto';
@@ -39,12 +40,6 @@ const IconClose = ({ className = 'w-6 h-6' }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <line x1="18" y1="6" x2="6" y2="18" />
     <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
   </svg>
 );
 
@@ -98,11 +93,11 @@ const STORAGE_KEY_SECTION_ORDER = 'resumeBuilder:sectionOrder';
 const STORAGE_KEY_TEMPLATE = 'resumeBuilder:selectedTemplate';
 const STORAGE_KEY_PAGE_NUMBERS = 'resumeBuilder:pageNumbers';
 
-const DEFAULT_SECTION_ORDER = ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'hobbies', 'references'];
+const DEFAULT_SECTION_ORDER = ['summary', 'experience', 'education', 'certificates', 'skills', 'projects', 'languages', 'hobbies', 'references'];
 
 // Keeps the user's saved order, drops unknown/duplicate keys, and appends any
 // section that is missing (e.g. an order saved before Projects, Languages,
-// Hobbies & Interests and References could be reordered).
+// Hobbies & Interests, References and Certificates could be reordered).
 const normalizeSectionOrder = (saved) => {
   const kept = Array.isArray(saved)
     ? saved.filter((key, i) => DEFAULT_SECTION_ORDER.includes(key) && saved.indexOf(key) === i)
@@ -163,7 +158,7 @@ const clearRowStyles = (rows) => {
 /* -------------------------------------------------------------------------- */
 
 // Which existing form opens when a section of the resume is clicked in edit mode.
-// Projects, Languages, Hobbies and References all live in the Finalize form.
+// Projects, Languages, Hobbies, References and Certificates all live in the Finalize form.
 const SECTION_EDITORS = {
   personal: { title: 'Heading', Component: PersonalInfo },
   experience: { title: 'Work history', Component: ExperienceField },
@@ -174,6 +169,7 @@ const SECTION_EDITORS = {
   languages: { title: 'Additional sections', Component: AdditionalSections },
   hobbies: { title: 'Additional sections', Component: AdditionalSections },
   references: { title: 'Additional sections', Component: AdditionalSections },
+  certificates: { title: 'Additional sections', Component: AdditionalSections },
 };
 
 const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sectionOrder: savedSectionOrder, setSectionOrder, hiddenSections, setHiddenSections, pageNumbers, setPageNumbers, editorProps, onClose }) => {
@@ -182,7 +178,7 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
   // are only left out of the template (and can be added back at any time).
   const hidden = (Array.isArray(hiddenSections) ? hiddenSections : []).filter((key) => SECTION_META[key]);
   const visibleOrder = sectionOrder.filter((key) => !hidden.includes(key));
-  const { personal, education, skills, summary, hobbies, languages, projects, references } = data;
+  const { personal, education, skills, summary, hobbies, languages, projects, references, certificates } = data;
   // Only jobs with a title or employer show on the resume; empty forms are skipped.
   const jobs = (Array.isArray(data.experiences) ? data.experiences : []).filter((j) => j.title || j.employer);
   // Only qualifications with an institution or degree show on the resume; empty forms are skipped.
@@ -478,9 +474,10 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
   const hasLanguages = !!(languages?.enabled && (languages.items || []).some((l) => l.name));
   const hasProjects = !!(projects?.enabled && (projects.items || []).some((p) => p.title || p.description));
   const hasReferences = !!(references?.enabled && (references.availableUponRequest || (references.items || []).some((r) => r.name)));
+  const hasCertificates = !!(certificates?.enabled && (certificates.items || []).some((c) => c.name || c.issuer));
 
   const isEmpty = !fullName && !summary && jobs.length === 0 && !educations.some((e) => e.institution) && namedSkills.length === 0
-    && !hasHobbies && !hasLanguages && !hasProjects && !hasReferences;
+    && !hasHobbies && !hasLanguages && !hasProjects && !hasReferences && !hasCertificates;
 
   // Download = print the resume's A4 pages to PDF. The pages are copied into a
   // hidden frame first, so the printout is only the pages (no modal, nothing
@@ -549,7 +546,7 @@ ${headMarkup}
     setTimeout(start, 3000); // fallback if the frame's load event never arrives
   };
 
-  const templateProps = { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, isEmpty, accentColor, sectionOrder: visibleOrder, edit };
+  const templateProps = { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, accentColor, sectionOrder: visibleOrder, edit };
 
   const renderActiveTemplate = () => {
     const Template = TEMPLATE_COMPONENTS[template] || TEMPLATE_COMPONENTS[DEFAULT_TEMPLATE];
@@ -1074,20 +1071,31 @@ ${headMarkup}
             <div className="pro-scroll pro-scroll-dark flex-1 bg-[#091122] p-6 overflow-y-auto">
               <h3 className="text-white text-[13px] font-extrabold mb-5">All templates</h3>
               <div className="grid grid-cols-2 gap-4">
-                {TEMPLATE_CARDS.map(({ id, label, Thumb }) => (
+                {TEMPLATE_CARDS.map(({ id, label }) => {
+                  // Render the real template (same as the showcase) so a new template needs no separate thumbnail.
+                  const Template = TEMPLATE_COMPONENTS[id];
+                  if (!Template) return null;
+                  return (
                   <div
                     key={id}
                     onClick={() => setTemplate(id)}
                     className={`relative group cursor-pointer overflow-hidden border-2 transition duration-200 hover:z-10 hover:scale-[1.03] active:scale-[0.97] motion-reduce:hover:scale-100 motion-reduce:active:scale-100 ${template === id ? 'border-[#d9856b]' : 'border-transparent'}`}
                   >
                     <TemplateThumb>
-                      <Thumb accent={color || DEFAULT_ACCENT[id]} />
+                      <div className="pointer-events-none select-none" aria-hidden="true">
+                        <Template
+                          {...templateProps}
+                          accentColor={color || DEFAULT_ACCENT[id]}
+                          edit={{ enabled: false }}
+                        />
+                      </div>
                     </TemplateThumb>
                     <div className="absolute bottom-0 left-0 w-full bg-slate-900/50 backdrop-blur-md text-white text-[9px] font-semibold text-center py-1 uppercase tracking-widest">
                       {label}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
               </>
@@ -1134,35 +1142,6 @@ ${headMarkup}
 /*                            Main Component                                  */
 /* -------------------------------------------------------------------------- */
 
-const Step = ({ number, label, description, active, completed }) => (
-  <div className="flex items-center relative z-10">
-    <div
-      className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[11px] font-medium transition-all ${
-        active
-          ? 'bg-[#d9856b] text-white shadow-md shadow-[#d9856b]/30'
-          : completed
-          ? 'bg-[#d9856b] text-white shadow-md shadow-[#d9856b]/20'
-          : 'bg-slate-800 text-slate-400 border border-slate-700'
-      }`}
-    >
-      {completed && !active ? <CheckIcon /> : number}
-    </div>
-    <div className="ml-4 min-w-0">
-      <span className={`block text-xs font-medium tracking-wide truncate ${active || completed ? 'text-white' : 'text-slate-400'}`}>
-        {label}
-      </span>
-      {description && (
-        <span
-          title={description}
-          className={`block text-[10px] font-normal leading-snug truncate ${active ? 'text-[#f0cec4]/90' : 'text-slate-500'}`}
-        >
-          {description}
-        </span>
-      )}
-    </div>
-  </div>
-);
-
 const stepsConfig = [
   { id: 1, label: 'Heading', description: 'Name & contact details', component: PersonalInfo },
   { id: 2, label: 'Work history', description: 'Your relevant job experience', component: ExperienceField },
@@ -1190,6 +1169,7 @@ const emptyResumeData = {
   languages: { enabled: false, items: [] },
   projects: { enabled: false, items: [] },
   references: { enabled: false, availableUponRequest: false, items: [] },
+  certificates: { enabled: false, items: [] },
 };
 
 // Where "Build cover letter" goes when the parent doesn't pass its own handler.
@@ -1278,6 +1258,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           languages: { ...emptyResumeData.languages, ...parsed.languages },
           projects: { ...emptyResumeData.projects, ...parsed.projects },
           references: { ...emptyResumeData.references, ...parsed.references },
+          certificates: { ...emptyResumeData.certificates, ...parsed.certificates },
         };
       }
       return emptyResumeData;
@@ -1523,66 +1504,20 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
       )}
 
       {/* Sidebar Navigation */}
-      <div
-        className={`fixed lg:static top-0 left-0 h-full w-[270px] max-w-[80vw] bg-slate-900 text-white flex flex-col justify-between gap-6 py-6 overflow-y-auto shrink-0 shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
-          menuOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
-      >
-        <div>
-          <div className="px-8 mb-8 flex items-center justify-between gap-3">
-            <span className="text-lg font-medium tracking-tight text-white">
-              Remo<span className="text-red-500">PDF</span>
-            </span>
-            <button onClick={() => setMenuOpen(false)} className="lg:hidden p-1 text-slate-400 hover:text-white transition-colors">
-              <IconClose />
-            </button>
-          </div>
-
-          <div className="relative px-8 space-y-5">
-            <div className="absolute left-[47px] top-4 bottom-4 w-0.5 bg-slate-800 z-0"></div>
-            {stepsConfig.map((step, index) => (
-              <Step
-                key={step.id}
-                number={step.id}
-                label={step.label}
-                description={step.description}
-                active={currentStepIndex === index}
-                completed={completedSteps.includes(index)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="px-8 text-[11px] font-normal space-y-4">
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-slate-300">Resume Completeness:</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-[#d9856b] rounded-full transition-all duration-500" 
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-              <span className="text-[#f0cec4] font-medium">{progressPercentage}%</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleBuildCoverLetter}
-            className="w-full px-4 py-2.5 rounded-full border border-slate-600 text-slate-200 text-xs font-medium hover:bg-slate-800 hover:border-slate-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]"
-          >
-            Build cover letter
-          </button>
-          <div className="text-base">
-            <ResumeUpload onImport={handleImport} />
-          </div>
-          <div className="text-slate-500 text-[10px] font-normal border-t border-slate-800/80 pt-4">
-            © 2026, Works Limited. All rights reserved.
-          </div>
-        </div>
-      </div>
+      <BuilderSidebar
+        steps={stepsConfig}
+        currentIndex={currentStepIndex}
+        completedSteps={completedSteps}
+        progress={progressPercentage}
+        onSelect={(index) => {
+          setCurrentStepIndex(index);
+          setMenuOpen(false);
+        }}
+        onBuildCoverLetter={handleBuildCoverLetter}
+        importSlot={<ResumeUpload onImport={handleImport} />}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col relative h-full min-h-0">

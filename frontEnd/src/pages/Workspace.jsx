@@ -4,6 +4,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import "pdfjs-dist/build/pdf.worker.mjs";
 import { Link } from 'react-router-dom';
 import image1 from '../assets/remopdf.png';
+import { addPasswordToPdf, pdfToImages } from "../api/client"; // adjust the path if client.js lives elsewhere
 
 
 const FONT_SIZE_OPTIONS = [10, 12, 14, 16, 20, 24, 32];
@@ -43,6 +44,14 @@ const PAGE_NUMBER_FORMATS = [
 const PAGE_NUMBER_SIZES = [8, 10, 12, 14, 16, 20];
 const PAGE_NUMBER_MARGIN_PT = 28; // page edge to the nearest edge of the number's digits
 const HELVETICA_DIGIT_HEIGHT = 0.716; // digit height as a fraction of the font size
+
+// --- Convert to images --------------------------------------------------------
+// Every page of the finished document as a picture. `id` is what the server's
+// pdf-to-images endpoint expects as image_type.
+const IMAGE_FORMATS = [
+  { id: "png", label: "PNG", hint: "Sharpest, larger files" },
+  { id: "jpeg", label: "JPG", hint: "Smaller files" },
+];
 
 // `startAt` is kept as typed so the box can be cleared while editing.
 function parsePageNumberStart(raw) {
@@ -1146,7 +1155,9 @@ function RotateRightIcon() { return (<svg {...ICON}><path d="M21 12a9 9 0 1 1-9-
 function WatermarkIcon() { return (<svg {...ICON}><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /><path d="M9.5 17.5l5-5" strokeWidth={3} /></svg>); }
 function TrashIcon() { return (<svg {...ICON}><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M6 7l1 13h10l1-13" /><path d="M10 11v6M14 11v6" /></svg>); }
 function PageNumberIcon() { return (<svg {...ICON}><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /><path d="M10 13.5l-.6 4.5M14 13.5l-.6 4.5M8.8 15h6M8.6 17h6" /></svg>); }
+function LockIcon() { return (<svg {...ICON}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>); }
 function AddPageIcon() { return (<svg {...ICON}><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /><path d="M12.5 12v6M9.5 15h6" /></svg>); }
+function ImageExportIcon() { return (<svg {...ICON}><rect x="3" y="3" width="18" height="14" rx="2" /><circle cx="8.5" cy="8" r="1.4" /><path d="M21 13l-4-4-4 4-2-2-6 6" /><path d="M12 18.5v3.5M10 20.5l2 1.5 2-1.5" /></svg>); }
 function GripIcon() { return (<svg {...ICON} fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" /><circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" /><circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" /></svg>); }
 
 // A miniature page with a dot where the number will sit (position picker).
@@ -1688,6 +1699,25 @@ export default function PdfFillerApp() {
     color: "#333333",
     skipFirst: false, // leave the first page (a cover, say) bare; it still counts
   });
+
+  // Password protection: applied last, at download time. pdf-lib can't encrypt,
+  // so the finished PDF is sent to the server's add-password endpoint (AES-256)
+  // and that encrypted copy is what gets downloaded. Off until turned on from
+  // the Protect button in the top bar (or the More menu on narrow screens).
+  const [showProtectPanel, setShowProtectPanel] = useState(false);
+  const [protect, setProtect] = useState({
+    enabled: false,
+    password: "",
+    confirm: "",
+    reveal: false, // show the typed password instead of dots
+  });
+  const protectMismatch = protect.confirm !== "" && protect.password !== protect.confirm;
+
+  // Convert to images: the finished document, one picture per page, as a .zip.
+  // Opened from the To images button in the top bar (or the More menu on narrow screens).
+  const [showImagePanel, setShowImagePanel] = useState(false);
+  const [imageFormat, setImageFormat] = useState(IMAGE_FORMATS[0].id);
+  const [isExportingImages, setIsExportingImages] = useState(false);
 
   // The text stamped on the page that sits at `position` (1-based) in the
   // downloaded PDF, or null when that page gets no number.
@@ -2770,280 +2800,339 @@ export default function PdfFillerApp() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo, activeTool]);
 
-  // --- Bake everything into the PDF and download ----------------------------
-  const handleDownload = async () => {
-    if (!pdfBytes) return;
-    setIsExporting(true);
-    setError("");
-    try {
-      const pdf = await PDFDocument.load(pdfBytes);
-      const fontCache = {};
-      const getFont = async (fontFamily, bold, italic) => {
-        const key = resolveStandardFont(fontFamily, bold, italic);
-        if (!fontCache[key]) {
-          fontCache[key] = await pdf.embedFont(StandardFonts[key]);
-        }
-        return fontCache[key];
-      };
-      // Pages added in the editor are tacked on after the file's own, in id
-      // order (which is also the order they were made), so page N is
-      // pages[N - 1] whether it came from the file or was added here. Where
-      // each one really sits is settled when the document is saved, below.
-      // Each one is copied — real content, not a blank sheet — out of the file
-      // it was uploaded from; a source used by more than one added page (a
-      // multi-page PDF that was inserted) is only loaded into pdf-lib once.
-      const srcDocCache = {};
-      for (const added of [...addedPages].sort((a, b) => a.id - b.id)) {
-        const source = addedSources[added.sourceId];
-        if (!source) continue; // shouldn't happen, but don't let a missing source break the export
-        if (!srcDocCache[added.sourceId]) {
-          srcDocCache[added.sourceId] = await PDFDocument.load(source.bytes);
-        }
-        const [copied] = await pdf.copyPages(srcDocCache[added.sourceId], [added.sourcePageIndex]);
-        pdf.addPage(copied);
+  // --- Bake everything into a finished PDF ------------------------------------
+  // Every edit, the watermark and the page numbers drawn in, deleted pages gone,
+  // added pages placed and any reordering applied. Download and Convert to images
+  // both start from this, so what you get is exactly what the editor shows.
+  // Returns the PDF's bytes; the callers handle errors.
+  const buildEditedPdfBytes = async () => {
+    const pdf = await PDFDocument.load(pdfBytes);
+    const fontCache = {};
+    const getFont = async (fontFamily, bold, italic) => {
+      const key = resolveStandardFont(fontFamily, bold, italic);
+      if (!fontCache[key]) {
+        fontCache[key] = await pdf.embedFont(StandardFonts[key]);
       }
-      const pages = pdf.getPages();
+      return fontCache[key];
+    };
+    // Pages added in the editor are tacked on after the file's own, in id
+    // order (which is also the order they were made), so page N is
+    // pages[N - 1] whether it came from the file or was added here. Where
+    // each one really sits is settled when the document is saved, below.
+    // Each one is copied — real content, not a blank sheet — out of the file
+    // it was uploaded from; a source used by more than one added page (a
+    // multi-page PDF that was inserted) is only loaded into pdf-lib once.
+    const srcDocCache = {};
+    for (const added of [...addedPages].sort((a, b) => a.id - b.id)) {
+      const source = addedSources[added.sourceId];
+      if (!source) continue; // shouldn't happen, but don't let a missing source break the export
+      if (!srcDocCache[added.sourceId]) {
+        srcDocCache[added.sourceId] = await PDFDocument.load(source.bytes);
+      }
+      const [copied] = await pdf.copyPages(srcDocCache[added.sourceId], [added.sourcePageIndex]);
+      pdf.addPage(copied);
+    }
+    const pages = pdf.getPages();
 
-      // A page is shown turned by its own /Rotate plus any turn added here, and
-      // everything below is placed on the page as shown. So: write the final
-      // rotation onto each turned page, and give every page a frame that maps
-      // on-screen coordinates back into the page's own unrotated space (which
-      // is what pdf-lib draws in).
-      const frames = pages.map((page, i) => {
-        const turn = rotations[i + 1] || 0;
-        const own = page.getRotation().angle;
-        const shown = normalizeRotation((own % 90 === 0 ? own : 0) + turn); // pdf.js ignores odd angles too
-        if (turn) page.setRotation(degrees(shown));
-        return makePageFrame(page, shown);
+    // A page is shown turned by its own /Rotate plus any turn added here, and
+    // everything below is placed on the page as shown. So: write the final
+    // rotation onto each turned page, and give every page a frame that maps
+    // on-screen coordinates back into the page's own unrotated space (which
+    // is what pdf-lib draws in).
+    const frames = pages.map((page, i) => {
+      const turn = rotations[i + 1] || 0;
+      const own = page.getRotation().angle;
+      const shown = normalizeRotation((own % 90 === 0 ? own : 0) + turn); // pdf.js ignores odd angles too
+      if (turn) page.setRotation(degrees(shown));
+      return makePageFrame(page, shown);
+    });
+
+    // Pages deleted in the editor are dropped at the very end (see below), so
+    // nothing is drawn on them here; the loops skip anything placed on them.
+
+    // Highlights go down first, as translucent rectangles under everything
+    // else, so the page's own text (and any edits made to it) stay legible
+    // on top of the marker color.
+    for (const hl of highlights.filter(onKeptPage)) {
+      const page = pages[hl.page - 1];
+      if (!page) continue;
+      const frame = frames[hl.page - 1];
+      const { width, height } = frame;
+      const { r, g, b } = hexToRgb01(hl.color);
+      const rectWidth = hl.widthRatio * width;
+      const rectHeight = hl.heightRatio * height;
+      const x = hl.xRatio * width;
+      const y = height - hl.yRatio * height - rectHeight;
+
+      page.drawRectangle({
+        ...frame.place(x, y),
+        width: rectWidth,
+        height: rectHeight,
+        color: rgb(r, g, b),
+        opacity: highlightOpacityOf(hl),
+      });
+    }
+
+    // Edited text is baked in next, as if it were part of the page's own
+    // content: cover the original run with a solid rectangle, then draw
+    // the replacement text on top of it.
+    for (const edit of textEdits.filter(onKeptPage)) {
+      const page = pages[edit.page - 1];
+      if (!page) continue;
+      const frame = frames[edit.page - 1];
+      const { width, height } = frame;
+      const font = await getFont(edit.fontFamily, edit.bold, edit.italic);
+      const { r, g, b } = hexToRgb01(edit.color);
+      const { r: br, g: bgCol, b: bb } = hexToRgb01(edit.bgColor || DEFAULT_BG_COLOR);
+
+      const textToDraw = edit.text || "";
+      const textWidth = font.widthOfTextAtSize(textToDraw || " ", edit.fontSize);
+      // The text starts exactly where the original did; the cover rectangle
+      // is what gets 1pt of breathing room on each side, so no anti-aliased
+      // fringe of the old text peeks out without shifting the new text.
+      const COVER_PAD = 1;
+      const textX = edit.xRatio * width;
+      const rectX = textX - COVER_PAD;
+      const rectWidth = Math.max(edit.boxWidthRatio * width, textWidth) + COVER_PAD * 2;
+      const rectHeight = Math.max(edit.boxHeightRatio * height, edit.fontSize * EDIT_LINE_HEIGHT_FACTOR);
+      const rectTopY = edit.yRatio * height;
+      const rectBottomY = height - rectTopY - rectHeight;
+
+      page.drawRectangle({
+        ...frame.place(rectX, rectBottomY),
+        width: rectWidth,
+        height: rectHeight,
+        color: rgb(br, bgCol, bb),
       });
 
-      // Pages deleted in the editor are dropped at the very end (see below), so
-      // nothing is drawn on them here; the loops skip anything placed on them.
-
-      // Highlights go down first, as translucent rectangles under everything
-      // else, so the page's own text (and any edits made to it) stay legible
-      // on top of the marker color.
-      for (const hl of highlights.filter(onKeptPage)) {
-        const page = pages[hl.page - 1];
-        if (!page) continue;
-        const frame = frames[hl.page - 1];
-        const { width, height } = frame;
-        const { r, g, b } = hexToRgb01(hl.color);
-        const rectWidth = hl.widthRatio * width;
-        const rectHeight = hl.heightRatio * height;
-        const x = hl.xRatio * width;
-        const y = height - hl.yRatio * height - rectHeight;
-
-        page.drawRectangle({
-          ...frame.place(x, y),
-          width: rectWidth,
-          height: rectHeight,
-          color: rgb(r, g, b),
-          opacity: highlightOpacityOf(hl),
-        });
-      }
-
-      // Edited text is baked in next, as if it were part of the page's own
-      // content: cover the original run with a solid rectangle, then draw
-      // the replacement text on top of it.
-      for (const edit of textEdits.filter(onKeptPage)) {
-        const page = pages[edit.page - 1];
-        if (!page) continue;
-        const frame = frames[edit.page - 1];
-        const { width, height } = frame;
-        const font = await getFont(edit.fontFamily, edit.bold, edit.italic);
-        const { r, g, b } = hexToRgb01(edit.color);
-        const { r: br, g: bgCol, b: bb } = hexToRgb01(edit.bgColor || DEFAULT_BG_COLOR);
-
-        const textToDraw = edit.text || "";
-        const textWidth = font.widthOfTextAtSize(textToDraw || " ", edit.fontSize);
-        // The text starts exactly where the original did; the cover rectangle
-        // is what gets 1pt of breathing room on each side, so no anti-aliased
-        // fringe of the old text peeks out without shifting the new text.
-        const COVER_PAD = 1;
-        const textX = edit.xRatio * width;
-        const rectX = textX - COVER_PAD;
-        const rectWidth = Math.max(edit.boxWidthRatio * width, textWidth) + COVER_PAD * 2;
-        const rectHeight = Math.max(edit.boxHeightRatio * height, edit.fontSize * EDIT_LINE_HEIGHT_FACTOR);
-        const rectTopY = edit.yRatio * height;
-        const rectBottomY = height - rectTopY - rectHeight;
-
-        page.drawRectangle({
-          ...frame.place(rectX, rectBottomY),
-          width: rectWidth,
-          height: rectHeight,
-          color: rgb(br, bgCol, bb),
-        });
-
-        if (textToDraw.trim()) {
-          const baselineY = height - edit.baselineYRatio * height;
-          page.drawText(textToDraw, {
-            ...frame.place(textX, baselineY),
-            size: edit.fontSize,
-            font,
-            color: rgb(r, g, b),
-          });
-        }
-      }
-
-      for (const field of fields.filter(onKeptPage)) {
-        if (!field.text.trim()) continue;
-        const page = pages[field.page - 1];
-        if (!page) continue;
-        const frame = frames[field.page - 1];
-        const { width, height } = frame;
-        const font = await getFont(field.fontFamily, field.bold, field.italic);
-        const { r, g, b } = hexToRgb01(field.color);
-
-        // Convert the ratio position (top-left origin, screen space) into
-        // PDF coordinates (bottom-left origin).
-        const x = field.xRatio * width;
-        const y = height - field.yRatio * height - field.fontSize * 0.8;
-
-        page.drawText(field.text, {
-          ...frame.place(x, y),
-          size: field.fontSize,
+      if (textToDraw.trim()) {
+        const baselineY = height - edit.baselineYRatio * height;
+        page.drawText(textToDraw, {
+          ...frame.place(textX, baselineY),
+          size: edit.fontSize,
           font,
           color: rgb(r, g, b),
         });
-
-        if (field.underline) {
-          const textWidth = font.widthOfTextAtSize(field.text, field.fontSize);
-          const underlineY = y - field.fontSize * 0.12;
-          page.drawLine({
-            start: frame.toPage(x, underlineY),
-            end: frame.toPage(x + textWidth, underlineY),
-            thickness: Math.max(1, field.fontSize * 0.05),
-            color: rgb(r, g, b),
-          });
-        }
       }
+    }
 
-      for (const sig of signatures.filter(onKeptPage)) {
-        const page = pages[sig.page - 1];
-        if (!page) continue;
-        const frame = frames[sig.page - 1];
+    for (const field of fields.filter(onKeptPage)) {
+      if (!field.text.trim()) continue;
+      const page = pages[field.page - 1];
+      if (!page) continue;
+      const frame = frames[field.page - 1];
+      const { width, height } = frame;
+      const font = await getFont(field.fontFamily, field.bold, field.italic);
+      const { r, g, b } = hexToRgb01(field.color);
+
+      // Convert the ratio position (top-left origin, screen space) into
+      // PDF coordinates (bottom-left origin).
+      const x = field.xRatio * width;
+      const y = height - field.yRatio * height - field.fontSize * 0.8;
+
+      page.drawText(field.text, {
+        ...frame.place(x, y),
+        size: field.fontSize,
+        font,
+        color: rgb(r, g, b),
+      });
+
+      if (field.underline) {
+        const textWidth = font.widthOfTextAtSize(field.text, field.fontSize);
+        const underlineY = y - field.fontSize * 0.12;
+        page.drawLine({
+          start: frame.toPage(x, underlineY),
+          end: frame.toPage(x + textWidth, underlineY),
+          thickness: Math.max(1, field.fontSize * 0.05),
+          color: rgb(r, g, b),
+        });
+      }
+    }
+
+    for (const sig of signatures.filter(onKeptPage)) {
+      const page = pages[sig.page - 1];
+      if (!page) continue;
+      const frame = frames[sig.page - 1];
+      const { width, height } = frame;
+      const pngBytes = await fetch(sig.dataUrl).then((res) => res.arrayBuffer());
+      const pngImage = await pdf.embedPng(pngBytes);
+
+      const drawWidth = sig.widthRatio * width;
+      const drawHeight = drawWidth * sig.aspectRatio;
+      const x = sig.xRatio * width;
+      const y = height - sig.yRatio * height - drawHeight;
+
+      page.drawImage(pngImage, { ...frame.place(x, y), width: drawWidth, height: drawHeight });
+    }
+
+    for (const imgItem of images.filter(onKeptPage)) {
+      const page = pages[imgItem.page - 1];
+      if (!page) continue;
+      try {
+        const frame = frames[imgItem.page - 1];
         const { width, height } = frame;
-        const pngBytes = await fetch(sig.dataUrl).then((res) => res.arrayBuffer());
-        const pngImage = await pdf.embedPng(pngBytes);
+        const bytes = await fetch(imgItem.dataUrl).then((res) => res.arrayBuffer());
+        const isPng = imgItem.dataUrl.startsWith("data:image/png");
+        const embeddedImage = isPng ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
 
-        const drawWidth = sig.widthRatio * width;
-        const drawHeight = drawWidth * sig.aspectRatio;
-        const x = sig.xRatio * width;
-        const y = height - sig.yRatio * height - drawHeight;
+        const drawWidth = imgItem.widthRatio * width;
+        const drawHeight = drawWidth * imgItem.aspectRatio;
+        const centerX = imgItem.xRatio * width + drawWidth / 2;
+        const centerY = height - imgItem.yRatio * height - drawHeight / 2;
+        // Our rotation is stored clockwise-positive (like CSS transform);
+        // pdf-lib's is counter-clockwise-positive, hence the negation.
+        const pdfAngle = -(imgItem.rotation || 0);
+        const anchor = rotatedAnchor(centerX, centerY, drawWidth, drawHeight, pdfAngle);
 
-        page.drawImage(pngImage, { ...frame.place(x, y), width: drawWidth, height: drawHeight });
+        page.drawImage(embeddedImage, {
+          ...frame.place(anchor.x, anchor.y, pdfAngle),
+          width: drawWidth,
+          height: drawHeight,
+        });
+      } catch (imgErr) {
+        console.error("Couldn't embed one of the images", imgErr);
       }
+    }
 
-      for (const imgItem of images.filter(onKeptPage)) {
-        const page = pages[imgItem.page - 1];
-        if (!page) continue;
+    // Page numbers go on after everything the person placed, but under the
+    // watermark.
+    if (pageNumbers.enabled) {
+      const pnFont = await getFont("Helvetica", false, false);
+      const { r, g, b } = hexToRgb01(pageNumbers.color);
+      const spot = PAGE_NUMBER_POSITIONS.find((p) => p.id === pageNumbers.position) || DEFAULT_PAGE_NUMBER_POSITION;
+      const pnSize = pageNumbers.fontSize;
+
+      for (const [pageIdx, page] of pages.entries()) {
+        const label = pageNumberText(pageLabel(pageIdx + 1)); // null on deleted pages
+        if (!label) continue;
+        const { width, height } = frames[pageIdx];
+        const textWidth = pnFont.widthOfTextAtSize(label, pnSize);
+        const x =
+          spot.h === "left"
+            ? PAGE_NUMBER_MARGIN_PT
+            : spot.h === "right"
+            ? width - PAGE_NUMBER_MARGIN_PT - textWidth
+            : (width - textWidth) / 2;
+        const y =
+          spot.v === "top"
+            ? height - PAGE_NUMBER_MARGIN_PT - HELVETICA_DIGIT_HEIGHT * pnSize
+            : PAGE_NUMBER_MARGIN_PT;
+
+        page.drawText(label, {
+          ...frames[pageIdx].place(x, y),
+          size: pnSize,
+          font: pnFont,
+          color: rgb(r, g, b),
+        });
+      }
+    }
+
+    // Watermark goes on last, on top of everything else, on every page.
+    if (watermark.enabled && watermark.text.trim()) {
+      const wmFont = await getFont("Helvetica", false, false);
+      const { r, g, b } = hexToRgb01(watermark.color);
+      const wmText = watermark.text;
+      const wmSize = watermark.fontSize;
+
+      for (const [pageIdx, page] of pages.entries()) {
+        if (deletedSet.has(pageIdx + 1)) continue;
+        const frame = frames[pageIdx];
+        const { width, height } = frame;
+        const textWidth = wmFont.widthOfTextAtSize(wmText, wmSize);
+        // Same trick used for rotated images: solve for the anchor point
+        // that keeps the text's own center pinned to the page's center
+        // once pdf-lib rotates it around that anchor.
+        const anchor = rotatedAnchor(width / 2, height / 2, textWidth, wmSize, watermark.rotation);
+
+        page.drawText(wmText, {
+          ...frame.place(anchor.x, anchor.y, watermark.rotation),
+          size: wmSize,
+          font: wmFont,
+          color: rgb(r, g, b),
+          opacity: watermark.opacity,
+        });
+      }
+    }
+
+    let outBytes = await pdf.save();
+    // Keep the pages that are left, in the order they're shown: this is what
+    // drops deleted pages, puts added ones where they were placed and applies
+    // any drag-and-drop reordering.
+    if (deletedSet.size > 0 || addedPages.length > 0 || pageOrder !== null) {
+      outBytes = await arrangePages(outBytes, visiblePages.map((n) => n - 1));
+    }
+    return outBytes;
+  };
+
+  // --- Download as a PDF ------------------------------------------------------
+  const handleDownload = async () => {
+    if (!pdfBytes) return;
+    // Check the password first so nothing is built (or sent anywhere) with a
+    // password that's missing or mistyped.
+    if (protect.enabled) {
+      const problem = !protect.password
+        ? "Enter a password to protect the PDF, or turn Protect off."
+        : protect.password !== protect.confirm
+          ? "The two passwords don't match."
+          : "";
+      if (problem) {
+        setError(problem);
+        setShowProtectPanel(true);
+        return;
+      }
+    }
+    setIsExporting(true);
+    setError("");
+    try {
+      const outBytes = await buildEditedPdfBytes();
+      if (protect.enabled) {
+        // Never fall back to the unprotected copy if this fails: the person asked
+        // for a password, so an error is better than a PDF anyone can open.
+        // The helper downloads the result itself, as "<name>_protected.pdf".
+        const toProtect = new File([outBytes], `${fileName || "document"}.pdf`, { type: "application/pdf" });
         try {
-          const frame = frames[imgItem.page - 1];
-          const { width, height } = frame;
-          const bytes = await fetch(imgItem.dataUrl).then((res) => res.arrayBuffer());
-          const isPng = imgItem.dataUrl.startsWith("data:image/png");
-          const embeddedImage = isPng ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
-
-          const drawWidth = imgItem.widthRatio * width;
-          const drawHeight = drawWidth * imgItem.aspectRatio;
-          const centerX = imgItem.xRatio * width + drawWidth / 2;
-          const centerY = height - imgItem.yRatio * height - drawHeight / 2;
-          // Our rotation is stored clockwise-positive (like CSS transform);
-          // pdf-lib's is counter-clockwise-positive, hence the negation.
-          const pdfAngle = -(imgItem.rotation || 0);
-          const anchor = rotatedAnchor(centerX, centerY, drawWidth, drawHeight, pdfAngle);
-
-          page.drawImage(embeddedImage, {
-            ...frame.place(anchor.x, anchor.y, pdfAngle),
-            width: drawWidth,
-            height: drawHeight,
-          });
-        } catch (imgErr) {
-          console.error("Couldn't embed one of the images", imgErr);
+          await addPasswordToPdf(toProtect, protect.password);
+        } catch (err) {
+          console.error(err);
+          setError("Couldn't add the password. Check your connection and try again.");
         }
+      } else {
+        const outFileName = `${fileName || "document"}-filled.pdf`;
+        const dataUrl = bytesToDownloadableDataUrl(outBytes, "application/pdf", outFileName);
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = outFileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       }
-
-      // Page numbers go on after everything the person placed, but under the
-      // watermark.
-      if (pageNumbers.enabled) {
-        const pnFont = await getFont("Helvetica", false, false);
-        const { r, g, b } = hexToRgb01(pageNumbers.color);
-        const spot = PAGE_NUMBER_POSITIONS.find((p) => p.id === pageNumbers.position) || DEFAULT_PAGE_NUMBER_POSITION;
-        const pnSize = pageNumbers.fontSize;
-
-        for (const [pageIdx, page] of pages.entries()) {
-          const label = pageNumberText(pageLabel(pageIdx + 1)); // null on deleted pages
-          if (!label) continue;
-          const { width, height } = frames[pageIdx];
-          const textWidth = pnFont.widthOfTextAtSize(label, pnSize);
-          const x =
-            spot.h === "left"
-              ? PAGE_NUMBER_MARGIN_PT
-              : spot.h === "right"
-              ? width - PAGE_NUMBER_MARGIN_PT - textWidth
-              : (width - textWidth) / 2;
-          const y =
-            spot.v === "top"
-              ? height - PAGE_NUMBER_MARGIN_PT - HELVETICA_DIGIT_HEIGHT * pnSize
-              : PAGE_NUMBER_MARGIN_PT;
-
-          page.drawText(label, {
-            ...frames[pageIdx].place(x, y),
-            size: pnSize,
-            font: pnFont,
-            color: rgb(r, g, b),
-          });
-        }
-      }
-
-      // Watermark goes on last, on top of everything else, on every page.
-      if (watermark.enabled && watermark.text.trim()) {
-        const wmFont = await getFont("Helvetica", false, false);
-        const { r, g, b } = hexToRgb01(watermark.color);
-        const wmText = watermark.text;
-        const wmSize = watermark.fontSize;
-
-        for (const [pageIdx, page] of pages.entries()) {
-          if (deletedSet.has(pageIdx + 1)) continue;
-          const frame = frames[pageIdx];
-          const { width, height } = frame;
-          const textWidth = wmFont.widthOfTextAtSize(wmText, wmSize);
-          // Same trick used for rotated images: solve for the anchor point
-          // that keeps the text's own center pinned to the page's center
-          // once pdf-lib rotates it around that anchor.
-          const anchor = rotatedAnchor(width / 2, height / 2, textWidth, wmSize, watermark.rotation);
-
-          page.drawText(wmText, {
-            ...frame.place(anchor.x, anchor.y, watermark.rotation),
-            size: wmSize,
-            font: wmFont,
-            color: rgb(r, g, b),
-            opacity: watermark.opacity,
-          });
-        }
-      }
-
-      let outBytes = await pdf.save();
-      // Keep the pages that are left, in the order they're shown: this is what
-      // drops deleted pages, puts added ones where they were placed and applies
-      // any drag-and-drop reordering.
-      if (deletedSet.size > 0 || addedPages.length > 0 || pageOrder !== null) {
-        outBytes = await arrangePages(outBytes, visiblePages.map((n) => n - 1));
-      }
-      const outFileName = `${fileName || "document"}-filled.pdf`;
-      const dataUrl = bytesToDownloadableDataUrl(outBytes, "application/pdf", outFileName);
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = outFileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
     } catch (err) {
       console.error(err);
       setError("Something went wrong while generating the PDF.");
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  // --- Download as images -----------------------------------------------------
+  // The same finished document as Download, turned into one image per page: it's
+  // sent to the server's pdf-to-images endpoint, and pdfToImages (api/client.js)
+  // downloads the .zip that comes back. A password doesn't apply to images, so
+  // Protect is ignored here.
+  const handleExportImages = async () => {
+    if (!pdfBytes || isExporting || isExportingImages) return;
+    setIsExportingImages(true);
+    setError("");
+    try {
+      const outBytes = await buildEditedPdfBytes();
+      const pdfFile = new File([outBytes], `${fileName || "document"}.pdf`, { type: "application/pdf" });
+      await pdfToImages([pdfFile], imageFormat);
+      setShowImagePanel(false);
+    } catch (err) {
+      console.error(err);
+      setError("Couldn't convert the PDF to images. Check your connection and try again.");
+    } finally {
+      setIsExportingImages(false);
     }
   };
 
@@ -3738,11 +3827,11 @@ export default function PdfFillerApp() {
 
         <button
           onClick={handleDownload}
-          disabled={!pdfDoc || isExporting}
+          disabled={!pdfDoc || isExporting || isExportingImages}
           className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white text-xs sm:text-sm font-medium px-2.5 sm:px-3.5 py-1.5 rounded-md"
         >
           <DownloadIcon />
-          <span className="hidden sm:inline">{isExporting ? "Preparing…" : "Download"}</span>
+          <span className="hidden sm:inline">{isExporting ? (protect.enabled ? "Protecting…" : "Preparing…") : "Download"}</span>
         </button>
 
         <div className="relative">
@@ -3868,6 +3957,30 @@ export default function PdfFillerApp() {
           <span className="hidden lg:inline">Page numbers</span>
         </button>
 
+        <button
+          onClick={() => setShowProtectPanel((v) => !v)}
+          disabled={!pdfDoc}
+          aria-expanded={showProtectPanel}
+          className={`hidden sm:flex items-center gap-1.5 p-1.5 lg:px-2.5 rounded text-sm hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent ${
+            protect.enabled ? "text-blue-400" : ""
+          }`}
+          title="Protect with a password"
+        >
+          <LockIcon />
+          <span className="hidden lg:inline">Protect</span>
+        </button>
+
+        <button
+          onClick={() => setShowImagePanel((v) => !v)}
+          disabled={!pdfDoc}
+          aria-expanded={showImagePanel}
+          className="hidden sm:flex items-center gap-1.5 p-1.5 lg:px-2.5 rounded text-sm hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent"
+          title="Convert to images"
+        >
+          <ImageExportIcon />
+          <span className="hidden lg:inline">To images</span>
+        </button>
+
         <div className="relative">
           <button
             onClick={() => setShowMoreMenu((v) => !v)}
@@ -3899,6 +4012,27 @@ export default function PdfFillerApp() {
                 >
                   Page numbers
                   {pageNumbers.enabled && <span className="ml-2 text-xs text-blue-600">On</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    setShowProtectPanel(true);
+                  }}
+                  disabled={!pdfDoc}
+                  className="sm:hidden w-full text-left px-3 py-2.5 text-sm hover:bg-neutral-50 disabled:opacity-40"
+                >
+                  Protect PDF
+                  {protect.enabled && <span className="ml-2 text-xs text-blue-600">On</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    setShowImagePanel(true);
+                  }}
+                  disabled={!pdfDoc}
+                  className="sm:hidden w-full text-left px-3 py-2.5 text-sm hover:bg-neutral-50 disabled:opacity-40"
+                >
+                  Convert to images
                 </button>
               </div>
             </>
@@ -4049,6 +4183,143 @@ export default function PdfFillerApp() {
                 {pageNumbers.enabled
                   ? "Added to every page when you download."
                   : "Turn on to add numbers when you download."}
+              </p>
+            </div>
+          </>
+        )}
+
+        {showProtectPanel && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setShowProtectPanel(false)} />
+            <div
+              role="dialog"
+              aria-label="Protect PDF"
+              className="absolute right-2 top-full mt-1 w-72 max-w-[calc(100vw-1rem)] max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-white text-neutral-800 rounded-md shadow-lg border border-neutral-200 p-3 z-40 space-y-2"
+            >
+              <button
+                type="button"
+                role="switch"
+                aria-checked={protect.enabled}
+                onClick={() => setProtect((p) => ({ ...p, enabled: !p.enabled }))}
+                className="w-full min-h-[44px] flex items-center justify-between text-sm font-medium touch-manipulation"
+              >
+                Password protect
+                <span
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    protect.enabled ? "bg-blue-600" : "bg-neutral-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                      protect.enabled ? "translate-x-5" : ""
+                    }`}
+                  />
+                </span>
+              </button>
+
+              <div className={`space-y-3 ${protect.enabled ? "" : "opacity-50"}`}>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="protect-password" className="block text-xs text-neutral-500">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setProtect((p) => ({ ...p, reveal: !p.reveal }))}
+                      disabled={!protect.enabled}
+                      className="text-xs text-blue-600 disabled:text-neutral-400"
+                    >
+                      {protect.reveal ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  <input
+                    id="protect-password"
+                    type={protect.reveal ? "text" : "password"}
+                    value={protect.password}
+                    onChange={(e) => setProtect((p) => ({ ...p, password: e.target.value }))}
+                    disabled={!protect.enabled}
+                    autoComplete="new-password"
+                    placeholder="Enter a password"
+                    className="w-full text-sm border border-neutral-300 rounded px-2 py-1.5 disabled:bg-neutral-50"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="protect-confirm" className="block text-xs text-neutral-500 mb-1">
+                    Confirm password
+                  </label>
+                  <input
+                    id="protect-confirm"
+                    type={protect.reveal ? "text" : "password"}
+                    value={protect.confirm}
+                    onChange={(e) => setProtect((p) => ({ ...p, confirm: e.target.value }))}
+                    disabled={!protect.enabled}
+                    autoComplete="new-password"
+                    placeholder="Enter it again"
+                    aria-invalid={protectMismatch}
+                    className={`w-full text-sm border rounded px-2 py-1.5 disabled:bg-neutral-50 ${
+                      protectMismatch ? "border-red-400" : "border-neutral-300"
+                    }`}
+                  />
+                  {protectMismatch && <p className="text-xs text-red-600 mt-1">The passwords don't match.</p>}
+                </div>
+              </div>
+
+              <p className="text-[11px] text-neutral-400">
+                {protect.enabled
+                  ? "Anyone opening the downloaded PDF will need this password, and it can't be recovered if you lose it. The PDF is encrypted (AES-256) on our server, so it's uploaded when you download."
+                  : "Turn on to lock the PDF with a password when you download."}
+              </p>
+            </div>
+          </>
+        )}
+
+        {showImagePanel && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setShowImagePanel(false)} />
+            <div
+              role="dialog"
+              aria-label="Convert to images"
+              className="absolute right-2 top-full mt-1 w-72 max-w-[calc(100vw-1rem)] max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-white text-neutral-800 rounded-md shadow-lg border border-neutral-200 p-3 z-40 space-y-3"
+            >
+              <p className="text-sm font-medium">Convert to images</p>
+
+              <div role="radiogroup" aria-label="Image format" className="grid grid-cols-2 gap-2">
+                {IMAGE_FORMATS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={imageFormat === f.id}
+                    onClick={() => setImageFormat(f.id)}
+                    className={`min-h-[44px] rounded-md border px-2 py-1.5 text-sm touch-manipulation ${
+                      imageFormat === f.id
+                        ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
+                        : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+                    }`}
+                  >
+                    <span className="block">{f.label}</span>
+                    <span className="block text-[11px] font-normal text-neutral-500">{f.hint}</span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleExportImages}
+                disabled={!pdfDoc || visiblePages.length === 0 || isExporting || isExportingImages}
+                className="w-full min-h-[44px] flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white text-sm font-medium rounded-md touch-manipulation"
+              >
+                <ImageExportIcon />
+                {isExportingImages
+                  ? "Converting…"
+                  : `Download ${visiblePages.length} ${visiblePages.length === 1 ? "image" : "images"}`}
+              </button>
+
+              <p className="text-[11px] text-neutral-400">
+                One image per page, saved together in a .zip. It matches what you see here: your edits, watermark and
+                page numbers are included and deleted pages are left out. A password isn't applied to images. The PDF is
+                uploaded to our server to be converted.
               </p>
             </div>
           </>
