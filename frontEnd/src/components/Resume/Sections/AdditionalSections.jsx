@@ -2,6 +2,7 @@ import React from 'react';
 import LanguageLevelSelect from './LanguageLevelSelect';
 import AchievementsField from './AchievementsField';
 import SpellCheckPanel from './SpellCheckPanel';
+import MonthYearPicker from './MonthYearPicker';
 
 /* Icons */
 const IconPlus = () => (
@@ -88,6 +89,20 @@ const AddRowButton = ({ onClick, label, disabled = false, disabledHint }) => (
 const hasEmptyRow = (items, field) => items.some((item) => !String(item[field] || '').trim());
 
 const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+/* A certificate keeps one `date` string ("12 2020", the same shape the education dates use);
+   the shared picker works with a month and a year, so convert in both directions.
+   Older typed values such as "12/2020", "2020-12", "Dec 2020" or "2020" are read as well. */
+const splitDate = (value) => {
+  const t = String(value || '').trim();
+  let m;
+  if ((m = /^(\d{1,2})[\s/.-](\d{4})$/.exec(t))) return { month: m[1], year: m[2] };
+  if ((m = /^(\d{4})[\s/.-](\d{1,2})$/.exec(t))) return { month: m[2], year: m[1] };
+  if ((m = /^([A-Za-z]{3,9})\.?[\s/.-]*(\d{4})$/.exec(t))) return { month: m[1], year: m[2] };
+  if ((m = /^(\d{4})$/.exec(t))) return { month: '', year: m[1] };
+  return { month: '', year: '' };
+};
+const joinDate = (month, year) => [month, year].filter(Boolean).join(' ');
 
 /* A rich-text field with the live spelling and grammar panel underneath it.
    The panel stays mounted but hidden while the field is empty, so it keeps its state and does not
@@ -245,13 +260,16 @@ const AdditionalSections = ({ data, updateData, updateItems }) => {
                   placeholder="Certificate name"
                   className={`${textInputClass} sm:w-2/3`}
                 />
-                <input
-                  type="text"
-                  value={item.date || ''}
-                  onChange={(e) => setItem('certificates', certificateItems, index, 'date', e.target.value)}
-                  placeholder="Date earned"
-                  className={`${textInputClass} sm:w-1/3`}
-                />
+                <div className="sm:w-1/3">
+                  <MonthYearPicker
+                    label="Date earned"
+                    month={splitDate(item.date).month}
+                    year={splitDate(item.date).year}
+                    align="right"
+                    heightClass="h-[30px]"
+                    onChange={({ month, year }) => setItem('certificates', certificateItems, index, 'date', joinDate(month, year))}
+                  />
+                </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input

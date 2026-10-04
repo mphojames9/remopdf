@@ -54,6 +54,14 @@ const IMAGE_FORMATS = [
   { id: "jpeg", label: "JPG", hint: "Smaller files" },
 ];
 
+// --- Download options ---------------------------------------------------------
+// How the finished PDF is saved: merged into one file, or split into one PDF per
+// page (the pages arrive together in a single .zip).
+const DOWNLOAD_MODES = [
+  { id: "merge", label: "Merge into one file", hint: "Every page together in a single PDF" },
+  { id: "split", label: "Split into pages", hint: "One PDF per page, saved in a .zip" },
+];
+
 // `startAt` is kept as typed so the box can be cleared while editing.
 function parsePageNumberStart(raw) {
   const n = parseInt(raw, 10);
@@ -514,6 +522,114 @@ function bytesToBase64(bytes) {
 function bytesToDownloadableDataUrl(bytes, mimeType, filename) {
   const base64 = bytesToBase64(bytes);
   return `data:${mimeType};name=${encodeURIComponent(filename)};base64,${base64}`;
+}
+
+// Saves a Blob under `filename`. Used for the .zip of separate pages, which can
+// be far larger than a data: URL handles comfortably.
+function triggerBlobDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// One single-page PDF per page of `bytes`, in order. Like arrangePages, each page
+// is copied into a fresh document so it carries only what that page uses.
+async function splitPdfIntoPages(bytes) {
+  const src = await PDFDocument.load(bytes);
+  const out = [];
+  for (let i = 0; i < src.getPageCount(); i++) {
+    const doc = await PDFDocument.create();
+    const [page] = await doc.copyPages(src, [i]);
+    doc.addPage(page);
+    copyDocumentInfo(src, doc);
+    out.push(await doc.save());
+  }
+  return out;
+}
+
+// A minimal .zip writer (files stored, not compressed — PDFs are already
+// compressed, so deflating them again would only cost time). Keeps the split
+// download free of an extra dependency.
+const CRC32_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CRC32_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+// files: [{ name, bytes: Uint8Array }]  ->  Blob (application/zip)
+function buildZip(files) {
+  const encoder = new TextEncoder();
+  const now = new Date();
+  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  const body = [];
+  const directory = [];
+  let offset = 0;
+
+  for (const { name, bytes } of files) {
+    const nameBytes = encoder.encode(name);
+    const crc = crc32(bytes);
+
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true); // local file header
+    lv.setUint16(4, 20, true); // version needed
+    lv.setUint16(6, 0x0800, true); // UTF-8 file name
+    lv.setUint16(8, 0, true); // method: stored
+    lv.setUint16(10, dosTime, true);
+    lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, bytes.length, true); // compressed size
+    lv.setUint32(22, bytes.length, true); // uncompressed size
+    lv.setUint16(26, nameBytes.length, true);
+    local.set(nameBytes, 30);
+    body.push(local, bytes);
+
+    const entry = new Uint8Array(46 + nameBytes.length);
+    const ev = new DataView(entry.buffer);
+    ev.setUint32(0, 0x02014b50, true); // central directory header
+    ev.setUint16(4, 20, true); // version made by
+    ev.setUint16(6, 20, true); // version needed
+    ev.setUint16(8, 0x0800, true);
+    ev.setUint16(10, 0, true);
+    ev.setUint16(12, dosTime, true);
+    ev.setUint16(14, dosDate, true);
+    ev.setUint32(16, crc, true);
+    ev.setUint32(20, bytes.length, true);
+    ev.setUint32(24, bytes.length, true);
+    ev.setUint16(28, nameBytes.length, true);
+    ev.setUint32(42, offset, true); // where this file's local header starts
+    entry.set(nameBytes, 46);
+    directory.push(entry);
+
+    offset += local.length + bytes.length;
+  }
+
+  const directorySize = directory.reduce((sum, e) => sum + e.length, 0);
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  endView.setUint32(0, 0x06054b50, true); // end of central directory
+  endView.setUint16(8, files.length, true);
+  endView.setUint16(10, files.length, true);
+  endView.setUint32(12, directorySize, true);
+  endView.setUint32(16, offset, true);
+
+  return new Blob([...body, ...directory, end], { type: "application/zip" });
 }
 
 function rotatedAnchor(centerX, centerY, width, height, angleDegCCW) {
@@ -1088,8 +1204,12 @@ async function arrangePages(bytes, order) {
   const out = await PDFDocument.create();
   const copied = await out.copyPages(src, order);
   copied.forEach((page) => out.addPage(page));
+  copyDocumentInfo(src, out);
+  return out.save();
+}
 
-  // copyPages() carries pages only; keep the basic document info too.
+// copyPages() carries pages only; this keeps the basic document info too.
+function copyDocumentInfo(src, out) {
   const title = src.getTitle();
   const author = src.getAuthor();
   const subject = src.getSubject();
@@ -1102,7 +1222,30 @@ async function arrangePages(bytes, order) {
   if (keywords) out.setKeywords(keywords.split(/\s+/).filter(Boolean));
   if (creator) out.setCreator(creator);
   if (created) out.setCreationDate(created);
+}
 
+// Combines several PDFs into one, every page of each in the order the files are
+// given, so choosing more than one file to open gives a single document. The
+// first file supplies the document info. Files are read one at a time, and one
+// that can't be read stops the merge with an error naming it (`unreadableFile`).
+async function mergePdfFiles(files) {
+  const out = await PDFDocument.create();
+  let first = null;
+  for (const file of files) {
+    let src;
+    try {
+      src = await PDFDocument.load(await file.arrayBuffer());
+    } catch (err) {
+      console.error("Couldn't read", file.name, err);
+      const failure = new Error(`Couldn't read ${file.name}`);
+      failure.unreadableFile = file.name;
+      throw failure;
+    }
+    const copied = await out.copyPages(src, src.getPageIndices());
+    copied.forEach((page) => out.addPage(page));
+    if (!first) first = src;
+  }
+  if (first) copyDocumentInfo(first, out);
   return out.save();
 }
 
@@ -1146,6 +1289,8 @@ function HighlightIcon() { return (<svg {...ICON}><path d="M12 3l4 4-9 9H3v-4l9-
 function UndoIcon() { return (<svg {...ICON}><path d="M9 7L4 12l5 5" /><path d="M4 12h11a5 5 0 010 10h-1" /></svg>); }
 function RedoIcon() { return (<svg {...ICON}><path d="M15 7l5 5-5 5" /><path d="M20 12H9a5 5 0 000 10h1" /></svg>); }
 function DownloadIcon() { return (<svg {...ICON}><path d="M12 3v12" /><path d="M7 10l5 5 5-5" /><path d="M5 21h14" /></svg>); }
+function MergeIcon() { return (<svg {...ICON}><path d="M8 6l4-4 4 4" /><path d="M12 2v10.3a4 4 0 01-1.17 2.87L4 22" /><path d="M20 22l-5-5" /></svg>); }
+function SplitIcon() { return (<svg {...ICON}><path d="M16 3h5v5" /><path d="M8 3H3v5" /><path d="M12 22v-8.3a4 4 0 00-1.17-2.87L3 3" /><path d="M15 9l6-6" /></svg>); }
 function MoreIcon() { return (<svg {...ICON} fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>); }
 function ChevronLeftIcon() { return (<svg {...ICON}><path d="M15 6l-6 6 6 6" /></svg>); }
 function ChevronRightIcon() { return (<svg {...ICON}><path d="M9 6l6 6-6 6" /></svg>); }
@@ -1319,36 +1464,107 @@ function isPickableForAddPages(file) {
     /\.(pdf|png|jpe?g)$/i.test(file.name)
   );
 }
+function isImageForAddPages(file) {
+  return /^image\/(png|jpe?g)$/.test(file.type) || /\.(png|jpe?g)$/i.test(file.name);
+}
+
+// How many pages a picked file will add, read without keeping the file open:
+// an image is always one page, a PDF is asked. Resolves to a page count, or to
+// { error } (a short reason) when the file can't be used, so the dialog can flag
+// that one file straight away instead of the whole batch failing at the end.
+async function countPagesForAddPages(file) {
+  if (isImageForAddPages(file)) return 1;
+  let task;
+  try {
+    task = pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+    const parsed = await task.promise;
+    return parsed.numPages;
+  } catch (err) {
+    return { error: err && err.name === "PasswordException" ? "Password-protected" : "Can't be read" };
+  } finally {
+    if (task) Promise.resolve(task.destroy()).catch(() => {});
+  }
+}
 
 // "Add pages" dialog: which file(s) to pull pages from, and where they go.
-// `onAdd({ files, position })` — files are the File objects the user picked
-// (PDFs are inserted page-for-page, images become one page apiece); position
-// is "after" (the page being viewed), "start" or "end". `onAdd` is async and
-// resolves to { ok, message } — the dialog stays open and shows `message` on
-// failure (an unreadable file, too many pages) instead of closing.
+// Any number of files can be picked (in one go, or over several picks / drops);
+// they are listed in the order they'll be inserted, which can be changed here.
+// `onAdd({ files, position })` — files are the File objects, in that order (PDFs
+// are inserted page-for-page, images become one page apiece); position is
+// "after" (the page being viewed), "start" or "end". Files that can't be read
+// (damaged, password-protected) are flagged in the list and left out. `onAdd`
+// is async and resolves to { ok, message } — the dialog stays open and shows
+// `message` on failure (an unreadable file, too many pages) instead of closing.
 function AddPagesDialog({ currentPageLabel, onAdd, onClose }) {
-  const [files, setFiles] = useState([]);
+  // One entry per picked file: { id, file, pages, error }. `pages` fills in once
+  // the file has been read; `error` is set instead if it can't be used.
+  const [entries, setEntries] = useState([]);
   const [position, setPosition] = useState("after");
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [notice, setNotice] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef(null);
+  const nextEntryIdRef = useRef(1);
+  const aliveRef = useRef(true);
+
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
 
   const addFiles = (list) => {
-    const picked = Array.from(list || []).filter(isPickableForAddPages);
-    if (picked.length) {
-      setFiles((prev) => [...prev, ...picked]);
-      setErrorMsg("");
-    }
+    const all = Array.from(list || []);
+    const picked = all.filter(isPickableForAddPages);
+    const skipped = all.length - picked.length;
+    setNotice(
+      skipped > 0
+        ? `${skipped === 1 ? "1 file was" : `${skipped} files were`} skipped. Only PDF, PNG and JPG files can be added.`
+        : ""
+    );
+    if (picked.length === 0) return;
+
+    const fresh = picked.map((file) => ({ id: nextEntryIdRef.current++, file, pages: undefined, error: undefined }));
+    setEntries((prev) => [...prev, ...fresh]);
+    setErrorMsg("");
+
+    // Read the new files one at a time (not all at once) to keep memory flat.
+    (async () => {
+      for (const entry of fresh) {
+        const result = await countPagesForAddPages(entry.file);
+        if (!aliveRef.current) return;
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id !== entry.id ? e : typeof result === "number" ? { ...e, pages: result } : { ...e, error: result.error }
+          )
+        );
+      }
+    })();
   };
-  const removeFile = (idx) => setFiles((prev) => prev.filter((_, i) => i !== idx));
+  const removeFile = (id) => setEntries((prev) => prev.filter((e) => e.id !== id));
+  const moveFile = (idx, dir) =>
+    setEntries((prev) => {
+      const to = idx + dir;
+      if (to < 0 || to >= prev.length) return prev;
+      const next = prev.slice();
+      [next[idx], next[to]] = [next[to], next[idx]];
+      return next;
+    });
+
+  const usable = entries.filter((e) => !e.error);
+  const counting = usable.some((e) => e.pages === undefined);
+  const totalPages = usable.reduce((sum, e) => sum + (e.pages || 0), 0);
+  const overLimit = totalPages > MAX_PAGES_PER_ADD;
+  const canSubmit = usable.length > 0 && !counting && !overLimit && !busy;
 
   const submit = async () => {
-    if (files.length === 0 || busy) return;
+    if (!canSubmit) return;
     setBusy(true);
     setErrorMsg("");
     try {
-      const result = await onAdd({ files, position });
+      const result = await onAdd({ files: usable.map((e) => e.file), position });
       if (result?.ok) onClose();
       else setErrorMsg(result?.message || "Couldn't add those pages.");
     } finally {
@@ -1364,6 +1580,9 @@ function AddPagesDialog({ currentPageLabel, onAdd, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, busy]);
 
+  const pagesWord = (n) => `${n} ${n === 1 ? "page" : "pages"}`;
+  const stepBtn = "w-7 h-7 shrink-0 rounded text-neutral-400 hover:text-neutral-700 disabled:opacity-30 disabled:hover:text-neutral-400";
+
   return (
     <div
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
@@ -1371,10 +1590,14 @@ function AddPagesDialog({ currentPageLabel, onAdd, onClose }) {
         if (e.target === e.currentTarget && !busy) onClose();
       }}
     >
-      <div role="dialog" aria-label="Add pages" className="bg-white rounded-lg shadow-xl w-full max-w-sm p-4">
+      <div
+        role="dialog"
+        aria-label="Add pages"
+        className="bg-white rounded-lg shadow-xl w-full max-w-sm p-4 max-h-[90vh] overflow-y-auto"
+      >
         <h3 className="text-sm font-semibold mb-1">Add pages</h3>
         <p className="text-xs text-neutral-500 mb-3">
-          Upload a PDF or a photo to insert as new pages in this document.
+          Choose one or more PDFs or photos to insert as new pages. They go in the order listed below.
         </p>
 
         <div className="space-y-3">
@@ -1398,7 +1621,8 @@ function AddPagesDialog({ currentPageLabel, onAdd, onClose }) {
                 : "cursor-pointer border-neutral-300 text-neutral-500 hover:border-neutral-400"
             }`}
           >
-            Tap to choose a file, or drop it here
+            {entries.length > 0 ? "Add more files" : "Tap to choose files, or drop them here"}
+            <div className="mt-0.5 text-[11px] text-neutral-400">PDF, PNG or JPG</div>
             <input
               ref={inputRef}
               type="file"
@@ -1406,6 +1630,7 @@ function AddPagesDialog({ currentPageLabel, onAdd, onClose }) {
               multiple
               disabled={busy}
               className="hidden"
+              onClick={(e) => e.stopPropagation()}
               onChange={(e) => {
                 addFiles(e.target.files);
                 e.target.value = "";
@@ -1413,26 +1638,72 @@ function AddPagesDialog({ currentPageLabel, onAdd, onClose }) {
             />
           </div>
 
-          {files.length > 0 && (
-            <ul className="space-y-1 max-h-32 overflow-y-auto">
-              {files.map((f, i) => (
+          {notice && <p className="text-xs text-neutral-500">{notice}</p>}
+
+          {entries.length > 0 && (
+            <ul className="space-y-1 max-h-48 overflow-y-auto">
+              {entries.map((e, i) => (
                 <li
-                  key={`${f.name}_${i}`}
-                  className="flex items-center justify-between gap-2 text-xs bg-neutral-50 border border-neutral-200 rounded px-2 py-1"
+                  key={e.id}
+                  className="flex items-center gap-1 text-xs bg-neutral-50 border border-neutral-200 rounded pl-2 pr-1 py-1"
                 >
-                  <span className="truncate">{f.name}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className={`truncate ${e.error ? "text-neutral-400" : ""}`}>{e.file.name}</div>
+                    <div className={`text-[11px] ${e.error ? "text-red-600" : "text-neutral-400"}`}>
+                      {e.error
+                        ? `${e.error}. It won't be added.`
+                        : e.pages === undefined
+                        ? "Reading…"
+                        : pagesWord(e.pages)}
+                    </div>
+                  </div>
+                  {entries.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => moveFile(i, -1)}
+                        disabled={busy || i === 0}
+                        className={stepBtn}
+                        title="Move up"
+                        aria-label={`Move ${e.file.name} up`}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveFile(i, 1)}
+                        disabled={busy || i === entries.length - 1}
+                        className={stepBtn}
+                        title="Move down"
+                        aria-label={`Move ${e.file.name} down`}
+                      >
+                        ↓
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
-                    onClick={() => removeFile(i)}
+                    onClick={() => removeFile(e.id)}
                     disabled={busy}
-                    className="text-neutral-400 hover:text-red-500 shrink-0 disabled:opacity-40"
+                    className="w-7 h-7 shrink-0 rounded text-neutral-400 hover:text-red-500 disabled:opacity-40"
                     title="Remove"
+                    aria-label={`Remove ${e.file.name}`}
                   >
                     ✕
                   </button>
                 </li>
               ))}
             </ul>
+          )}
+
+          {usable.length > 0 && (
+            <p className={`text-xs ${overLimit ? "text-red-600" : "text-neutral-500"}`}>
+              {counting
+                ? "Reading files…"
+                : overLimit
+                ? `That's ${pagesWord(totalPages)}, and up to ${MAX_PAGES_PER_ADD} can be added at once. Remove a file to continue.`
+                : `${usable.length === 1 ? "1 file" : `${usable.length} files`}, ${pagesWord(totalPages)}.`}
+            </p>
           )}
 
           <label className="block text-xs text-neutral-600">
@@ -1461,10 +1732,10 @@ function AddPagesDialog({ currentPageLabel, onAdd, onClose }) {
           </button>
           <button
             onClick={submit}
-            disabled={files.length === 0 || busy}
+            disabled={!canSubmit}
             className="px-3 py-1.5 rounded-md bg-neutral-900 text-white text-sm disabled:opacity-40"
           >
-            {busy ? "Adding…" : files.length > 1 ? `Add ${files.length} files` : "Add page"}
+            {busy ? "Adding…" : usable.length > 0 && !counting ? `Add ${pagesWord(totalPages)}` : "Add pages"}
           </button>
         </div>
       </div>
@@ -1654,6 +1925,7 @@ export default function PdfFillerApp() {
   const [isRendering, setIsRendering] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
+  const [isOpening, setIsOpening] = useState(false); // reading / combining the chosen PDF(s)
 
   // Responsive chrome: thumbnail drawer + inspector sheet on narrow screens.
   const [mobilePagesOpen, setMobilePagesOpen] = useState(false);
@@ -1720,6 +1992,11 @@ export default function PdfFillerApp() {
   const [imageFormat, setImageFormat] = useState(IMAGE_FORMATS[0].id);
   const [isExportingImages, setIsExportingImages] = useState(false);
 
+  // Download: the Download button opens a small panel where the person picks
+  // between one PDF and one PDF per page before anything is saved.
+  const [showDownloadPanel, setShowDownloadPanel] = useState(false);
+  const [downloadMode, setDownloadMode] = useState(DOWNLOAD_MODES[0].id);
+
   // The text stamped on the page that sits at `position` (1-based) in the
   // downloaded PDF, or null when that page gets no number.
   const pageNumberText = (position) => {
@@ -1745,12 +2022,24 @@ export default function PdfFillerApp() {
   const gestureMovedRef = useRef(false); // true once the pointer has travelled past the tap slop
 
   // --- Load a new PDF file -------------------------------------------------
+  // One file opens as it is. Several are combined, in the order the picker gave
+  // them, into a single PDF first (see mergePdfFiles), so from here on the editor
+  // deals with one document either way.
   const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    e.target.value = ""; // so choosing the same file(s) again still counts as a change
+    if (files.length === 0) return;
     setError("");
+    setIsOpening(true);
     try {
-      const buf = await file.arrayBuffer();
+      const combined = files.length > 1;
+      let buf;
+      if (combined) {
+        const merged = await mergePdfFiles(files);
+        buf = merged.buffer.slice(merged.byteOffset, merged.byteOffset + merged.byteLength);
+      } else {
+        buf = await files[0].arrayBuffer();
+      }
       const parsed = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
       setPdfBytes(buf);
       setPdfDoc(parsed);
@@ -1772,10 +2061,17 @@ export default function PdfFillerApp() {
       setActiveId(null);
       setMobilePagesOpen(false);
       setMobileElementsOpen(false);
-      setFileName(file.name.replace(/\.pdf$/i, ""));
+      const firstName = files[0].name.replace(/\.pdf$/i, "");
+      setFileName(combined ? `${firstName}-merged` : firstName);
     } catch (err) {
       console.error(err);
-      setError("Couldn't read that file. Make sure it's a valid PDF.");
+      setError(
+        err && err.unreadableFile
+          ? `Couldn't read ${err.unreadableFile}. Make sure it's a valid PDF that isn't password-protected, or leave it out and try again.`
+          : "Couldn't read that file. Make sure it's a valid PDF."
+      );
+    } finally {
+      setIsOpening(false);
     }
   };
 
@@ -2372,28 +2668,42 @@ export default function PdfFillerApp() {
       if (!files || files.length === 0) return { ok: false, message: "Choose at least one file." };
       const current = docRef.current;
 
-      let parsedFiles;
-      try {
-        parsedFiles = await Promise.all(
-          files.map(async (file) => {
-            const isImage = /^image\/(png|jpe?g)$/.test(file.type) || /\.(png|jpe?g)$/i.test(file.name);
-            const bytes = isImage ? await imageFileToPdfBytes(file) : await file.arrayBuffer();
-            // .slice(0) keeps a pristine copy for pdf-lib at Download time —
-            // pdf.js's own copy is free to consume/transfer its buffer.
-            const parsed = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
-            return { name: file.name, bytes, parsed };
-          })
-        );
-      } catch (err) {
-        console.error("Couldn't read one of the chosen files", err);
-        return { ok: false, message: "Couldn't read one of those files. Make sure they're valid PDFs or images." };
+      // Files are read one after another (not all at once) so a big batch
+      // doesn't hold every file in memory at the same moment, and a bad file
+      // is reported by name rather than as an anonymous "one of those files".
+      const parsedFiles = [];
+      const unreadable = [];
+      for (const file of files) {
+        try {
+          const bytes = isImageForAddPages(file) ? await imageFileToPdfBytes(file) : await file.arrayBuffer();
+          // .slice(0) keeps a pristine copy for pdf-lib at Download time —
+          // pdf.js's own copy is free to consume/transfer its buffer.
+          const parsed = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+          parsedFiles.push({ name: file.name, bytes, parsed });
+        } catch (err) {
+          console.error("Couldn't read", file.name, err);
+          unreadable.push(file.name);
+        }
+      }
+      // Nothing is added unless everything is, so let go of what was opened.
+      const releaseParsed = () => parsedFiles.forEach((f) => Promise.resolve(f.parsed.destroy()).catch(() => {}));
+
+      if (unreadable.length > 0) {
+        releaseParsed();
+        const shown = unreadable.slice(0, 3).join(", ") + (unreadable.length > 3 ? ` and ${unreadable.length - 3} more` : "");
+        return {
+          ok: false,
+          message: `Couldn't read ${shown}. Make sure ${unreadable.length === 1 ? "it's a valid PDF or image" : "they're valid PDFs or images"}, or remove ${unreadable.length === 1 ? "it" : "them"} and try again.`,
+        };
       }
 
       const totalNewPages = parsedFiles.reduce((sum, f) => sum + f.parsed.numPages, 0);
       if (totalNewPages === 0) {
+        releaseParsed();
         return { ok: false, message: "Those files don't have any pages to add." };
       }
       if (totalNewPages > MAX_PAGES_PER_ADD) {
+        releaseParsed();
         return { ok: false, message: `That's ${totalNewPages} pages — up to ${MAX_PAGES_PER_ADD} can be added at once.` };
       }
 
@@ -3066,8 +3376,13 @@ export default function PdfFillerApp() {
   };
 
   // --- Download as a PDF ------------------------------------------------------
+  // "Merge" saves the finished document as one PDF. "Split" divides
+  // that same finished document (edits, watermark and page numbers already baked
+  // in, deleted pages gone) into one single-page PDF per page, saved in a .zip.
+  // With Protect on, every page is encrypted on its own and saved as its own file.
   const handleDownload = async () => {
     if (!pdfBytes) return;
+    const asPages = downloadMode === "split" && visiblePages.length > 1;
     // Check the password first so nothing is built (or sent anywhere) with a
     // password that's missing or mistyped.
     if (protect.enabled) {
@@ -3078,6 +3393,7 @@ export default function PdfFillerApp() {
           : "";
       if (problem) {
         setError(problem);
+        setShowDownloadPanel(false);
         setShowProtectPanel(true);
         return;
       }
@@ -3086,11 +3402,39 @@ export default function PdfFillerApp() {
     setError("");
     try {
       const outBytes = await buildEditedPdfBytes();
-      if (protect.enabled) {
+      const baseName = fileName || "document";
+      if (asPages) {
+        const pageBytes = await splitPdfIntoPages(outBytes);
+        const digits = String(pageBytes.length).length; // page-01 … so the files sort in order
+        const pageFiles = pageBytes.map((bytes, i) => ({
+          name: `${baseName}-page-${String(i + 1).padStart(digits, "0")}.pdf`,
+          bytes,
+        }));
+        if (protect.enabled) {
+          // The helper saves each result itself, one file per page. Stops at the
+          // first failure rather than leaving some pages locked and some not.
+          let done = 0;
+          try {
+            for (const f of pageFiles) {
+              if (done > 0) await new Promise((resolve) => setTimeout(resolve, 400)); // browsers drop downloads fired back-to-back
+              const toProtect = new File([f.bytes], f.name, { type: "application/pdf" });
+              await addPasswordToPdf(toProtect, protect.password);
+              done++;
+            }
+          } catch (err) {
+            console.error(err);
+            setError(
+              `Couldn't add the password to every page (${done} of ${pageFiles.length} saved). Check your connection and try again.`
+            );
+          }
+        } else {
+          triggerBlobDownload(buildZip(pageFiles), `${baseName}-pages.zip`);
+        }
+      } else if (protect.enabled) {
         // Never fall back to the unprotected copy if this fails: the person asked
         // for a password, so an error is better than a PDF anyone can open.
         // The helper downloads the result itself, as "<name>_protected.pdf".
-        const toProtect = new File([outBytes], `${fileName || "document"}.pdf`, { type: "application/pdf" });
+        const toProtect = new File([outBytes], `${baseName}.pdf`, { type: "application/pdf" });
         try {
           await addPasswordToPdf(toProtect, protect.password);
         } catch (err) {
@@ -3098,7 +3442,7 @@ export default function PdfFillerApp() {
           setError("Couldn't add the password. Check your connection and try again.");
         }
       } else {
-        const outFileName = `${fileName || "document"}-filled.pdf`;
+        const outFileName = `${baseName}-filled.pdf`;
         const dataUrl = bytesToDownloadableDataUrl(outBytes, "application/pdf", outFileName);
         const a = document.createElement("a");
         a.href = dataUrl;
@@ -3112,6 +3456,7 @@ export default function PdfFillerApp() {
       setError("Something went wrong while generating the PDF.");
     } finally {
       setIsExporting(false);
+      setShowDownloadPanel(false);
     }
   };
 
@@ -3825,8 +4170,10 @@ export default function PdfFillerApp() {
         </button>
 
         <button
-          onClick={handleDownload}
+          onClick={() => setShowDownloadPanel((v) => !v)}
           disabled={!pdfDoc || isExporting || isExportingImages}
+          aria-haspopup="dialog"
+          aria-expanded={showDownloadPanel}
           className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white text-xs sm:text-sm font-medium px-2.5 sm:px-3.5 py-1.5 rounded-md"
         >
           <DownloadIcon />
@@ -4037,7 +4384,7 @@ export default function PdfFillerApp() {
             </>
           )}
         </div>
-        <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleFileChange} className="hidden" />
+        <input ref={fileInputRef} type="file" accept="application/pdf" multiple onChange={handleFileChange} className="hidden" />
 
         {showPageNumberPanel && (
           <>
@@ -4323,6 +4670,121 @@ export default function PdfFillerApp() {
             </div>
           </>
         )}
+
+        {showDownloadPanel && (() => {
+          const n = visiblePages.length;
+          const canSplit = n > 1;
+          const mode = downloadMode === "split" && canSplit ? "split" : "merge";
+          const modeIcon = { merge: <MergeIcon />, split: <SplitIcon /> };
+          const modeHint = (m) =>
+            m.id === "split" && !canSplit ? "Needs at least 2 pages" : m.hint;
+          return (
+            <>
+              <div className="fixed inset-0 z-30 bg-slate-900/10 backdrop-blur-[1px]" onClick={() => !isExporting && setShowDownloadPanel(false)} />
+              <div
+                role="dialog"
+                aria-label="Download"
+                className="absolute right-2 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-white text-neutral-800 rounded-2xl shadow-2xl ring-1 ring-black/5 p-4 z-40 space-y-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-base font-semibold leading-tight">Download</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">Merge everything into one PDF, or split it page by page.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDownloadPanel(false)}
+                    disabled={isExporting}
+                    aria-label="Close"
+                    className="-mr-1 -mt-1 w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 disabled:opacity-40 touch-manipulation"
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
+
+                <div role="radiogroup" aria-label="Download as" className="space-y-2">
+                  {DOWNLOAD_MODES.map((m) => {
+                    const unavailable = m.id === "split" && !canSplit;
+                    const selected = mode === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        disabled={unavailable}
+                        onClick={() => setDownloadMode(m.id)}
+                        className={`group w-full flex items-center gap-3 text-left rounded-xl border-2 p-3 transition-all touch-manipulation disabled:opacity-40 disabled:cursor-not-allowed ${
+                          selected
+                            ? "border-blue-500 bg-blue-50/70 shadow-sm"
+                            : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 disabled:hover:border-neutral-200 disabled:hover:bg-transparent"
+                        }`}
+                      >
+                        <span
+                          className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-colors ${
+                            selected ? "bg-blue-600 text-white" : "bg-neutral-100 text-neutral-500 group-hover:bg-neutral-200"
+                          }`}
+                        >
+                          {modeIcon[m.id]}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block text-sm font-medium ${selected ? "text-blue-700" : "text-neutral-800"}`}>
+                            {m.label}
+                          </span>
+                          <span className="block text-xs text-neutral-500">{modeHint(m)}</span>
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            selected ? "border-blue-600" : "border-neutral-300"
+                          }`}
+                        >
+                          <span className={`w-2.5 h-2.5 rounded-full transition-transform ${selected ? "bg-blue-600 scale-100" : "scale-0"}`} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between gap-2 rounded-lg bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+                  <span className="font-medium tabular-nums">{n} {n === 1 ? "page" : "pages"}</span>
+                  <span aria-hidden="true" className="text-neutral-300">→</span>
+                  <span className="font-medium text-neutral-800 tabular-nums">
+                    {mode === "split" ? `${n} PDFs${protect.enabled ? "" : " in a .zip"}` : "1 PDF"}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={!pdfDoc || n === 0 || isExporting || isExportingImages}
+                  className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.99] disabled:opacity-40 disabled:hover:bg-blue-600 text-white text-sm font-semibold rounded-xl shadow-sm transition touch-manipulation"
+                >
+                  <DownloadIcon />
+                  {isExporting
+                    ? protect.enabled
+                      ? "Protecting…"
+                      : mode === "split"
+                        ? "Splitting…"
+                        : "Preparing…"
+                    : mode === "split"
+                      ? `Split & download ${n} pages`
+                      : n > 1
+                        ? "Merge & download PDF"
+                        : "Download PDF"}
+                </button>
+
+                <p className="text-[11px] leading-relaxed text-neutral-400">
+                  {mode === "split"
+                    ? protect.enabled
+                      ? "Split: each page is locked with your password and saved as its own file, so your browser may ask to allow multiple downloads. Every page is uploaded to our server to be encrypted."
+                      : "Split: every page is saved as its own PDF, together in a .zip. Your edits, watermark and page numbers are included and deleted pages are left out."
+                    : "Merge: all pages are combined into one PDF, with your edits, watermark and page numbers included and deleted pages left out."}
+                </p>
+              </div>
+            </>
+          );
+        })()}
       </header>
 
       {/* Tool row */}
@@ -4446,10 +4908,12 @@ export default function PdfFillerApp() {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full px-5 py-3.5 rounded-xl bg-black text-white text-sm font-semibold tracking-wide border border-black hover:bg-neutral-800 active:scale-[0.98] transition-transform"
+              disabled={isOpening}
+              className="w-full px-5 py-3.5 rounded-xl bg-black text-white text-sm font-semibold tracking-wide border border-black hover:bg-neutral-800 active:scale-[0.98] transition-transform disabled:opacity-60"
             >
-              Choose a PDF
+              {isOpening ? "Opening…" : "Choose a PDF"}
             </button>
+            <p className="mt-2 text-[11px] text-neutral-400">Select more than one to combine them into a single document.</p>
 
             <div className="mt-8 flex items-center justify-center gap-6">
               <div className="flex flex-col items-center gap-1.5">

@@ -11,12 +11,33 @@ const CSS = `
 }
 @keyframes ts2-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .ts2-fill { transform-origin: left; animation: ts2-fill var(--ts2-dur, 5500ms) linear forwards; }
+/* Every slide stays mounted and stacked in one grid cell; only opacity/transform change. */
+.ts2-layer { grid-area: 1 / 1; opacity: 0; visibility: hidden; }
+.ts2-layer[data-live='true'] { will-change: transform, opacity; }
+.ts2-layer[data-on='true'] { opacity: 1; visibility: visible; }
+.ts2-paper { transform: translate3d(48px, 32px, 0) rotate(1.5deg); }
+.ts2-paper[data-past='true'] { transform: translate3d(-48px, -24px, 0) rotate(-1.5deg); }
+.ts2-copy { transform: translate3d(0, 16px, 0); }
+.ts2-copy[data-past='true'] { transform: translate3d(0, -12px, 0); }
+.ts2-layer[data-on='true'] { transform: translate3d(0, 0, 0) rotate(0deg); }
+/* Motion tuning: raise --ts2-speed to slow everything down, lower it to speed up. */
+.ts2-stage { --ts2-speed: 1; --ts2-ease: cubic-bezier(.45, .05, .2, 1); }
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes ts2-paper { from { opacity: 0; transform: translate(40px, 30px) rotate(1.5deg); } to { opacity: 1; transform: none; } }
-  @keyframes ts2-copy { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-  .ts2-paper { animation: ts2-paper .7s cubic-bezier(.2,.8,.2,1) both; }
-  .ts2-copy { animation: ts2-copy .5s cubic-bezier(.2,.8,.2,1) both; }
-  .ts2-stage { transition: background-color .8s ease; }
+  /* leaving: gentle fade while it drifts away, hidden once the move finishes */
+  .ts2-layer {
+    transition:
+      opacity calc(.7s * var(--ts2-speed)) ease,
+      transform calc(1.3s * var(--ts2-speed)) var(--ts2-ease),
+      visibility 0s linear calc(1.3s * var(--ts2-speed));
+  }
+  /* entering: waits for the old slide to clear, then eases in */
+  .ts2-layer[data-on='true'] {
+    transition:
+      opacity calc(1s * var(--ts2-speed)) ease calc(.3s * var(--ts2-speed)),
+      transform calc(1.5s * var(--ts2-speed)) var(--ts2-ease) calc(.2s * var(--ts2-speed)),
+      visibility 0s;
+  }
+  .ts2-stage { transition: background-color calc(1.5s * var(--ts2-speed)) ease; }
 }
 `;
 
@@ -40,7 +61,8 @@ export default function TemplateSlideshow({ onUseTemplate, color, interval = 550
   const n = TEMPLATE_CARDS.length;
   const rootRef = useRef(null);
   const touchX = useRef(null);
-  const [index, setIndex] = useState(0);
+  const [pos, setPos] = useState({ index: 0, prev: -1 });
+  const { index, prev } = pos;
   const [playing, setPlaying] = useState(
     () => typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
@@ -59,14 +81,34 @@ export default function TemplateSlideshow({ onUseTemplate, color, interval = 550
     return () => io.disconnect();
   }, []);
 
-  const go = useCallback((i) => setIndex(((i % n) + n) % n), [n]);
+  const go = useCallback(
+    (i) => setPos((p) => { const next = ((i % n) + n) % n; return next === p.index ? p : { index: next, prev: p.index }; }),
+    [n],
+  );
 
   const card = TEMPLATE_CARDS[index];
-  const { Template } = card;
   const choice = color !== undefined ? color : saved;
   const accent = choice || DEFAULT_ACCENT[card.id];
-  const props = useMemo(() => getTemplateProps(accent), [accent]);
   const running = playing && inView && !hover && !focused;
+
+  // There are ~30 layouts, so only the current, the one leaving and its two neighbours stay mounted.
+  // Neighbours are pre-mounted so the next slide is ready before its transition starts.
+  const live = new Set([index, prev, (index + 1) % n, (index - 1 + n) % n]);
+
+  // Built once per colour choice, so hovering/pausing never re-renders the resumes, and a slide
+  // is already mounted (off-screen) before it becomes the active one.
+  const papers = useMemo(
+    () =>
+      TEMPLATE_CARDS.map((c) => {
+        const { Template } = c;
+        return (
+          <TemplateThumb className="w-full rounded-[3px] shadow-[0_40px_80px_-24px_rgba(0,0,0,.65),0_8px_20px_-8px_rgba(0,0,0,.4)]">
+            <Template {...getTemplateProps(choice || DEFAULT_ACCENT[c.id])} />
+          </TemplateThumb>
+        );
+      }),
+    [choice],
+  );
 
   const use = () => {
     saveChoice(card.id, choice);
@@ -101,9 +143,13 @@ export default function TemplateSlideshow({ onUseTemplate, color, interval = 550
           onTouchEnd={onTouchEnd}
         >
           <div className="flex flex-col justify-between gap-12 p-7 sm:p-12 lg:min-h-[560px] lg:p-14">
-            <div key={card.id} className="ts2-copy" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${n}`} aria-live={running ? 'off' : 'polite'}>
-              <h2 className="ts2-display text-5xl font-extrabold leading-none tracking-tight sm:text-6xl">{card.label}</h2>
-              <p className="mt-4 max-w-sm text-lg leading-relaxed text-white/75">{card.note}</p>
+            <div className="grid" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${n}`} aria-live={running ? 'off' : 'polite'}>
+              {TEMPLATE_CARDS.map((c, i) => (
+                <div key={c.id} className="ts2-layer ts2-copy" data-on={i === index} data-past={i < index} aria-hidden={i !== index}>
+                  <h2 className="ts2-display text-5xl font-extrabold leading-none tracking-tight sm:text-6xl">{c.label}</h2>
+                  <p className="mt-4 max-w-sm text-lg leading-relaxed text-white/75">{c.note}</p>
+                </div>
+              ))}
             </div>
 
             <div className="grid gap-6">
@@ -149,12 +195,12 @@ export default function TemplateSlideshow({ onUseTemplate, color, interval = 550
           </div>
 
           <div className="relative min-h-[340px] sm:min-h-[420px] lg:min-h-0">
-            <div className="absolute bottom-0 left-1/2 w-[min(78%,400px)] -translate-x-1/2 translate-y-[14%] rotate-[-2deg]">
-              <div key={card.id} className="ts2-paper">
-                <TemplateThumb className="w-full rounded-[3px] shadow-[0_40px_80px_-24px_rgba(0,0,0,.65),0_8px_20px_-8px_rgba(0,0,0,.4)]">
-                  <Template {...props} />
-                </TemplateThumb>
-              </div>
+            <div className="absolute bottom-0 left-1/2 grid w-[min(78%,400px)] -translate-x-1/2 translate-y-[14%] rotate-[-2deg]">
+              {TEMPLATE_CARDS.map((c, i) => (
+                <div key={c.id} className="ts2-layer ts2-paper" data-on={i === index} data-live={live.has(i)} data-past={i < index} aria-hidden={i !== index}>
+                  {live.has(i) && papers[i]}
+                </div>
+              ))}
             </div>
           </div>
         </div>

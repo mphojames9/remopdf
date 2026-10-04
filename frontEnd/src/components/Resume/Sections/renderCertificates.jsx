@@ -1,6 +1,7 @@
 import React from 'react';
 import { padLast, endGroup } from '../Templates/templateShared';
 import { renderAchievements } from './richText';
+import { formatRange } from './dateFormat';
 
 // Builds the Certificates section as a flat list of blocks, the same way renderExtraSections
 // does for Projects / References, so it paginates and gets edit-mode marking like the rest.
@@ -12,8 +13,12 @@ import { renderAchievements } from './richText';
 //   };
 //
 // Each template passes its own headingClass / headingStyle so the heading matches the rest.
+// The date is always shown as "Jan 2020" (see dateFormat.js), whatever the template.
+// Optional: dateClass / dateStyle restyle the date (e.g. an outlined pill); without them it stays small grey text.
 // The description supports bold, italic and bullets (same rich text as the job and education lines).
-const renderCertificates = ({ certificates, headingClass, headingStyle = {} }) => {
+const DEFAULT_DATE_CLASS = 'text-[11px] text-slate-500 whitespace-nowrap';
+
+const renderCertificates = ({ certificates, headingClass, headingStyle = {}, dateClass = DEFAULT_DATE_CLASS, dateStyle }) => {
   const items = (certificates?.items || []).filter((c) => c.name || c.issuer);
   if (!certificates?.enabled || items.length === 0) return { certificates: [] };
 
@@ -29,7 +34,7 @@ const renderCertificates = ({ certificates, headingClass, headingStyle = {} }) =
         return padLast([
           <div key={`certificate-${c.id}-title`} className={`flex justify-between items-baseline gap-3${gap('title')}`}>
             <p className="font-bold text-slate-900 text-sm break-words">{c.name || c.issuer}</p>
-            {c.date && <p className="text-[11px] text-slate-500 whitespace-nowrap">{c.date}</p>}
+            {c.date && <p className={dateClass} style={dateStyle}>{formatRange(c.date)}</p>}
           </div>,
           c.name && c.issuer && (
             <p key={`certificate-${c.id}-issuer`} className={`text-xs text-slate-600 mt-0.5${gap('issuer')}`}>{c.issuer}</p>

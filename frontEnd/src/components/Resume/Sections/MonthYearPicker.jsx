@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
-/* Shared month + year picker (used by Work History and Education). */
+/* Shared month + year picker (used by Work History, Education and Certificates). */
 
 // Months are stored as two-digit strings ("01"–"12"), the same shape the old MM text boxes used.
 const MONTHS = [
@@ -19,6 +20,23 @@ const normalizeMonth = (value) => {
 };
 
 const MIN_YEAR = 1950; // earliest year the picker offers; the latest is the current year
+const POPOVER_W = 280;
+const GAP = 6; // space between the field and the popover
+const EDGE = 8; // minimum distance from the screen edge
+
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+
+const FOCUS_RING = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300';
+
+// A short entrance for the popover and a soft cross-fade when switching between months and years.
+// Both switch off for people who prefer reduced motion.
+const POPOVER_CSS = `
+@keyframes mypIn { from { opacity: 0; transform: translateY(var(--myp-from, -6px)) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes mypFade { from { opacity: 0; } to { opacity: 1; } }
+.myp-pop { animation: mypIn 150ms cubic-bezier(.2, .8, .2, 1) both; }
+.myp-fade { animation: mypFade 140ms ease-out both; }
+@media (prefers-reduced-motion: reduce) { .myp-pop, .myp-fade { animation: none; } }
+`;
 
 const PickerNavButton = ({ label, onClick, disabled, children }) => (
   <button
@@ -26,24 +44,35 @@ const PickerNavButton = ({ label, onClick, disabled, children }) => (
     aria-label={label}
     onClick={onClick}
     disabled={disabled}
-    className="w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+    className={`w-8 h-8 inline-flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors ${FOCUS_RING}`}
   >
     {children}
   </button>
 );
 
 const pickerCellClass = (selected, disabled) =>
-  `h-8 rounded-md text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
+  `relative h-11 rounded-lg text-[13px] font-medium transition-all duration-150 ${FOCUS_RING} ${
     disabled
       ? 'text-slate-300 cursor-not-allowed'
       : selected
-      ? 'bg-amber-500 text-white'
-      : 'text-slate-700 hover:bg-amber-50 hover:text-amber-700'
+      ? 'bg-gradient-to-b from-amber-400 to-amber-500 font-semibold text-white shadow-[0_8px_16px_-8px_rgba(245,158,11,0.9)] active:scale-95'
+      : 'text-slate-700 hover:bg-slate-100 active:scale-95'
   }`;
 
-// One field for a month + year: a trigger showing "Mar 2021" that opens a small popover with a
+// The small marker under "this month" / "this year".
+const CurrentDot = ({ selected }) => (
+  <span
+    aria-hidden="true"
+    className={`absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${selected ? 'bg-white/90' : 'bg-amber-500'}`}
+  />
+);
+
+// One field for a month + year: a trigger showing "Mar 2021" that opens a small calendar popover with a
 // year stepper and a month grid. Click the year to jump through years. Arrow keys move around
 // the grid, Escape closes.
+// The popover is portaled to <body> and positioned with fixed coordinates, so a card with
+// overflow-hidden never clips it. It opens under the field (aligned to its left or right edge) and
+// flips above when there is no room below.
 const MonthYearPicker = ({
   label,
   month,
@@ -55,11 +84,14 @@ const MonthYearPicker = ({
   heightClass = 'h-[34px]', // matches the py-2 text inputs in Work History
 }) => {
   const maxYear = new Date().getFullYear();
+  const thisMonth = String(new Date().getMonth() + 1).padStart(2, '0');
   const [open, setOpen] = useState(false);
   const [view, setView] = useState('months'); // 'months' | 'years'
   const [viewYear, setViewYear] = useState(maxYear);
+  const [pos, setPos] = useState(null);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
+  const popRef = useRef(null);
   const gridRef = useRef(null);
 
   const monthValue = normalizeMonth(month);
@@ -77,16 +109,51 @@ const MonthYearPicker = ({
   const toggle = () => {
     if (disabled) return undefined;
     if (open) return close(false);
-    setViewYear(/^\d{4}$/.test(yearValue) ? Number(yearValue) : maxYear);
+    setViewYear(/^\d{4}$/.test(yearValue) ? clamp(Number(yearValue), MIN_YEAR, maxYear) : maxYear);
     setView('months');
+    setPos(null);
     setOpen(true);
   };
 
-  // Close when the user clicks or tabs away.
+  // Fixed coordinates under the field; flips above when the space below is too small.
+  const place = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const r = trigger.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    if (r.bottom < 0 || r.top > vh) { // the field scrolled out of view
+      setOpen(false);
+      return;
+    }
+    const width = Math.min(POPOVER_W, vw - EDGE * 2);
+    const height = popRef.current ? popRef.current.offsetHeight : 320;
+    const left = clamp(align === 'right' ? r.right - width : r.left, EDGE, vw - width - EDGE);
+    const roomBelow = vh - r.bottom - GAP - EDGE;
+    const roomAbove = r.top - GAP - EDGE;
+    const above = roomBelow < height && roomAbove > roomBelow;
+    const top = above ? Math.max(EDGE, r.top - GAP - height) : r.bottom + GAP;
+    setPos((p) => (p && p.top === top && p.left === left && p.width === width && p.above === above ? p : { top, left, width, above }));
+  }, [align]);
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open, place]);
+
+  // Close when the user clicks or tabs away (the popover lives outside the root in the DOM, so check both).
   useEffect(() => {
     if (!open) return undefined;
     const away = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      const inRoot = rootRef.current && rootRef.current.contains(e.target);
+      const inPopover = popRef.current && popRef.current.contains(e.target);
+      if (!inRoot && !inPopover) setOpen(false);
     };
     document.addEventListener('mousedown', away);
     document.addEventListener('focusin', away);
@@ -102,9 +169,10 @@ const MonthYearPicker = ({
     const target =
       gridRef.current.querySelector('[data-autofocus="true"]:not(:disabled)') ||
       gridRef.current.querySelector('button:not(:disabled)');
-    if (target) target.focus();
+    if (target) target.focus({ preventScroll: true });
   }, [open, view]);
 
+  // Key presses inside the portaled popover still bubble to the root through React's tree.
   const handleKeyDown = (e) => {
     if (e.key === 'Escape' && open) {
       e.stopPropagation();
@@ -147,6 +215,107 @@ const MonthYearPicker = ({
   const nextDisabled = view === 'months' ? viewYear >= maxYear : pageEnd >= maxYear;
   const goPrev = () => setViewYear((v) => v - (view === 'months' ? 1 : 12));
   const goNext = () => setViewYear((v) => Math.min(v + (view === 'months' ? 1 : 12), maxYear));
+
+  const popover = open && !disabled && (
+    <div
+      ref={popRef}
+      role="dialog"
+      aria-label={`Choose ${(label || 'date').toLowerCase()}`}
+      className="myp-pop fixed z-[1000] overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_24px_48px_-12px_rgba(15,23,42,0.28),0_4px_10px_rgba(15,23,42,0.06)]"
+      style={{
+        top: pos ? pos.top : 0,
+        left: pos ? pos.left : 0,
+        width: pos ? pos.width : POPOVER_W,
+        transformOrigin: `${pos && pos.above ? 'bottom' : 'top'} ${align === 'right' ? 'right' : 'left'}`,
+        '--myp-from': pos && pos.above ? '6px' : '-6px',
+      }}
+    >
+      <style>{POPOVER_CSS}</style>
+
+      <div className="flex items-center justify-between px-3 pt-3">
+        <PickerNavButton label={view === 'months' ? 'Previous year' : 'Earlier years'} onClick={goPrev} disabled={prevDisabled}>
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+          </svg>
+        </PickerNavButton>
+
+        {view === 'months' ? (
+          <button
+            type="button"
+            onClick={() => setView('years')}
+            aria-label={`${viewYear}, choose a different year`}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[15px] font-semibold tracking-tight text-slate-900 hover:bg-slate-100 transition-colors ${FOCUS_RING}`}
+          >
+            {viewYear}
+            <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        ) : (
+          <span className="px-2.5 py-1.5 text-[15px] font-semibold tracking-tight tabular-nums text-slate-900">
+            {pageStart} – {pageEnd}
+          </span>
+        )}
+
+        <PickerNavButton label={view === 'months' ? 'Next year' : 'Later years'} onClick={goNext} disabled={nextDisabled}>
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+          </svg>
+        </PickerNavButton>
+      </div>
+
+      <div ref={gridRef} key={view} className={`myp-fade grid gap-1.5 p-3 ${view === 'months' ? 'grid-cols-3' : 'grid-cols-4'}`}>
+        {view === 'months'
+          ? MONTHS.map(([value, name]) => {
+              const selected = value === monthValue && yearValue === String(viewYear);
+              const current = value === thisMonth && viewYear === maxYear;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => pickMonth(value)}
+                  aria-pressed={selected}
+                  data-autofocus={selected}
+                  className={pickerCellClass(selected, false)}
+                >
+                  {name}
+                  {current && <CurrentDot selected={selected} />}
+                </button>
+              );
+            })
+          : pageYears.map((y) => {
+              const isDisabled = y > maxYear || y < MIN_YEAR;
+              const selected = String(y) === yearValue;
+              return (
+                <button
+                  key={y}
+                  type="button"
+                  disabled={isDisabled}
+                  onClick={() => pickYear(y)}
+                  aria-pressed={selected}
+                  data-autofocus={y === viewYear}
+                  className={`${pickerCellClass(selected, isDisabled)} tabular-nums`}
+                >
+                  {y}
+                  {y === maxYear && !isDisabled && <CurrentDot selected={selected} />}
+                </button>
+              );
+            })}
+      </div>
+
+      {display && (
+        <div className="flex justify-end border-t border-slate-100 bg-slate-50/60 px-3 py-2">
+          <button
+            type="button"
+            onClick={clear}
+            className={`rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors ${FOCUS_RING}`}
+          >
+            Clear
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div ref={rootRef} className="relative w-full" onKeyDown={handleKeyDown}>
@@ -194,94 +363,7 @@ const MonthYearPicker = ({
         </svg>
       </button>
 
-      {open && !disabled && (
-        <div
-          role="dialog"
-          aria-label={`Choose ${label.toLowerCase()}`}
-          className={`absolute top-full mt-1.5 z-30 w-60 ${
-            align === 'right' ? 'right-0' : 'left-0'
-          } rounded-lg border border-slate-200 bg-white p-3 shadow-lg shadow-slate-900/10`}
-        >
-          <div className="flex items-center justify-between mb-2.5">
-            <PickerNavButton label={view === 'months' ? 'Previous year' : 'Earlier years'} onClick={goPrev} disabled={prevDisabled}>
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-              </svg>
-            </PickerNavButton>
-
-            {view === 'months' ? (
-              <button
-                type="button"
-                onClick={() => setView('years')}
-                aria-label={`${viewYear}, choose a different year`}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-bold text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
-              >
-                {viewYear}
-                <svg className="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            ) : (
-              <span className="text-xs font-bold text-slate-800">
-                {pageStart}–{pageEnd}
-              </span>
-            )}
-
-            <PickerNavButton label={view === 'months' ? 'Next year' : 'Later years'} onClick={goNext} disabled={nextDisabled}>
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-              </svg>
-            </PickerNavButton>
-          </div>
-
-          <div ref={gridRef} className={`grid gap-1.5 ${view === 'months' ? 'grid-cols-3' : 'grid-cols-4'}`}>
-            {view === 'months'
-              ? MONTHS.map(([value, name]) => {
-                  const selected = value === monthValue && yearValue === String(viewYear);
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => pickMonth(value)}
-                      aria-pressed={selected}
-                      data-autofocus={selected}
-                      className={pickerCellClass(selected, false)}
-                    >
-                      {name}
-                    </button>
-                  );
-                })
-              : pageYears.map((y) => {
-                  const disabled = y > maxYear || y < MIN_YEAR;
-                  return (
-                    <button
-                      key={y}
-                      type="button"
-                      disabled={disabled}
-                      onClick={() => pickYear(y)}
-                      aria-pressed={String(y) === yearValue}
-                      data-autofocus={y === viewYear}
-                      className={pickerCellClass(String(y) === yearValue, disabled)}
-                    >
-                      {y}
-                    </button>
-                  );
-                })}
-          </div>
-
-          {display && (
-            <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex justify-end">
-              <button
-                type="button"
-                onClick={clear}
-                className="px-1 rounded-sm text-[11px] font-semibold text-slate-500 hover:text-red-500 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-300"
-              >
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      {popover ? createPortal(popover, document.body) : null}
     </div>
   );
 };

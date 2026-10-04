@@ -1,18 +1,14 @@
 import React from 'react';
 import { renderAchievements } from '../Sections/richText';
-import ResumePhoto from '../Sections/ResumePhoto';
 import renderCertificates from '../Sections/renderCertificates';
 import {
   PAGE_WIDTH_PX,
   PAGE_HEIGHT_PX,
   tint,
   jobDates,
-  skillRating,
-  skillDots,
   DEFAULT_ACCENT,
   usePaginatedBlocks,
   A4Page,
-  padLast,
   endGroup,
   editAttrs,
   markSection,
@@ -20,123 +16,315 @@ import {
 } from './templateShared';
 
 /**
- * Journal (id: stone-journal). EMPTY STARTER: the wiring is done, the design is not.
+ * Plain ATS (id: ats-clean). A single-column, text-only résumé laid out the way applicant tracking systems
+ * expect to read it.
  *
- * It already paginates, supports edit mode, page numbers and section order, and
- * shows every section in a plain single-column layout. To design it, change the
- * markup below; keep these rules so pagination keeps working:
- *   - Sections stay FLAT: plain DOM elements (div, p, h3, span), no custom
- *     components and no Fragments. Section headings must be <h3>.
- *   - Body spacing is margins on the measured element (firstBodyRef), and the
- *     hidden measuring box must be as wide as the real body (CONTENT_WIDTH).
+ *   header   (page 1 only) the name on one line, the profession under it, then the contact details as a
+ *            horizontal row of bullets, one detail per bullet, wrapping onto more rows as needed. Everything
+ *            is plain text; nothing sits in a side panel.
+ *   body     one column, top to bottom, in sectionOrder order. Standard section names (Professional Summary,
+ *            Work Experience, Education, Skills, Languages ...) each with a thin rule under the heading.
+ *            Experience and Education put the title and the dates on one line (dates right-aligned), the
+ *            employer or school under it.
+ *   skills   plain comma-separated text, so every keyword is a real word in reading order.
+ *   languages  plain comma-separated text, with the level written as a word: "English (Native), Spanish (B2)".
+ *
+ * What is left out on purpose: sidebars, tables, text in columns, icons, level dots or bars, chips, text inside
+ * images, and anything that carries meaning only through colour. The accent strip along the top and the rules
+ * under the headings are CSS only, so they add nothing to the extracted text. Pages 2+ carry no name.
+ *
+ * Everything is flat: every heading, row and line is its own direct node, so the paginator can break between
+ * any two of them. Gaps are padding (never margin) on the atoms, so the hidden measuring box matches the real
+ * column.
+ *
+ * Type: Outfit for the name, section headings and entry titles, Inter for everything else (both must be loaded by
+ * the app, as in the other templates). Headings are large and semibold so each section stands out at a glance.
+ * Small coloured text uses a darkened accent; the pure accent is used for shapes only.
+ *
+ * To register: add 'ats-clean' to DEFAULT_ACCENT (suggested #1F4E79) and to your template list. A missing key
+ * falls back to FALLBACK_ACCENT. Use a #rrggbb accent.
+ *
+ * Note: this only helps if the exported PDF keeps real, selectable text. A PDF made from a screenshot of the page
+ * has no text for an ATS to read.
  */
 
-// Body geometry: mx-12 (48px) on both sides, mb-10 (40px) at the bottom, mt-10 on
-// pages 2+ (mt-6 on page 1, under the header).
-const MARGIN_X = 48;
-const MARGIN_Y = 40;
-const CONTENT_WIDTH = PAGE_WIDTH_PX - MARGIN_X * 2;
-const CONTENT_MAX_HEIGHT = PAGE_HEIGHT_PX - MARGIN_Y * 2;
+const FONT = `'Inter', 'Segoe UI', Arial, Helvetica, sans-serif`;
+const DISPLAY_FONT = `'Outfit', 'Inter', 'Segoe UI', Arial, Helvetica, sans-serif`;
+const FALLBACK_ACCENT = '#1F4E79';
+const INK = '#0E1116';
+const TEXT = '#2F3744';
+const MUTED = '#5B6472';
 
-const HEADING_CLASS = 'mb-3 border-b border-slate-200 pb-1 text-[14px] font-bold';
+// Geometry (px).
+const STRIP_H = 5; // accent strip along the top of every page
+const PAD_X = 52; // left and right page margin
+const TOP = 34; // top padding inside the header
+const MARGIN_TOP_FIRST = 24; // body on page 1, under the header
+const MARGIN_TOP_NEXT = 40; // body on pages 2+, under the strip
+const MARGIN_BOTTOM = 40;
 
-const StoneJournalTemplate = (props) => {
-  const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, sectionOrder, edit } = props;
-  const accentColor = props.accentColor || DEFAULT_ACCENT['stone-journal'];
+const CONTENT_W = PAGE_WIDTH_PX - PAD_X * 2; // the hidden measuring box must match
+const NEXT_PAGE_MAX_HEIGHT = PAGE_HEIGHT_PX - STRIP_H - MARGIN_TOP_NEXT - MARGIN_BOTTOM; // pages 2+
 
-  const headingStyle = { color: accentColor };
-  const heading = (key, text) => <h3 key={`${key}-h`} className={HEADING_CLASS} style={headingStyle}>{text}</h3>;
+// Contact entries shown as the value alone ("name@mail.com"). Anything else keeps its label ("Nationality: South African").
+const VALUE_ONLY_LABELS = new Set(['email', 'phone', 'tel', 'telephone', 'mobile', 'cell', 'website', 'linkedin', 'github', 'portfolio', 'location', 'address', 'other']);
 
-  const entryHead = (key, title, date) => (
-    <div key={key} className="mb-0.5 flex items-baseline justify-between gap-3">
-      <p className="text-[13.5px] font-bold leading-tight text-slate-900">{title}</p>
-      {date && <span className="shrink-0 whitespace-nowrap text-[11px] text-slate-500">{date}</span>}
+// Heading: plain text with a thin rule under it. The rule is a CSS border, so the heading stays plain text.
+// The shared renderers receive the same class and style, so their headings match.
+const HEADING = 'mb-3 border-b-2 pb-1.5 text-[21px] font-semibold leading-tight tracking-[-0.01em]';
+
+// Darken a #rrggbb colour toward black (used for small accent-coloured text).
+const shade = (hex, amount) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  const n = m ? parseInt(m[1], 16) : 0x1f3a5f;
+  const f = 1 - amount;
+  return `rgb(${Math.round(((n >> 16) & 255) * f)}, ${Math.round(((n >> 8) & 255) * f)}, ${Math.round((n & 255) * f)})`;
+};
+
+// Normalise any month/year in a string to "Jan 2025". Handles "08 2025", "08/2025", "2025-08",
+// "2025-08-15", "August 2025" and "Sept, 2025". Plain years and words like "Present" are left alone.
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAME_RE = /\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?,?\s+(\d{4})\b/gi;
+const formatDates = (text, { numeric = true } = {}) => {
+  if (!text) return text;
+  const fromNumber = (all, m, y) => (+m >= 1 && +m <= 12 ? `${MONTHS[+m - 1]} ${y}` : all);
+  let out = String(text);
+  if (numeric) {
+    out = out
+      .replace(/\b(\d{4})[/.-](\d{1,2})(?:[/.-]\d{1,2})?\b/g, (all, y, m) => fromNumber(all, m, y))
+      .replace(/\b(\d{1,2})[/.\s-]+(\d{4})\b/g, fromNumber);
+  }
+  return out.replace(MONTH_NAME_RE, (all, name, y) => `${MONTHS[MONTHS.findIndex((m) => m.toLowerCase() === name.slice(0, 3).toLowerCase())]} ${y}`);
+};
+
+// The shared renderers (Certificates, Projects) print whatever was stored, so "06 2020" can slip through. Walk what
+// they return and rewrite every text node that is only a date, whichever field it came from: "06 2020" -> "Jun 2020".
+const isDateOnly = (text) => {
+  const t = String(text).trim();
+  if (!t || t.length > 40 || !/\d{4}/.test(t)) return false;
+  const rest = t.replace(MONTH_NAME_RE, '').replace(/present|current|now|ongoing/gi, '');
+  return /^[\d\s/.,–—-]*$/.test(rest);
+};
+const unifyDates = (node) => {
+  if (typeof node === 'string') return isDateOnly(node) ? formatDates(node) : node;
+  if (Array.isArray(node)) return node.map((child) => unifyDates(child));
+  if (!React.isValidElement(node) || node.props.children === undefined || node.props.children === null) return node;
+  return React.cloneElement(node, undefined, React.Children.map(node.props.children, (child) => unifyDates(child)));
+};
+
+// Run formatDates over the date fields (date, issueDate, expiryDate, startDate, year ...) of a list of entries,
+// for sections whose shared renderer prints the raw value (Certificates, Projects).
+const DATE_KEY_RE = /date|issued|expir|year/i;
+const withFormattedDates = (items) => (Array.isArray(items) ? items.map((item) => {
+  if (!item || typeof item !== 'object') return item;
+  const next = { ...item };
+  Object.keys(next).forEach((k) => {
+    if (DATE_KEY_RE.test(k) && typeof next[k] === 'string') next[k] = formatDates(next[k]);
+  });
+  return next;
+}) : items);
+
+// A language as one plain-text phrase. Objects ({ language | text | name, level | proficiency }) become
+// "Spanish (Intermediate)"; a numeric level is written as a word, a text level is kept as typed. Plain strings
+// such as "English - Fluent" are kept as typed.
+const LEVEL_NAMES = ['', 'Beginner', 'Basic', 'Intermediate', 'Advanced', 'Fluent'];
+const languageText = (item) => {
+  if (item === null || item === undefined) return '';
+  if (typeof item !== 'object') return String(item).trim();
+  const name = String(item.text ?? item.language ?? item.name ?? item.label ?? '').trim();
+  if (!name) return '';
+  const raw = item.level ?? item.proficiency ?? item.rating ?? item.value;
+  if (raw === undefined || raw === null || raw === '') return name;
+  const n = Number(raw);
+  let level = String(raw).trim();
+  if (Number.isFinite(n)) {
+    const dots = n > 5 ? Math.min(5, Math.max(1, Math.round(n / 20))) : Math.min(5, Math.max(0, Math.round(n)));
+    level = LEVEL_NAMES[dots];
+  }
+  return level ? `${name} (${level})` : name;
+};
+
+// Split a contact entry into a label and a value. "Born: 10 Sep 2026" -> Born / 10 Sep 2026, so personal details
+// keep their own label. Email, phone, website and address entries without a "Label:" get a label from their shape.
+const parseContact = (raw) => {
+  const text = String(raw).trim();
+  const t = text.toLowerCase();
+  const labelled = /^(?!https?:)([^:\d,]{2,28}):\s*(.+)$/.exec(text);
+  if (labelled) return { label: labelled[1].trim(), value: labelled[2].trim() };
+  if (t.includes('@')) return { label: 'Email', value: text };
+  if (t.includes('linkedin')) return { label: 'LinkedIn', value: text };
+  if (/^\+?[\d\s().-]{7,}$/.test(t)) return { label: 'Phone', value: text };
+  if (/^(https?:\/\/|www\.)/.test(t) || /\.(com|dev|io|net|org|co|me|app|site)(\/|$)/.test(t)) return { label: 'Website', value: text };
+  if (/\d|,/.test(text)) return { label: 'Location', value: text };
+  if (/licen[cs]e/i.test(text)) return { label: 'Licence', value: text };
+  return { label: 'Other', value: text };
+};
+
+const unifyDatesIn = (sections) => Object.fromEntries(
+  Object.entries(sections || {}).map(([key, blocks]) => [
+    key,
+    Array.isArray(blocks) && blocks.length > 0 ? endGroup(blocks.map((block) => unifyDates(block))) : blocks,
+  ]),
+);
+
+const AtsCleanTemplate = (props) => {
+  const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects: rawProjects, references, certificates: rawCertificates, isEmpty, sectionOrder, edit } = props;
+  const projects = withFormattedDates(rawProjects);
+  const certificates = withFormattedDates(rawCertificates);
+  const accentColor = props.accentColor || DEFAULT_ACCENT['ats-clean'] || FALLBACK_ACCENT;
+  const accentText = shade(accentColor, 0.3);
+
+  const headingStyle = { fontFamily: DISPLAY_FONT, color: INK, borderColor: tint(accentColor, 0.5) };
+  const heading = (key, text) => <h3 key={`${key}-h`} className={HEADING} style={headingStyle}>{text}</h3>;
+
+  // Head of an entry: title with the dates on the same line, employer / school under it.
+  const entryHead = (title, date, primary, secondary) => (
+    <div>
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="text-[15.5px] font-semibold leading-snug tracking-tight" style={{ fontFamily: DISPLAY_FONT, color: INK }}>{title}</p>
+        {date && <span className="shrink-0 whitespace-nowrap text-[11.5px] tabular-nums" style={{ color: TEXT }}>{date}</span>}
+      </div>
+      {(primary || secondary) && (
+        <p className="mt-0.5 text-[12.5px] leading-snug">
+          {primary && <span className="font-medium" style={{ color: accentText }}>{primary}</span>}
+          {secondary && <span style={{ color: MUTED }}>{primary ? ', ' : ''}{secondary}</span>}
+        </p>
+      )}
     </div>
   );
 
-  const metaLine = (key, primary, secondary) => (primary || secondary) && (
-    <p key={key} className="mb-1.5 text-xs">
-      {primary && <span className="font-semibold" style={{ color: accentColor }}>{primary}</span>}
-      {secondary && <span className="text-slate-500">{primary ? ', ' : ''}{secondary}</span>}
-    </p>
+  // One entry = the head plus one atom per body line. The gap between entries is padding.
+  const entry = (id, head, bodyNodes, isLastEntry) => {
+    const body = (bodyNodes || []).filter(Boolean);
+    return [
+      <div key={`${id}-0`} style={{ paddingBottom: body.length === 0 ? (isLastEntry ? 0 : 14) : 4 }}>{head}</div>,
+      ...body.map((node, i) => (
+        <div key={`${id}-${i + 1}`} style={{ paddingBottom: i === body.length - 1 ? (isLastEntry ? 0 : 14) : 3 }}>{node}</div>
+      )),
+    ];
+  };
+
+  const richLines = (text, prefix) => (
+    text ? renderAchievements(text, prefix).map((el, i) => <div key={`${prefix}-w${i}`}>{el}</div>) : []
   );
+
+  // Skills and languages are one plain paragraph each: real words, in reading order, no graphics.
+  const skillNames = (namedSkills || []).map((s) => String(s.text ?? '').trim()).filter(Boolean);
+  const languageNames = (Array.isArray(languages) ? languages : []).map(languageText).filter(Boolean);
 
   const sectionMap = {
     summary: summary ? endGroup([
-      heading('summary', 'Summary'),
-      ...renderAchievements(summary, 'summary'),
+      heading('summary', 'Professional Summary'),
+      ...renderAchievements(summary, 'summary').map((el, i) => (
+        <div key={`summary-w${i}`} className="[&_*]:!text-[12.5px] [&_*]:!leading-[1.65] [&_*]:!text-[#1F2937]">{el}</div>
+      )),
     ]) : [],
+
     experience: jobs.length > 0 ? endGroup([
-      heading('experience', 'Experience'),
-      ...jobs.flatMap((job) => padLast([
-        entryHead(`job-${job.id}-title`, job.title, jobDates(job)),
-        metaLine(`job-${job.id}-meta`, job.employer, [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(', ')),
-        ...renderAchievements(job.achievements, `job-${job.id}-ach`),
-      ], 'mb-4')),
+      heading('experience', 'Work Experience'),
+      ...jobs.flatMap((job, i) => entry(
+        `job-${job.id ?? i}`,
+        entryHead(
+          job.title,
+          formatDates(jobDates(job)),
+          job.employer,
+          [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(', '),
+        ),
+        richLines(job.achievements, `job-${job.id ?? i}-ach`),
+        i === jobs.length - 1,
+      )),
     ]) : [],
+
     education: educations.length > 0 ? endGroup([
       heading('education', 'Education'),
-      ...educations.flatMap((ed) => padLast([
-        entryHead(`education-${ed.id}-title`, [ed.degree, ed.field].filter(Boolean).join(', ') || ed.institution, ed.date),
-        metaLine(`education-${ed.id}-meta`, [ed.degree, ed.field].some(Boolean) ? ed.institution : '', ed.location),
-        ...renderAchievements(ed.achievements, `education-${ed.id}-ach`),
-      ], 'mb-3')),
+      ...educations.flatMap((ed, i) => {
+        const title = [ed.degree, ed.field].filter(Boolean).join(', ') || ed.institution;
+        const school = title === ed.institution ? '' : ed.institution;
+        return entry(
+          `education-${ed.id ?? i}`,
+          entryHead(title, formatDates(ed.date), school, ed.location),
+          richLines(ed.achievements, `education-${ed.id ?? i}-ach`),
+          i === educations.length - 1,
+        );
+      }),
     ]) : [],
-    skills: namedSkills.length > 0 ? endGroup([
+
+    skills: skillNames.length > 0 ? endGroup([
       heading('skills', 'Skills'),
-      ...namedSkills.map((s) => (
-        <span key={`skill-${s.id}`} className="mb-1.5 mr-5 inline-flex items-center gap-2 align-top text-[12px] font-semibold text-slate-800">
-          {s.text}
-          {skillDots(skillRating(s), accentColor, tint(accentColor, 0.8))}
-        </span>
-      )),
+      <p key="skills-list" className="text-[12.5px] leading-[1.7]" style={{ color: TEXT }}>{skillNames.join(', ')}</p>,
+    ]) : [],
+
+    languages: languageNames.length > 0 ? endGroup([
+      heading('languages', 'Languages'),
+      <p key="languages-list" className="text-[12.5px] leading-[1.7]" style={{ color: TEXT }}>{languageNames.join(', ')}</p>,
     ]) : [],
   };
 
-  const extras = {
-    ...renderExtraSections({ projects, languages, hobbies, references, headingClass: HEADING_CLASS, headingStyle, accentColor }),
-    ...renderCertificates({ certificates, headingClass: HEADING_CLASS, headingStyle }),
-  };
-  const allBlocks = sectionOrder.flatMap((key) => markSection(edit, key, sectionMap[key] || extras[key] || []));
-  const { pages, measureContainerRef, firstBodyRef, measureContent } = usePaginatedBlocks(allBlocks, CONTENT_MAX_HEIGHT);
+  // Extras come from the shared helpers and take this template's heading; their dates are normalised too.
+  const extras = unifyDatesIn(renderExtraSections({ projects, languages, hobbies, references, headingClass: HEADING, headingStyle, accentColor }));
+  const certs = unifyDatesIn(renderCertificates({ certificates, headingClass: HEADING, headingStyle }));
+
+  const blocks = sectionOrder.flatMap((key) => markSection(edit, key, sectionMap[key] || extras[key] || certs[key] || []));
+  const body = usePaginatedBlocks(blocks, NEXT_PAGE_MAX_HEIGHT);
+  const pageCount = Math.max(1, body.pages.length);
+
+  // Header pieces. The name stays one text run on one line; each contact detail is one plain-text bullet.
+  const name = (fullName || 'Your Name').trim();
+  const nameSize = name.length > 26 ? 34 : name.length > 18 ? 42 : 52;
+  const profession = (personal.profession || '').split('|').map((s) => s.trim()).filter(Boolean).join(' | ');
+  const contactItems = (contactList || [])
+    .filter((c) => typeof c === 'string' && c.trim())
+    .map((c) => parseContact(formatDates(c, { numeric: false })))
+    .map(({ label, value }) => (VALUE_ONLY_LABELS.has(label.toLowerCase()) ? value : `${label}: ${value}`));
 
   return (
     <>
-      {/* Hidden copy of every atom, as wide as the real page body, used to measure the page breaks. */}
+      {/* Hidden copy of every atom, as wide as the real column body. */}
       <div
-        ref={measureContainerRef}
+        ref={body.measureContainerRef}
         className="absolute pointer-events-none"
-        style={{ top: -9999, left: -9999, width: CONTENT_WIDTH }}
+        style={{ top: -9999, left: -9999, width: CONTENT_W, fontFamily: FONT }}
       >
-        {measureContent}
+        {body.measureContent}
       </div>
 
-      {pages.map((pageBlocks, index) => (
-        <A4Page key={index} pageNum={index + 1} totalPages={pages.length}>
-          <div className="relative flex h-full w-full flex-col bg-white text-left text-slate-800">
+      {Array.from({ length: pageCount }, (_, index) => (
+        <A4Page key={index} pageNum={index + 1} totalPages={pageCount}>
+          <div
+            className="relative flex h-full w-full flex-col overflow-hidden bg-white text-left antialiased"
+            style={{ fontFamily: FONT, color: TEXT, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+          >
+            {/* Accent strip: CSS only, on every page. */}
+            <div aria-hidden="true" className="shrink-0" style={{ height: STRIP_H, background: accentColor }} />
+
+            {/* Header: page 1 only, so the name is never repeated on later pages. */}
             {index === 0 && (
-              <div {...editAttrs(edit, 'personal')} className="flex shrink-0 items-center justify-between gap-6 px-12 pt-10">
-                <div className="min-w-0 flex-1">
-                  <h1 className="break-words text-[34px] font-bold leading-[1.1] text-slate-900">{fullName || 'Your Name'}</h1>
-                  {personal.profession && (
-                    <p className="mt-1 text-[15px] font-medium" style={{ color: accentColor }}>{personal.profession}</p>
-                  )}
-                  {contactList.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-slate-600">
-                      {contactList.map((c, i) => <span key={i} className="[overflow-wrap:anywhere]">{c}</span>)}
-                    </div>
-                  )}
-                </div>
-                <div className="shrink-0">
-                  <ResumePhoto src={personal.photo} style={personal.photoStyle} borderColor={accentColor} />
-                </div>
+              <div {...editAttrs(edit, 'personal')} className="shrink-0" style={{ padding: `${TOP}px ${PAD_X}px 6px` }}>
+                <h1 className="break-words font-semibold leading-[1.05] tracking-[-0.03em]" style={{ fontFamily: DISPLAY_FONT, fontSize: nameSize, color: INK }}>{name}</h1>
+                {profession && (
+                  <p className="mt-2 text-[18px] font-medium leading-snug" style={{ fontFamily: DISPLAY_FONT, color: accentText }}>{profession}</p>
+                )}
+                {contactItems.length > 0 && (
+                  <ul className="mt-3.5 flex flex-wrap gap-x-5 gap-y-1 text-[12px] leading-[1.6]" style={{ color: TEXT }}>
+                    {contactItems.map((item, i) => (
+                      <li key={i} className="flex min-w-0 items-baseline gap-1.5 [overflow-wrap:anywhere]">
+                        <span style={{ color: accentText }}>•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 
-            <div ref={index === 0 ? firstBodyRef : undefined} className={`mx-12 mb-10 min-h-0 flex-1 overflow-hidden ${index === 0 ? 'mt-6' : 'mt-10'}`}>
-              {pageBlocks}
+            <div
+              ref={index === 0 ? body.firstBodyRef : undefined}
+              className="relative min-h-0 flex-1 overflow-hidden"
+              style={{ marginLeft: PAD_X, marginRight: PAD_X, marginTop: index === 0 ? MARGIN_TOP_FIRST : MARGIN_TOP_NEXT, marginBottom: MARGIN_BOTTOM }}
+            >
+              {body.pages[index] || null}
               {isEmpty && index === 0 && (
-                <p className="text-xs italic text-slate-400">Nothing entered yet — fill in a few steps to see them appear here.</p>
+                <p className="text-xs italic" style={{ color: MUTED }}>Nothing entered yet — fill in a few steps to see them appear here.</p>
               )}
             </div>
           </div>
@@ -146,4 +334,4 @@ const StoneJournalTemplate = (props) => {
   );
 };
 
-export default StoneJournalTemplate;
+export default AtsCleanTemplate;

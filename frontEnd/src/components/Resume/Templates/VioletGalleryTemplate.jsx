@@ -1,142 +1,199 @@
 import React from 'react';
 import { renderAchievements } from '../Sections/richText';
-import ResumePhoto from '../Sections/ResumePhoto';
-import renderCertificates from '../Sections/renderCertificates';
+import { languageLevelInfo } from '../Sections/LanguageLevelSelect';
+import { getSkillLevelLabel } from '../Sections/SkillsField';
 import {
-  PAGE_WIDTH_PX,
-  PAGE_HEIGHT_PX,
   tint,
   jobDates,
   skillRating,
-  skillDots,
-  DEFAULT_ACCENT,
   usePaginatedBlocks,
   A4Page,
   padLast,
   endGroup,
-  editAttrs,
   markSection,
   renderExtraSections,
 } from './templateShared';
+import renderCertificates from '../Sections/renderCertificates';
 
-/**
- * Gallery (id: violet-gallery). EMPTY STARTER: the wiring is done, the design is not.
- *
- * It already paginates, supports edit mode, page numbers and section order, and
- * shows every section in a plain single-column layout. To design it, change the
- * markup below; keep these rules so pagination keeps working:
- *   - Sections stay FLAT: plain DOM elements (div, p, h3, span), no custom
- *     components and no Fragments. Section headings must be <h3>.
- *   - Body spacing is margins on the measured element (firstBodyRef), and the
- *     hidden measuring box must be as wide as the real body (CONTENT_WIDTH).
- */
+/* ------------------------------ Design tokens ------------------------------ */
+// ATS-friendly version of the Slate style:
+//  - ONE column, read top to bottom, so a parser never has to guess the order of two columns
+//  - no photo, no icons, no rating dots/bars: everything that carries meaning is real text
+//  - standard section names (Professional Summary, Work Experience, Education, Skills, ...)
+//  - the look comes only from empty decorative shapes (top strip, heading marker + rule), which add no text
+const INK = '#1E2530';        // headings, names, main text
+const MUTED = '#667085';      // secondary text
+const PAPER = '#FFFFFF';      // page background
+const MAIN_W = 714;           // px  -> 794 - 40 - 40
+const NAME_FONT = '"Plus Jakarta Sans", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
-// Body geometry: mx-12 (48px) on both sides, mb-10 (40px) at the bottom, mt-10 on
-// pages 2+ (mt-6 on page 1, under the header).
-const MARGIN_X = 48;
-const MARGIN_Y = 40;
-const CONTENT_WIDTH = PAGE_WIDTH_PX - MARGIN_X * 2;
-const CONTENT_MAX_HEIGHT = PAGE_HEIGHT_PX - MARGIN_Y * 2;
+// Darkens a #rgb / #rrggbb colour. Used so accent-coloured TEXT stays readable on white.
+const darken = (color, amount) => {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(color || '').trim());
+  if (!m) return '#334155';
+  let hex = m[1];
+  if (hex.length === 3) hex = hex.split('').map((ch) => ch + ch).join('');
+  const n = parseInt(hex, 16);
+  const channel = (v) => Math.round(v * (1 - amount)).toString(16).padStart(2, '0');
+  return `#${channel((n >> 16) & 255)}${channel((n >> 8) & 255)}${channel(n & 255)}`;
+};
 
-const HEADING_CLASS = 'mb-3 border-b border-slate-200 pb-1 text-[14px] font-bold';
+const SlateATSTemplate = (props) => {
+  const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, accentColor, sectionOrder, edit } = props;
 
-const VioletGalleryTemplate = (props) => {
-  const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, sectionOrder, edit } = props;
-  const accentColor = props.accentColor || DEFAULT_ACCENT['violet-gallery'];
+  const lineColor = tint(accentColor, 0.6);       // hairlines
+  const accentText = darken(accentColor, 0.2);    // accent used for text
 
-  const headingStyle = { color: accentColor };
-  const heading = (key, text) => <h3 key={`${key}-h`} className={HEADING_CLASS} style={headingStyle}>{text}</h3>;
+  const marker = <span key="marker" className="shrink-0" style={{ width: 8, height: 8, backgroundColor: accentColor }} />;
+  const rule = <span key="rule" className="flex-1" style={{ height: 1, backgroundColor: lineColor }} />;
 
-  const entryHead = (key, title, date) => (
-    <div key={key} className="mb-0.5 flex items-baseline justify-between gap-3">
-      <p className="text-[13.5px] font-bold leading-tight text-slate-900">{title}</p>
-      {date && <span className="shrink-0 whitespace-nowrap text-[11px] text-slate-500">{date}</span>}
-    </div>
+  // Every entry is a FLAT list of elements: no <section>, no wrapper divs.
+  const headingClass = 'flex items-center gap-3 text-[13.5px] font-semibold mb-3';
+  const headingStyle = { color: INK };
+  const heading = (key, text) => (
+    <h3 key={`${key}-h`} className={headingClass} style={headingStyle}>
+      {marker}
+      <span>{text}</span>
+      {rule}
+    </h3>
+  );
+  // Sections built by the shared renderers draw their own heading; give it the marker and the rule.
+  const withHeadingMarker = (blocks) => {
+    const [first, ...rest] = blocks;
+    if (!React.isValidElement(first) || first.props.className !== headingClass) return blocks;
+    return [React.cloneElement(first, undefined, marker, <span key="text">{first.props.children}</span>, rule), ...rest];
+  };
+
+  // One entry (job or education): title + date on one line, accent meta line, then the bullets.
+  const entry = (kind, item, title, date, meta) => padLast([
+    <div key={`${kind}-${item.id}-title`} className={`flex justify-between items-baseline gap-3 ${meta ? 'mb-0.5' : 'mb-2'}`}>
+      <p className="font-semibold text-[13px] leading-snug" style={{ color: INK }}>{title}</p>
+      {date && <p className="text-[10.5px] whitespace-nowrap" style={{ color: MUTED }}>{date}</p>}
+    </div>,
+    meta && (
+      <p key={`${kind}-${item.id}-meta`} className="text-[11.5px] font-medium mb-2" style={{ color: accentText }}>{meta}</p>
+    ),
+    ...renderAchievements(item.achievements, `${kind}-${item.id}-ach`),
+  ], 'mb-4');
+
+  // Skills and languages are plain comma-separated text, with the level written out in brackets.
+  const skillItems = namedSkills.map((s) => {
+    const rating = skillRating(s);
+    return rating > 0 ? `${s.text} (${getSkillLevelLabel(rating)})` : s.text;
+  });
+  const languageItems = (languages?.items || []).filter((l) => l.name).map((l) => {
+    const { label } = languageLevelInfo(l);
+    return label ? `${l.name} (${label})` : l.name;
+  });
+  const hasHobbies = Boolean(hobbies?.enabled && hobbies.text && String(hobbies.text).trim());
+  const listLine = (key, items) => (
+    <p key={key} className="text-[11.5px] leading-relaxed" style={{ color: INK }}>{items.join(', ')}</p>
   );
 
-  const metaLine = (key, primary, secondary) => (primary || secondary) && (
-    <p key={key} className="mb-1.5 text-xs">
-      {primary && <span className="font-semibold" style={{ color: accentColor }}>{primary}</span>}
-      {secondary && <span className="text-slate-500">{primary ? ', ' : ''}{secondary}</span>}
-    </p>
-  );
-
-  const sectionMap = {
+  const mainMap = {
     summary: summary ? endGroup([
-      heading('summary', 'Summary'),
+      heading('summary', 'Professional Summary'),
       ...renderAchievements(summary, 'summary'),
     ]) : [],
     experience: jobs.length > 0 ? endGroup([
-      heading('experience', 'Experience'),
-      ...jobs.flatMap((job) => padLast([
-        entryHead(`job-${job.id}-title`, job.title, jobDates(job)),
-        metaLine(`job-${job.id}-meta`, job.employer, [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(', ')),
-        ...renderAchievements(job.achievements, `job-${job.id}-ach`),
-      ], 'mb-4')),
+      heading('experience', 'Work Experience'),
+      ...jobs.flatMap((job) => {
+        const place = [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(' · ');
+        const meta = [job.employer, place].filter(Boolean).join(' · ');
+        return entry('job', job, job.title, jobDates(job), meta);
+      }),
     ]) : [],
     education: educations.length > 0 ? endGroup([
       heading('education', 'Education'),
-      ...educations.flatMap((ed) => padLast([
-        entryHead(`education-${ed.id}-title`, [ed.degree, ed.field].filter(Boolean).join(', ') || ed.institution, ed.date),
-        metaLine(`education-${ed.id}-meta`, [ed.degree, ed.field].some(Boolean) ? ed.institution : '', ed.location),
-        ...renderAchievements(ed.achievements, `education-${ed.id}-ach`),
-      ], 'mb-3')),
+      ...educations.flatMap((ed) => {
+        const degree = [ed.degree, ed.field].filter(Boolean).join(', ');
+        const title = degree || ed.institution;
+        const school = degree ? ed.institution : '';
+        const meta = [school, ed.location].filter(Boolean).join(' · ');
+        return entry('education', ed, title, ed.date, meta);
+      }),
     ]) : [],
-    skills: namedSkills.length > 0 ? endGroup([
+    skills: skillItems.length > 0 ? endGroup([
       heading('skills', 'Skills'),
-      ...namedSkills.map((s) => (
-        <span key={`skill-${s.id}`} className="mb-1.5 mr-5 inline-flex items-center gap-2 align-top text-[12px] font-semibold text-slate-800">
-          {s.text}
-          {skillDots(skillRating(s), accentColor, tint(accentColor, 0.8))}
-        </span>
-      )),
+      listLine('skills-list', skillItems),
+    ]) : [],
+    languages: languageItems.length > 0 ? endGroup([
+      heading('languages', 'Languages'),
+      listLine('languages-list', languageItems),
+    ]) : [],
+    hobbies: hasHobbies ? endGroup([
+      heading('hobbies', 'Hobbies & Interests'),
+      ...renderAchievements(hobbies.text, 'hobbies'),
     ]) : [],
   };
 
+  // Projects, references and certificates come from the shared renderers.
   const extras = {
-    ...renderExtraSections({ projects, languages, hobbies, references, headingClass: HEADING_CLASS, headingStyle, accentColor }),
-    ...renderCertificates({ certificates, headingClass: HEADING_CLASS, headingStyle }),
+    ...renderExtraSections({ projects, references, headingClass, headingStyle }),
+    ...renderCertificates({ certificates, headingClass, headingStyle }),
   };
-  const allBlocks = sectionOrder.flatMap((key) => markSection(edit, key, sectionMap[key] || extras[key] || []));
-  const { pages, measureContainerRef, firstBodyRef, measureContent } = usePaginatedBlocks(allBlocks, CONTENT_MAX_HEIGHT);
+
+  /* ------------------------------- Page header ------------------------------ */
+  // Name, profession and contact line are plain text at the top of page 1, as one flat block.
+  const nameParts = (fullName || 'Your Name').trim().split(/\s+/);
+  const lastName = nameParts.length > 1 ? nameParts.pop() : '';
+  const firstName = nameParts.join(' ');
+  const nameLength = (fullName || 'Your Name').trim().length;
+  const nameSize = nameLength <= 18 ? 40 : nameLength <= 26 ? 34 : 28;
+  const professionParts = (personal.profession || '').split('|').map((p) => p.trim()).filter(Boolean);
+
+  const headerBlocks = markSection(edit, 'personal', [
+    <div key="page-header" className="pb-5 mb-6 border-b" style={{ borderColor: lineColor }}>
+      <h1 className="break-words" style={{ fontFamily: NAME_FONT, fontSize: nameSize, lineHeight: 1.08, letterSpacing: '-0.015em', color: INK }}>
+        <span style={{ fontWeight: lastName ? 300 : 700 }}>{firstName}</span>
+        {lastName && <span style={{ fontWeight: 700 }}>{' '}{lastName}</span>}
+      </h1>
+      {professionParts.length > 0 && (
+        <p className="mt-2 text-[12.5px] font-semibold leading-relaxed" style={{ color: accentText }}>
+          {professionParts.join(' | ')}
+        </p>
+      )}
+      {contactList.length > 0 && (
+        <p className="mt-3 text-[11px] leading-relaxed break-words" style={{ color: MUTED }}>
+          {contactList.join(' | ')}
+        </p>
+      )}
+    </div>,
+  ]);
+
+  const mainBlocks = [
+    ...headerBlocks,
+    ...sectionOrder.flatMap((key) => markSection(
+      edit,
+      key,
+      mainMap[key] || (extras[key] ? withHeadingMarker(extras[key]) : []),
+    )),
+  ];
+
+  /* ------------------------------ Pagination ------------------------------- */
+  const main = usePaginatedBlocks(mainBlocks, 1020);
+  const pageCount = main.pages.length;
 
   return (
     <>
-      {/* Hidden copy of every atom, as wide as the real page body, used to measure the page breaks. */}
-      <div
-        ref={measureContainerRef}
-        className="absolute pointer-events-none"
-        style={{ top: -9999, left: -9999, width: CONTENT_WIDTH }}
-      >
-        {measureContent}
+      <div ref={main.measureContainerRef} className="absolute top-[-9999px] left-[-9999px] pointer-events-none" style={{ width: MAIN_W }}>
+        {main.measureContent}
       </div>
 
-      {pages.map((pageBlocks, index) => (
-        <A4Page key={index} pageNum={index + 1} totalPages={pages.length}>
-          <div className="relative flex h-full w-full flex-col bg-white text-left text-slate-800">
-            {index === 0 && (
-              <div {...editAttrs(edit, 'personal')} className="flex shrink-0 items-center justify-between gap-6 px-12 pt-10">
-                <div className="min-w-0 flex-1">
-                  <h1 className="break-words text-[34px] font-bold leading-[1.1] text-slate-900">{fullName || 'Your Name'}</h1>
-                  {personal.profession && (
-                    <p className="mt-1 text-[15px] font-medium" style={{ color: accentColor }}>{personal.profession}</p>
-                  )}
-                  {contactList.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-slate-600">
-                      {contactList.map((c, i) => <span key={i} className="[overflow-wrap:anywhere]">{c}</span>)}
-                    </div>
-                  )}
-                </div>
-                <div className="shrink-0">
-                  <ResumePhoto src={personal.photo} style={personal.photoStyle} borderColor={accentColor} />
-                </div>
-              </div>
-            )}
+      {Array.from({ length: pageCount }, (_, index) => (
+        <A4Page key={index} pageNum={index + 1} totalPages={pageCount}>
+          <div className="relative w-full h-full text-left" style={{ color: INK, backgroundColor: PAPER }}>
+            {/* accent strip across the top of every page (decorative, holds no text) */}
+            <div className="absolute top-0 left-0 right-0 z-10" style={{ height: 6, backgroundColor: accentColor }} aria-hidden="true" />
 
-            <div ref={index === 0 ? firstBodyRef : undefined} className={`mx-12 mb-10 min-h-0 flex-1 overflow-hidden ${index === 0 ? 'mt-6' : 'mt-10'}`}>
-              {pageBlocks}
+            <div
+              ref={index === 0 ? main.firstBodyRef : undefined}
+              className="w-full h-full overflow-hidden"
+              style={{ padding: '32px 40px' }}
+            >
+              {main.pages[index]}
               {isEmpty && index === 0 && (
-                <p className="text-xs italic text-slate-400">Nothing entered yet — fill in a few steps to see them appear here.</p>
+                <p className="text-xs text-slate-400 italic mt-10">Nothing entered yet — fill in a few steps to see them appear here.</p>
               )}
             </div>
           </div>
@@ -146,4 +203,4 @@ const VioletGalleryTemplate = (props) => {
   );
 };
 
-export default VioletGalleryTemplate;
+export default SlateATSTemplate;

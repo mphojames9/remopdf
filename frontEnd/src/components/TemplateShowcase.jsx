@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, memo } from 'react';
 import ResumePhoto, { PHOTO_DEFAULTS } from './Resume/Sections/ResumePhoto';
 import profile2 from '../assets/profile2.png';
 
@@ -57,6 +57,12 @@ const COPY = {
 const PAGE_WIDTH_PX = 794;
 const PAGE_HEIGHT_PX = 1123;
 
+const AUTOPLAY_MS = 3500; // time each layout stays on stage while auto-playing
+const LEAVE_MS = 500; // how long the outgoing layout lingers while it slides away
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 const SHOWCASE_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap');
 .ts-display { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
@@ -71,12 +77,22 @@ const SHOWCASE_CSS = `
   @keyframes ts-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes ts-modal { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
   @keyframes ts-bounce { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  @keyframes ts-in-next { from { opacity: 0; transform: translateX(56px) rotate(1.8deg) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes ts-in-prev { from { opacity: 0; transform: translateX(-56px) rotate(-1.8deg) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes ts-out-next { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-56px) rotate(-1.8deg) scale(.96); } }
+  @keyframes ts-out-prev { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(56px) rotate(1.8deg) scale(.96); } }
 
   .ts-paper { opacity: 0; }
   .ts-paper.ts-in { opacity: 1; animation: ts-settle .7s cubic-bezier(.2,.8,.2,1) both; }
+  .ts-paper.ts-in.ts-dir-next { animation: ts-in-next .6s cubic-bezier(.2,.8,.2,1) both; }
+  .ts-paper.ts-in.ts-dir-prev { animation: ts-in-prev .6s cubic-bezier(.2,.8,.2,1) both; }
+  .ts-leave.ts-dir-next { animation: ts-out-next .45s cubic-bezier(.4,0,.8,.4) both; }
+  .ts-leave.ts-dir-prev { animation: ts-out-prev .45s cubic-bezier(.4,0,.8,.4) both; }
   .ts-fade { animation: ts-fade .25s ease-out; }
   .ts-modal { animation: ts-modal .35s cubic-bezier(.2,.9,.25,1.05); }
   .ts-bounce { animation: ts-bounce .35s ease-out; }
+  @keyframes ts-swap { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+  .ts-swap { transform-origin: top center; animation: ts-swap .55s cubic-bezier(.45,.05,.2,1) both; }
 
   .ts-stage { transition: background-color .6s ease; }
   .ts-thumb, .ts-thumb * { transition: background-color .45s ease, color .45s ease, border-color .45s ease; }
@@ -120,6 +136,24 @@ const useInView = (threshold = 0.1) => {
   }, [threshold]);
 
   return [ref, seen];
+};
+
+// Unlike useInView, this tracks live visibility so autoplay stops when scrolled away.
+const useOnScreen = (ref, threshold = 0.15) => {
+  const [onScreen, setOnScreen] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setOnScreen(true);
+      return undefined;
+    }
+    const io = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting), { threshold });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, threshold]);
+
+  return onScreen;
 };
 
 const ACCENT_SWATCHES = [
@@ -398,6 +432,31 @@ const IconReset = () => (
   </svg>
 );
 
+const IconPrev = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+);
+
+const IconNext = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+const IconPlay = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+    <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" />
+  </svg>
+);
+
+const IconPause = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+    <rect x="6" y="5" width="4" height="14" rx="1" />
+    <rect x="14" y="5" width="4" height="14" rx="1" />
+  </svg>
+);
+
 const colorName = (color) => {
   if (color == null) return 'Template default';
   if (color === GRAYSCALE) return 'Grayscale';
@@ -468,11 +527,14 @@ const ColorBar = ({ color, onChange }) => {
   );
 };
 
-const TemplateRow = ({ card, color, selected, featured, featuredLabel, onSelect }) => {
+// memo + a cached thumbnail element: when the selection moves, only the two rows whose highlight
+// changes re-render, and the (heavy) resume inside every thumbnail is left untouched.
+const TemplateRow = memo(function TemplateRow({ card, color, selected, featured, featuredLabel, onSelect }) {
   const { id, label, note, Template } = card;
   const accent = color || DEFAULT_ACCENT[id];
   const props = useMemo(() => getTemplateProps(accent), [accent]);
   const [rowRef, seen] = useInView(0.01);
+  const thumb = useMemo(() => (seen ? <Template {...props} /> : null), [seen, Template, props]);
 
   return (
     <button
@@ -485,7 +547,7 @@ const TemplateRow = ({ card, color, selected, featured, featuredLabel, onSelect 
       }`}
     >
       <TemplateThumb className="w-14 shrink-0 rounded-[3px] shadow-md ring-1 ring-black/10">
-        {seen && <Template {...props} />}
+        {thumb}
       </TemplateThumb>
 
       <span className="min-w-0 flex-1">
@@ -505,22 +567,114 @@ const TemplateRow = ({ card, color, selected, featured, featuredLabel, onSelect 
       )}
     </button>
   );
-};
+});
 
-const Stage = ({ card, accent, visible }) => {
+const PAPER_CLASS =
+  'w-full rounded-[3px] shadow-[0_40px_80px_-24px_rgba(0,0,0,.65),0_8px_20px_-8px_rgba(0,0,0,.4)]';
+
+const CTRL_BTN =
+  'flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:bg-white/15 active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white';
+
+// The layout that was just on stage; it stays mounted briefly so it can slide out.
+const LeavingPaper = ({ card, accent, direction }) => {
   const props = useMemo(() => getTemplateProps(accent), [accent]);
   const { Template } = card;
 
   return (
     <div
-      className="ts-stage ts-spot flex h-full items-center justify-center rounded-[28px] px-6 py-10 sm:px-14 sm:py-14"
-      style={{ '--ts-accent': accent }}
+      className={`ts-leave ts-dir-${direction > 0 ? 'next' : 'prev'} pointer-events-none absolute inset-0`}
+      aria-hidden="true"
     >
-      <div key={card.id} className={`ts-paper w-full max-w-[460px] ${visible ? 'ts-in' : ''}`}>
-        <TemplateThumb className="w-full rounded-[3px] shadow-[0_40px_80px_-24px_rgba(0,0,0,.65),0_8px_20px_-8px_rgba(0,0,0,.4)]">
-          <Template {...props} />
-        </TemplateThumb>
+      <TemplateThumb className={PAPER_CLASS}>
+        <Template {...props} />
+      </TemplateThumb>
+    </div>
+  );
+};
+
+const Stage = ({ card, accent, visible, direction, index, total, playing, onPrev, onNext, onTogglePlay }) => {
+  const props = useMemo(() => getTemplateProps(accent), [accent]);
+  const { Template } = card;
+  const dir = direction > 0 ? 'next' : direction < 0 ? 'prev' : '';
+
+  const lastShown = useRef({ card, accent });
+  const [leaving, setLeaving] = useState(null);
+
+  // When the layout changes, keep the previous one around so it can animate out.
+  useLayoutEffect(() => {
+    const last = lastShown.current;
+    if (last.card.id !== card.id && direction !== 0 && !prefersReducedMotion()) {
+      setLeaving({ card: last.card, accent: last.accent, direction });
+    }
+    lastShown.current = { card, accent };
+  }, [card, accent, direction]);
+
+  useEffect(() => {
+    if (!leaving) return undefined;
+    const t = setTimeout(() => setLeaving(null), LEAVE_MS);
+    return () => clearTimeout(t);
+  }, [leaving]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      onPrev();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      onNext();
+    }
+  };
+
+  return (
+    <div
+      className="ts-stage ts-spot flex h-full flex-col items-center justify-center gap-6 overflow-hidden rounded-[28px] px-6 py-8 sm:px-14 sm:py-12"
+      style={{ '--ts-accent': accent }}
+      role="group"
+      aria-roledescription="carousel"
+      aria-label="Layout preview"
+    >
+      <div className="relative w-full max-w-[460px]">
+        {leaving && <LeavingPaper key={`leaving-${leaving.card.id}`} {...leaving} />}
+
+        <div
+          key={card.id}
+          className={`ts-paper relative ${visible ? 'ts-in' : ''} ${visible && dir ? `ts-dir-${dir}` : ''}`}
+        >
+          <TemplateThumb className={PAPER_CLASS}>
+            <Template {...props} />
+          </TemplateThumb>
+        </div>
       </div>
+
+      <div
+        className="flex items-center gap-1 rounded-full bg-white/10 p-1.5 text-white ring-1 ring-white/15 backdrop-blur"
+        role="group"
+        aria-label="Layout controls"
+        onKeyDown={handleKeyDown}
+      >
+        <button type="button" onClick={onPrev} aria-label="Previous layout" title="Previous" className={CTRL_BTN}>
+          <IconPrev />
+        </button>
+        <button
+          type="button"
+          onClick={onTogglePlay}
+          aria-label={playing ? 'Pause slideshow' : 'Play slideshow'}
+          title={playing ? 'Pause' : 'Play'}
+          className={CTRL_BTN}
+        >
+          {playing ? <IconPause /> : <IconPlay />}
+        </button>
+        <span className="min-w-[4.5rem] select-none text-center text-sm font-semibold tabular-nums text-white/90">
+          {index + 1} / {total}
+        </span>
+        <button type="button" onClick={onNext} aria-label="Next layout" title="Next" className={CTRL_BTN}>
+          <IconNext />
+        </button>
+      </div>
+
+      <p className="sr-only" aria-live={playing ? 'off' : 'polite'}>
+        {card.label} layout, {index + 1} of {total}
+      </p>
     </div>
   );
 };
@@ -530,58 +684,103 @@ const BTN_PRIMARY =
 const BTN_SECONDARY =
   'inline-flex items-center justify-center rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 active:scale-[.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2';
 
-const PreviewModal = ({ templateId, color, onClose, onUse }) => {
+const NAV_BTN =
+  'flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900';
+
+const PreviewModal = ({ templateId, color, onColorChange, onStep, onClose, onUse }) => {
   const card = TEMPLATE_CARDS.find((c) => c.id === templateId);
   const startRef = useRef(null);
+  const scrollRef = useRef(null);
+  const accent = card ? color || DEFAULT_ACCENT[card.id] : null;
+  const templateProps = useMemo(() => (accent ? getTemplateProps(accent) : null), [accent]);
 
+  // Lock page scroll and focus the primary action once, when the preview opens.
   useEffect(() => {
-    const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handleEsc);
     document.body.style.overflow = 'hidden';
     startRef.current?.focus();
     return () => {
-      document.removeEventListener('keydown', handleEsc);
       document.body.style.overflow = '';
     };
-  }, [onClose]);
+  }, []);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+        onStep(e.key === 'ArrowRight' ? 1 : -1);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose, onStep]);
+
+  // A new layout starts at the top of its first page.
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [templateId]);
 
   if (!card) return null;
 
-  const accent = color || DEFAULT_ACCENT[card.id];
   const { Template } = card;
-  const templateProps = getTemplateProps(accent);
+  const total = TEMPLATE_IDS.length;
+  const position = TEMPLATE_IDS.indexOf(card.id) + 1;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={`Preview of ${card.label}`}>
       <div className="ts-fade absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
       <div className="ts-modal relative flex max-h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
-        <div className="flex shrink-0 items-center justify-between px-6 py-4">
-          <div>
+        <div className="flex shrink-0 items-center justify-between gap-3 px-6 py-4">
+          <div className="min-w-0">
             <h2 className="ts-display text-xl font-extrabold text-slate-900">{card.label}</h2>
             <p className="text-sm text-slate-500">{card.note}</p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={COPY.closePreview}
-            className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
-          >
-            <IconClose />
-          </button>
+
+          <div className="flex shrink-0 items-center gap-1">
+            <button type="button" onClick={() => onStep(-1)} aria-label="Previous layout" title="Previous" className={NAV_BTN}>
+              <IconPrev />
+            </button>
+            <span className="min-w-[3.5rem] select-none text-center text-sm font-semibold tabular-nums text-slate-700">
+              {position} / {total}
+            </span>
+            <button type="button" onClick={() => onStep(1)} aria-label="Next layout" title="Next" className={NAV_BTN}>
+              <IconNext />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={COPY.closePreview}
+              className="ml-1 rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+            >
+              <IconClose />
+            </button>
+          </div>
         </div>
 
-        <div className="ts-stage pro-scroll pro-scroll-dark flex-1 overflow-auto p-4 sm:p-10" style={{ '--ts-accent': accent }}>
+        <div ref={scrollRef} className="ts-stage pro-scroll pro-scroll-dark flex-1 overflow-auto p-4 sm:p-10" style={{ '--ts-accent': accent }}>
           {/* Templates render multiple pages; stack them at true page width and let the area scroll */}
-          <div className="mx-auto flex select-none flex-col gap-6" style={{ width: PAGE_WIDTH_PX }}>
+          <div key={card.id} className="ts-swap mx-auto flex select-none flex-col gap-6" style={{ width: PAGE_WIDTH_PX }}>
             <Template {...templateProps} />
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-between px-6 py-4">
-          <button type="button" onClick={onClose} className={BTN_SECONDARY}>{COPY.back}</button>
-          <button type="button" ref={startRef} onClick={() => onUse(card.id)} className={BTN_PRIMARY}>{COPY.use}</button>
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-4 px-6 py-4">
+          <div>
+            <div className="mb-2 flex items-baseline gap-3">
+              <h3 className="text-sm font-semibold text-slate-900">{COPY.colors}</h3>
+              <span className="text-sm text-slate-500">{colorName(color)}</span>
+            </div>
+            <ColorBar color={color} onChange={onColorChange} />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={onClose} className={BTN_SECONDARY}>{COPY.back}</button>
+            <button type="button" ref={startRef} onClick={() => onUse(card.id)} className={BTN_PRIMARY}>{COPY.use}</button>
+          </div>
         </div>
+
+        <p className="sr-only" aria-live="polite">{card.label} layout, {position} of {total}</p>
       </div>
     </div>
   );
@@ -599,7 +798,11 @@ export default function TemplateShowcase({
   const [selected, setSelected] = useState(DEFAULT_TEMPLATE);
   const [color, setColor] = useState(null);
   const [previewId, setPreviewId] = useState(null);
+  const [direction, setDirection] = useState(0); // 1 = moving forward, -1 = backward, 0 = first paint
+  const [playing, setPlaying] = useState(true); // starts on its own; visitors can pause it
+  const [hovering, setHovering] = useState(false);
   const listRef = useRef(null);
+  const onScreen = useOnScreen(ref, 0.15);
 
   useEffect(() => {
     setSelected(readTemplate());
@@ -613,20 +816,75 @@ export default function TemplateShowcase({
     },
     [color, onUseTemplate],
   );
-  const closePreview = useCallback(() => setPreviewId(null), []);
+  // Close the preview and leave the page on whichever layout was last viewed.
+  const closePreview = useCallback(() => {
+    if (previewId) setSelected(previewId);
+    setPreviewId(null);
+  }, [previewId]);
 
-  // Keep the chosen row visible inside the list (scrolls the list only, never the page).
+  // Prev/next inside the preview (wraps around at both ends).
+  const stepPreview = useCallback(
+    (step) => {
+      const n = TEMPLATE_IDS.length;
+      const from = Math.max(0, TEMPLATE_IDS.indexOf(previewId));
+      setDirection(step > 0 ? 1 : -1);
+      setPreviewId(TEMPLATE_IDS[(from + step + n) % n]);
+    },
+    [previewId],
+  );
+
+  const index = Math.max(0, TEMPLATE_IDS.indexOf(selected));
+
+  // Step forward/back one layout, wrapping around at both ends.
+  const stepBy = useCallback(
+    (step) => {
+      const n = TEMPLATE_IDS.length;
+      setDirection(step > 0 ? 1 : -1);
+      setSelected(TEMPLATE_IDS[(index + step + n) % n]);
+    },
+    [index],
+  );
+  const handlePrev = useCallback(() => stepBy(-1), [stepBy]);
+  const handleNext = useCallback(() => stepBy(1), [stepBy]);
+  const togglePlay = useCallback(() => setPlaying((p) => !p), []);
+
+  // Picking a layout from the list means the visitor is browsing, so stop auto-advancing.
+  const handleSelect = useCallback(
+    (id) => {
+      const to = TEMPLATE_IDS.indexOf(id);
+      if (to < 0 || to === index) return;
+      setDirection(to > index ? 1 : -1);
+      setSelected(id);
+      setPlaying(false);
+    },
+    [index],
+  );
+  const stopAutoplay = useCallback(() => setPlaying(false), []);
+
+  // Auto-advance. The timer restarts after every change, so a manual Prev/Next gets a full interval.
+  useEffect(() => {
+    if (!playing || hovering || !onScreen || previewId) return undefined;
+    const t = setTimeout(handleNext, AUTOPLAY_MS);
+    return () => clearTimeout(t);
+  }, [playing, hovering, onScreen, previewId, handleNext]);
+
+  const handlePointerEnter = useCallback((e) => {
+    if (e.pointerType === 'mouse') setHovering(true);
+  }, []);
+  const handlePointerLeave = useCallback(() => setHovering(false), []);
+
+  // Slide the thumbnail list so the active row stays centred (scrolls the list only, never the page).
+  // The first paint, before anything has moved, jumps instantly; every later change glides.
   useEffect(() => {
     const list = listRef.current;
     const row = list && list.querySelector('[aria-pressed="true"]');
     if (!list || !row) return;
-    const top = row.offsetTop;
-    const bottom = top + row.offsetHeight;
-    if (top < list.scrollTop) list.scrollTop = Math.max(0, top - 4);
-    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight + 4;
-  }, [selected]);
+    const target = row.offsetTop - (list.clientHeight - row.offsetHeight) / 2;
+    const glide = direction !== 0 && !prefersReducedMotion();
+    list.scrollTo({ top: Math.max(0, target), behavior: glide ? 'smooth' : 'auto' });
+  }, [selected, direction]);
 
-  const card = TEMPLATE_CARDS.find((c) => c.id === selected) || TEMPLATE_CARDS[0];
+  const card = TEMPLATE_CARDS[index];
   const accent = color || DEFAULT_ACCENT[card.id];
 
   return (
@@ -635,7 +893,11 @@ export default function TemplateShowcase({
       <style>{SCROLLBAR_CSS}</style>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-14 lg:gap-y-8">
+        <div
+          className="grid gap-8 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-14 lg:gap-y-8"
+          onPointerEnter={handlePointerEnter}
+          onPointerLeave={handlePointerLeave}
+        >
           <header className="lg:col-start-1 lg:row-start-1">
             <h2 className="ts-display text-4xl font-extrabold leading-[1.03] tracking-tight text-slate-900 sm:text-5xl" style={{ textWrap: 'balance' }}>
               {title}
@@ -644,7 +906,18 @@ export default function TemplateShowcase({
           </header>
 
           <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
-            <Stage card={card} accent={accent} visible={seen} />
+            <Stage
+              card={card}
+              accent={accent}
+              visible={seen}
+              direction={direction}
+              index={index}
+              total={TEMPLATE_CARDS.length}
+              playing={playing}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              onTogglePlay={togglePlay}
+            />
           </div>
 
           <div className="flex flex-col gap-8 lg:col-start-1 lg:row-start-2">
@@ -652,6 +925,8 @@ export default function TemplateShowcase({
               ref={listRef}
               role="group"
               aria-label={COPY.templates}
+              onPointerDown={stopAutoplay}
+              onWheel={stopAutoplay}
               className="pro-scroll relative -mx-4 flex max-h-[24rem] flex-col gap-1.5 overflow-y-auto overscroll-contain px-1 py-1"
             >
               {TEMPLATE_CARDS.map((c) => (
@@ -660,7 +935,7 @@ export default function TemplateShowcase({
                   card={c}
                   color={color}
                   selected={selected === c.id}
-                  onSelect={setSelected}
+                  onSelect={handleSelect}
                   featured={featuredTemplate === c.id}
                   featuredLabel={featuredLabel}
                 />
@@ -684,7 +959,14 @@ export default function TemplateShowcase({
       </div>
 
       {previewId && (
-        <PreviewModal templateId={previewId} color={color} onClose={closePreview} onUse={handleUse} />
+        <PreviewModal
+          templateId={previewId}
+          color={color}
+          onColorChange={setColor}
+          onStep={stepPreview}
+          onClose={closePreview}
+          onUse={handleUse}
+        />
       )}
     </section>
   );

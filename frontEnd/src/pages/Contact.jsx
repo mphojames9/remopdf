@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
+import brandLogo from '../assets/logo.png'; // same logo the Home footer uses; adjust the path if needed
 
 const EMAILJS_SERVICE_ID = 'service_a7c5ag9';
 const EMAILJS_TEMPLATE_ID = 'template_5bc1mt5';
@@ -19,6 +20,209 @@ const NAV_LINKS = [
   { label: 'Trust Center', path: '/PrivacyPolicy' },
   { label: 'T&C', path: '/terms-of-use' }
 ];
+
+// --- Footer ---------------------------------------------------------------
+// Same look as the Home page footer (navy panel, folded corner, coral glow),
+// written to stand on its own so Contact doesn't depend on Home's styles.
+const BRAND = 'RemoPDF';
+const FOOTER_BLURB = 'Edit, organize, convert and share PDFs, or build an ATS-friendly resume from a template.';
+
+const FOOTER_COLS = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'PDF editor', to: '/Workspace', kind: 'route' },
+      { label: 'Resume builder', to: '/ResumeBuilder', kind: 'route' },
+      { label: 'Templates', to: '/#templates', kind: 'route' },
+    ],
+  },
+  {
+    title: 'Learn',
+    links: [
+      { label: 'PDF editor', to: '/#tools', kind: 'page' },
+      { label: 'ATS scan', to: '/#ats', kind: 'page' },
+      { label: 'How it works', to: '/#how-it-works', kind: 'page' },
+      { label: 'FAQ', to: '/#faq', kind: 'page' },
+    ],
+  },
+  {
+    title: 'Support',
+    links: [
+      { label: 'About us', to: '/about', kind: 'route' },
+      { label: 'Email us', to: 'mailto:remopdf@outlook.com', kind: 'page' },
+      { label: 'Privacy policy', to: '/PrivacyPolicy', kind: 'route' },
+      { label: 'Terms of use', to: '/terms-of-use', kind: 'route' },
+    ],
+  },
+];
+
+const FOOTER_LINK =
+  'inline-block rounded bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 text-[0.9375rem] text-slate-300 transition-[color,background-size] duration-300 hover:bg-[length:100%_1px] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white';
+
+function FooterLink({ link }) {
+  if (link.kind === 'route') {
+    return (
+      <Link to={link.to} className={FOOTER_LINK}>
+        {link.label}
+      </Link>
+    );
+  }
+  // Plain anchors: they leave this page for a section of Home (/#faq) or open the mail app.
+  return (
+    <a href={link.to} className={FOOTER_LINK}>
+      {link.label}
+    </a>
+  );
+}
+
+function SiteFooter() {
+  const ref = useRef(null);
+  const [seen, setSeen] = useState(false);
+  const [launching, setLaunching] = useState(false);
+
+  // Plays the entrance (corner unfolds, text rises) once the footer scrolls into view.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setSeen(true);
+      return undefined;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const toTop = () => {
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: calm ? 'auto' : 'smooth' });
+    setLaunching(true);
+    setTimeout(() => setLaunching(false), 850);
+  };
+
+  return (
+    // The wrapper colour shows through the folded corner, so it matches the page background.
+    <div ref={ref} className={`cf-wrap relative z-10 mt-auto w-full bg-[#FAFAFA] ${seen ? 'cf-in' : ''}`}>
+      <style>{`
+        @property --cf-fold { syntax: '<length>'; inherits: true; initial-value: 0px; }
+        .cf-wrap { --cf-size: 3.5rem; --cf-fold: 0px; }
+        @media (min-width: 1024px) { .cf-wrap { --cf-size: 5rem; } }
+        .cf-wrap.cf-in { --cf-fold: var(--cf-size); }
+        @media (hover: hover) { .cf-wrap.cf-in:has(.cf-hit:hover) { --cf-fold: calc(var(--cf-size) + 1.25rem); } }
+        .cf-cut { clip-path: polygon(0 0, calc(100% - var(--cf-fold)) 0, 100% var(--cf-fold), 100% 100%, 0 100%); }
+        .cf-flap { position: absolute; top: 0; right: 0; z-index: 10; width: var(--cf-fold); height: var(--cf-fold); background: linear-gradient(to bottom left, #3d5078, #1f2e49 65%); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+        .cf-word { display: inline-block; }
+        @media (prefers-reduced-motion: no-preference) {
+          .cf-wrap { transition: --cf-fold .9s cubic-bezier(.16,1,.3,1); }
+          .cf-wrap:not(.cf-in) :is(.cf-rise, .cf-word) { opacity: 0; }
+          .cf-in .cf-rise { animation: cf-rise .9s cubic-bezier(.16,1,.3,1) calc(var(--i, 0) * 90ms + 250ms) backwards; }
+          @keyframes cf-rise { from { opacity: 0; translate: 0 24px; } }
+          .cf-in .cf-word { animation: cf-word .9s cubic-bezier(.16,1,.3,1) calc(var(--i, 0) * 45ms + 450ms) backwards; }
+          @keyframes cf-word { from { opacity: 0; translate: 0 .5em; filter: blur(8px); } }
+          .cf-rule { transform: scaleX(0); transform-origin: left; }
+          .cf-in .cf-rule { animation: cf-rule 1.3s cubic-bezier(.65,0,.35,1) .8s both; }
+          @keyframes cf-rule { to { transform: scaleX(1); } }
+          .cf-arrow { display: block; animation: cf-bob 2.4s ease-in-out infinite; }
+          @keyframes cf-bob { 50% { translate: 0 -3px; } }
+          .cf-launch { display: block; animation: cf-launch .8s cubic-bezier(.5,0,.2,1); }
+          @keyframes cf-launch { 45% { translate: 0 -2rem; opacity: 0; } 46% { translate: 0 2rem; opacity: 0; } }
+          .cf-blob-a { animation: cf-drift 14s ease-in-out infinite; }
+          .cf-blob-b { animation: cf-drift 18s ease-in-out infinite reverse; }
+          @keyframes cf-drift { 50% { transform: translate(40px, 30px) scale(1.12); } }
+        }
+      `}</style>
+
+      <span aria-hidden="true" className="cf-hit absolute right-0 top-0 z-20 h-[6.5rem] w-[6.5rem]" />
+      <footer className="cf-cut relative isolate overflow-hidden bg-[#0e1726] text-slate-300">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,#000,transparent_75%)]"
+          style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '22px 22px' }}
+        />
+        <div aria-hidden="true" className="cf-blob-b pointer-events-none absolute -bottom-40 -left-32 h-[26rem] w-[26rem] rounded-full bg-[#d9856b]/15 blur-3xl" />
+        <div aria-hidden="true" className="cf-blob-a pointer-events-none absolute -right-24 top-1/3 h-80 w-80 rounded-full bg-[#3d5078]/40 blur-3xl" />
+        <div aria-hidden="true" className="cf-flap" />
+
+        <div className="relative z-10 mx-auto max-w-7xl px-4 pb-8 pt-16 sm:px-6 sm:pt-20 lg:px-8">
+          <div className="grid gap-14 lg:grid-cols-[1.3fr_2fr] lg:gap-20">
+            <div className="max-w-sm">
+              <Link
+                to="/"
+                style={{ '--i': 0 }}
+                aria-label={BRAND}
+                className="cf-rise group inline-flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              >
+                <img
+                  src={brandLogo}
+                  alt={BRAND}
+                  className="h-10 w-auto transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                />
+              </Link>
+              <p className="mt-5 leading-relaxed text-slate-300">
+                {FOOTER_BLURB.split(' ').map((w, i) => (
+                  <span key={i}>
+                    <span className="cf-word" style={{ '--i': i }}>{w}</span>{' '}
+                  </span>
+                ))}
+              </p>
+            </div>
+
+            <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
+              {FOOTER_COLS.map((col, ci) => (
+                <div key={col.title}>
+                  <h2 className="cf-rise text-base font-bold text-white" style={{ '--i': 1 + ci }}>{col.title}</h2>
+                  <ul className="mt-4 space-y-3">
+                    {col.links.map((link, li) => (
+                      <li key={link.label} className="cf-rise" style={{ '--i': 2 + ci + li * 0.6 }}>
+                        <FooterLink link={link} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </nav>
+          </div>
+
+          <span aria-hidden="true" className="cf-rule mt-16 block h-px bg-white/15" />
+          <div className="cf-rise flex items-center justify-between gap-4 pt-6 text-sm text-slate-400" style={{ '--i': 7 }}>
+            <p>© {new Date().getFullYear()} {BRAND}</p>
+            <button
+              type="button"
+              onClick={toTop}
+              className="group inline-flex items-center gap-3 rounded-full py-1 pl-2 text-slate-300 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            >
+              Back to top
+              <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/20 transition-colors group-hover:border-white/40 group-hover:bg-white/10">
+                <span className={launching ? 'cf-launch' : 'cf-arrow'}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5"
+                  >
+                    <path d="M12 19V5" />
+                    <path d="m6 11 6-6 6 6" />
+                  </svg>
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
 
 export default function Contact() {
   // --- Navigation States ---
@@ -424,6 +628,9 @@ export default function Contact() {
           </div>
         </div>
       </div>
+
+      {/* --- Footer --- */}
+      <SiteFooter />
     </div>
   );
 }

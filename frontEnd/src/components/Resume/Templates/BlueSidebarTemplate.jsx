@@ -30,7 +30,7 @@ const SIDE_CONTENT_W = 198;
 const HEADER_SPACER_H = HEADER_H - 32 + 24;
 const SERIF = '"Cormorant Garamond", "Playfair Display", Georgia, "Times New Roman", serif';
 // Sections that live in the left sidebar. Every other section goes in the main column on the right.
-const SIDEBAR_KEYS = ['skills', 'languages', 'hobbies'];
+const SIDEBAR_KEYS = ['skills', 'languages', 'certificates', 'hobbies'];
 
 /* --------------------------------- Icons ---------------------------------- */
 const Svg = ({ size = 16, children }) => (
@@ -56,16 +56,43 @@ const PhoneIcon = (p) => <Svg {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79
 const PinIcon = (p) => <Svg {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></Svg>;
 const LinkedinIcon = (p) => <Svg {...p}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" /><rect width="4" height="12" x="2" y="9" /><circle cx="4" cy="4" r="2" /></Svg>;
 const DotIcon = (p) => <Svg {...p}><circle cx="12" cy="12" r="3" /></Svg>;
+const GithubIcon = (p) => <Svg {...p}><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></Svg>;
+const CalendarIcon = (p) => <Svg {...p}><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></Svg>;
+const FlagIcon = (p) => <Svg {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><path d="M4 22v-7" /></Svg>;
+const CarIcon = (p) => <Svg {...p}><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" /></Svg>;
+
+const HeartIcon = (p) => <Svg {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></Svg>;
+// An email typed without its "@" (e.g. "name9gmail.com") still gets the mail icon.
+const MAIL_HOST = /^(?!www\.)[^\s@/]+(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|proton|protonmail)\.(com|me|co\.za|co\.uk)$/;
 
 // The contact list is plain text, so the icon is picked from what the line looks like.
+// Order matters: the specific kinds are checked first, and the pin is only used for lines that really
+// look like an address. Anything unrecognised gets a neutral dot instead of a (wrong) location pin.
 const contactIcon = (c) => {
   if (typeof c !== 'string') return DotIcon;
   const s = c.trim().toLowerCase();
+  // Split off a leading "Label:" (but not the "https:" of a URL) so "Tel: +27 ..." is still recognised.
+  const m = s.match(/^([a-z][a-z .\/&-]{1,28}):(?!\/\/)\s*/);
+  const label = m ? m[1] : '';
+  const value = m ? s.slice(m[0].length) : s;
+
   if (s.includes('linkedin')) return LinkedinIcon;
-  if (s.includes('@')) return MailIcon;
-  if (/^[+()\d\s.-]{7,}$/.test(s)) return PhoneIcon;
-  if (/(https?:\/\/|www\.|\.(com|dev|io|net|org|me|site|co|app)\b)/.test(s)) return GlobeIcon;
-  return PinIcon;
+  if (s.includes('github')) return GithubIcon;
+  if (value.includes('@') || /e-?mail/.test(label) || MAIL_HOST.test(value)) return MailIcon;
+  if (/birth|\bdob\b|\bborn\b|\bage\b/.test(label) || /^born\b/.test(s)
+    || /^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(value)
+    || /^\d{1,2}(st|nd|rd|th)?\s+[a-z]{3,9},?\s+\d{4}$/.test(value)) return CalendarIcon;
+  if (/^(tel|telephone|phone|mobile|cell|whatsapp|fax)\b/.test(label) || /^[+()\d\s.-]{7,}$/.test(value)) return PhoneIcon;
+  if (/national|citizen/.test(label)) return FlagIcon;
+  if (/gender|\bsex\b/.test(label)) return UserIcon;
+  if (/marital|civil status|relationship/.test(label)) return HeartIcon;
+  if (/licen[cs]e/.test(s)) return CarIcon;
+  if (/web|site|portfolio|url|link/.test(label) || /(https?:\/\/|www\.|\.(com|dev|io|net|org|me|site|co|app)\b)/.test(value)) return GlobeIcon;
+  if (/address|location|city|based|residen/.test(label)
+    || /\d+\s+.*\b(street|st|road|rd|avenue|ave|drive|dr|lane|ln|blvd|boulevard|close|crescent|way)\b/.test(value)
+    || /\bp\.?o\.?\s*box\b/.test(value)
+    || value.includes(',')) return PinIcon;
+  return DotIcon;
 };
 
 const BlueSidebarTemplate = (props) => {
@@ -88,10 +115,12 @@ const BlueSidebarTemplate = (props) => {
     <span key="icon" className="shrink-0" style={{ color: accentColor }}><Icon size={18} /></span>
   );
   const heading = (key, text, Icon) => (
+    
     <h3 key={`${key}-h`} className={headingClass} style={headingStyle}>
       {headingIcon(Icon)}
       <span>{text}</span>
     </h3>
+    
   );
   // Sections built by renderExtraSections draw their own heading; add the icon to it when we can recognise it.
   const withHeadingIcon = (blocks, Icon) => {
@@ -99,7 +128,7 @@ const BlueSidebarTemplate = (props) => {
     if (!React.isValidElement(first) || first.props.className !== headingClass) return blocks;
     return [React.cloneElement(first, undefined, headingIcon(Icon), <span key="text">{first.props.children}</span>), ...rest];
   };
-  const extraIcons = { projects: CodeIcon, references: UserIcon, certificates: AwardIcon };
+  const extraIcons = { projects: CodeIcon, references: UserIcon };
 
   const mainMap = {
     summary: summary ? endGroup([
@@ -150,10 +179,9 @@ const BlueSidebarTemplate = (props) => {
     ]) : [],
   };
 
-  // Skills, Languages and Hobbies live in the sidebar (sideMap), so they are not passed in here.
+  // Skills, Languages, Certificates and Hobbies live in the sidebar (sideMap), so they are not passed in here.
   const extras = {
     ...renderExtraSections({ projects, references, headingClass, headingStyle }),
-    ...renderCertificates({ certificates, headingClass, headingStyle }),
   };
   const mainOrder = sectionOrder.filter((key) => !SIDEBAR_KEYS.includes(key));
   const sideOrder = sectionOrder.filter((key) => SIDEBAR_KEYS.includes(key));
@@ -170,20 +198,39 @@ const BlueSidebarTemplate = (props) => {
   const languageItems = (languages?.items || []).filter((l) => l.name);
   const hasLanguages = Boolean(languages?.enabled && languageItems.length > 0);
   const hasHobbies = Boolean(hobbies?.enabled && hobbies.text && String(hobbies.text).trim());
+  const sideHeadClass = 'flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.2em] mb-3';
+  const sideHeadStyle = { color: INK, borderColor: lineColor };
+  // Certificates come from the shared renderer, which draws its own heading. It is rendered here with the
+  // sidebar heading style so it matches the other sidebar sections.
+  const rawCertificates = renderCertificates({ certificates, headingClass: sideHeadClass, headingStyle: sideHeadStyle })?.certificates || [];
+  const hasCertificates = rawCertificates.length > 0;
+
   // The first sidebar section has no divider above it; every later one does.
-  const sideHas = { skills: namedSkills.length > 0, languages: hasLanguages, hobbies: hasHobbies };
+  const sideHas = { skills: namedSkills.length > 0, languages: hasLanguages, certificates: hasCertificates, hobbies: hasHobbies };
   const firstSideKey = sideOrder.find((k) => sideHas[k]);
+  const sideHeadClassFor = (key) => `${sideHeadClass} ${key === firstSideKey ? '' : 'pt-4 border-t'}`;
 
   const sideHeading = (key, text, Icon) => (
-    <h3
-      key={`${key}-h`}
-      className={`flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.2em] mb-3 ${key === firstSideKey ? '' : 'pt-4 border-t'}`}
-      style={{ color: INK, borderColor: lineColor }}
-    >
+    <h3 key={`${key}-h`} className={sideHeadClassFor(key)} style={sideHeadStyle}>
       <span className="shrink-0" style={{ color: accentColor }}><Icon size={16} /></span>
       <span>{text}</span>
     </h3>
   );
+
+  // Add the award icon and the right divider to the heading the renderer drew (recognised by its class).
+  const certificateBlocks = (() => {
+    const [first, ...rest] = rawCertificates;
+    if (!React.isValidElement(first) || first.props.className !== sideHeadClass) return rawCertificates;
+    return [
+      React.cloneElement(
+        first,
+        { className: sideHeadClassFor('certificates') },
+        <span key="icon" className="shrink-0" style={{ color: accentColor }}><AwardIcon size={16} /></span>,
+        <span key="text">{first.props.children}</span>,
+      ),
+      ...rest,
+    ];
+  })();
 
   const ratingBars = (rating) => (
     <div className="flex gap-1 mt-1 pl-3">
@@ -193,20 +240,23 @@ const BlueSidebarTemplate = (props) => {
     </div>
   );
 
+  // One layout for every rated item in the sidebar (skills and languages): dot, name, level word, then the bars.
+  const levelItem = (key, name, label, rating) => (
+    <div key={key} className="mb-1.5">
+      <div className="flex items-start gap-2 text-[11px]">
+        <span className="w-1 h-1 rounded-full shrink-0 mt-[6px]" style={{ backgroundColor: accentColor }} />
+        <span className="break-words flex-1">{name}</span>
+        {label && <span className="text-[10px] italic shrink-0" style={{ color: MUTED }}>{label}</span>}
+      </div>
+      {rating > 0 && ratingBars(rating)}
+    </div>
+  );
+
   const languageBlocks = hasLanguages ? endGroup([
     sideHeading('languages', 'Languages', GlobeIcon),
     ...languageItems.map((l) => {
       const { label, rating } = languageLevelInfo(l);
-      return (
-        <div key={`language-${l.id}`} className="mb-2">
-          <div className="flex items-start gap-2 text-[11px]">
-            <span className="w-1 h-1 rounded-full shrink-0 mt-[6px]" style={{ backgroundColor: accentColor }} />
-            <span className="font-semibold break-words flex-1">{l.name}</span>
-            <span className="text-[10px] italic shrink-0" style={{ color: MUTED }}>{label}</span>
-          </div>
-          {rating > 0 && ratingBars(rating)}
-        </div>
-      );
+      return levelItem(`language-${l.id}`, l.name, label, rating);
     }),
   ]) : [];
 
@@ -215,19 +265,11 @@ const BlueSidebarTemplate = (props) => {
       sideHeading('skills', 'Skills', GearIcon),
       ...namedSkills.map((s) => {
         const rating = skillRating(s);
-        return (
-          <div key={`skill-${s.id}`} className="mb-1.5">
-            <div className="flex items-start gap-2 text-[11px]">
-              <span className="w-1 h-1 rounded-full shrink-0 mt-[6px]" style={{ backgroundColor: accentColor }} />
-              <span className="break-words flex-1">{s.text}</span>
-              {rating > 0 && <span className="text-[10px] italic shrink-0" style={{ color: MUTED }}>{getSkillLevelLabel(rating)}</span>}
-            </div>
-            {rating > 0 && ratingBars(rating)}
-          </div>
-        );
+        return levelItem(`skill-${s.id}`, s.text, rating > 0 ? getSkillLevelLabel(rating) : '', rating);
       }),
     ]) : [],
     languages: languageBlocks,
+    certificates: certificateBlocks,
     hobbies: hasHobbies ? endGroup([
       sideHeading('hobbies', 'Hobbies & Interests', TargetIcon),
       ...sideRichText(hobbies.text, 'hobbies'),
@@ -250,6 +292,18 @@ const BlueSidebarTemplate = (props) => {
 
   // Automatically switch to a 2-column grid when contact/meta list is long (> 5 items)
   const isMultiColumn = contactList.length > 5;
+
+  // A resume has one location, so only the first address-like line gets the pin; any later one gets a dot.
+  const contactIcons = (() => {
+    let pinUsed = false;
+    return contactList.map((c) => {
+      const Icon = contactIcon(c);
+      if (Icon !== PinIcon) return Icon;
+      if (pinUsed) return DotIcon;
+      pinUsed = true;
+      return PinIcon;
+    });
+  })();
 
   const headerBlocks = markSection(edit, 'personal', [
     <div key="page-header" className="flex items-center w-full h-full" style={{ padding: '0 28px', gap: 20 }}>
@@ -288,7 +342,7 @@ const BlueSidebarTemplate = (props) => {
         >
           <div className={isMultiColumn ? "grid grid-cols-2 gap-x-3 gap-y-2" : "flex flex-col gap-2.5"}>
             {contactList.map((c, i) => {
-              const Icon = contactIcon(c);
+              const Icon = contactIcons[i];
               return (
                 <div key={`contact-${i}`} className="flex items-center gap-2 text-[10px] leading-tight" style={{ color: INK }}>
                   <span className="shrink-0" style={{ color: accentColor }}><Icon size={13} /></span>

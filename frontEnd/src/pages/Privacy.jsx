@@ -55,6 +55,148 @@ function FooterLink({ link }) {
   return <a href={link.to} className={FOOTER_LINK}>{link.label}</a>;
 }
 
+// --- Animated footer ------------------------------------------------------
+// The corner unfolds and the text rises in the first time the footer scrolls into
+// view; the divider draws across, the arrow bobs, and the glows drift. All motion
+// is switched off for people who prefer reduced motion.
+function SiteFooter() {
+  const ref = useRef(null);
+  const [seen, setSeen] = useState(false);
+  const [launching, setLaunching] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setSeen(true);
+      return undefined;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const toTop = () => {
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: calm ? 'auto' : 'smooth' });
+    setLaunching(true);
+    setTimeout(() => setLaunching(false), 850);
+  };
+
+  return (
+    // The coral wrapper shows through the folded corner so the band above seems to continue under it.
+    <div ref={ref} className={`ft-wrap relative z-10 bg-[#d9856b] ${seen ? 'ft-in' : ''}`}>
+      <style>{`
+        @property --ft-fold { syntax: '<length>'; inherits: true; initial-value: 0px; }
+        .ft-wrap { --ft-size: 3.5rem; --ft-fold: 0px; }
+        @media (min-width: 1024px) { .ft-wrap { --ft-size: 5rem; } }
+        .ft-wrap.ft-in { --ft-fold: var(--ft-size); }
+        @media (hover: hover) { .ft-wrap.ft-in:has(.ft-hit:hover) { --ft-fold: calc(var(--ft-size) + 1.25rem); } }
+        .ft-cut { clip-path: polygon(0 0, calc(100% - var(--ft-fold)) 0, 100% var(--ft-fold), 100% 100%, 0 100%); }
+        .ft-flap { position: absolute; top: 0; right: 0; z-index: 10; width: var(--ft-fold); height: var(--ft-fold); background: linear-gradient(to bottom left, #3d5078, #1f2e49 65%); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+        .ft-word { display: inline-block; }
+        @media (prefers-reduced-motion: no-preference) {
+          .ft-wrap { transition: --ft-fold .9s cubic-bezier(.16,1,.3,1); }
+          .ft-wrap:not(.ft-in) :is(.ft-rise, .ft-word) { opacity: 0; }
+          .ft-in .ft-rise { animation: ft-rise .9s cubic-bezier(.16,1,.3,1) calc(var(--i, 0) * 90ms + 250ms) backwards; }
+          @keyframes ft-rise { from { opacity: 0; translate: 0 24px; } }
+          .ft-in .ft-word { animation: ft-word .9s cubic-bezier(.16,1,.3,1) calc(var(--i, 0) * 45ms + 450ms) backwards; }
+          @keyframes ft-word { from { opacity: 0; translate: 0 .5em; filter: blur(8px); } }
+          .ft-rule { transform: scaleX(0); transform-origin: left; }
+          .ft-in .ft-rule { animation: ft-rule 1.3s cubic-bezier(.65,0,.35,1) .8s both; }
+          @keyframes ft-rule { to { transform: scaleX(1); } }
+          .ft-arrow { display: block; animation: ft-bob 2.4s ease-in-out infinite; }
+          @keyframes ft-bob { 50% { translate: 0 -3px; } }
+          .ft-launch { display: block; animation: ft-launch .8s cubic-bezier(.5,0,.2,1); }
+          @keyframes ft-launch { 45% { translate: 0 -2rem; opacity: 0; } 46% { translate: 0 2rem; opacity: 0; } }
+          .ft-blob-a { animation: ft-drift 14s ease-in-out infinite; }
+          .ft-blob-b { animation: ft-drift 18s ease-in-out infinite reverse; }
+          @keyframes ft-drift { 50% { transform: translate(40px, 30px) scale(1.12); } }
+        }
+      `}</style>
+
+      <span aria-hidden="true" className="ft-hit absolute right-0 top-0 z-20 h-[6.5rem] w-[6.5rem]" />
+      <footer className="ft-cut relative isolate overflow-hidden bg-[#0e1726] text-slate-300">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,#000,transparent_75%)]"
+          style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '22px 22px' }}
+        />
+        <div aria-hidden="true" className="ft-blob-b pointer-events-none absolute -bottom-40 -left-32 h-[26rem] w-[26rem] rounded-full bg-[#d9856b]/15 blur-3xl" />
+        <div aria-hidden="true" className="ft-blob-a pointer-events-none absolute -right-24 top-1/3 h-80 w-80 rounded-full bg-[#3d5078]/40 blur-3xl" />
+        <div aria-hidden="true" className="ft-flap" />
+
+        {/* Extra bottom padding on small screens so the floating section bar never covers the last row */}
+        <div className="relative z-10 mx-auto max-w-7xl px-4 pb-28 pt-16 sm:px-6 sm:pt-20 lg:px-8 lg:pb-8">
+          <div className="grid gap-14 lg:grid-cols-[1.3fr_2fr] lg:gap-20">
+            <div className="max-w-sm">
+              <Link
+                to="/"
+                style={{ '--i': 0 }}
+                aria-label="RemoPDF home"
+                className="ft-rise group inline-flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              >
+                <img
+                  src={footerLogo}
+                  alt="RemoPDF"
+                  draggable={false}
+                  className="block h-10 w-auto transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                />
+              </Link>
+              <p className="mt-5 leading-relaxed text-slate-300">
+                {FOOTER_BLURB.split(' ').map((w, i) => (
+                  <span key={i}>
+                    <span className="ft-word" style={{ '--i': i }}>{w}</span>{' '}
+                  </span>
+                ))}
+              </p>
+            </div>
+
+            <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
+              {FOOTER_COLS.map((col, ci) => (
+                <div key={col.title}>
+                  <h2 className="ft-rise text-base font-bold text-white" style={{ '--i': 1 + ci }}>{col.title}</h2>
+                  <ul className="mt-4 space-y-3">
+                    {col.links.map((link, li) => (
+                      <li key={link.label} className="ft-rise" style={{ '--i': 2 + ci + li * 0.6 }}>
+                        <FooterLink link={link} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </nav>
+          </div>
+
+          <span aria-hidden="true" className="ft-rule mt-16 block h-px bg-white/15" />
+          <div className="ft-rise flex items-center justify-between gap-4 pt-6 text-sm text-slate-400" style={{ '--i': 7 }}>
+            <p>© {new Date().getFullYear()} RemoPDF</p>
+            <button
+              type="button"
+              onClick={toTop}
+              className="group inline-flex items-center gap-3 rounded-full py-1 pl-2 text-slate-300 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            >
+              Back to top
+              <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/20 transition-colors group-hover:border-white/40 group-hover:bg-white/10">
+                <span className={launching ? 'ft-launch' : 'ft-arrow'}>
+                  <i className="fa-solid fa-arrow-up text-xs transition-transform duration-200 group-hover:-translate-y-0.5"></i>
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
 export default function TrustCenter() {
   const [activeSection, setActiveSection] = useState(LEGAL_SECTIONS[0].id);
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -462,73 +604,8 @@ export default function TrustCenter() {
         </div>
       </section>
 
-      {/* --- Footer: the coral wrapper shows through the folded corner so the band above seems to continue under it --- */}
-      <div className="relative z-10 bg-[#d9856b]">
-        <style>{`
-          .site-fold { clip-path: polygon(0 0, calc(100% - 3.5rem) 0, 100% 3.5rem, 100% 100%, 0 100%); }
-          .site-fold-flap { position: absolute; top: 0; right: 0; z-index: 10; width: 3.5rem; height: 3.5rem; background: linear-gradient(to bottom left, #3d5078, #1f2e49 65%); clip-path: polygon(0 0, 100% 100%, 0 100%); }
-          @media (min-width: 1024px) {
-            .site-fold { clip-path: polygon(0 0, calc(100% - 5rem) 0, 100% 5rem, 100% 100%, 0 100%); }
-            .site-fold-flap { width: 5rem; height: 5rem; }
-          }
-        `}</style>
-        <footer className="site-fold relative isolate overflow-hidden bg-[#0e1726] text-slate-300">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,#000,transparent_75%)]"
-            style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px)', backgroundSize: '22px 22px' }}
-          />
-          <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -left-32 h-[26rem] w-[26rem] rounded-full bg-[#d9856b]/15 blur-3xl" />
-          <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-1/3 h-80 w-80 rounded-full bg-[#3d5078]/40 blur-3xl" />
-          <div aria-hidden="true" className="site-fold-flap" />
-
-          {/* Extra bottom padding on small screens so the floating section bar never covers the last row */}
-          <div className="relative z-10 mx-auto max-w-7xl px-4 pb-28 pt-16 sm:px-6 sm:pt-20 lg:px-8 lg:pb-8">
-            <div className="grid gap-14 lg:grid-cols-[1.3fr_2fr] lg:gap-20">
-              <div className="max-w-sm">
-                <Link
-                  to="/"
-                  aria-label="RemoPDF home"
-                  className="inline-flex items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-                >
-                  <img src={footerLogo} alt="RemoPDF" draggable={false} className="h-10 w-auto block" />
-                </Link>
-                <p className="mt-5 leading-relaxed text-slate-300">{FOOTER_BLURB}</p>
-              </div>
-
-              <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
-                {FOOTER_COLS.map((col) => (
-                  <div key={col.title}>
-                    <h2 className="text-base font-bold text-white">{col.title}</h2>
-                    <ul className="mt-4 space-y-3">
-                      {col.links.map((link) => (
-                        <li key={link.label}>
-                          <FooterLink link={link} />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </nav>
-            </div>
-
-            <span aria-hidden="true" className="mt-16 block h-px bg-white/15" />
-            <div className="flex items-center justify-between gap-4 pt-6 text-sm text-slate-400">
-              <p>© {new Date().getFullYear()} RemoPDF</p>
-              <button
-                type="button"
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="group inline-flex items-center gap-3 rounded-full py-1 pl-2 text-slate-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-              >
-                Back to top
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 transition-colors group-hover:border-white/40 group-hover:bg-white/10">
-                  <i className="fa-solid fa-arrow-up text-xs transition-transform duration-200 group-hover:-translate-y-0.5"></i>
-                </span>
-              </button>
-            </div>
-          </div>
-        </footer>
-      </div>
+      {/* --- Footer --- */}
+      <SiteFooter />
 
       {/* --- Mobile Floating Glass Navigation (< 1024px) --- */}
       <div 

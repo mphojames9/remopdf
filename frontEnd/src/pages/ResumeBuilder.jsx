@@ -96,6 +96,21 @@ const STORAGE_KEY_PAGE_NUMBERS = 'resumeBuilder:pageNumbers';
 
 const DEFAULT_SECTION_ORDER = ['summary', 'experience', 'education', 'certificates', 'skills', 'projects', 'languages', 'hobbies', 'references'];
 
+// SECTION_META (from Templates) may not have an entry for every reorderable key, which crashed the
+// "Section order" list. These labels are used whenever an entry is missing.
+const FALLBACK_SECTION_LABELS = {
+  summary: 'Summary',
+  experience: 'Work history',
+  education: 'Education',
+  certificates: 'Certificates',
+  skills: 'Skills',
+  projects: 'Projects',
+  languages: 'Languages',
+  hobbies: 'Hobbies & interests',
+  references: 'References',
+};
+const getSectionMeta = (key) => SECTION_META[key] || { label: FALLBACK_SECTION_LABELS[key] || key };
+
 // Keeps the user's saved order, drops unknown/duplicate keys, and appends any
 // section that is missing (e.g. an order saved before Projects, Languages,
 // Hobbies & Interests, References and Certificates could be reordered).
@@ -311,7 +326,7 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
   const sectionOrder = normalizeSectionOrder(savedSectionOrder);
   // Sections the user removed from the resume. Their information is kept, they
   // are only left out of the template (and can be added back at any time).
-  const hidden = (Array.isArray(hiddenSections) ? hiddenSections : []).filter((key) => SECTION_META[key]);
+  const hidden = (Array.isArray(hiddenSections) ? hiddenSections : []).filter((key) => DEFAULT_SECTION_ORDER.includes(key));
   const visibleOrder = sectionOrder.filter((key) => !hidden.includes(key));
   const { personal, education, skills, summary, hobbies, languages, projects, references, certificates } = data;
   // Only jobs with a title or employer show on the resume; empty forms are skipped.
@@ -395,7 +410,7 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
   };
 
   const removeSection = (key) => {
-    if (!SECTION_META[key]) return;
+    if (!DEFAULT_SECTION_ORDER.includes(key)) return;
     setHiddenSections((prev) => (prev.includes(key) ? prev : [...prev, key]));
     setEditingSection((current) => (current === key ? null : current));
     setUndoKey(key);
@@ -909,7 +924,7 @@ ${headMarkup}
               <div className="edit-ui absolute bottom-4 left-1/2 -translate-x-1/2 z-10 max-w-[92%]">
                 {undoKey ? (
                   <div className="flex items-center gap-3 bg-slate-900 text-white text-xs font-semibold rounded-full pl-4 pr-2 py-2 shadow-lg">
-                    <span>{SECTION_META[undoKey].label} removed from your resume</span>
+                    <span>{getSectionMeta(undoKey).label} removed from your resume</span>
                     <button
                       type="button"
                       onClick={() => restoreSection(undoKey)}
@@ -1107,7 +1122,7 @@ ${headMarkup}
                                   >
                                     <IconGrip />
                                   </div>
-                                  <span className={`text-xs font-bold text-slate-700 truncate ${isHidden ? 'line-through' : ''}`}>{SECTION_META[key].label}</span>
+                                  <span className={`text-xs font-bold text-slate-700 truncate ${isHidden ? 'line-through' : ''}`}>{getSectionMeta(key).label}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <button
@@ -1121,7 +1136,7 @@ ${headMarkup}
                                     type="button"
                                     onClick={() => moveSection(index, -1)}
                                     disabled={index === 0}
-                                    aria-label={`Move ${SECTION_META[key].label} up`}
+                                    aria-label={`Move ${getSectionMeta(key).label} up`}
                                     className="w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 active:bg-slate-300 disabled:opacity-25 disabled:hover:bg-transparent transition-colors focus:outline-none"
                                   >
                                     <IconChevronUp />
@@ -1130,7 +1145,7 @@ ${headMarkup}
                                     type="button"
                                     onClick={() => moveSection(index, 1)}
                                     disabled={index === sectionOrder.length - 1}
-                                    aria-label={`Move ${SECTION_META[key].label} down`}
+                                    aria-label={`Move ${getSectionMeta(key).label} down`}
                                     className="w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 active:bg-slate-300 disabled:opacity-25 disabled:hover:bg-transparent transition-colors focus:outline-none"
                                   >
                                     <IconChevronDown />
@@ -1202,7 +1217,7 @@ ${headMarkup}
                       onClick={() => restoreSection(key)}
                       className="px-3 py-1 rounded-full border border-slate-300 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors focus:outline-none"
                     >
-                      + {SECTION_META[key].label}
+                      + {getSectionMeta(key).label}
                     </button>
                   ))}
                 </div>
