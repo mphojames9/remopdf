@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { suggestSkills } from './datasetSuggestions';
+import { suggestSkills } from './onetSuggestions';
+import useSuggestions from './useSuggestions';
 
 // Skill levels. The chosen `value` is stored on each skill as `rating` (1-5);
 // 0 / missing means "not chosen yet" (older saved skills). New skills start at Novice.
@@ -142,8 +143,11 @@ const flashRow = (row) => {
 /*                         Skill input with suggestions                       */
 /* -------------------------------------------------------------------------- */
 
-// Text input that suggests skills from the dataset while you type. With nothing typed it
-// suggests skills for the job titles from the Work History step.
+const NO_SKILLS = { suggestions: [], personalised: false, source: '' };
+
+// Text input that suggests skills while you type. With nothing typed it suggests skills for the
+// job titles from the Work History step: from O*NET first, from the dataset when O*NET does not
+// know those titles.
 const SkillInput = ({ value, onChange, placeholder, invalid, exclude, jobTitles }) => {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -152,15 +156,20 @@ const SkillInput = ({ value, onChange, placeholder, invalid, exclude, jobTitles 
   const excludeKey = exclude.join('|');
   const titlesKey = jobTitles.join('|');
 
+  const { data: found } = useSuggestions(
+    () => suggestSkills({ query: value, exclude, jobTitles, limit: 7 }),
+    [value, excludeKey, titlesKey],
+    { enabled: open, initial: NO_SKILLS }
+  );
+
   const { items, personalised } = useMemo(() => {
     if (!open) return { items: [], personalised: false };
     const typed = (value || '').trim().toLowerCase();
-    const result = suggestSkills({ query: value, exclude, jobTitles, limit: 7 });
     return {
-      items: result.suggestions.filter((s) => s.toLowerCase() !== typed).slice(0, 6),
-      personalised: result.personalised,
+      items: found.suggestions.filter((s) => s.toLowerCase() !== typed).slice(0, 6),
+      personalised: found.personalised,
     };
-  }, [open, value, excludeKey, titlesKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, value, found]);
 
   const showList = open && items.length > 0;
   const heading = (value || '').trim() ? 'Matching skills' : personalised ? 'Suggested for your job titles' : 'Popular skills';
@@ -254,20 +263,30 @@ const SkillInput = ({ value, onChange, placeholder, invalid, exclude, jobTitles 
 /*                             Suggested skills list                          */
 /* -------------------------------------------------------------------------- */
 
-// Left column: skills from the dataset for the user's job titles (or popular skills when there
-// are none yet), with a search box. Skills already added drop out of the list.
+// Left column: skills for the user's job titles (O*NET first, the dataset when O*NET does not know
+// them, popular skills when there are no titles yet), with a search box. Skills already added drop out of the list.
 const SuggestedSkills = ({ selectedTexts, jobTitles, onAdd, pending = [] }) => {
   const [search, setSearch] = useState('');
   const selectedKey = selectedTexts.join('|');
   const titlesKey = jobTitles.join('|');
 
-  const { suggestions, personalised } = useMemo(
+  const { data: found, loading } = useSuggestions(
     () => suggestSkills({ query: search, exclude: selectedTexts, jobTitles, limit: 40 }),
-    [search, selectedKey, titlesKey] // eslint-disable-line react-hooks/exhaustive-deps
+    [search, selectedKey, titlesKey],
+    { initial: NO_SKILLS }
   );
+  const { personalised, source } = found;
+
+  // A skill leaves the list the moment it is added, without waiting for the next lookup.
+  const taken = new Set(selectedTexts.map((t) => String(t || '').trim().toLowerCase()));
+  const suggestions = found.suggestions.filter((t) => pending.includes(t) || !taken.has(t.toLowerCase()));
 
   const searching = !!search.trim();
-  const caption = searching ? 'Matching skills' : personalised ? 'Based on the job titles you added' : 'Popular skills';
+  const caption = searching
+    ? 'Matching skills'
+    : personalised
+      ? `Based on the job titles you added${source === 'onet' ? ' (O*NET)' : ''}`
+      : 'Popular skills';
 
   return (
     <div className="border border-slate-200 rounded-sm bg-white h-[360px] flex flex-col">
@@ -327,7 +346,7 @@ const SuggestedSkills = ({ selectedTexts, jobTitles, onAdd, pending = [] }) => {
         })}
         {suggestions.length === 0 && (
           <p className="p-2 text-xs text-slate-500">
-            {searching ? 'No matching skills. Type your own on the right.' : 'No more suggestions.'}
+            {loading ? 'Loading suggestions...' : searching ? 'No matching skills. Type your own on the right.' : 'No more suggestions.'}
           </p>
         )}
       </div>

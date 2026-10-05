@@ -10,6 +10,8 @@ import AdditionalSections from '../components/Resume/Sections/AdditionalSections
 import { DEFAULT_LANGUAGE_LEVEL } from '../components/Resume/Sections/LanguageLevelSelect';
 import { PHOTO_DEFAULTS } from '../components/Resume/Sections/ResumePhoto';
 import demoPhoto from '../assets/profile.png';
+import { downloadBlob } from '../api/client';
+import { buildResumePdf } from '../utils/resumePdf';
 import {
   TEMPLATE_COMPONENTS,
   TEMPLATE_IDS,
@@ -27,6 +29,13 @@ import {
   DEFAULT_ACCENT,
   ACCENT_SWATCHES,
 } from '../components/Resume/Templates';
+
+// Resolves after the browser has painted the next frame (with a short fallback), so the download
+// overlay is on screen before the heavy PDF rendering starts blocking the main thread.
+const nextPaint = () => new Promise((resolve) => {
+  requestAnimationFrame(() => setTimeout(resolve, 0));
+  setTimeout(resolve, 150);
+});
 
 /* Icons */
 const IconMenu = ({ className = 'w-6 h-6' }) => (
@@ -342,6 +351,8 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
   const [customizeOpen, setCustomizeOpen] = useState(false);
   // Small screens: the footer actions (Edit / Download / Close) live in a menu instead of a footer bar.
   const [actionsOpen, setActionsOpen] = useState(false);
+  // True while the PDF is being rendered, so the Download buttons can't be tapped twice.
+  const [downloading, setDownloading] = useState(false);
 
   // Drag and drop for the section-order list. Pointer events cover mouse, pen and touch. While a row is
   // dragged the rows are moved with inline transforms (no React re-render of the heavy preview on every
@@ -629,71 +640,27 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
   const isEmpty = !fullName && !summary && jobs.length === 0 && !educations.some((e) => e.institution) && namedSkills.length === 0
     && !hasHobbies && !hasLanguages && !hasProjects && !hasReferences && !hasCertificates;
 
-  // Download = print the resume's A4 pages to PDF. The pages are copied into a
-  // hidden frame first, so the printout is only the pages (no modal, nothing
-  // clipped by the scrolling preview) and matches the preview exactly, page
-  // numbers included. In the print dialog the user picks "Save as PDF".
-  const downloadResume = () => {
+  // Download = render the resume's A4 pages into a real PDF file and save it with the
+  // app's existing download code (downloadBlob in api/client), so it also works inside
+  // the Android WebView where window.print() does nothing.
+  const downloadResume = async () => {
+    if (downloading) return;
     const source = document.getElementById('resume-preview-content');
     const pageNodes = source ? Array.from(source.querySelectorAll('.a4-page')) : [];
     if (pageNodes.length === 0) return;
 
-    const oldFrame = document.getElementById('resume-print-frame');
-    if (oldFrame) oldFrame.remove();
-
-    const fileTitle = (fullName ? `${fullName} - Resume` : 'Resume').replace(/[<>&"]/g, '');
-    const headMarkup = Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).map((node) => node.outerHTML).join('\n');
-    const pagesMarkup = pageNodes.map((node) => node.outerHTML).join('\n');
-
-    const frame = document.createElement('iframe');
-    frame.id = 'resume-print-frame';
-    frame.setAttribute('aria-hidden', 'true');
-    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-    document.body.appendChild(frame);
-
-    const frameWindow = frame.contentWindow;
-    const frameDoc = frame.contentDocument;
-    frameDoc.open();
-    frameDoc.write(`<!doctype html><html><head><meta charset="utf-8"><base href="${document.baseURI}"><title>${fileTitle}</title>
-${headMarkup}
-<style>
-  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  html, body { margin: 0; padding: 0; background: #fff; }
-  @media print {
-    #resume-preview-content { position: static !important; width: 210mm !important; }
-    .a4-page { min-height: 0 !important; max-height: none !important; }
-    .a4-page:last-child { break-after: auto !important; page-break-after: auto !important; }
-  }
-</style></head><body><div id="resume-preview-content">${pagesMarkup}</div></body></html>`);
-    frameDoc.close();
-
-    let started = false;
-    const start = async () => {
-      if (started) return;
-      started = true;
-      try {
-        // Print only once the web font and any photo have loaded in the frame.
-        if (frameDoc.fonts && frameDoc.fonts.ready) {
-          await Promise.race([frameDoc.fonts.ready, new Promise((resolve) => setTimeout(resolve, 2000))]);
-        }
-        await Promise.all(Array.from(frameDoc.images).map((img) => (
-          img.complete ? null : new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; })
-        )));
-      } catch {
-        // print anyway
-      }
-      // The browser suggests the page title as the file name.
-      const previousTitle = document.title;
-      document.title = fileTitle;
-      frameWindow.addEventListener('afterprint', () => {
-        document.title = previousTitle;
-        frame.remove();
-      }, { once: true });
-      frameWindow.focus();
-      frameWindow.print();
-    };
-    frameWindow.addEventListener('load', start, { once: true });
-    setTimeout(start, 3000); // fallback if the frame's load event never arrives
+    const baseName = (fullName ? `${fullName} - Resume` : 'Resume').replace(/[\\/:*?"<>|]/g, '').trim() || 'Resume';
+    setDownloading(true);
+    try {
+      await nextPaint();
+      const bytes = await buildResumePdf(pageNodes, { pageWidthPx: PAGE_WIDTH_PX, title: baseName });
+      downloadBlob(new Blob([bytes], { type: 'application/pdf' }), `${baseName}.pdf`);
+    } catch (err) {
+      console.error('Resume PDF export failed', err);
+      window.alert('Sorry, the PDF could not be created. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const templateProps = { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, accentColor, sectionOrder: visibleOrder, edit };
@@ -759,11 +726,92 @@ ${headMarkup}
         .cz-sheet { transform: translateY(100%); visibility: hidden; transition: transform .3s cubic-bezier(.22,1,.36,1), visibility .3s; }
         .cz-sheet.is-open { transform: none; visibility: visible; }
         @media (min-width: 768px) { .cz-sheet, .cz-sheet.is-open { transform: none; visibility: visible; transition: none; } }
+        @keyframes dl-fade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes dl-rise { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+        @keyframes dl-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        @keyframes dl-fan-l { 0%, 100% { transform: rotate(-9deg) translateX(-13px); } 50% { transform: rotate(-14deg) translateX(-19px); } }
+        @keyframes dl-fan-r { 0%, 100% { transform: rotate(9deg) translateX(13px); } 50% { transform: rotate(14deg) translateX(19px); } }
+        @keyframes dl-write { 0% { transform: scaleX(0); opacity: 1; } 30%, 82% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+        @keyframes dl-scan { 0% { transform: translateY(-30px); opacity: 0; } 15%, 85% { opacity: 1; } 100% { transform: translateY(84px); opacity: 0; } }
+        @keyframes dl-glow { 0%, 100% { opacity: .14; transform: scale(.92); } 50% { opacity: .28; transform: scale(1.06); } }
+        .dl-overlay { animation: dl-fade .18s ease-out; }
+        .dl-card { animation: dl-rise .26s cubic-bezier(.22,1,.36,1); }
+        .dl-stack { position: relative; width: 120px; height: 100px; }
+        .dl-glow {
+          position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 9999px;
+          background: radial-gradient(circle, var(--dl-accent, #2563eb) 0%, transparent 68%); filter: blur(10px);
+          animation: dl-glow 2.4s ease-in-out infinite;
+        }
+        .dl-sheet {
+          position: absolute; top: 9px; left: 50%; width: 60px; height: 80px; margin-left: -30px; display: block; overflow: hidden;
+          border-radius: 9px; background: #fff; box-shadow: 0 0 0 1px rgba(15,23,42,.07), 0 8px 20px -6px rgba(15,23,42,.25);
+        }
+        .dl-sheet-l { transform: rotate(-9deg) translateX(-13px); background: #f8fafc; animation: dl-fan-l 2.4s ease-in-out infinite; }
+        .dl-sheet-r { transform: rotate(9deg) translateX(13px); background: #f1f5f9; animation: dl-fan-r 2.4s ease-in-out infinite; }
+        .dl-sheet-front { animation: dl-float 2.4s ease-in-out infinite; }
+        .dl-head { display: flex; align-items: center; gap: 5px; height: 21px; padding: 0 7px; background: linear-gradient(135deg, var(--dl-accent, #2563eb), color-mix(in srgb, var(--dl-accent, #2563eb) 60%, #020617)); background-color: var(--dl-accent, #2563eb); }
+        .dl-avatar { flex: none; width: 10px; height: 10px; border-radius: 9999px; background: rgba(255,255,255,.85); }
+        .dl-head-lines { display: flex; flex: 1; flex-direction: column; gap: 3px; }
+        .dl-body { display: flex; flex-direction: column; gap: 4px; padding: 8px 7px; }
+        .dl-line { display: block; height: 3px; border-radius: 9999px; background: #cbd5e1; transform-origin: left center; animation: dl-write 2.4s cubic-bezier(.4,0,.2,1) infinite; animation-delay: calc(var(--i, 0) * .17s); }
+        .dl-line.is-head { height: 2.5px; background: rgba(255,255,255,.8); }
+        .dl-line.is-title { background: var(--dl-accent, #2563eb); }
+        .dl-beam {
+          position: absolute; left: 0; right: 0; top: 0; height: 30px; display: block; pointer-events: none;
+          background: var(--dl-accent, #2563eb);
+          -webkit-mask-image: linear-gradient(to bottom, transparent, #000 85%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 85%, transparent);
+          opacity: .22; animation: dl-scan 2.4s ease-in-out infinite;
+        }
         @media (prefers-reduced-motion: reduce) {
           .cz-collapse, .cz-row, .cz-sheet { transition: none !important; }
           .cz-pop { animation: none; }
+          .dl-overlay, .dl-card { animation: none; }
+          .dl-glow, .dl-sheet-l, .dl-sheet-r, .dl-sheet-front, .dl-line { animation: none; }
+          .dl-beam { display: none; }
         }
       `}</style>
+
+      {/* Download in progress: blocks the screen and shows a resume page being written until the PDF is saved. */}
+      {downloading && (
+        <div
+          className="dl-overlay fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 backdrop-blur-sm cursor-wait px-6"
+          onClick={(e) => e.stopPropagation()}
+          aria-busy="true"
+        >
+          <div
+            role="status"
+            aria-live="polite"
+            style={{ '--dl-accent': accentColor }}
+            className="dl-card w-full max-w-[19rem] rounded-[28px] bg-white px-8 pb-8 pt-9 text-center shadow-[0_28px_70px_-14px_rgba(2,6,23,0.5)] ring-1 ring-slate-900/5"
+          >
+            <div className="dl-stack mx-auto" aria-hidden="true">
+              <span className="dl-glow" />
+              <span className="dl-sheet dl-sheet-l" />
+              <span className="dl-sheet dl-sheet-r" />
+              <span className="dl-sheet dl-sheet-front">
+                <span className="dl-head">
+                  <span className="dl-avatar" />
+                  <span className="dl-head-lines">
+                    <span className="dl-line is-head" style={{ '--i': 0, width: '90%' }} />
+                    <span className="dl-line is-head" style={{ '--i': 1, width: '60%' }} />
+                  </span>
+                </span>
+                <span className="dl-body">
+                  <span className="dl-line is-title" style={{ '--i': 2, width: '40%' }} />
+                  <span className="dl-line" style={{ '--i': 3, width: '100%' }} />
+                  <span className="dl-line" style={{ '--i': 4, width: '86%' }} />
+                  <span className="dl-line" style={{ '--i': 5, width: '62%' }} />
+                  <span className="dl-line is-title" style={{ '--i': 6, width: '40%' }} />
+                  <span className="dl-line" style={{ '--i': 7, width: '94%' }} />
+                </span>
+                <span className="dl-beam" />
+              </span>
+            </div>
+            <p className="mt-6 text-[16px] font-semibold tracking-tight text-slate-900">Preparing your PDF</p>
+            <p className="mt-1.5 text-[13px] leading-snug text-slate-500">Rendering every page. This only takes a moment.</p>
+          </div>
+        </div>
+      )}
 
       <div
         className="bg-white w-full h-full overflow-hidden flex flex-col"
@@ -872,11 +920,11 @@ ${headMarkup}
                       type="button"
                       role="menuitem"
                       onClick={() => { setActionsOpen(false); downloadResume(); }}
-                      disabled={isEmpty}
+                      disabled={isEmpty || downloading}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-[13px] font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent transition-colors focus:outline-none"
                     >
                       <IconDownload />
-                      Download
+                      {downloading ? 'Preparing PDF…' : 'Download'}
                     </button>
                     <div className="my-1 border-t border-slate-100" />
                     <button
@@ -1282,12 +1330,12 @@ ${headMarkup}
           <button
             type="button"
             onClick={downloadResume}
-            disabled={isEmpty}
+            disabled={isEmpty || downloading}
             title={isEmpty ? 'Fill in your details first' : 'Download your resume as a PDF'}
             className="order-1 sm:order-3 px-6 py-2 rounded-full bg-[#1e3a8a] text-white text-[13px] font-semibold border-2 border-[#1e3a8a] hover:bg-blue-900 hover:border-blue-900 disabled:opacity-40 disabled:hover:bg-[#1e3a8a] transition-colors flex items-center justify-center gap-2 focus:outline-none"
           >
             <IconDownload />
-            Download
+            {downloading ? 'Preparing PDF…' : 'Download'}
           </button>
         </div>
       </div>
@@ -1483,6 +1531,30 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     return list.map((entry, i) => (i === 0 ? { ...entry, ...foundEntry, id: entry.id } : entry));
   };
 
+  // A parsed resume can hold several jobs and qualifications. A list that is still the empty
+  // starter entry is replaced; a list the person has already filled in keeps their entries and
+  // gets the new ones added (skipping any that look like duplicates).
+  const isBlankItem = (item, keys) => !keys.some((k) => String(item?.[k] ?? '').trim());
+  const sameText = (a, b) => String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+
+  const mergeList = (existing, incoming, keys, isSame, create, idPrefix) => {
+    const current = existing || [];
+    if (!incoming || incoming.length === 0) return current;
+    const filled = current.filter((item) => !isBlankItem(item, keys));
+    const fresh = incoming.filter((item) => !filled.some((have) => isSame(have, item)));
+    if (fresh.length === 0) return current;
+    const stamp = Date.now();
+    return [...filled, ...fresh.map((item, i) => ({ ...create(item), id: `${idPrefix}-${stamp}-${i}` }))];
+  };
+
+  const mergeJobList = (existing, incoming) =>
+    mergeList(existing, incoming, ['title', 'employer', 'description', 'achievements'],
+      (a, b) => sameText(a.title, b.title) && sameText(a.employer, b.employer), createJob, 'import-job');
+
+  const mergeEducationList = (existing, incoming) =>
+    mergeList(existing, incoming, ['institution', 'degree'],
+      (a, b) => sameText(a.institution, b.institution) && sameText(a.degree, b.degree), createEducation, 'import-edu');
+
   const mergeSkills = (existing, found) => {
     if (!found || found.length === 0) return existing;
     if (existing && existing.length > 0) return existing;
@@ -1491,12 +1563,18 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
 
   const mergeSummary = (existing, found) => (existing && existing.trim() ? existing : found || existing);
 
+  // `experiences` / `educations` (lists) come from the resume parser. The single `experience` /
+  // `education` objects are the old format and still work.
   const handleImport = (parsed) => {
     setResumeData((prev) => ({
       ...prev,
-      personal: mergeFound(prev.personal, parsed.personal),
-      experiences: mergeExperiences(prev.experiences, parsed.experience),
-      education: mergeEducation(prev.education, parsed.education),
+      personal: mergeFound(prev.personal, parsed.personal || {}),
+      experiences: parsed.experiences
+        ? mergeJobList(prev.experiences, parsed.experiences)
+        : mergeExperiences(prev.experiences, parsed.experience),
+      education: parsed.educations
+        ? mergeEducationList(prev.education, parsed.educations)
+        : mergeEducation(prev.education, parsed.education),
       skills: mergeSkills(prev.skills, parsed.skills),
       summary: mergeSummary(prev.summary, parsed.summary),
     }));

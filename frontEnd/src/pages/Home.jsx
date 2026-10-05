@@ -32,6 +32,13 @@ const PATHS = {
   mail: ['M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z', 'm22 6-10 7L2 6'],
   phone: ['M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'],
   pin: ['M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z', 'M12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'],
+  globe: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z', 'M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20', 'M2 12h20'],
+  briefcase: ['M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16', 'M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z'],
+  cap: ['M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z', 'M22 10v6', 'M6 12.5V16a6 3 0 0 0 12 0v-3.5'],
+  person: ['M12 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z', 'M20 21a8 8 0 0 0-16 0'],
+  zap: ['M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'],
+  languages: ['m5 8 6 6', 'm4 14 6-6 2-3', 'M2 5h12', 'M7 2h1', 'm22 22-5-10-5 10', 'M14 18h6'],
+  calendar: ['M8 2v4', 'M16 2v4', 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z', 'M3 10h18'],
 };
 
 function Icon({ name, className = 'h-5 w-5' }) {
@@ -489,13 +496,58 @@ const accents = [
 const layouts = [
   { id: 'modern', label: 'Modern' },
   { id: 'sidebar', label: 'Sidebar' },
+  { id: 'denim', label: 'Denim' },
 ];
 
-// Sample entries so the page looks finished. The latest job title follows the title typed in the form.
-const sampleJobs = [
-  { title: null, company: 'Northwind Studio', when: '2021 to now', bullets: ['Led projects from first brief to final delivery.', 'Mentored new team members.'] },
-  { title: 'Associate', company: 'Fieldwork Agency', when: '2018 to 2021', bullets: ['Worked with clients to meet every deadline.'] },
+// Everything the form edits. A blank email, phone or place falls back to a placeholder so the page still looks finished.
+const startDetails = {
+  email: '', phone: '', place: '', link: '',
+  company: 'Northwind Studio', when: '2021 to now', win: 'Led projects from first brief to final delivery.',
+  degree: 'BA, Visual Communication', school: 'Riverside University', years: '2014 to 2018',
+  langs: 'English, French',
+};
+// The older sample job stays fixed; the latest one is built from the form and follows the job title typed in.
+const olderJob = { title: 'Associate', company: 'Fieldwork Agency', when: '2018 to 2021', bullets: ['Worked with clients to meet every deadline.'] };
+const splitList = (t, max) => t.split(',').map((x) => x.trim()).filter(Boolean).slice(0, max);
+const contactItems = (name, d) => [
+  ['mail', d.email.trim() || emailFrom(name)],
+  ['phone', d.phone.trim() || '+00 000 000 000'],
+  ['pin', d.place.trim() || 'City, Country'],
+  ...(d.link.trim() ? [['globe', d.link.trim()]] : []),
 ];
+
+// Colour helpers for the Denim header: the gradient is deepened only as far as white text needs.
+const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const mixRgb = (x, y, t) => x.map((v, i) => Math.round(v + (y[i] - v) * t));
+const lum = (c) => c.reduce((sum, v, i) => { const q = v / 255; return sum + [0.2126, 0.7152, 0.0722][i] * (q <= 0.04 ? q / 12.92 : ((q + 0.055) / 1.055) ** 2.4); }, 0);
+const deep = (c, max) => { let k = 1; let o = c; while (lum(o) > max && k > 0.1) { k -= 0.04; o = c.map((v) => Math.round(v * k)); } return `rgb(${o})`; };
+const heroOf = (hex) => `linear-gradient(120deg, ${deep(rgb(hex), 0.16)}, ${deep(mixRgb(rgb(hex), [61, 80, 120], 0.5), 0.07)})`;
+const pale = (hex, t) => `rgb(${mixRgb(rgb(hex), [255, 255, 255], t)})`;
+
+// Wavy bottom edge of the Denim header: two see-through layers and a solid white one, climbing to the right.
+const wave = (yL, yR, amp, cyc, ph) => {
+  let d = '';
+  for (let i = 0; i <= 40; i++) {
+    const t = i / 40;
+    d += `${i ? 'L' : 'M'}${t * 800} ${(yL + (yR - yL) * t + amp * Math.sin(Math.PI * 2 * cyc * t + ph)).toFixed(1)}`;
+  }
+  return `${d}L800 70L0 70Z`;
+};
+const WAVES = [[wave(40, 8, 8, 1.4, 0.4), 'rgba(255,255,255,.2)'], [wave(52, 20, 9, 1.9, 2), 'rgba(255,255,255,.42)'], [wave(62, 30, 8, 2.5, 4), '#ffffff']];
+const BLOOMS = [[398, 300, 40, 6], [404, 372, 18, 5], [4, 548, 44, 7], [396, 540, 38, 8]];
+
+function Bloom({ x, y, r, n, outer, inner, core }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      {[1, 0.62].flatMap((sc, ring) =>
+        Array.from({ length: n }, (_, k) => (
+          <ellipse key={`${ring}-${k}`} cy={-r * sc * 0.58} rx={r * sc * 0.3} ry={r * sc * 0.5} fill={ring ? inner : outer} transform={`rotate(${(360 / n) * k + (ring ? 180 / n : 0)})`} />
+        )),
+      )}
+      <circle r={r * 0.17} fill={core} />
+    </g>
+  );
+}
 
 const initials = (n) => n.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'CV';
 const emailFrom = (n) => `${n.toLowerCase().replace(/[^a-z\s]/g, '').trim().split(/\s+/).filter(Boolean).join('.') || 'you'}@email.com`;
@@ -527,21 +579,21 @@ function Contact({ items, iconColor, className }) {
 }
 
 // timeline: a vertical line with a dot per job and the dates as a small tinted tag. Without it, a flat list.
-function Jobs({ role, a, timeline }) {
+function Jobs({ jobs, a, timeline }) {
   return (
     <div className={`mt-2.5 ${timeline ? 'ml-1 space-y-3 border-l pl-4' : 'space-y-2.5'}`} style={timeline ? { borderColor: tint(a.bar, '40') } : undefined}>
-      {sampleJobs.map((j, i) => (
-        <div key={j.company} className={`relative ${i ? 'hidden sm:block' : ''}`}>
+      {jobs.map((j, i) => (
+        <div key={`${j.company}-${i}`} className={`relative ${i ? 'hidden sm:block' : ''}`}>
           {timeline && (
             <span aria-hidden="true" className="absolute -left-[20.5px] top-[5px] h-2 w-2 rounded-full ring-2 ring-white transition-colors duration-500" style={{ background: a.bar }} />
           )}
           <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
-            <p className="break-words text-xs font-bold">{j.title || role || 'Your job title'}</p>
-            {timeline && (
+            <p className="break-words text-xs font-bold">{j.title}</p>
+            {timeline && j.when && (
               <span className="rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors duration-500" style={{ background: tint(a.bar, '1f'), color: a.text }}>{j.when}</span>
             )}
           </div>
-          <p className="text-[11px] text-slate-500">{timeline ? j.company : `${j.company}, ${j.when}`}</p>
+          <p className="text-[11px] text-slate-500">{timeline || !j.when ? j.company : `${j.company}, ${j.when}`}</p>
           <ul className="mt-1 list-disc pl-4 text-[11px] leading-snug text-slate-600 marker:text-slate-400">
             {j.bullets.map((b) => (
               <li key={b}>{b}</li>
@@ -553,25 +605,29 @@ function Jobs({ role, a, timeline }) {
   );
 }
 
-function School({ a }) {
+function School({ ed, a }) {
   return (
     <div className="mt-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-        <p className="text-xs font-bold">BA, Visual Communication</p>
-        <span className="text-[10px] font-medium transition-colors duration-500" style={{ color: a.text }}>2014 to 2018</span>
+        <p className="text-xs font-bold">{ed.degree.trim() || 'Your degree'}</p>
+        <span className="text-[10px] font-medium transition-colors duration-500" style={{ color: a.text }}>{ed.years.trim()}</span>
       </div>
-      <p className="text-[11px] text-slate-500">Riverside University</p>
+      <p className="text-[11px] text-slate-500">{ed.school.trim() || 'Your school'}</p>
     </div>
   );
 }
 
 // Two layouts of the same sample resume. The paper box has no overflow clipping, so long input grows the page instead of cutting text.
-function ResumePaper({ layout, name, role, about, skills, a }) {
+function ResumePaper({ layout, name, role, about, skills, d, a }) {
   const nameText = name || 'Your name';
   const roleText = role || 'Your job title';
   const aboutText = about || 'A short summary of who you are appears here.';
-  const contact = [['mail', emailFrom(name)], ['phone', '+00 000 000 000'], ['pin', 'City, Country']];
+  const contact = contactItems(name, d);
+  const langs = splitList(d.langs, 4);
+  const jobs = [{ title: role || 'Your job title', company: d.company.trim() || 'Company name', when: d.when.trim(), bullets: d.win.trim() ? [d.win.trim()] : [] }, olderJob];
   const mono = initials(name);
+
+  if (layout === 'denim') return <DenimPaper name={nameText} role={roleText} about={aboutText} skills={skills} langs={langs} items={contact} jobs={jobs} ed={d} a={a} />;
 
   if (layout === 'sidebar')
     return (
@@ -593,14 +649,20 @@ function ResumePaper({ layout, name, role, about, skills, a }) {
                 </li>
               ))}
             </ul>
+            {langs.length > 0 && (
+              <>
+                <p className="mt-6 text-xs font-bold">Languages</p>
+                <p className="mt-2 break-words text-[11px] leading-snug">{langs.join(', ')}</p>
+              </>
+            )}
           </div>
           <div className="min-w-0 p-4 sm:p-5">
             <PaperHead a={a} first>Profile</PaperHead>
             <p className="mt-2 break-words text-[11px] leading-relaxed text-slate-600">{aboutText}</p>
             <PaperHead a={a}>Experience</PaperHead>
-            <Jobs role={role} a={a} />
+            <Jobs jobs={jobs} a={a} />
             <PaperHead a={a}>Education</PaperHead>
-            <School a={a} />
+            <School ed={d} a={a} />
           </div>
         </div>
       </>
@@ -622,17 +684,127 @@ function ResumePaper({ layout, name, role, about, skills, a }) {
         </div>
         <p className="mt-2 break-words text-[11.5px] leading-relaxed text-slate-600">{aboutText}</p>
         <PaperHead a={a}>Experience</PaperHead>
-        <Jobs role={role} a={a} timeline />
+        <Jobs jobs={jobs} a={a} timeline />
         <PaperHead a={a}>Education</PaperHead>
-        <School a={a} />
+        <School ed={d} a={a} />
         <PaperHead a={a}>Skills</PaperHead>
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {skills.map((s, i) => (
             <span key={`${s}-${i}`} className="rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors duration-500" style={{ background: tint(a.bar, '1f'), color: a.text }}>{s}</span>
           ))}
         </div>
+        {langs.length > 0 && (
+          <>
+            <PaperHead a={a}>Languages</PaperHead>
+            <p className="mt-2.5 break-words text-[11px] text-slate-600">{langs.join(', ')}</p>
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+// The Denim layout, drawn after the Denim template: a gradient header with a wavy edge, pale flowers behind the
+// page, a timeline with a ringed icon per entry, and outlined skill pills.
+function DenimPaper({ name, role, about, skills, langs, items, jobs, ed, a }) {
+  const [first, ...rest] = name.split(/\s+/);
+  const hero = heroOf(a.bar);
+  const rail = pale(a.bar, 0.78);
+  const head = (icon, text, top) => (
+    <div className={`${top ? '' : 'mt-4'} flex items-center gap-2`}>
+      <span aria-hidden="true" className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-white transition-all duration-500" style={{ background: hero }}>
+        <Icon name={icon} className="h-3 w-3" />
+      </span>
+      <h3 className="font-display text-[13px] font-semibold">{text}</h3>
+      <span className="h-px flex-1" style={{ background: rail }} />
+    </div>
+  );
+  const entry = (icon, key, title, when, place, lines, hide) => (
+    <div key={key} className={`relative ${hide ? 'hidden sm:block' : ''}`}>
+      <span aria-hidden="true" className="absolute -left-[30px] top-0 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 bg-white transition-colors duration-500" style={{ borderColor: a.bar, color: a.bar }}>
+        <Icon name={icon} className="h-2.5 w-2.5" />
+      </span>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+        <p className="break-words font-display text-xs font-semibold">{title}</p>
+        {when && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium transition-colors duration-500" style={{ color: a.text }}>
+            <Icon name="calendar" className="h-2.5 w-2.5" />
+            {when}
+          </span>
+        )}
+      </div>
+      <p className="break-words text-[11px] font-medium transition-colors duration-500" style={{ color: a.text }}>{place}</p>
+      {lines.length > 0 && (
+        <ul className="mt-1 list-disc pl-4 text-[11px] leading-snug text-slate-600 marker:text-slate-400">
+          {lines.map((b) => (
+            <li key={b}>{b}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+  const pills = (list) => (
+    <div className="mt-2.5 flex flex-wrap gap-1.5">
+      {list.map((x, i) => (
+        <span key={`${x}-${i}`} className="rounded-[10px] border bg-white px-2.5 py-1 text-[11px] font-medium" style={{ borderColor: pale(a.bar, 0.72) }}>{x}</span>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="swap relative overflow-hidden rounded-md">
+      <svg aria-hidden="true" focusable="false" className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 400 560" preserveAspectRatio="xMidYMid slice">
+        {BLOOMS.map(([x, y, r, n], i) => (
+          <Bloom key={i} x={x} y={y} r={r} n={n} outer={pale(a.bar, 0.86)} inner={pale(a.bar, 0.76)} core={pale(a.bar, 0.5)} />
+        ))}
+      </svg>
+      <div className="relative overflow-hidden px-5 pb-16 pt-6 transition-all duration-500 sm:px-7" style={{ background: hero }}>
+        <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10" />
+        <div className="relative">
+          <p className="break-words font-display text-[1.625rem] leading-none tracking-tight text-white sm:text-[1.875rem]">
+            <span className="font-light">{first}</span>
+            {rest.length > 0 && <span className="font-semibold">{` ${rest.join(' ')}`}</span>}
+          </p>
+          <p className="mt-2 break-words text-[13px] font-medium text-white/90">{role}</p>
+          <Contact items={items} iconColor="rgba(255,255,255,.78)" className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-white/30 pt-3 text-[10.5px] text-white" />
+        </div>
+        <svg aria-hidden="true" focusable="false" className="pointer-events-none absolute inset-x-0 -bottom-px block h-14 w-full" viewBox="0 0 800 70" preserveAspectRatio="none">
+          {WAVES.map(([d, fill], i) => (
+            <path key={i} d={d} fill={fill} />
+          ))}
+        </svg>
+      </div>
+      <div className="relative px-5 pb-6 sm:px-7">
+        {head('person', 'Professional summary', true)}
+        <p className="mt-2 break-words border-l-[3px] pl-3 text-[11.5px] leading-relaxed text-slate-700" style={{ borderColor: pale(a.bar, 0.55) }}>{about}</p>
+        {head('briefcase', 'Work experience')}
+        <div className="ml-2.5 mt-3 space-y-3 border-l-2 pl-5" style={{ borderColor: rail }}>
+          {jobs.map((j, i) => entry('briefcase', `${j.company}-${i}`, j.title, j.when, j.company, j.bullets, i > 0))}
+        </div>
+        {head('cap', 'Education')}
+        <div className="ml-2.5 mt-3 border-l-2 pl-5" style={{ borderColor: rail }}>
+          {entry('cap', 'ed', ed.degree.trim() || 'Your degree', ed.years.trim(), ed.school.trim() || 'Your school', [], false)}
+        </div>
+        {head('zap', 'Skills')}
+        {pills(skills)}
+        {langs.length > 0 && (
+          <>
+            {head('languages', 'Languages')}
+            {pills(langs)}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, hint, ...props }) {
+  return (
+    <label className="block text-sm font-medium text-slate-200">
+      {label}
+      {hint && <span className="font-normal text-slate-400"> {hint}</span>}
+      <input className="field mt-1.5" {...props} />
+    </label>
   );
 }
 
@@ -642,16 +814,18 @@ function LiveDemo() {
   const [about, setAbout] = useState('Designer with six years of experience shaping clear, accessible products.');
   const [skillText, setSkillText] = useState('Research, Prototyping, Accessibility');
   const [pick, setPick] = useState(1);
-  const [layout, setLayout] = useState('modern');
+  const [layout, setLayout] = useState('denim');
+  const [d, setD] = useState(startDetails);
+  const set = (k) => (e) => setD((p) => ({ ...p, [k]: e.target.value }));
   const a = accents[pick];
   const list = skillText.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 6);
   const skills = list.length ? list : ['Your skills'];
 
   return (
-    <section id="resume" className="dark-sec relative isolate scroll-mt-20 overflow-hidden bg-[#0e1726] text-white">
+    <section id="resume" className="dark-sec relative isolate scroll-mt-20 overflow-clip bg-[#0e1726] text-white">
       <div aria-hidden="true" className="blob-b pointer-events-none absolute -left-32 top-10 -z-10 h-[26rem] w-[26rem] rounded-full bg-[#d9856b]/15 blur-3xl" />
       <div aria-hidden="true" className="blob-a pointer-events-none absolute -right-24 bottom-0 -z-10 h-80 w-80 rounded-full bg-[#3d5078]/40 blur-3xl" />
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20 lg:px-8">
+      <div className="mx-auto grid max-w-7xl items-start gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20 lg:px-8">
         <div className="min-w-0">
           <h2 className="reveal font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
             Type a few lines. Get a resume that looks finished.
@@ -679,6 +853,29 @@ function LiveDemo() {
               Top skills <span className="font-normal text-slate-400">(separate with commas)</span>
               <input className="field mt-1.5" value={skillText} maxLength={80} onChange={(e) => setSkillText(e.target.value)} />
             </label>
+
+            <p className="pt-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Contact</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Email" type="email" value={d.email} maxLength={40} placeholder={emailFrom(name)} onChange={set('email')} />
+              <Field label="Phone" type="tel" value={d.phone} maxLength={20} placeholder="+00 000 000 000" onChange={set('phone')} />
+              <Field label="Location" value={d.place} maxLength={28} placeholder="City, Country" onChange={set('place')} />
+              <Field label="LinkedIn or website" value={d.link} maxLength={40} placeholder="linkedin.com/in/you" onChange={set('link')} />
+            </div>
+
+            <p className="pt-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Latest job</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Company" value={d.company} maxLength={32} onChange={set('company')} />
+              <Field label="Dates" value={d.when} maxLength={20} onChange={set('when')} />
+            </div>
+            <Field label="Key achievement" value={d.win} maxLength={90} onChange={set('win')} />
+
+            <p className="pt-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Education and languages</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Degree" value={d.degree} maxLength={36} onChange={set('degree')} />
+              <Field label="School" value={d.school} maxLength={36} onChange={set('school')} />
+              <Field label="Years" value={d.years} maxLength={16} onChange={set('years')} />
+              <Field label="Languages" hint="(commas)" value={d.langs} maxLength={40} onChange={set('langs')} />
+            </div>
           </div>
 
           <div className="reveal mt-6 flex flex-wrap items-start gap-x-10 gap-y-5" style={{ '--i': 3 }}>
@@ -724,11 +921,11 @@ function LiveDemo() {
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-sm lg:max-w-md">
+        <div className="relative mx-auto w-full max-w-sm lg:sticky lg:top-24 lg:max-w-md">
           <div aria-hidden="true" className="absolute inset-6 -z-10 rounded-full bg-[#d9856b]/25 blur-3xl" />
           <div onPointerMove={tilt} onPointerLeave={untilt} className="tilt">
             <div className="paper-in relative rounded-md bg-white text-[#0e1726] shadow-2xl ring-1 ring-black/10 sm:aspect-[3/4]">
-              <ResumePaper layout={layout} name={name} role={role} about={about} skills={skills} a={a} />
+              <ResumePaper layout={layout} name={name} role={role} about={about} skills={skills} d={d} a={a} />
             </div>
           </div>
           <span className="absolute -bottom-4 left-4 z-10 flex items-center gap-2 rounded-full bg-white py-2 pl-3.5 pr-4 text-sm font-medium text-[#0e1726] shadow-lg ring-1 ring-black/5">
@@ -812,6 +1009,51 @@ function FooterLink({ link }) {
 }
 
 const BLURB = 'Edit, organize, convert and share PDFs, or build an ATS-friendly resume from a template.';
+
+const ONET_URL = 'https://services.onetcenter.org/';
+const ONET_BADGE = 'https://www.onetcenter.org/image/link/onet-in-it.svg';
+
+// Required O*NET Web Services attribution: badge image linked to O*NET, plus the credit text.
+function OnetCredit() {
+  return (
+    <div
+      style={{ '--i': 6 }}
+      className="f-rise group/credit relative mt-14 flex flex-col gap-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,.06)] backdrop-blur-sm transition-colors duration-300 hover:border-white/20 sm:flex-row sm:items-center sm:gap-7 sm:p-6"
+    >
+      <span aria-hidden="true" className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#d9856b]/60 to-transparent" />
+      <a
+        href={ONET_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="This site incorporates information from O*NET Web Services. Click to learn more."
+        className="shrink-0 self-start rounded-xl bg-white p-2.5 shadow-lg shadow-black/25 ring-1 ring-white/20 transition-transform duration-300 ease-out hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      >
+        <img
+          src={ONET_BADGE}
+          alt="O*NET in-it"
+          width="130"
+          height="60"
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          className="block h-[60px] w-[130px] border-0"
+        />
+      </a>
+      <p className="max-w-3xl text-sm leading-relaxed text-slate-400">
+        This site incorporates information from{' '}
+        <a
+          href={ONET_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded text-slate-200 underline decoration-[#d9856b]/60 decoration-1 underline-offset-4 transition-colors hover:text-white hover:decoration-[#d9856b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+        >
+          O*NET Web Services
+        </a>{' '}
+        by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA). O*NET&reg; is a trademark of USDOL/ETA.
+      </p>
+    </div>
+  );
+}
 
 function SiteFooter() {
   const ref = useRef(null);
@@ -902,7 +1144,9 @@ function SiteFooter() {
             </nav>
           </div>
 
-          <span aria-hidden="true" className="f-rule mt-16 block h-px bg-white/15" />
+          <OnetCredit />
+
+          <span aria-hidden="true" className="f-rule mt-10 block h-px bg-white/15" />
           <div className="f-rise flex items-center justify-between gap-4 pt-6 text-sm text-slate-400" style={{ '--i': 7 }}>
             <p>© {new Date().getFullYear()} {BRAND}</p>
             <button

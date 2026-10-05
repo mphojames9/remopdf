@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import navLogo from '../assets/logo.png';
@@ -7,6 +7,20 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const emptyItem = () => ({ id: uid(), description: '', qty: 1, rate: 0 });
 
 const STORAGE_KEY = 'invoice-builder:draft';
+
+// A4 sheet, in CSS pixels (96 per inch): 210mm x 297mm = 793.7 x 1122.5. Everything
+// drawn on the preview sheet is sized in pt, like the PDF, so what you see is what downloads.
+const A4_W_PX = (595.28 * 4) / 3;
+const A4_H_PX = (841.89 * 4) / 3;
+const PAGE_MARGIN_PT = 50; // same margin the PDF uses
+const PAGE_BOTTOM_RESERVE_PT = 90; // the PDF starts a new page 90pt above the bottom edge
+const PAGE_CONTENT_H_PX = ((841.89 - PAGE_MARGIN_PT - PAGE_BOTTOM_RESERVE_PT) * 4) / 3;
+const SHEET_FONT = 'Helvetica, Arial, "Liberation Sans", sans-serif'; // the PDF is set in Helvetica too
+const INK = '#0f172a';
+const GREY = '#6b7380';
+const RULE = '#e3e6eb';
+const AMBER = '#fabf24';
+const ITEM_COLS = '1fr 50pt 80pt 90pt'; // description | qty | rate | amount
 
 const loadDraft = () => {
   if (typeof window === 'undefined') return null;
@@ -82,6 +96,55 @@ export default function InvoiceBuilder() {
       document.body.style.overflow = prevOverflow;
     };
   }, [showPreview]);
+
+  // --- A4 preview: pagination + fit-to-screen ---------------------------------
+  // The invoice is cut into blocks (header, parties, table head, one per item,
+  // totals, notes). They are measured off-screen, then dealt onto A4 sheets the way
+  // the PDF does it: a block that doesn't fit moves to the next sheet.
+  const [pages, setPages] = useState([]); // [[blockKey, ...], ...]
+  const [previewScale, setPreviewScale] = useState(1);
+  const previewScrollRef = useRef(null);
+  const measureRef = useRef(null);
+
+  useEffect(() => {
+    if (!showPreview) return undefined;
+    const el = previewScrollRef.current;
+    if (!el) return undefined;
+    const update = () => setPreviewScale(Math.max(0.2, Math.min(1, (el.clientWidth - 32) / A4_W_PX)));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [showPreview]);
+
+  useLayoutEffect(() => {
+    if (!showPreview) return;
+    const root = measureRef.current;
+    if (!root) return;
+    const measured = Array.from(root.children).map((el) => ({
+      key: el.dataset.key,
+      h: el.offsetHeight,
+      keepWithNext: el.dataset.keep === '1',
+    }));
+    const out = [[]];
+    let used = 0;
+    measured.forEach((b, i) => {
+      const need = b.h + (b.keepWithNext && measured[i + 1] ? measured[i + 1].h : 0);
+      if (used > 0 && used + need > PAGE_CONTENT_H_PX) {
+        out.push([]);
+        used = 0;
+      }
+      out[out.length - 1].push(b.key);
+      used += b.h;
+    });
+    setPages(out);
+  }, [
+    showPreview,
+    businessName, businessAddress, businessEmail, businessPhone,
+    clientName, clientAddress, clientEmail,
+    invoiceNumber, invoiceDate, dueDate, currency,
+    items, taxRate, discountRate, notes, logoDataUrl,
+  ]);
 
   const handleLogoUpload = (e) => {
     const file = e.target.files?.[0];
@@ -285,6 +348,117 @@ export default function InvoiceBuilder() {
   const labelClass = 'block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1.5';
   const cardClass = 'bg-white rounded-[2rem] border border-slate-100 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.12)] p-6';
 
+  // The invoice as A4 blocks, laid out like generatePDF draws it. Each block carries
+  // its own bottom spacing so its measured height is the room it really takes.
+  const sheetLabel = { fontSize: '9pt', fontWeight: 700, color: GREY, letterSpacing: '0.05em', lineHeight: '12pt' };
+  const wrap = { overflowWrap: 'anywhere', whiteSpace: 'pre-line' };
+  const invoiceBlocks = !showPreview ? [] : [
+    {
+      key: 'header',
+      node: (
+        <div style={{ paddingBottom: '28pt' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '32pt', gap: '12pt' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14pt', minWidth: 0 }}>
+              {logoDataUrl && (
+                <img src={logoDataUrl} alt="Company logo" style={{ maxWidth: '110pt', maxHeight: '32pt', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }} />
+              )}
+              <span style={{ fontSize: '26pt', fontWeight: 700, lineHeight: 1, color: INK }}>INVOICE</span>
+            </div>
+            <span style={{ fontSize: '11pt', lineHeight: 1, color: GREY, paddingBottom: '4pt', ...wrap }}>#{invoiceNumber || '—'}</span>
+          </div>
+          <div style={{ height: '3pt', background: AMBER, marginTop: '10pt' }} />
+          <div style={{ textAlign: 'right', fontSize: '10pt', color: GREY, marginTop: '14pt' }}>
+            {`Issued ${invoiceDate || '—'}\u00A0\u00A0\u00A0·\u00A0\u00A0\u00A0Due ${dueDate || '—'}`}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'parties',
+      node: (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '20pt', paddingBottom: '30pt' }}>
+          {[
+            ['FROM', [businessName, businessAddress, businessEmail, businessPhone]],
+            ['BILL TO', [clientName, clientAddress, clientEmail]],
+          ].map(([label, lines]) => (
+            <div key={label} style={{ minWidth: 0 }}>
+              <div style={{ ...sheetLabel, paddingBottom: '4pt' }}>{label}</div>
+              {lines.filter(Boolean).map((line, i) => (
+                <div key={i} style={{ fontSize: '11pt', lineHeight: '14pt', fontWeight: i === 0 ? 700 : 400, color: INK, ...wrap }}>{line}</div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: 'table-head',
+      keepWithNext: true,
+      node: (
+        <div style={{ paddingBottom: '14pt' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: ITEM_COLS, ...sheetLabel, paddingBottom: '8pt', borderBottom: `1px solid ${RULE}` }}>
+            <span>DESCRIPTION</span>
+            <span style={{ textAlign: 'right' }}>QTY</span>
+            <span style={{ textAlign: 'right' }}>RATE</span>
+            <span style={{ textAlign: 'right' }}>AMOUNT</span>
+          </div>
+        </div>
+      ),
+    },
+    ...items.map((it) => {
+      const qty = parseFloat(it.qty) || 0;
+      const rate = parseFloat(it.rate) || 0;
+      return {
+        key: `row-${it.id}`,
+        node: (
+          <div style={{ display: 'grid', gridTemplateColumns: ITEM_COLS, fontSize: '10.5pt', lineHeight: '14pt', color: INK, paddingBottom: '8pt' }}>
+            <span style={{ minWidth: 0, paddingRight: '12pt', ...wrap }}>{it.description || 'Untitled item'}</span>
+            <span style={{ textAlign: 'right' }}>{qty}</span>
+            <span style={{ textAlign: 'right' }}>{fmt(rate)}</span>
+            <span style={{ textAlign: 'right' }}>{fmt(qty * rate)}</span>
+          </div>
+        ),
+      };
+    }),
+    {
+      key: 'totals',
+      node: (
+        <div style={{ paddingBottom: '36pt' }}>
+          <div style={{ borderTop: `1px solid ${RULE}`, paddingTop: '22pt' }}>
+            <div style={{ marginLeft: 'auto', width: '220pt', fontSize: '10.5pt', lineHeight: '18pt' }}>
+              {[
+                ['Subtotal', fmt(subtotal)],
+                ...(discountAmount > 0 ? [[`Discount (${discountRate}%)`, `-${fmt(discountAmount)}`]] : []),
+                ...(taxAmount > 0 ? [[`Tax (${taxRate}%)`, fmt(taxAmount)]] : []),
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: GREY }}>{label}</span>
+                  <span style={{ color: INK }}>{value}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6pt', paddingTop: '8pt', borderTop: `1px solid ${RULE}`, fontSize: '13pt', fontWeight: 700, color: INK }}>
+                <span>Total due</span>
+                <span>{fmt(total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    ...(notes
+      ? [{
+          key: 'notes',
+          node: (
+            <div>
+              <div style={{ ...sheetLabel, paddingBottom: '4pt' }}>NOTES</div>
+              <div style={{ fontSize: '10pt', lineHeight: '14pt', color: GREY, ...wrap }}>{notes}</div>
+            </div>
+          ),
+        }]
+      : []),
+  ];
+  const blockByKey = Object.fromEntries(invoiceBlocks.map((b) => [b.key, b]));
+
   return (
     <div style={{ fontFamily: '"Outfit", sans-serif' }} className="min-h-screen bg-slate-50/50 pb-24">
       {/* Top bar */}
@@ -486,88 +660,57 @@ export default function InvoiceBuilder() {
             onClick={(e) => e.stopPropagation()}
           >
 
-            {/* Scrollable invoice body */}
-            <div className="overflow-y-auto px-4 sm:px-10 py-8 bg-slate-50/40">
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.12)] p-6 sm:p-10">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    {logoDataUrl && (
-                      <img src={logoDataUrl} alt="Company logo" className="h-9 w-auto max-w-[110px] object-contain" />
-                    )}
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">INVOICE</h1>
-                  </div>
-                  <p className="text-sm text-slate-400 font-semibold pt-1 shrink-0">#{invoiceNumber || '—'}</p>
-                </div>
-                <div className="h-[3px] bg-amber-400 rounded-full my-3" />
-                <p className="text-right text-xs text-slate-400 mb-8">
-                  Issued {invoiceDate || '—'} &nbsp;·&nbsp; Due {dueDate || '—'}
-                </p>
+            {/* Slim title bar */}
+            <div className="flex items-center justify-between gap-3 px-6 py-3 border-b border-slate-100 shrink-0 bg-white">
+              <h2 className="text-sm font-bold text-slate-900">Invoice preview</h2>
+              <span className="text-[11px] font-semibold text-slate-400">
+                A4 · 210 × 297 mm{pages.length > 1 ? ` · ${pages.length} pages` : ''}
+              </span>
+            </div>
 
-                {/* From / Bill To */}
-                <div className="grid sm:grid-cols-2 gap-6 mb-8">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1.5">From</p>
-                    {businessName && <p className="text-sm font-bold text-slate-900">{businessName}</p>}
-                    {businessAddress && <p className="text-sm text-slate-600">{businessAddress}</p>}
-                    {businessEmail && <p className="text-sm text-slate-600">{businessEmail}</p>}
-                    {businessPhone && <p className="text-sm text-slate-600">{businessPhone}</p>}
-                    {!businessName && !businessAddress && !businessEmail && !businessPhone && (
-                      <p className="text-sm text-slate-300 italic">Add your business details</p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1.5">Bill to</p>
-                    {clientName && <p className="text-sm font-bold text-slate-900">{clientName}</p>}
-                    {clientAddress && <p className="text-sm text-slate-600">{clientAddress}</p>}
-                    {clientEmail && <p className="text-sm text-slate-600">{clientEmail}</p>}
-                    {!clientName && !clientAddress && !clientEmail && (
-                      <p className="text-sm text-slate-300 italic">Add client details</p>
-                    )}
-                  </div>
-                </div>
+            {/* Off-screen copy of the blocks, only here to be measured for pagination */}
+            <div
+              ref={measureRef}
+              aria-hidden="true"
+              className="pointer-events-none"
+              style={{ position: 'absolute', left: '-99999px', top: 0, visibility: 'hidden', width: `calc(210mm - ${PAGE_MARGIN_PT * 2}pt)`, fontFamily: SHEET_FONT, color: INK }}
+            >
+              {invoiceBlocks.map((b) => (
+                <div key={b.key} data-key={b.key} data-keep={b.keepWithNext ? '1' : '0'}>{b.node}</div>
+              ))}
+            </div>
 
-                {/* Items table */}
-                <div className="mb-2">
-                  <div className="grid grid-cols-[1fr_50px_80px_80px] sm:grid-cols-[1fr_60px_90px_90px] gap-2 sm:gap-3 pb-2 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                    <span>Description</span><span className="text-right">Qty</span><span className="text-right">Rate</span><span className="text-right">Amount</span>
-                  </div>
-                  {items.map((it) => {
-                    const amount = (parseFloat(it.qty) || 0) * (parseFloat(it.rate) || 0);
-                    return (
-                      <div key={it.id} className="grid grid-cols-[1fr_50px_80px_80px] sm:grid-cols-[1fr_60px_90px_90px] gap-2 sm:gap-3 py-2.5 border-b border-slate-50 text-sm">
-                        <span className="text-slate-800">{it.description || 'Untitled item'}</span>
-                        <span className="text-right text-slate-600">{parseFloat(it.qty) || 0}</span>
-                        <span className="text-right text-slate-600">{fmt(parseFloat(it.rate) || 0)}</span>
-                        <span className="text-right font-semibold text-slate-800">{fmt(amount)}</span>
+            {/* A4 sheets, scaled down to fit narrow screens */}
+            <div ref={previewScrollRef} className="flex-1 min-h-0 overflow-y-auto bg-slate-200/70 px-4 py-6">
+              <div className="mx-auto" style={{ width: A4_W_PX * previewScale }}>
+                {pages.map((keys, pageIndex) => (
+                  <div key={pageIndex} className="mb-6 last:mb-0">
+                    <div style={{ width: A4_W_PX * previewScale, height: A4_H_PX * previewScale }}>
+                      <div
+                        className="border border-slate-300/70"
+                        style={{
+                          width: '210mm',
+                          height: '297mm',
+                          boxSizing: 'border-box',
+                          padding: `${PAGE_MARGIN_PT}pt ${PAGE_MARGIN_PT}pt 0`,
+                          background: '#fff',
+                          overflow: 'hidden',
+                          fontFamily: SHEET_FONT,
+                          color: INK,
+                          transform: `scale(${previewScale})`,
+                          transformOrigin: 'top left',
+                        }}
+                      >
+                        {keys.map((k) => (
+                          <div key={k}>{blockByKey[k]?.node}</div>
+                        ))}
                       </div>
-                    );
-                  })}
-                </div>
-
-                {/* Totals */}
-                <div className="flex justify-end mt-6">
-                  <div className="w-full sm:w-64 space-y-2 text-sm">
-                    <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
-                    {discountAmount > 0 && (
-                      <div className="flex justify-between text-slate-500"><span>Discount ({discountRate}%)</span><span>-{fmt(discountAmount)}</span></div>
-                    )}
-                    {taxAmount > 0 && (
-                      <div className="flex justify-between text-slate-500"><span>Tax ({taxRate}%)</span><span>{fmt(taxAmount)}</span></div>
-                    )}
-                    <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-slate-100">
-                      <span>Total due</span><span>{fmt(total)}</span>
                     </div>
+                    <p className="mt-2 text-center text-[11px] font-semibold text-slate-500">
+                      Page {pageIndex + 1} of {pages.length}
+                    </p>
                   </div>
-                </div>
-
-                {/* Notes */}
-                {notes && (
-                  <div className="mt-8 pt-6 border-t border-slate-100">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1.5">Notes</p>
-                    <p className="text-sm text-slate-600 whitespace-pre-line">{notes}</p>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
 

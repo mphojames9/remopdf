@@ -10,12 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cantoo/pdf-lib": "^2.11.1",
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0",
     "@emailjs/browser": "^4.4.1",
     "@tailwindcss/vite": "^4.3.0",
     "axios": "^1.17.0",
     "dictionary-en": "^4.0.0",
+    "html2canvas-pro": "^2.5.1",
     "html5-qrcode": "^2.3.8",
     "jsqr": "^1.4.0",
     "jszip": "^3.10.2",

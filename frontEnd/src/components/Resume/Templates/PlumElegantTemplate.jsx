@@ -21,7 +21,8 @@ import {
  * page is real text in reading order (no photo, icons, images or skill dots).
  *
  *   - oversized name (light first name, semibold surname) over a soft gradient circle, ring and dot grid
- *   - contact details as a spec row: a small label over each value (Email, Phone, ...)
+ *   - contact details as a 4-column grid: a small accent label over each value (Email, Phone, ...), each cell with a
+ *     thin accent rule on its left (the same motif as the timeline rail); long values such as an address take two cells
  *   - a full-height two-tone rail down the left edge (ink cap on page 1); pages 2+ repeat the name small at the top
  *   - a light timeline rail with accent nodes for Experience and Education
  *   - the summary set as a larger lead paragraph
@@ -83,6 +84,22 @@ const splitContact = (raw) => {
   if (/^(https?:\/\/|www\.)/.test(t) || /\.(com|dev|io|net|org|co|me|app|site)(\/|$)/.test(t)) return { label: 'Website', value: text };
   if (/licen[sc]e/.test(t)) return { label: 'Licence', value: text };
   return { label: 'Location', value: text };
+};
+
+// Places the contact entries on the 4-column header grid. A long value (an address, a long URL) takes two
+// cells so it stays on one or two lines instead of a tall narrow column. A long value that would land in
+// the last column takes one cell instead, so the grid never gets a hole in it. The order is never changed.
+const CONTACT_COLS = 4;
+const LONG_CONTACT = 26; // characters
+const layoutContacts = (list) => {
+  let col = 0;
+  return list.map((raw) => {
+    const { label, value } = splitContact(raw);
+    let span = value.length > LONG_CONTACT ? 2 : 1;
+    if (span === 2 && col === CONTACT_COLS - 1) span = 1;
+    col = (col + span) % CONTACT_COLS;
+    return { label, value, span };
+  });
 };
 
 // First non-empty string among the given keys of an object (languages can store their fields under different names).
@@ -358,24 +375,32 @@ const AtlasTemplate = (props) => {
                   {restName && (<>{' '}<span className="font-semibold">{restName}</span></>)}
                 </h1>
                 {professionParts.length > 0 && (
-                  <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[17px]" style={{ fontFamily: DISPLAY_FONT, color: accentText }}>
+                  <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[16px] font-medium tracking-[0.01em]" style={{ fontFamily: DISPLAY_FONT, color: accentText }}>
                     {professionParts.map((part, i) => (
                       <React.Fragment key={i}>
-                        {i > 0 && <span aria-hidden="true" className="h-4 w-px" style={{ backgroundColor: tint(accentColor, 0.5) }} />}
+                        {i > 0 && <span aria-hidden="true" className="h-[5px] w-[5px] rotate-45" style={{ backgroundColor: accentColor }} />}
                         <span>{part}</span>
                       </React.Fragment>
                     ))}
                   </p>
                 )}
                 {contacts.length > 0 && (
-                  <div className="mt-6 flex flex-wrap gap-y-3">
-                    {contacts.map((c, i) => (
-                      <div key={i} className="mr-5 border-r border-slate-200 pr-5 last:mr-0 last:border-r-0 last:pr-0">
-                        <p className="text-[9.5px] font-medium leading-none tracking-[0.06em] text-slate-400">{splitContact(c).label}</p>
-                        <p className="mt-1 text-[11.5px] leading-snug [overflow-wrap:anywhere]" style={{ color: INK }}>{splitContact(c).value}</p>
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    {/* Decorative rule between who you are and how to reach you (CSS only, no text). */}
+                    <div aria-hidden="true" className="mt-6 h-[2px] w-full rounded-full" style={{ background: `linear-gradient(to right, ${accentColor}, ${tint(accentColor, 0.55)} 45%, transparent)` }} />
+                    <div className="mt-5 grid grid-cols-4 gap-x-5 gap-y-4">
+                      {layoutContacts(contacts).map((c, i) => (
+                        <div
+                          key={i}
+                          className={`min-w-0 border-l-2 pl-3 ${c.span === 2 ? 'col-span-2' : ''}`}
+                          style={{ borderColor: tint(accentColor, 0.6) }}
+                        >
+                          <p className="text-[9.5px] font-semibold uppercase leading-none tracking-[0.14em]" style={{ color: accentText }}>{c.label}</p>
+                          <p className="mt-1.5 text-[11.5px] leading-snug [overflow-wrap:anywhere]" style={{ color: INK }}>{c.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             )}

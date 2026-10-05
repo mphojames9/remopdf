@@ -1,5 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
+import { PDFDocument, EncryptedPDFError, rgb, degrees, StandardFonts } from "pdf-lib";
+// Only used to unlock password-protected PDFs: stock pdf-lib refuses encrypted files.
+// Needs: npm i @cantoo/pdf-lib
+import { PDFDocument as DecryptingPDFDocument } from "@cantoo/pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
 import "pdfjs-dist/build/pdf.worker.mjs";
 import { Link } from 'react-router-dom';
@@ -1224,18 +1227,76 @@ function copyDocumentInfo(src, out) {
   if (created) out.setCreationDate(created);
 }
 
+// True when pdf-lib refused a file because it is encrypted. `instanceof` alone
+// isn't enough: pdf-lib is built for old browsers, where its error classes come
+// out as plain Errors, so the message is what gives it away.
+function isEncryptedPdfError(err) {
+  return !!err && (err instanceof EncryptedPDFError || /is encrypted/i.test(String(err.message)));
+}
+
+// Unlocks a password-protected PDF and returns the same document without the
+// protection, as an ArrayBuffer. pdf.js checks each password (it is what tells a
+// right one from a wrong one); once one works, the file is decrypted with
+// @cantoo/pdf-lib and saved plain, because everything else in the editor (page
+// copying, export) runs on stock pdf-lib, which can't read encrypted files.
+// `askPassword({ fileName, wrong })` resolves to the typed password, or null if
+// the person cancels — then this throws an error with `cancelled` set, which
+// callers treat as "stop quietly". Anything else that goes wrong (a file the
+// decrypter can't handle) throws an error with `cantDecrypt` set.
+async function decryptPdfBytes(bytes, name, askPassword) {
+  let password; // undefined until the first one is typed
+  for (;;) {
+    const task = pdfjsLib.getDocument({ data: new Uint8Array(bytes.slice(0)), password });
+    try {
+      await task.promise;
+      break; // this password (or none) opens it
+    } catch (err) {
+      if (!err || err.name !== "PasswordException") throw err;
+    } finally {
+      Promise.resolve(task.destroy()).catch(() => {});
+    }
+    const answer = await askPassword({ fileName: name, wrong: password !== undefined });
+    if (answer === null) {
+      const cancelled = new Error("Password entry cancelled");
+      cancelled.cancelled = true;
+      throw cancelled;
+    }
+    password = answer;
+  }
+
+  try {
+    const locked = await DecryptingPDFDocument.load(bytes, { password: password ?? "" });
+    const plain = await locked.save();
+    await PDFDocument.load(plain); // throws EncryptedPDFError if it somehow still is
+    return plain.buffer.slice(plain.byteOffset, plain.byteOffset + plain.byteLength);
+  } catch (err) {
+    console.error("Couldn't unlock", name, err);
+    const failure = new Error(`Couldn't unlock ${name}`);
+    failure.cantDecrypt = true;
+    throw failure;
+  }
+}
+
 // Combines several PDFs into one, every page of each in the order the files are
 // given, so choosing more than one file to open gives a single document. The
 // first file supplies the document info. Files are read one at a time, and one
 // that can't be read stops the merge with an error naming it (`unreadableFile`).
-async function mergePdfFiles(files) {
+async function mergePdfFiles(files, askPassword) {
   const out = await PDFDocument.create();
   let first = null;
   for (const file of files) {
     let src;
     try {
-      src = await PDFDocument.load(await file.arrayBuffer());
+      const bytes = await file.arrayBuffer();
+      try {
+        src = await PDFDocument.load(bytes);
+      } catch (err) {
+        // A protected file: ask for its password, then use the unlocked copy.
+        if (!isEncryptedPdfError(err) || !askPassword) throw err;
+        src = await PDFDocument.load(await decryptPdfBytes(bytes, file.name, askPassword));
+      }
     } catch (err) {
+      if (err && err.cancelled) throw err; // they backed out of the password prompt
       console.error("Couldn't read", file.name, err);
       const failure = new Error(`Couldn't read ${file.name}`);
       failure.unreadableFile = file.name;
@@ -1743,6 +1804,152 @@ function AddPagesDialog({ currentPageLabel, onAdd, onClose }) {
   );
 }
 
+// Asks for the password of a protected PDF. `wrong` is set when the last try
+// didn't open it (the dialog is mounted afresh for every attempt, so the field
+// starts empty and the card gives a short shake). The caller decides what
+// happens next: onSubmit(password) or onCancel().
+function PasswordDialog({ fileName, wrong, onSubmit, onCancel }) {
+  const [value, setValue] = useState("");
+  const [reveal, setReveal] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  const iconProps = {
+    width: 18,
+    height: 18,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-4 sm:pb-0"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
+      <style>{`
+        @keyframes rp-pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+        @keyframes rp-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
+        @media (prefers-reduced-motion: reduce) { .rp-anim { animation: none !important; } }
+      `}</style>
+
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pwd-title"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (value) onSubmit(value);
+        }}
+        className="rp-anim w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6"
+        style={{ animation: wrong ? "rp-shake .35s ease-in-out" : "rp-pop .2s ease-out" }}
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-black text-white">
+          <svg {...iconProps} width={22} height={22}>
+            <rect x="4" y="11" width="16" height="10" rx="2.5" />
+            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          </svg>
+        </div>
+
+        <h3 id="pwd-title" className="mt-4 text-lg font-semibold tracking-tight text-neutral-900">
+          Password required
+        </h3>
+        <p className="mt-1 text-sm leading-relaxed text-neutral-500">
+          This PDF is protected. Enter its password to open it.
+        </p>
+
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-neutral-600">
+          <svg {...iconProps} width={16} height={16} className="shrink-0 text-neutral-400">
+            <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+            <path d="M14 3v5h5" />
+          </svg>
+          <span className="min-w-0 truncate text-xs font-medium" title={fileName}>
+            {fileName}
+          </span>
+        </div>
+
+        <div className="mt-4">
+          <div
+            className={`flex items-center rounded-xl border bg-white transition-colors ${
+              wrong ? "border-red-500" : "border-neutral-300 focus-within:border-black"
+            }`}
+          >
+            <input
+              autoFocus
+              type={reveal ? "text" : "password"}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Password"
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-label="PDF password"
+              aria-invalid={wrong}
+              aria-describedby={wrong ? "pwd-error" : undefined}
+              className="h-12 min-w-0 flex-1 bg-transparent pl-4 pr-2 text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
+            />
+            <button
+              type="button"
+              onClick={() => setReveal((r) => !r)}
+              aria-label={reveal ? "Hide password" : "Show password"}
+              aria-pressed={reveal}
+              className="mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-900"
+            >
+              {reveal ? (
+                <svg {...iconProps}>
+                  <path d="M3 3l18 18" />
+                  <path d="M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 8.5 4.2 9.5 7a11.6 11.6 0 0 1-2.9 4.1M6.6 6.6A11.7 11.7 0 0 0 2.5 12c1 2.8 4.5 7 9.5 7a9.7 9.7 0 0 0 4.2-1" />
+                  <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                </svg>
+              ) : (
+                <svg {...iconProps}>
+                  <path d="M2.5 12C3.5 9.2 7 5 12 5s8.5 4.2 9.5 7c-1 2.8-4.5 7-9.5 7s-8.5-4.2-9.5-7z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
+          {wrong && (
+            <p id="pwd-error" role="alert" className="mt-2 text-xs font-medium text-red-600">
+              Incorrect password. Please try again.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-12 rounded-xl border border-neutral-300 bg-white text-sm font-semibold text-neutral-700 hover:border-neutral-900 hover:text-neutral-900 active:scale-[0.98] transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!value}
+            className="h-12 rounded-xl border border-black bg-black text-sm font-semibold tracking-wide text-white hover:bg-neutral-800 active:scale-[0.98] transition disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Unlock
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function PdfFillerApp() {
   const [pdfBytes, setPdfBytes] = useState(null); // ArrayBuffer of the original PDF
   const [fileName, setFileName] = useState("");
@@ -1927,6 +2134,29 @@ export default function PdfFillerApp() {
   const [error, setError] = useState("");
   const [isOpening, setIsOpening] = useState(false); // reading / combining the chosen PDF(s)
 
+  // A protected PDF waiting for its password: { id, fileName, wrong, resolve }.
+  // askPassword() shows the dialog and resolves to what was typed (null = cancelled).
+  const [passwordPrompt, setPasswordPrompt] = useState(null);
+  const passwordPromptCountRef = useRef(0);
+  const askPassword = useCallback(
+    ({ fileName, wrong }) =>
+      new Promise((resolve) => {
+        passwordPromptCountRef.current += 1;
+        setPasswordPrompt({ id: passwordPromptCountRef.current, fileName, wrong, resolve });
+      }),
+    []
+  );
+
+  // "Unlock PDF": a protected file in, an unprotected copy out (no editing involved).
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [notice, setNotice] = useState(""); // short neutral message, e.g. "Unlocked. Saved as ..."
+  const unlockInputRef = useRef(null);
+  useEffect(() => {
+    if (!notice) return undefined;
+    const t = setTimeout(() => setNotice(""), 7000);
+    return () => clearTimeout(t);
+  }, [notice]);
+
   // Responsive chrome: thumbnail drawer + inspector sheet on narrow screens.
   const [mobilePagesOpen, setMobilePagesOpen] = useState(false);
   const [mobileElementsOpen, setMobileElementsOpen] = useState(false);
@@ -2035,12 +2265,20 @@ export default function PdfFillerApp() {
       const combined = files.length > 1;
       let buf;
       if (combined) {
-        const merged = await mergePdfFiles(files);
+        const merged = await mergePdfFiles(files, askPassword);
         buf = merged.buffer.slice(merged.byteOffset, merged.byteOffset + merged.byteLength);
       } else {
         buf = await files[0].arrayBuffer();
       }
-      const parsed = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      let parsed;
+      try {
+        parsed = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      } catch (err) {
+        // A password-protected PDF: ask for the password, then open an unlocked copy.
+        if (!err || err.name !== "PasswordException") throw err;
+        buf = await decryptPdfBytes(buf, files[0].name, askPassword);
+        parsed = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      }
       setPdfBytes(buf);
       setPdfDoc(parsed);
       setNumPages(parsed.numPages);
@@ -2064,14 +2302,63 @@ export default function PdfFillerApp() {
       const firstName = files[0].name.replace(/\.pdf$/i, "");
       setFileName(combined ? `${firstName}-merged` : firstName);
     } catch (err) {
+      if (err && err.cancelled) return; // they backed out of the password prompt: nothing to report
       console.error(err);
       setError(
-        err && err.unreadableFile
-          ? `Couldn't read ${err.unreadableFile}. Make sure it's a valid PDF that isn't password-protected, or leave it out and try again.`
+        err && err.cantDecrypt
+          ? "Couldn't unlock that PDF. Its protection isn't supported yet."
+          : err && err.unreadableFile
+          ? `Couldn't read ${err.unreadableFile}. Make sure it's a valid PDF, or leave it out and try again.`
           : "Couldn't read that file. Make sure it's a valid PDF."
       );
     } finally {
       setIsOpening(false);
+    }
+  };
+
+  // --- Unlock a protected PDF ------------------------------------------------
+  // Pick one PDF, type its password if it has one, and a copy without the
+  // protection is saved as "<name>-unlocked.pdf". Nothing is opened in the editor.
+  const handleUnlockFile = async (e) => {
+    const file = (e.target.files || [])[0];
+    e.target.value = "";
+    if (!file || isUnlocking) return;
+    setError("");
+    setNotice("");
+    setIsUnlocking(true);
+    try {
+      const bytes = await file.arrayBuffer();
+      let isProtected = false;
+      try {
+        await PDFDocument.load(bytes);
+      } catch (err) {
+        if (!isEncryptedPdfError(err)) throw err; // not protected, just not a readable PDF
+        isProtected = true;
+      }
+      if (!isProtected) {
+        setNotice(`${file.name} isn't password-protected, so there's nothing to unlock.`);
+        return;
+      }
+      const unlocked = await decryptPdfBytes(bytes, file.name, askPassword);
+      const base = file.name.replace(/\.pdf$/i, "").replace(/[\s_-]*protected$/i, "") || "document";
+      const outName = `${base}-unlocked.pdf`;
+      const a = document.createElement("a");
+      a.href = bytesToDownloadableDataUrl(new Uint8Array(unlocked), "application/pdf", outName);
+      a.download = outName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setNotice(`Unlocked. Saved as ${outName}. It opens without a password.`);
+    } catch (err) {
+      if (err && err.cancelled) return; // they backed out of the password prompt
+      console.error(err);
+      setError(
+        err && err.cantDecrypt
+          ? "Couldn't unlock that PDF. Its protection isn't supported yet."
+          : "Couldn't read that file. Make sure it's a valid PDF."
+      );
+    } finally {
+      setIsUnlocking(false);
     }
   };
 
@@ -4351,6 +4638,16 @@ export default function PdfFillerApp() {
                 <button
                   onClick={() => {
                     setShowMoreMenu(false);
+                    unlockInputRef.current?.click();
+                  }}
+                  disabled={isUnlocking}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 disabled:opacity-40"
+                >
+                  {isUnlocking ? "Unlocking…" : "Unlock PDF"}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMoreMenu(false);
                     setShowPageNumberPanel(true);
                   }}
                   disabled={!pdfDoc}
@@ -4385,6 +4682,7 @@ export default function PdfFillerApp() {
           )}
         </div>
         <input ref={fileInputRef} type="file" accept="application/pdf" multiple onChange={handleFileChange} className="hidden" />
+        <input ref={unlockInputRef} type="file" accept="application/pdf" onChange={handleUnlockFile} className="hidden" />
 
         {showPageNumberPanel && (
           <>
@@ -4894,6 +5192,15 @@ export default function PdfFillerApp() {
         <div className="px-4 py-2 bg-red-50 text-red-700 text-sm border-b border-red-100 shrink-0">{error}</div>
       )}
 
+      {notice && (
+        <div role="status" className="flex items-start gap-3 px-4 py-2 bg-neutral-900 text-white text-sm shrink-0">
+          <span className="flex-1 break-words">{notice}</span>
+          <button onClick={() => setNotice("")} aria-label="Dismiss" className="text-white/60 hover:text-white">
+            ✕
+          </button>
+        </div>
+      )}
+
       {!pdfDoc ? (
         <div className="flex-1 flex items-center justify-center p-6 bg-neutral-50">
           <div className="text-center max-w-sm w-full">
@@ -4914,6 +5221,16 @@ export default function PdfFillerApp() {
               {isOpening ? "Opening…" : "Choose a PDF"}
             </button>
             <p className="mt-2 text-[11px] text-neutral-400">Select more than one to combine them into a single document.</p>
+
+            <button
+              onClick={() => unlockInputRef.current?.click()}
+              disabled={isOpening || isUnlocking}
+              className="mt-5 w-full px-5 py-3 rounded-xl bg-white text-neutral-900 text-sm font-semibold tracking-wide border border-neutral-300 hover:border-black active:scale-[0.98] transition disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              <LockIcon />
+              {isUnlocking ? "Unlocking…" : "Unlock a PDF"}
+            </button>
+            <p className="mt-2 text-[11px] text-neutral-400">Remove a PDF's password and save a copy that opens without one.</p>
 
             <div className="mt-8 flex items-center justify-center gap-6">
               <div className="flex flex-col items-center gap-1.5">
@@ -5689,6 +6006,24 @@ export default function PdfFillerApp() {
             </button>
           </div>
         </div>
+      )}
+
+      {passwordPrompt && (
+        <PasswordDialog
+          key={passwordPrompt.id}
+          fileName={passwordPrompt.fileName}
+          wrong={passwordPrompt.wrong}
+          onSubmit={(password) => {
+            const { resolve } = passwordPrompt;
+            setPasswordPrompt(null);
+            resolve(password);
+          }}
+          onCancel={() => {
+            const { resolve } = passwordPrompt;
+            setPasswordPrompt(null);
+            resolve(null);
+          }}
+        />
       )}
 
       {showSignaturePad && (

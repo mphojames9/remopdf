@@ -3,7 +3,8 @@ import AchievementsField from './AchievementsField';
 import SpellCheckPanel from './SpellCheckPanel';
 import MonthYearPicker from './MonthYearPicker';
 import { skillNames, achievementLines, hasAchievement, appendAchievement } from './aiSuggestions';
-import { suggestTitles, suggestAchievements } from './datasetSuggestions';
+import { suggestTitles, suggestAchievements } from './onetSuggestions';
+import useSuggestions from './useSuggestions';
 
 /* -------------------------------------------------------------------------- */
 /*                                 Job helpers                                */
@@ -170,8 +171,11 @@ const flashField = (el) => {
   if (r.top < 0 || r.bottom > window.innerHeight) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 };
 
-// Title input with a suggestions dropdown fed by the job-title dataset. Suggestions come from the
-// typed text, the skills the user picked and their other job titles, and open instantly.
+const NO_TITLES = { suggestions: [] };
+
+// Title input with a suggestions dropdown. Titles come from O*NET first (matched to the typed
+// text); when O*NET has no match, or nothing is typed yet, they come from the job-title dataset,
+// using the skills the user picked and their other job titles.
 const TitleSuggestField = ({ label, value, onChange, placeholder, skills, previousTitles }) => {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -180,13 +184,17 @@ const TitleSuggestField = ({ label, value, onChange, placeholder, skills, previo
   const skillsKey = skills.join('|');
   const previousKey = previousTitles.join('|');
 
+  const { data: found } = useSuggestions(
+    () => suggestTitles({ query: value, skills, previousTitles, limit: 8 }),
+    [value, skillsKey, previousKey],
+    { enabled: open, initial: NO_TITLES }
+  );
+
   const items = useMemo(() => {
     if (!open) return [];
     const typed = (value || '').trim().toLowerCase();
-    return suggestTitles({ query: value, skills, previousTitles, limit: 8 }).suggestions.filter(
-      (s) => s.toLowerCase() !== typed
-    );
-  }, [open, value, skillsKey, previousKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    return found.suggestions.filter((s) => s.toLowerCase() !== typed);
+  }, [open, value, found]);
 
   const showList = open && items.length > 0;
 
@@ -285,8 +293,8 @@ const TitleSuggestField = ({ label, value, onChange, placeholder, skills, previo
 const IDEAS_PER_PAGE = 5;
 const NO_IDEAS = { suggestions: [], total: 0, roleLabel: '', forTitle: '' };
 
-// Achievement ideas for one job, taken from the dataset role that matches the job title. They
-// appear as soon as a title is entered. Each idea has an add button that puts it into the
+// Achievement ideas for one job, taken from the O*NET occupation that matches the job title (or
+// from the dataset role when O*NET does not have it). They appear as soon as a title is entered. Each idea has an add button that puts it into the
 // achievements field; ideas already in the field show a check instead.
 const AchievementSuggestions = ({ job, skills, onAdd, pending = [] }) => {
   const [round, setRound] = useState(0);
@@ -307,17 +315,26 @@ const AchievementSuggestions = ({ job, skills, onAdd, pending = [] }) => {
       setResult(NO_IDEAS);
       return undefined;
     }
+    let alive = true;
     const timer = setTimeout(() => {
-      const found = suggestAchievements({
+      suggestAchievements({
         title,
         skills,
         existing: achievementLines(achievementsRef.current),
         round,
         limit: IDEAS_PER_PAGE,
-      });
-      setResult({ ...found, forTitle: title });
+      })
+        .then((found) => {
+          if (alive) setResult({ ...found, forTitle: title });
+        })
+        .catch(() => {
+          if (alive) setResult({ ...NO_IDEAS, forTitle: title });
+        });
     }, 250);
-    return () => clearTimeout(timer);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
   }, [title, skillsKey, round]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { suggestions: items, total, roleLabel } = result;
@@ -333,7 +350,7 @@ const AchievementSuggestions = ({ job, skills, onAdd, pending = [] }) => {
           <p className="text-xs font-bold text-slate-800">Achievement ideas</p>
           <p className="text-[11px] text-slate-500">
             {title && roleLabel
-              ? `Ready-made ideas for ${roleLabel}. Tap + to add one.`
+              ? `Ready-made ideas for ${roleLabel}${result.source === 'onet' ? ' (from O*NET)' : ''}. Tap + to add one.`
               : 'Add a job title to see ready-made ideas.'}
           </p>
         </div>

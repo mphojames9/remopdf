@@ -1,71 +1,103 @@
-import React, { useRef, useState } from 'react';
-import { extractTextFromFile, parseResumeText } from '../../../utils/resumeParser';
+import React, { useEffect, useRef, useState } from 'react';
+import { parseResumeFile, ResumeParseError, ACCEPTED_EXTENSIONS } from '../../../utils/resumeParser';
 
-/**
- * "Import from an old resume" control for the sidebar.
- * Extracts text from an uploaded PDF / DOCX / TXT resume, runs a best-effort
- * parse, and hands the result up via onImport so the parent can merge it
- * into the shared resume data. Always let the person review what got filled
- * in - the parse is a heuristic, not a guarantee.
- */
-export default function ResumeUpload({ onImport }) {
+/* -------------------------------------------------------------------------- */
+/*  "Import resume" button for the builder sidebar.                           */
+/*  Props: onImport(parsed), called with { personal, experiences,             */
+/*  educations, skills, summary } once a file has been read.                  */
+/* -------------------------------------------------------------------------- */
+
+const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/70';
+
+const Svg = ({ children, className = 'h-4 w-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const UploadIcon = () => (
+  <Svg>
+    <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
+  </Svg>
+);
+
+const Spinner = () => (
+  <svg className="h-4 w-4 animate-spin motion-reduce:animate-none" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+    <path d="M21 12a9 9 0 00-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+  </svg>
+);
+
+const ResumeUpload = ({ onImport }) => {
   const inputRef = useRef(null);
-  const [status, setStatus] = useState('idle'); // idle | reading | done | error
-  const [errorMsg, setErrorMsg] = useState('');
+  const abortRef = useRef(null);
+  const [status, setStatus] = useState({ kind: 'idle', message: '' });
 
-  const handleFile = async (e) => {
-    const file = e.target.files?.[0];
+  // Cancel an in-flight request if the sidebar unmounts.
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  // The success note fades away on its own.
+  useEffect(() => {
+    if (status.kind !== 'success') return undefined;
+    const timer = setTimeout(() => setStatus({ kind: 'idle', message: '' }), 7000);
+    return () => clearTimeout(timer);
+  }, [status.kind]);
+
+  const handleFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // lets the same file be chosen again
     if (!file) return;
 
-    setStatus('reading');
-    setErrorMsg('');
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setStatus({ kind: 'loading', message: 'Reading your resume…' });
+
     try {
-      const text = await extractTextFromFile(file);
-      const parsed = parseResumeText(text);
-      onImport(parsed);
-      setStatus('done');
+      const parsed = await parseResumeFile(file, controller.signal);
+      onImport?.(parsed);
+      setStatus({ kind: 'success', message: 'Details added. Please check them over.' });
     } catch (err) {
-      console.error(err);
-      setErrorMsg(err.message || 'Could not read that file.');
-      setStatus('error');
-    } finally {
-      e.target.value = ''; // allow re-uploading the same file
+      if (err?.name === 'AbortError') return;
+      const message = err instanceof ResumeParseError ? err.message : 'Something went wrong while reading that file.';
+      setStatus({ kind: 'error', message });
     }
   };
+
+  const loading = status.kind === 'loading';
 
   return (
     <div>
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,.docx,.txt"
+        accept={ACCEPTED_EXTENSIONS.map((e) => `.${e}`).join(',')}
         onChange={handleFile}
         className="hidden"
+        tabIndex={-1}
+        aria-hidden="true"
       />
-  <button
-  type="button"
-  onClick={() => inputRef.current?.click()}
-  disabled={status === 'reading'}
-  className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-bold text-white
-    bg-gradient-to-b from-[#1e40af] to-[#1e3a8a]
-    shadow-[0_4px_0_0_#0b1a4a,0_10px_18px_-6px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.22)]
-    hover:brightness-110 hover:-translate-y-px
-    active:translate-y-[3px] active:shadow-[0_1px_0_0_#0b1a4a,0_4px_8px_-4px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15)]
-    transition duration-150
-    focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
-    disabled:opacity-60 disabled:pointer-events-none"
->
-  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14" />
-  </svg>
-  {status === 'reading' ? 'Reading resume…' : 'Import Resume'}
-</button>
-      {status === 'done' && (
-        <p className="mt-2 text-[11px] text-amber-400 font-medium">Imported — please double-check the fields.</p>
-      )}
-      {status === 'error' && (
-        <p className="mt-2 text-[11px] text-red-400 font-medium">{errorMsg}</p>
-      )}
+      <button
+        type="button"
+        disabled={loading}
+        onClick={() => inputRef.current?.click()}
+        className={`flex h-9 w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] text-[13px] font-medium text-slate-200 transition-colors hover:bg-white/[0.08] hover:text-white disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none ${focusRing}`}
+      >
+        {loading ? <Spinner /> : <UploadIcon />}
+        {loading ? 'Importing…' : 'Import resume'}
+      </button>
+
+      <p
+        role={status.kind === 'error' ? 'alert' : 'status'}
+        aria-live="polite"
+        className={`px-2.5 text-[11px] leading-snug ${status.message ? 'mt-1.5' : ''} ${
+          status.kind === 'error' ? 'text-rose-300' : status.kind === 'success' ? 'text-emerald-300' : 'text-slate-400'
+        }`}
+      >
+        {status.message}
+      </p>
     </div>
   );
-}
+};
+
+export default ResumeUpload;
