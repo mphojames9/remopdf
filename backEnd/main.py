@@ -13,6 +13,7 @@ from openai import OpenAI
 
 from routers.editor import router as editor_router
 from routers.tools import router as tools_router
+from routers.onet import router as onet_router
 from routers import resume
 
 app = FastAPI(
@@ -129,6 +130,7 @@ def root():
 
 app.include_router(editor_router)
 app.include_router(tools_router)
+app.include_router(onet_router)
 app.include_router(resume.router) 
 
 if __name__ == "__main__":
