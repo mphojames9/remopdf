@@ -3,6 +3,12 @@ FROM mcr.microsoft.com/playwright/python:v1.45.0-jammy
 
 WORKDIR /app
 
+# System library required by pyzbar (QR code scanning in routers/tools.py).
+# The pyzbar pip package is only a wrapper and fails at import without it.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libzbar0 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy your requirements file and install Python packages
 # (Make sure requirements.txt pins playwright==1.45.0 to match this image)
 COPY backEnd/requirements.txt ./

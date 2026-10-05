@@ -18,7 +18,8 @@ pdfminer.six
 
 # --- AI, Automation & Web ---
 openai
-playwright
+# Pinned to match the mcr.microsoft.com/playwright/python:v1.45.0 base image
+playwright==1.45.0
 requests
 beautifulsoup4
 
@@ -30,3 +31,8 @@ numpy
 # --- Image Processing ---
 Pillow
 pdfservices-sdk
+
+# --- QR code scanning (routers/tools.py) ---
+# pyzbar also needs the libzbar0 system package, installed in the Dockerfile
+pyzbar
+opencv-python-headless
