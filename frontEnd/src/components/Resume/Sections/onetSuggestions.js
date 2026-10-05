@@ -23,8 +23,14 @@ import * as dataset from './datasetSuggestions';
   when the dataset answered, why O*NET was not used.
 */
 
-const ONET_API = '/api/onet';
-const REQUEST_TIMEOUT_MS = 8000;
+// Absolute backend URL: a relative '/api/onet' only works behind the Vite dev proxy. On
+// remopdf.site it hits the static host (HTML, not JSON) and inside the Android WebView it
+// cannot reach the backend at all. Set VITE_API_URL to override the default.
+const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://remopdf-backend.onrender.com').replace(/\/$/, '');
+const ONET_API = `${API_ORIGIN}/api/onet`;
+// Render's free tier can take 30-50 s to wake up, so the first request after idle may still
+// time out and fall back to the dataset; later ones are fast.
+const REQUEST_TIMEOUT_MS = 15000;
 // O*NET scores each keyword match 0-100. Below this the match is too loose to trust.
 const MIN_RELEVANCE = 45;
 // After a failed request (server down, key missing, quota hit) skip O*NET for a while so the
