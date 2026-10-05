@@ -1,3 +1,0 @@
-# Server-side only. Do NOT prefix with VITE_ (that would bundle the key into the browser code).
-# Keep this file out of git.
-APILAYER_RESUME_KEY=YAvT9-oGEWh-NqQ71-A2trn
