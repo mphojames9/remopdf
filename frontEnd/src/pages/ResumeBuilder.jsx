@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import PersonalInfo from '../components/Resume/Sections/PersonalInfo';
 import ExperienceField, { createJob } from '../components/Resume/Sections/ExperienceField';
 import EducationField, { createEducation, normalizeEducation } from '../components/Resume/Sections/EducationField';
-import SkillsField from '../components/Resume/Sections/SkillsField';
+import SkillsField, { DEFAULT_SKILL_RATING } from '../components/Resume/Sections/SkillsField';
 import Summary from '../components/Resume/Sections/Summary';
 import ResumeUpload from '../components/Resume/Sections/ResumeUpload';
 import BuilderSidebar from '../components/Resume/Sections/BuilderSidebar';
@@ -1555,20 +1555,59 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     mergeList(existing, incoming, ['institution', 'degree'],
       (a, b) => sameText(a.institution, b.institution) && sameText(a.degree, b.degree), createEducation, 'import-edu');
 
+  // New skills are added after the ones already there, skipping any that exist (case-insensitive).
+  // Like skills added by hand, they start at the first level so the Skills step is never blocked.
   const mergeSkills = (existing, found) => {
     if (!found || found.length === 0) return existing;
-    if (existing && existing.length > 0) return existing;
-    return found.map((text, i) => ({ id: Date.now() + i, text, rating: 0 }));
+    const have = existing || [];
+    const taken = new Set(have.map((skill) => String(skill.text || '').trim().toLowerCase()).filter(Boolean));
+    const fresh = found.filter((text) => !taken.has(String(text).trim().toLowerCase()));
+    if (fresh.length === 0) return have;
+    const stamp = Date.now();
+    return [...have, ...fresh.map((text, i) => ({ id: stamp + i, text, rating: DEFAULT_SKILL_RATING }))];
   };
 
   const mergeSummary = (existing, found) => (existing && existing.trim() ? existing : found || existing);
+
+  // Projects, certificates and languages live in { enabled, items }. Imported items are added to
+  // what is already there (skipping duplicates) and the section is switched on so it shows up.
+  const mergeSectionItems = (section, incoming, keys, isSame, idPrefix) => {
+    const base = section || { enabled: false, items: [] };
+    if (!incoming || incoming.length === 0) return base;
+    const have = (base.items || []).filter((item) => !isBlankItem(item, keys));
+    const fresh = incoming.filter((item) => !have.some((h) => isSame(h, item)));
+    if (fresh.length === 0) return { ...base, enabled: true, items: have };
+    const stamp = Date.now();
+    return {
+      ...base,
+      enabled: true,
+      items: [...have, ...fresh.map((item, i) => ({ ...item, id: `${idPrefix}-${stamp}-${i}` }))],
+    };
+  };
+
+  // Links are added to the ones already listed instead of replacing them.
+  const normalizeUrl = (w) =>
+    String((w && w.url) || w || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '');
+
+  const mergePersonal = (existing, found) => {
+    const { websites: foundSites, ...rest } = found || {};
+    const merged = mergeFound(existing, rest);
+    if (Array.isArray(foundSites) && foundSites.length > 0) {
+      const have = (existing.websites || []).filter((w) => normalizeUrl(w));
+      const fresh = foundSites.filter((w) => normalizeUrl(w) && !have.some((h) => normalizeUrl(h) === normalizeUrl(w)));
+      // The Heading form edits links by id, so every imported link needs its own.
+      const stamp = Date.now();
+      merged.websites = [...have, ...fresh.map((w, i) => ({ id: `website-${stamp}-${i}`, url: String((w && w.url) || w).trim() }))];
+    }
+    return merged;
+  };
 
   // `experiences` / `educations` (lists) come from the resume parser. The single `experience` /
   // `education` objects are the old format and still work.
   const handleImport = (parsed) => {
     setResumeData((prev) => ({
       ...prev,
-      personal: mergeFound(prev.personal, parsed.personal || {}),
+      personal: mergePersonal(prev.personal, parsed.personal),
       experiences: parsed.experiences
         ? mergeJobList(prev.experiences, parsed.experiences)
         : mergeExperiences(prev.experiences, parsed.experience),
@@ -1577,6 +1616,18 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         : mergeEducation(prev.education, parsed.education),
       skills: mergeSkills(prev.skills, parsed.skills),
       summary: mergeSummary(prev.summary, parsed.summary),
+      projects: mergeSectionItems(prev.projects, parsed.projects, ['title', 'description'],
+        (a, b) => sameText(a.title, b.title), 'import-proj'),
+      certificates: mergeSectionItems(prev.certificates, parsed.certificates, ['name', 'issuer'],
+        (a, b) => sameText(a.name, b.name) && sameText(a.issuer, b.issuer), 'import-cert'),
+      languages: mergeSectionItems(prev.languages, parsed.languages, ['name'],
+        (a, b) => sameText(a.name, b.name), 'import-lang'),
+      hobbies: parsed.hobbies && !(prev.hobbies?.text || '').trim()
+        ? { ...prev.hobbies, enabled: true, text: parsed.hobbies }
+        : prev.hobbies,
+      references: parsed.references?.availableUponRequest && !(prev.references?.items || []).some((r) => r.name)
+        ? { ...prev.references, enabled: true, availableUponRequest: true }
+        : prev.references,
     }));
   };
 

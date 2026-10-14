@@ -1,10 +1,14 @@
 /* -------------------------------------------------------------------------- */
-/*  Resume parsing via the APILayer Resume Parser API.                        */
+/*  Resume import.                                                            */
 /*                                                                            */
-/*  The browser never talks to APILayer directly. It posts the file to your   */
-/*  own endpoint (a Vite proxy in dev, a serverless function in production),  */
-/*  which adds the API key on the server. That keeps the key out of the       */
-/*  bundle and avoids CORS problems.                                          */
+/*  1. The file is read in the browser (resumeFileText.js) and its sections   */
+/*     are parsed locally (resumeTextParser.js). This finds the name, title,  */
+/*     location, links, summary, skills, jobs, education, projects and        */
+/*     certificates, which the API below cannot return.                       */
+/*  2. Only if that finds too little (a .doc file, a scanned PDF) is the file */
+/*     sent to the APILayer Resume Parser through your own endpoint (Vite     */
+/*     proxy in dev, serverless function in production), which adds the API   */
+/*     key on the server so it never reaches the bundle.                      */
 /*                                                                            */
 /*  APILayer returns:                                                         */
 /*    { name, email, skills: [], education: [{ name, dates }],                */
@@ -12,78 +16,15 @@
 /*  Every field can be missing, so everything below is defensive.             */
 /* -------------------------------------------------------------------------- */
 
+import { fileToBlocks } from './resumeFileText.js';
+import { parseResumeBlocks, countFilledAreas, parseDateRange, splitName, tidyCase, clean } from './resumeTextParser.js';
+
+export { parseDateRange };
+
 const ENDPOINT = import.meta.env?.VITE_RESUME_PARSER_URL || '/api/resume-parser';
 
 export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 export const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx'];
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const MONTH_LOOKUP = {
-  jan: 'Jan', january: 'Jan', feb: 'Feb', february: 'Feb', mar: 'Mar', march: 'Mar',
-  apr: 'Apr', april: 'Apr', may: 'May', jun: 'Jun', june: 'Jun', jul: 'Jul', july: 'Jul',
-  aug: 'Aug', august: 'Aug', sep: 'Sep', sept: 'Sep', september: 'Sep',
-  oct: 'Oct', october: 'Oct', nov: 'Nov', november: 'Nov', dec: 'Dec', december: 'Dec',
-};
-
-const clean = (v) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : '');
-
-// Parsers often return names in capitals ("JOHN DOE"). Mixed case is left alone.
-const tidyCase = (text) => {
-  const t = clean(text);
-  if (!t) return '';
-  const isShouting = t === t.toUpperCase() || t === t.toLowerCase();
-  if (!isShouting) return t;
-  return t.toLowerCase().replace(/(^|[\s\-'(])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
-};
-
-const splitName = (full) => {
-  const parts = tidyCase(full).split(' ').filter(Boolean);
-  if (parts.length === 0) return { firstName: '', lastName: '' };
-  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
-  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
-};
-
-/**
- * "2015", "2015 - 2018", "Jan 2015 – Present", "03/2019 to 11/2021" ...
- * Returns the pieces the builder stores for a job.
- */
-export const parseDateRange = (raw) => {
-  const text = clean(raw);
-  const empty = { startMonth: '', startYear: '', endMonth: '', endYear: '', current: false, startDate: '', endDate: '' };
-  if (!text) return empty;
-
-  const current = /\b(present|current|now|ongoing|today|to date)\b/i.test(text);
-
-  // Each match is an optional month (name or number) followed by a four-digit year.
-  const found = [];
-  const re = /(?:\b([A-Za-z]{3,9})\.?,?\s+|\b(\d{1,2})\s*[\/\-.]\s*)?\b((?:19|20)\d{2})\b/g;
-  let m;
-  while ((m = re.exec(text)) !== null) {
-    let month = '';
-    if (m[1]) month = MONTH_LOOKUP[m[1].toLowerCase()] || '';
-    else if (m[2]) {
-      const n = parseInt(m[2], 10);
-      if (n >= 1 && n <= 12) month = MONTHS[n - 1];
-    }
-    found.push({ month, year: m[3] });
-  }
-
-  if (found.length === 0) return { ...empty, current, endDate: current ? 'Present' : '' };
-
-  const start = found[0];
-  const end = found.length > 1 ? found[1] : null;
-  const fmt = (p) => (p ? [p.month, p.year].filter(Boolean).join(' ') : '');
-
-  return {
-    startMonth: start.month,
-    startYear: start.year,
-    endMonth: !current && end ? end.month : '',
-    endYear: !current && end ? end.year : '',
-    current,
-    startDate: fmt(start),
-    endDate: current ? 'Present' : fmt(end),
-  };
-};
 
 const mapJob = (item) => {
   const range = parseDateRange(item?.dates);
@@ -111,7 +52,7 @@ const mapEducation = (item) => {
   };
 };
 
-const mapSkills = (skills, limit = 15) => {
+const mapSkills = (skills, limit = 30) => {
   if (!Array.isArray(skills)) return [];
   const seen = new Set();
   const out = [];
@@ -174,11 +115,13 @@ export const validateResumeFile = (file) => {
   return '';
 };
 
-/** Uploads the file and resolves with parsed data ready for handleImport. */
-export async function parseResumeFile(file, signal) {
-  const problem = validateResumeFile(file);
-  if (problem) throw new ResumeParseError(problem, 0);
+const isAbort = (err) => err?.name === 'AbortError';
+const throwIfAborted = (signal) => {
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+};
 
+/** Sends the file to the API proxy. Resolves with mapped data, or throws a ResumeParseError. */
+async function parseWithApi(file, signal) {
   let response;
   try {
     response = await fetch(ENDPOINT, {
@@ -188,7 +131,7 @@ export async function parseResumeFile(file, signal) {
       signal,
     });
   } catch (err) {
-    if (err?.name === 'AbortError') throw err;
+    if (isAbort(err)) throw err;
     throw new ResumeParseError('Could not reach the resume service. Check your connection and try again.', 0);
   }
 
@@ -200,11 +143,73 @@ export async function parseResumeFile(file, signal) {
   } catch {
     throw new ResumeParseError("We couldn't read the response from the resume service.", response.status);
   }
+  return mapParsedResume(json);
+}
 
-  const parsed = mapParsedResume(json);
-  const gotAnything =
-    hasValue(parsed.personal) || parsed.experiences.length > 0 || parsed.educations.length > 0 || parsed.skills.length > 0;
-  if (!gotAnything) throw new ResumeParseError("We couldn't find any details in that resume.", response.status);
+// Keeps whatever the local reader found and fills only the gaps from the API.
+const mergeResults = (local, api) => {
+  const personal = { ...(api.personal || {}) };
+  for (const [key, value] of Object.entries(local.personal || {})) {
+    const filled = Array.isArray(value) ? value.length > 0 : value !== '' && value != null;
+    if (filled) personal[key] = value;
+  }
+  const pick = (a, b) => (a && a.length ? a : b);
+  return {
+    ...api,
+    ...local,
+    personal,
+    experiences: pick(local.experiences, api.experiences),
+    educations: pick(local.educations, api.educations),
+    skills: pick(local.skills, api.skills),
+    summary: local.summary || api.summary || '',
+  };
+};
 
-  return parsed;
+const hasAnything = (p) =>
+  hasValue(p.personal) || p.experiences.length > 0 || p.educations.length > 0 || p.skills.length > 0
+  || Boolean(p.summary) || Boolean(p.projects?.length) || Boolean(p.certificates?.length);
+
+// A local result with this many filled areas (name/contact, links, summary, skills ...) is trusted as is.
+const CONFIDENT_AREAS = 3;
+
+// meta tells the UI which reader produced the result: "local" (read in the browser), "api"
+// (the APILayer backup) or "merged". handleImport ignores it.
+const withMeta = (parsed, source, localError) => ({
+  ...parsed,
+  meta: { source, localError: localError ? String(localError.message || localError) : '' },
+});
+
+/** Reads the file and resolves with parsed data ready for handleImport. */
+export async function parseResumeFile(file, signal) {
+  const problem = validateResumeFile(file);
+  if (problem) throw new ResumeParseError(problem, 0);
+
+  // 1. Read it here in the browser.
+  let local = null;
+  let localError = null;
+  try {
+    local = parseResumeBlocks(await fileToBlocks(file));
+  } catch (err) {
+    localError = err;
+    console.error('[resume import] the browser reader failed, falling back to the API:', err);
+  }
+  throwIfAborted(signal);
+  if (local && countFilledAreas(local) >= CONFIDENT_AREAS) {
+    console.info('[resume import] read in the browser,', countFilledAreas(local), 'areas found');
+    return withMeta(local, 'local');
+  }
+
+  // 2. Too little found (or an unreadable file type): ask the API and fill the gaps.
+  try {
+    const api = await parseWithApi(file, signal);
+    const merged = local ? mergeResults(local, api) : api;
+    if (hasAnything(merged)) return withMeta(merged, local ? 'merged' : 'api', localError);
+  } catch (err) {
+    if (isAbort(err)) throw err;
+    // The API is only the backup. If the local reader found something, use it.
+    if (!(local && countFilledAreas(local) > 0)) throw err;
+  }
+
+  if (local && countFilledAreas(local) > 0) return withMeta(local, 'local');
+  throw new ResumeParseError("We couldn't find any details in that resume.", 0);
 }

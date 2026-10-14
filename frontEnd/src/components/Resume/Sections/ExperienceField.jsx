@@ -348,11 +348,9 @@ const AchievementSuggestions = ({ job, skills, onAdd, pending = [] }) => {
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold text-slate-800">Achievement ideas</p>
-          <p className="text-[11px] text-slate-500">
-            {title && roleLabel
-              ? `Ready-made ideas for ${roleLabel}${result.source === 'onet' ? ' (from O*NET)' : ''}. Tap + to add one.`
-              : 'Add a job title to see ready-made ideas.'}
-          </p>
+          {!(title && roleLabel) && (
+            <p className="text-[11px] text-slate-500">Add a job title to see ready-made ideas.</p>
+          )}
         </div>
         {total > IDEAS_PER_PAGE && (
           <button

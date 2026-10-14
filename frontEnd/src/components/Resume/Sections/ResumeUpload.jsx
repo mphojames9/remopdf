@@ -56,7 +56,15 @@ const ResumeUpload = ({ onImport }) => {
     try {
       const parsed = await parseResumeFile(file, controller.signal);
       onImport?.(parsed);
-      setStatus({ kind: 'success', message: 'Details added. Please check them over.' });
+      const source = parsed?.meta?.source;
+      const basic = source === 'api' || source === 'merged';
+      const why = basic && import.meta.env?.DEV && parsed.meta.localError ? ` (${parsed.meta.localError})` : '';
+      setStatus({
+        kind: 'success',
+        message: basic
+          ? `Imported with the basic reader, so some sections may be missing. Please check them over.${why}`
+          : 'Details added. Please check them over.',
+      });
     } catch (err) {
       if (err?.name === 'AbortError') return;
       const message = err instanceof ResumeParseError ? err.message : 'Something went wrong while reading that file.';
