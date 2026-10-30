@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import navLogo from '../assets/logo1.png';        // logo for the light navigation bar
-import footerLogo from '../assets/logo.png';  // logo for the dark footer
+import navLogo from '../assets/logo1.webp';        // logo for the light navigation bar
+import footerLogo from '../assets/logo.webp';  // logo for the dark footer
 
 const NAV_LINKS = [
   { label: 'About Us', path: '/about' },

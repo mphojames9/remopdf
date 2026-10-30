@@ -77,50 +77,249 @@ const InputField = ({ label, value, onChange, placeholder, focused }) => (
 /*                    Institution picker (Hipolabs universities)              */
 /* -------------------------------------------------------------------------- */
 
-// HTTPS is tried first so the picker still works on a deployed (https) site; the plain-http
-// address is the fallback because that is the one the API documents.
-const UNIVERSITY_API_URLS = [
-  'https://universities.hipolabs.com/search',
-  'http://universities.hipolabs.com/search',
+// The hosted Hipolabs API only serves plain http (its https address redirects to http), and browsers
+// block that from an https site such as remopdf.site (it worked on http://localhost, which is exempt).
+// So there is no API call at all: the open-source dataset behind that API is a static JSON file served
+// over https with CORS enabled. It is downloaded once (compressed in transit), trimmed to the three
+// fields we use, and searched in the browser. Fully frontend, no backend needed.
+const UNIVERSITY_DATASET_URLS = [
+  'https://raw.githubusercontent.com/Hipo/university-domains-list/master/world_universities_and_domains.json',
+  'https://cdn.jsdelivr.net/gh/Hipo/university-domains-list@master/world_universities_and_domains.json',
 ];
-const MIN_SEARCH_CHARS = 3;
+const MIN_SEARCH_CHARS = 2;
 const MAX_VISIBLE_RESULTS = 8;
 const SEARCH_DEBOUNCE_MS = 300;
 
 // Shared by every picker on the page so re-opening a qualification does not refetch.
 const universitySearchCache = new Map();
 
-const fetchUniversities = async (query, signal) => {
-  let lastError;
-  for (const base of UNIVERSITY_API_URLS) {
-    try {
-      const res = await fetch(`${base}?name=${encodeURIComponent(query)}&limit=100`, { signal });
-      if (!res.ok) throw new Error(`Universities API returned ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      if (err.name === 'AbortError') throw err;
-      lastError = err;
-    }
-  }
-  throw lastError;
+/* -------------------------------------------------------------------------- */
+/*                         Smarter school matching                            */
+/* -------------------------------------------------------------------------- */
+
+// Schools the public dataset is missing or lists under a different name (mostly South African
+// private colleges and TVET colleges). They are searched together with the dataset.
+const EXTRA_INSTITUTIONS = [
+  ...[
+    ['University of Pretoria', 'Gauteng'],
+    ['University of the Witwatersrand', 'Gauteng'],
+    ['University of Johannesburg', 'Gauteng'],
+    ['Tshwane University of Technology', 'Gauteng'],
+    ['University of South Africa', 'Gauteng'],
+    ['Vaal University of Technology', 'Gauteng'],
+    ['Sefako Makgatho Health Sciences University', 'Gauteng'],
+    ['University of Cape Town', 'Western Cape'],
+    ['Stellenbosch University', 'Western Cape'],
+    ['University of the Western Cape', 'Western Cape'],
+    ['Cape Peninsula University of Technology', 'Western Cape'],
+    ['University of KwaZulu-Natal', 'KwaZulu-Natal'],
+    ['Durban University of Technology', 'KwaZulu-Natal'],
+    ['Mangosuthu University of Technology', 'KwaZulu-Natal'],
+    ['University of Zululand', 'KwaZulu-Natal'],
+    ['North-West University', 'North West'],
+    ['University of the Free State', 'Free State'],
+    ['Central University of Technology', 'Free State'],
+    ['Nelson Mandela University', 'Eastern Cape'],
+    ['Rhodes University', 'Eastern Cape'],
+    ['University of Fort Hare', 'Eastern Cape'],
+    ['Walter Sisulu University', 'Eastern Cape'],
+    ['University of Limpopo', 'Limpopo'],
+    ['University of Venda', 'Limpopo'],
+    ['University of Mpumalanga', 'Mpumalanga'],
+    ['Sol Plaatje University', 'Northern Cape'],
+    ['Tshwane North TVET College', 'Gauteng'],
+    ['Tshwane South TVET College', 'Gauteng'],
+    ['Ekurhuleni East TVET College', 'Gauteng'],
+    ['Ekurhuleni West TVET College', 'Gauteng'],
+    ['Central Johannesburg TVET College', 'Gauteng'],
+    ['Sedibeng TVET College', 'Gauteng'],
+    ['South West Gauteng TVET College', 'Gauteng'],
+    ['Western TVET College', 'Gauteng'],
+  ].map(([name, province]) => ({ name, 'state-province': province, country: 'South Africa' })),
+  ...[
+    'Boston City Campus',
+    'Damelin',
+    'Rosebank College',
+    'Varsity College',
+    'Stadio',
+    'Regenesys Business School',
+    'Milpark Education',
+    'Midrand Graduate Institute',
+    'The Independent Institute of Education',
+    'CTI Education Group',
+    'Monash South Africa',
+  ].map((name) => ({ name, 'state-province': null, country: 'South Africa' })),
+];
+
+// What people type instead of the full name (the dataset has no abbreviations).
+const SCHOOL_ALIASES = {
+  wits: 'witwatersrand',
+  unisa: 'university of south africa',
+  ukzn: 'kwazulu natal',
+  unizulu: 'university of zululand',
+  univen: 'university of venda',
+  stellies: 'stellenbosch',
+  nmmu: 'nelson mandela',
+  smu: 'sefako makgatho',
+  unp: 'university of pretoria',
 };
 
-// Dedupe by name + country, put names that start with the query first, then shorter names.
-const rankUniversities = (list, query) => {
-  const q = query.toLowerCase();
+const INITIALS_SKIP = new Set(['of', 'the', 'and', 'for', 'at', 'in', 'de', 'du', 'la', 'le', 'des', 'da', 'do', 'di', 'del', 'van', 'von', 'der', 'den']);
+
+// Lowercase, strip accents, "&" -> "and", punctuation -> spaces, so "Université  de-Paris" == "universite de paris".
+const normalizeText = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const indexUniversity = (u) => {
+  const norm = normalizeText(u.name);
+  const tokens = norm.split(' ').filter(Boolean);
+  return {
+    name: u.name,
+    country: u.country,
+    'state-province': u['state-province'],
+    _norm: norm,
+    _tokens: tokens,
+    _init: tokens.filter((t) => !INITIALS_SKIP.has(t)).map((t) => t[0]).join(''),
+    _curated: !!u._curated,
+    _place: normalizeText([u['state-province'], u.country].filter(Boolean).join(' ')).split(' ').filter(Boolean),
+  };
+};
+
+// Edit distance that also counts a swapped pair of letters as one slip; gives up early past `max`.
+const editDistance = (a, b, max) => {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev2 = null;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i += 1) {
+    const cur = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      let v = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (prev2 && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) v = Math.min(v, prev2[j - 2] + 1);
+      cur[j] = v;
+      if (v < rowMin) rowMin = v;
+    }
+    if (rowMin > max) return max + 1;
+    prev2 = prev;
+    prev = cur;
+  }
+  return prev[b.length];
+};
+
+const fuzzyTokenHit = (qt, tokens) => {
+  if (qt.length < 4) return false;
+  const max = qt.length >= 8 ? 2 : 1;
+  return tokens.some((t) => editDistance(qt, t.slice(0, qt.length), max) <= max || editDistance(qt, t, max) <= max);
+};
+
+const buildQuery = (query) => {
+  const rawTokens = normalizeText(query).split(' ').filter(Boolean);
+  const tokens = rawTokens.flatMap((t) => (SCHOOL_ALIASES[t] ? SCHOOL_ALIASES[t].split(' ') : [t]));
+  return {
+    aliased: rawTokens.some((t) => SCHOOL_ALIASES[t]),
+    norm: tokens.join(' '),
+    tokens,
+    compact: rawTokens.join(''), // "u j" and "uj" both read as the abbreviation UJ
+    single: rawTokens.length === 1,
+  };
+};
+
+// 0 = not a match. Higher = better: exact name, name starts with the text, abbreviation, then every
+// typed word matching a word of the name (any order, partial words allowed), then typo-tolerant matches.
+const scoreUniversity = (e, q, fuzzy) => {
+  const bonus = e._curated ? 5 : 0; // the hand-picked schools win ties
+  if (e._norm === q.norm) return 1000 + bonus;
+  if (e._norm.startsWith(q.norm)) return 900 + bonus;
+  if (q.compact.length >= 2 && e._init === q.compact) return 850 + bonus;
+  if (q.single && q.compact.length >= 3 && e._init.startsWith(q.compact)) return 500;
+  if (q.single && q.compact.length < 3) return 0; // two letters: only the checks above
+
+  let total = 0;
+  let nameHits = 0;
+  for (const qt of q.tokens) {
+    if (e._tokens.includes(qt)) {
+      total += 30;
+      nameHits += 1;
+    } else if (qt.length >= 2 && e._tokens.some((t) => t.startsWith(qt))) {
+      total += 25;
+      nameHits += 1;
+    } else if (qt.length >= 4 && e._norm.includes(qt)) {
+      total += 12;
+      nameHits += 1;
+    } else if (!q.aliased && e._place.some((t) => t.startsWith(qt))) {
+      total += 8; // "pretoria south africa": the place words count, but never alone
+    } else if (fuzzy && fuzzyTokenHit(qt, e._tokens)) {
+      total += 10;
+      nameHits += 1;
+    } else {
+      return 0;
+    }
+  }
+  if (!nameHits) return 0;
+  if (e._tokens[0] && e._tokens[0].startsWith(q.tokens[0])) total += 15;
+  return 600 + total + bonus;
+};
+
+const searchUniversities = (entries, query) => {
+  const q = buildQuery(query);
+  if (!q.norm) return [];
+  const run = (fuzzy) => {
+    const hits = [];
+    for (const e of entries) {
+      const s = scoreUniversity(e, q, fuzzy);
+      if (s > 0) hits.push([s, e]);
+    }
+    return hits;
+  };
+  let hits = run(false);
+  if (hits.length < 4 && q.norm.length >= 4) hits = run(true); // few results: also forgive typos
   const seen = new Set();
-  return (Array.isArray(list) ? list : [])
-    .filter((u) => {
-      const key = `${u.name}|${u.country}`;
-      if (!u.name || seen.has(key)) return false;
+  return hits
+    .sort((a, b) => b[0] - a[0] || a[1].name.length - b[1].name.length || a[1].name.localeCompare(b[1].name))
+    .filter(([, e]) => {
+      const key = `${e._norm}|${e.country}`;
+      if (seen.has(key)) return false;
       seen.add(key);
       return true;
     })
-    .sort((a, b) => {
-      const aStarts = a.name.toLowerCase().startsWith(q) ? 0 : 1;
-      const bStarts = b.name.toLowerCase().startsWith(q) ? 0 : 1;
-      return aStarts - bStarts || a.name.length - b.name.length || a.name.localeCompare(b.name);
-    });
+    .map(([, e]) => e);
+};
+
+// One shared download for every picker on the page; a failed attempt is retried on the next search.
+let universityDatasetPromise = null;
+const loadUniversityDataset = () => {
+  if (universityDatasetPromise) return universityDatasetPromise;
+  universityDatasetPromise = (async () => {
+    let lastError;
+    for (const url of UNIVERSITY_DATASET_URLS) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`University list returned ${res.status}`);
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error('Unexpected university list format');
+        return [...EXTRA_INSTITUTIONS.map((u) => ({ ...u, _curated: true })), ...data.filter((u) => u && u.name)].map(indexUniversity);
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    throw lastError;
+  })().catch((err) => {
+    universityDatasetPromise = null;
+    throw err;
+  });
+  return universityDatasetPromise;
+};
+
+const fetchUniversities = async (query, signal) => {
+  const entries = await loadUniversityDataset();
+  if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+  return searchUniversities(entries, query);
 };
 
 const universityLocation = (u) => [u['state-province'], u.country].filter(Boolean).join(', ');
@@ -161,7 +360,7 @@ const InstitutionField = ({ id, label, value, onChange, onSelect, placeholder, f
     const timer = setTimeout(async () => {
       try {
         const data = await fetchUniversities(query, controller.signal);
-        const ranked = rankUniversities(data, query);
+        const ranked = data; // already matched, ranked and de-duplicated by searchUniversities
         universitySearchCache.set(key, ranked);
         setResults(ranked.slice(0, MAX_VISIBLE_RESULTS));
         setStatus('done');
@@ -241,7 +440,10 @@ const InstitutionField = ({ id, label, value, onChange, onSelect, placeholder, f
             // Delay so a click on a suggestion lands before the list unmounts.
             blurTimer.current = setTimeout(() => setOpen(false), 120);
           }}
-          onFocus={() => clearTimeout(blurTimer.current)}
+          onFocus={() => {
+            clearTimeout(blurTimer.current);
+            loadUniversityDataset().catch(() => {}); // warm up so the first suggestions appear quickly
+          }}
           placeholder={placeholder}
           className={`w-full bg-white border ${
             focused ? 'border-[#d9856b] text-slate-900 font-medium' : 'border-slate-200 text-slate-900 focus:border-[#d9856b]'
@@ -287,117 +489,60 @@ const InstitutionField = ({ id, label, value, onChange, onSelect, placeholder, f
 };
 
 /* -------------------------------------------------------------------------- */
-/*              Field of Study picker (Coursera course categories)            */
+/*                     Field of Study picker (built-in list)                  */
 /* -------------------------------------------------------------------------- */
 
-// courses.v1 lists courses, not fields of study. Every course carries `domainTypes`
-// ({ domainId, subdomainId }), Coursera's category tree, so the dropdown is built from those.
-const COURSERA_COURSES_URL = 'https://api.coursera.org/api/courses.v1';
-const COURSERA_PAGE_SIZE = 100;
-const COURSERA_SAMPLE_PAGES = 12; // pages spread across the catalogue so every category turns up
-const FIELDS_CACHE_KEY = 'coursera-fields-of-study-v1';
-const FIELDS_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-
-// Shown immediately, and kept if the API can't be reached.
-const FALLBACK_DOMAINS = [
-  'arts-and-humanities',
-  'business',
-  'computer-science',
-  'data-science',
-  'health',
-  'information-technology',
-  'language-learning',
-  'math-and-logic',
-  'personal-development',
-  'physical-science-and-engineering',
-  'social-sciences',
-];
-
-const LOWERCASE_WORDS = new Set(['and', 'of', 'for', 'to', 'in']);
-const humanizeSlug = (slug) =>
-  String(slug || '')
-    .split('-')
-    .filter(Boolean)
-    .map((w, i) => (i > 0 && LOWERCASE_WORDS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
-    .join(' ');
-
-// Domains become top-level options; subdomains sit under their domain ("Machine Learning" / "Data Science").
-const buildFieldOptions = (pairs) => {
-  const map = new Map();
-  const add = (label, group) => {
-    if (label) map.set(`${group}|${label}`, { label, group });
-  };
-  pairs.forEach(({ domainId, subdomainId }) => {
-    const group = humanizeSlug(domainId);
-    add(group, '');
-    if (subdomainId) add(humanizeSlug(subdomainId), group);
-  });
-  return [...map.values()].sort((a, b) => a.label.localeCompare(b.label) || a.group.localeCompare(b.group));
+// Browsers block the Coursera API from other sites (no CORS headers), so the list is built in.
+// Nothing is fetched, which also makes the dropdown instant and fully offline-safe.
+const FIELD_GROUPS = {
+  'Business & Management': [
+    'Business Administration', 'Operations Management', 'Supply Chain Management', 'Logistics',
+    'Project Management', 'Human Resource Management', 'Industrial Management', 'Marketing',
+    'Entrepreneurship', 'International Business', 'Management', 'Public Administration',
+  ],
+  'Finance & Economics': [
+    'Accounting', 'Finance', 'Economics', 'Banking', 'Auditing', 'Taxation', 'Actuarial Science',
+  ],
+  'Engineering': [
+    'Industrial Engineering', 'Mechanical Engineering', 'Electrical Engineering', 'Civil Engineering',
+    'Chemical Engineering', 'Mechatronics', 'Manufacturing Engineering', 'Metallurgical Engineering',
+    'Mining Engineering', 'Aerospace Engineering', 'Biomedical Engineering', 'Environmental Engineering',
+  ],
+  'Computing & Data': [
+    'Computer Science', 'Information Technology', 'Software Engineering', 'Information Systems',
+    'Data Science', 'Artificial Intelligence', 'Cybersecurity', 'Computer Engineering', 'Statistics',
+  ],
+  'Science & Mathematics': [
+    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Biochemistry', 'Environmental Science',
+    'Geology', 'Agriculture', 'Food Science', 'Microbiology', 'Zoology', 'Botany',
+  ],
+  'Health': [
+    'Nursing', 'Medicine', 'Pharmacy', 'Public Health', 'Physiotherapy', 'Dentistry',
+    'Occupational Health and Safety', 'Nutrition', 'Psychology', 'Radiography', 'Medical Laboratory Science',
+  ],
+  'Social Sciences & Law': [
+    'Law', 'Political Science', 'Sociology', 'Social Work', 'International Relations', 'Criminology',
+    'Anthropology', 'Development Studies', 'Geography', 'Public Policy',
+  ],
+  'Education': [
+    'Education', 'Early Childhood Education', 'Teaching', 'Educational Leadership', 'Curriculum Studies',
+  ],
+  'Arts & Humanities': [
+    'English', 'History', 'Philosophy', 'Linguistics', 'Languages', 'Theology', 'Journalism',
+    'Communication', 'Media Studies', 'Graphic Design', 'Fine Arts', 'Music', 'Architecture',
+    'Film Studies',
+  ],
+  'Trades & Vocational': [
+    'Engineering Studies', 'Electrical Trade', 'Welding', 'Boilermaking', 'Fitting and Turning',
+    'Occupational Safety', 'Hospitality Management', 'Tourism', 'Office Administration',
+  ],
 };
 
-const FALLBACK_FIELD_OPTIONS = buildFieldOptions(FALLBACK_DOMAINS.map((domainId) => ({ domainId })));
+const FIELD_OPTIONS = Object.entries(FIELD_GROUPS)
+  .flatMap(([group, labels]) => labels.map((label) => ({ label, group })))
+  .sort((a, b) => a.label.localeCompare(b.label));
 
-const fetchCoursePage = async (start) => {
-  const res = await fetch(`${COURSERA_COURSES_URL}?fields=domainTypes&start=${start}&limit=${COURSERA_PAGE_SIZE}`);
-  if (!res.ok) throw new Error(`Coursera API returned ${res.status}`);
-  return res.json();
-};
-
-const fetchFieldOptions = async () => {
-  const first = await fetchCoursePage(0);
-  const total = Number(first && first.paging && first.paging.total) || COURSERA_PAGE_SIZE;
-  const step = Math.max(COURSERA_PAGE_SIZE, Math.floor(total / COURSERA_SAMPLE_PAGES));
-  const starts = [];
-  for (let s = step; s < total && starts.length < COURSERA_SAMPLE_PAGES - 1; s += step) starts.push(s);
-
-  const rest = await Promise.allSettled(starts.map(fetchCoursePage));
-  const pages = [first, ...rest.filter((r) => r.status === 'fulfilled').map((r) => r.value)];
-  const pairs = pages.flatMap((page) => (page.elements || []).flatMap((course) => course.domainTypes || []));
-  return buildFieldOptions([...FALLBACK_DOMAINS.map((domainId) => ({ domainId })), ...pairs]);
-};
-
-// One request shared by every qualification panel, remembered for a week.
-let fieldOptionsPromise = null;
-const loadFieldOptions = () => {
-  if (fieldOptionsPromise) return fieldOptionsPromise;
-  try {
-    const cached = JSON.parse(localStorage.getItem(FIELDS_CACHE_KEY) || 'null');
-    if (cached && Array.isArray(cached.options) && cached.options.length && Date.now() - cached.savedAt < FIELDS_CACHE_TTL_MS) {
-      fieldOptionsPromise = Promise.resolve(cached.options);
-      return fieldOptionsPromise;
-    }
-  } catch {
-    /* storage unavailable or corrupt: fetch instead */
-  }
-  fieldOptionsPromise = fetchFieldOptions()
-    .then((options) => {
-      try {
-        localStorage.setItem(FIELDS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), options }));
-      } catch {
-        /* storage full or blocked: the list still works for this session */
-      }
-      return options;
-    })
-    .catch((err) => {
-      fieldOptionsPromise = null; // let the next mount try again
-      throw err;
-    });
-  return fieldOptionsPromise;
-};
-
-const useFieldOptions = () => {
-  const [state, setState] = useState({ options: FALLBACK_FIELD_OPTIONS, status: 'loading' }); // loading | done | error
-  useEffect(() => {
-    let active = true;
-    loadFieldOptions()
-      .then((options) => active && setState({ options, status: 'done' }))
-      .catch(() => active && setState({ options: FALLBACK_FIELD_OPTIONS, status: 'error' }));
-    return () => {
-      active = false;
-    };
-  }, []);
-  return state;
-};
+const useFieldOptions = () => ({ options: FIELD_OPTIONS, status: 'done' });
 
 // Names that start with the query come first, then the rest of the matches (still alphabetical).
 const filterFieldOptions = (options, query) => {
@@ -412,7 +557,7 @@ const filterFieldOptions = (options, query) => {
 /* Dropdown that opens on focus and narrows as the user types. The typed text always stays valid,
    so a field that isn't in the list can still be entered. */
 const FieldOfStudyField = ({ id, label, value, onChange, placeholder }) => {
-  const { options, status } = useFieldOptions();
+  const { options } = useFieldOptions();
   const [open, setOpen] = useState(false);
   // False while the value came from a pick, so reopening shows every option instead of just that one.
   const [typed, setTyped] = useState(false);
@@ -533,11 +678,6 @@ const FieldOfStudyField = ({ id, label, value, onChange, placeholder }) => {
             ))}
             {visible.length === 0 && (
               <li className="px-3 py-2 text-[11px] text-slate-500" role="presentation">No matching fields.</li>
-            )}
-            {status === 'loading' && (
-              <li className="px-3 py-1.5 text-[10px] text-slate-400 border-t border-slate-100" role="presentation">
-                Loading more fields from Coursera…
-              </li>
             )}
           </ul>
         )}

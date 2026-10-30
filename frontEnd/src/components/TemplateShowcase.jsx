@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, memo } from 'react';
 import ResumePhoto, { PHOTO_DEFAULTS } from './Resume/Sections/ResumePhoto';
-import profile2 from '../assets/profile2.png';
+import profile2 from '../assets/profile2.webp';
 
 // Import actual templates
 import BlueSidebarTemplate from './Resume/Templates/BlueSidebarTemplate';

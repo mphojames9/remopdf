@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-import navLogo from '../assets/logo.png';
+import navLogo from '../assets/logo.webp';
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const emptyItem = () => ({ id: uid(), description: '', qty: 1, rate: 0 });

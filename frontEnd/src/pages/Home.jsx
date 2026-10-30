@@ -1,11 +1,46 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import image1 from '../assets/image1.png';
-import image2 from '../assets/image2.png';
-import editorShot from '../assets/editor-preview.png';
-import brandLogo from '../assets/logo.png';
-import TemplateShowcase from '../components/TemplateShowcase';
+import image1 from '../assets/image1.webp';
+import image2 from '../assets/image2.webp';
+import editorShot from '../assets/editor-preview.webp';
+import editorShotSmall from '../assets/editor-preview-800.webp';
+import brandLogo from '../assets/logo.webp';
 import Navbar from '../components/Navbar';
+
+// TemplateShowcase pulls in every resume template, so it lives in its own chunk and is only
+// fetched when the Templates section is about to scroll into view.
+const TemplateShowcase = lazy(() => import('../components/TemplateShowcase'));
+
+function LazyOnView({ children, minHeight = 720, rootMargin = '1200px' }) {
+  const ref = useRef(null);
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setShow(true);
+      return undefined;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShow(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [rootMargin]);
+
+  // The reserved height keeps the page length (and the #templates anchor) stable until the chunk arrives.
+  return (
+    <div ref={ref} style={show ? undefined : { minHeight }}>
+      {show ? <Suspense fallback={<div style={{ minHeight }} />}>{children}</Suspense> : null}
+    </div>
+  );
+}
 
 const BRAND = 'RemoPDF';
 const PDF_EDITOR_ROUTE = '/Workspace';
@@ -424,51 +459,64 @@ function ResumeStack() {
       ref={ref}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
-      className="relative isolate mx-auto aspect-[4/5] w-full max-w-[26rem] lg:max-w-none"
+      className="stack3d relative isolate mx-auto aspect-[100/118] w-full max-w-[22rem] sm:max-w-[26rem] lg:ml-auto lg:mr-0 lg:max-w-[28rem]"
     >
-      <div aria-hidden="true" className="layer absolute inset-x-[6%] inset-y-[8%] -z-10" style={{ '--depth': 10 }}>
-        <div className="h-full w-full rounded-[2rem] bg-[#f3dbd1]" />
-      </div>
+      <div className="stack-tilt absolute inset-0">
+        {/* glow + rotating ring + card behind the pages */}
+        <div aria-hidden="true" className="hp-glow absolute -inset-[12%] -z-20 rounded-full bg-[radial-gradient(closest-side,rgba(217,133,107,.38),transparent)] blur-2xl" />
+        <div aria-hidden="true" className="hp-orbit absolute -inset-[7%] -z-10 rounded-full" />
 
-      <div className="layer absolute left-[4%] top-[3%] w-[70%]" style={{ '--depth': -16 }}>
-        <img
-          src={image1}
-          alt="Resume template preview"
-          loading="eager"
-          decoding="async"
-          style={{ '--d': '.25s' }}
-          className="rise aspect-[3/4] w-full -rotate-2 rounded-md bg-white object-cover object-top shadow-xl ring-1 ring-black/5"
-        />
-      </div>
+        <div aria-hidden="true" className="layer absolute inset-x-[2%] inset-y-[4%] -z-10" style={{ '--depth': 10 }}>
+          <div className="h-full w-full rounded-[2.25rem] bg-gradient-to-br from-[#fbeae2] via-[#f3dbd1] to-[#dfe6f7] ring-1 ring-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,.8),0_30px_60px_-20px_rgba(217,133,107,.55)]" />
+          <div className="hero-grid absolute inset-0 rounded-[2.25rem] opacity-60" />
+        </div>
 
-      <div className="layer absolute bottom-[2%] right-0 w-[62%]" style={{ '--depth': 22 }}>
-        <img
-          src={image2}
-          alt="A second resume template preview"
-          loading="eager"
-          decoding="async"
-          style={{ '--d': '.4s' }}
-          className="rise aspect-[3/4] w-full rotate-3 rounded-md bg-white object-cover object-top shadow-xl ring-1 ring-black/5"
-        />
-      </div>
+        {/* floating sparkles */}
+        <span aria-hidden="true" className="hp-spark absolute -left-3 top-[18%] text-[#d9856b]" style={{ '--s': '0s' }}><Icon name="spark" className="h-7 w-7" /></span>
+        <span aria-hidden="true" className="hp-spark absolute -right-2 bottom-[30%] text-[#0e1726]" style={{ '--s': '1.4s' }}><Icon name="spark" className="h-5 w-5" /></span>
 
-      <div className="layer absolute bottom-[12%] left-0 z-20" style={{ '--depth': 34 }}>
-        <span
-          style={{ '--d': '.6s' }}
-          className="rise chip flex items-center gap-2 rounded-full bg-white py-2 pl-2.5 pr-4 text-sm font-medium text-[#0e1726] shadow-lg ring-1 ring-black/5"
-        >
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#d9856b] text-[#0e1726]">
-            <Icon name="check" className="h-3.5 w-3.5" />
+        {/* page 1 */}
+        <div className="layer absolute left-[2%] top-[0%] w-[62%]" style={{ '--depth': -16 }}>
+          <div className="hp-float-a">
+            <div className="relative -rotate-3 overflow-hidden rounded-md shadow-[0_28px_50px_-12px_rgba(14,23,38,.45)] ring-1 ring-black/10">
+              <img
+                src={image1}
+                alt="Resume template preview"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                style={{ '--d': '.25s' }}
+                className="rise block h-auto w-full"
+              />
+              <div aria-hidden="true" className="hp-sheen pointer-events-none absolute inset-0" />
+            </div>
+          </div>
+        </div>
+
+        {/* page 2 */}
+        <div className="layer absolute bottom-[0%] right-[0%] w-[54%]" style={{ '--depth': 22 }}>
+          <div className="hp-float-b">
+            <div className="relative rotate-3 overflow-hidden rounded-md shadow-[0_28px_50px_-12px_rgba(14,23,38,.5)] ring-1 ring-black/10">
+              <img
+                src={image2}
+                alt="A second resume template preview"
+                loading="eager"
+                decoding="async"
+                style={{ '--d': '.4s' }}
+                className="rise block h-auto w-full"
+              />
+              <div aria-hidden="true" className="hp-sheen hp-sheen-b pointer-events-none absolute inset-0" />
+            </div>
+          </div>
+        </div>
+
+        <div className="layer absolute bottom-[8%] left-[2%] z-20" style={{ '--depth': 40 }}>
+          <span style={{ '--d': '1s' }} className="rise chip flex items-center gap-2 rounded-full bg-[#d9856b] py-2 pl-3 pr-4 text-sm font-semibold text-[#0e1726] shadow-lg">
+            <Icon name="arrowUpRight" className="h-4 w-4" />
+            Download clean PDF
           </span>
-          ATS-friendly layout
-        </span>
-      </div>
+        </div>
 
-      <div className="layer absolute right-0 top-[6%] z-20" style={{ '--depth': 28 }}>
-        <span style={{ '--d': '.8s' }} className="rise chip2 flex items-center gap-2 rounded-full bg-[#0e1726] py-2 pl-3 pr-4 text-sm font-medium text-white shadow-lg">
-          <Icon name="edit" className="h-4 w-4 text-[#d9856b]" />
-          Edit PDF text
-        </span>
       </div>
     </div>
   );
@@ -652,6 +700,10 @@ function SiteFooter() {
                 <img
                   src={brandLogo}
                   alt={BRAND}
+                  width="480"
+                  height="160"
+                  loading="lazy"
+                  decoding="async"
                   className="h-10 w-auto transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                 />
               </Link>
@@ -783,7 +835,7 @@ export default function Home() {
       style={{ fontFamily: "'Instrument Sans', ui-sans-serif, system-ui, sans-serif" }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap');
+        /* Fonts (Bricolage Grotesque, Instrument Sans) are loaded from <head> in index.html, not @import. */
         html { scroll-behavior: smooth; }
         .kin-copy { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .2em var(--kin-g, .45em); padding-inline: 1rem; }
         .kin-copy + .kin-copy { display: none; }
@@ -956,6 +1008,40 @@ export default function Home() {
           .faq-mark { transition: background-size .55s cubic-bezier(.16,1,.3,1); }
           .faq-row { animation: rise .5s cubic-bezier(.16,1,.3,1) calc(var(--i, 0) * 50ms) both; }
         }
+        .grad-text { background-image: linear-gradient(100deg, #d9856b 0%, #f2a98f 35%, #b5563a 70%, #d9856b 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+        .hp-orbit { background: conic-gradient(from 0deg, rgba(217,133,107,0), rgba(217,133,107,.75), rgba(201,212,242,.8), rgba(217,133,107,0) 70%); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); }
+        .hp-sheen { background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.55) 50%, transparent 62%); opacity: 0; }
+        .hp-prog { width: 70%; }
+        .hp-ping { opacity: .5; }
+        .hp-caret { opacity: 1; }
+        @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+          .stack3d { perspective: 1400px; }
+          .stack-tilt { transform-style: preserve-3d; transform: rotateY(calc(var(--px, 0) * 9deg)) rotateX(calc(var(--py, 0) * -7deg)); transition: transform .5s cubic-bezier(.16,1,.3,1); }
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          .grad-text { animation: word .9s cubic-bezier(.16,1,.3,1) calc(var(--i) * 70ms + 80ms) both, grad-slide 6s ease-in-out 1.2s infinite alternate; }
+          @keyframes grad-slide { to { background-position: 100% 0; } }
+          .hp-orbit { animation: hp-spin 16s linear infinite; }
+          @keyframes hp-spin { to { transform: rotate(360deg); } }
+          .hp-glow { animation: hp-breathe 6s ease-in-out infinite; }
+          @keyframes hp-breathe { 50% { transform: scale(1.1); opacity: .75; } }
+          .hp-float-a { animation: hp-fa 7s ease-in-out infinite; }
+          .hp-float-b { animation: hp-fb 8s ease-in-out -2s infinite; }
+          @keyframes hp-fa { 50% { transform: translateY(-12px) rotate(.6deg); } }
+          @keyframes hp-fb { 50% { transform: translateY(10px) rotate(-.8deg); } }
+          .hp-sheen { animation: hp-shine 6s ease-in-out 2s infinite; }
+          .hp-sheen-b { animation-delay: 4s; }
+          @keyframes hp-shine { 0% { transform: translateX(-120%); opacity: 1; } 35%, 100% { transform: translateX(120%); opacity: 1; } }
+          .hp-spark { animation: hp-twinkle 3.2s ease-in-out var(--s, 0s) infinite; }
+          @keyframes hp-twinkle { 0%, 100% { transform: scale(.7) rotate(0deg); opacity: .5; } 50% { transform: scale(1.15) rotate(25deg); opacity: 1; } }
+          .hp-prog { animation: hp-load 5s ease-in-out infinite; }
+          @keyframes hp-load { 0% { width: 6%; } 70%, 100% { width: 100%; } }
+          .hp-dot { animation: ats-pulse 1.4s ease-in-out infinite; }
+          .hp-ping { animation: hp-ping 1.8s cubic-bezier(0,0,.2,1) infinite; }
+          @keyframes hp-ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }
+          .hp-caret { animation: hp-blink 1s steps(2, start) infinite; }
+          @keyframes hp-blink { to { visibility: hidden; } }
+        }
         @media (prefers-reduced-motion: reduce) {
           html { scroll-behavior: auto; }
           .rise { animation: none; }
@@ -973,12 +1059,19 @@ export default function Home() {
           <div aria-hidden="true" className="hero-grid pointer-events-none absolute inset-0 -z-10" />
           <div aria-hidden="true" className="blob-a pointer-events-none absolute -right-24 -top-24 -z-10 h-[30rem] w-[30rem] rounded-full bg-[#f3b9a5]/50 blur-3xl" />
           <div aria-hidden="true" className="blob-b pointer-events-none absolute -left-32 top-1/2 -z-10 h-[26rem] w-[26rem] rounded-full bg-[#c9d4f2]/60 blur-3xl" />
-          <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-8 lg:pb-28 lg:pt-20">
+          <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-8 lg:pb-24 lg:pt-16">
             <div className="hero-out">
+              <span className="rise mb-6 inline-flex items-center gap-2 rounded-full bg-white/70 py-1.5 pl-2.5 pr-4 text-sm font-medium text-[#0e1726] shadow-sm ring-1 ring-[#0e1726]/10 backdrop-blur">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="hp-ping absolute inline-flex h-full w-full rounded-full bg-[#d9856b]" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#d9856b]" />
+                </span>
+                PDF editor + ATS resume builder
+              </span>
               <h1 className="font-display text-[2.75rem] font-extrabold leading-[1.02] tracking-[-0.035em] [text-wrap:balance] sm:text-6xl lg:text-[4.5rem]">
                 {'Edit PDFs. Build resumes.'.split(' ').map((w, i) => (
                   <span key={i}>
-                    <span className="word relative" style={{ '--i': i }}>
+                    <span className={`word relative ${i >= 2 ? 'grad-text' : ''}`} style={{ '--i': i }}>
                       {w}
                       {i === 3 && (
                         <svg className="squiggle absolute -bottom-1.5 left-0 h-3 w-full overflow-visible" viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true">
@@ -1000,6 +1093,16 @@ export default function Home() {
                   Build a resume
                 </Link>
               </div>
+              <ul className="rise mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-slate-600" style={{ '--d': '.35s' }}>
+                {['Works in your browser', 'ATS-friendly templates', 'Clean PDF download'].map((t) => (
+                  <li key={t} className="flex items-center gap-1.5">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#d9856b]/20 text-[#b5563a]">
+                      <Icon name="check" className="h-3 w-3" />
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
 
             <ResumeStack />
@@ -1031,9 +1134,11 @@ export default function Home() {
               <div className="rounded-3xl bg-[#f3dbd1] p-3 sm:p-6 lg:p-8">
                 <img
                   src={editorShot}
+                  srcSet={`${editorShotSmall} 800w, ${editorShot} 1600w`}
+                  sizes="(min-width: 1280px) 1152px, 92vw"
                   alt="The RemoPDF editor with a toolbar for text, highlight, signature and image tools, a page sidebar, and an invoice open on the page."
-                  width="1366"
-                  height="641"
+                  width="1600"
+                  height="751"
                   loading="lazy"
                   decoding="async"
                   draggable={false}
@@ -1095,7 +1200,9 @@ export default function Home() {
         {/* Templates */}
         <section id="templates" className="scroll-mt-20 border-t border-[#0e1726]/10">
           <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-            <TemplateShowcase onUseTemplate={() => navigate('/ResumeBuilder')} />
+            <LazyOnView>
+              <TemplateShowcase onUseTemplate={() => navigate('/ResumeBuilder')} />
+            </LazyOnView>
           </div>
         </section>
 

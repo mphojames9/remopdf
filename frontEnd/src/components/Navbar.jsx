@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import logo1 from '../assets/logo1.png';
+import logo1 from '../assets/logo1.webp';
 
 const BRAND = 'RemoPDF';
 

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useLayoutEffect } from 'react';
 import ResumePhoto, { PHOTO_DEFAULTS } from '../Sections/ResumePhoto';
-import profile2 from '../../../assets/profile2.png';
+import profile2 from '../../../assets/profile2.webp';
 import {
   PAGE_WIDTH_PX,
   PAGE_HEIGHT_PX,

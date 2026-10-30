@@ -6,8 +6,8 @@ import { PDFDocument as DecryptingPDFDocument } from "@cantoo/pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
 import "pdfjs-dist/build/pdf.worker.mjs";
 import { Link } from 'react-router-dom';
-import image1 from '../assets/remopdf.png';
-import navLogo from '../assets/logo.png';
+import image1 from '../assets/remopdf.webp';
+import navLogo from '../assets/logo.webp';
 import { addPasswordToPdf, pdfToImages } from "../api/client"; // adjust the path if client.js lives elsewhere
 
 
@@ -1317,7 +1317,7 @@ async function mergePdfFiles(files, askPassword) {
 async function imageFileToPdfBytes(file) {
   const bytes = await file.arrayBuffer();
   const doc = await PDFDocument.create();
-  const isPng = file.type === "image/png" || /\.png$/i.test(file.name);
+  const isPng = file.type === "image/png" || /\.webp$/i.test(file.name);
   const embedded = isPng ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
   const landscape = embedded.width > embedded.height;
   const pageWidth = landscape ? 792 : 612; // US Letter, turned to match the photo
@@ -1516,7 +1516,7 @@ function SignaturePad({ onSave, onClose }) {
   );
 }
 
-const ADD_PAGES_ACCEPT = "application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg";
+const ADD_PAGES_ACCEPT = "application/pdf,image/png,image/jpeg,.pdf,.webp,.jpg,.jpeg";
 function isPickableForAddPages(file) {
   return (
     file.type === "application/pdf" ||

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import profile from '../assets/profile.png'
-import navLogo from '../assets/logo1.png';        // logo for the light navigation bar
-import footerLogo from '../assets/logo.png';  // logo for the dark footer
+import profile from '../assets/profile.webp'
+import navLogo from '../assets/logo1.webp';        // logo for the light navigation bar
+import footerLogo from '../assets/logo.webp';  // logo for the dark footer
 
 // Structural Core Constants
 const NAV_LINKS = [

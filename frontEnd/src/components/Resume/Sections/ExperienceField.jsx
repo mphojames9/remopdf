@@ -290,6 +290,360 @@ const TitleSuggestField = ({ label, value, onChange, placeholder, skills, previo
   );
 };
 
+/* -------------------------------------------------------------------------- */
+/*                 Employer suggestions from the GLEIF LEI API                */
+/* -------------------------------------------------------------------------- */
+
+const GLEIF_BASE = 'https://api.gleif.org/api/v1';
+const KEEP_UPPER = new Set(['PTY', 'LTD', 'LLC', 'LLP', 'LP', 'INC', 'PLC', 'AG', 'SA', 'NV', 'BV', 'GMBH', 'SE', 'SAB', 'CO', 'USA', 'UK', 'IBM', 'BMW', 'AB', 'AS', 'ASA', 'OY', 'KK', 'SPA', 'SRL', 'NPC', 'SOC']);
+
+// GLEIF legal names are often ALL CAPS. Make those readable, and leave mixed-case names alone.
+const tidyName = (name) => {
+  const n = (name || '').trim();
+  if (!n || n !== n.toUpperCase()) return n;
+  return n
+    .toLowerCase()
+    .replace(/[a-z0-9]+/g, (w) => (KEEP_UPPER.has(w.toUpperCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)));
+};
+
+const fetchEmployers = async (query, signal) => {
+  const q = query.trim();
+  let names = [];
+  try {
+    // Fast prefix autocomplete on legal names.
+    const res = await fetch(
+      `${GLEIF_BASE}/autocompletions?field=entity.legalName&q=${encodeURIComponent(q)}`,
+      { signal, headers: { Accept: 'application/vnd.api+json' } }
+    );
+    if (!res.ok) throw new Error(`GLEIF ${res.status}`);
+    const json = await res.json();
+    names = (json.data || []).map((d) => d && d.attributes && d.attributes.value).filter(Boolean);
+  } catch (err) {
+    if (err && err.name === 'AbortError') throw err;
+    names = [];
+  }
+  if (!names.length) {
+    // Fallback: normal record search (also used if autocomplete returns nothing usable).
+    const res = await fetch(
+      `${GLEIF_BASE}/lei-records?filter[entity.legalName]=${encodeURIComponent(q)}&page[size]=10`,
+      { signal, headers: { Accept: 'application/vnd.api+json' } }
+    );
+    if (!res.ok) throw new Error(`GLEIF ${res.status}`);
+    const json = await res.json();
+    names = (json.data || [])
+      .map((r) => r && r.attributes && r.attributes.entity && r.attributes.entity.legalName && r.attributes.entity.legalName.name)
+      .filter(Boolean);
+  }
+  const seen = new Set();
+  return names
+    .map(tidyName)
+    .filter((n) => {
+      const k = n.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .slice(0, 8);
+};
+
+// Employer input with a suggestions dropdown fed by GLEIF. Typing freely always works: GLEIF only
+// lists companies that have an LEI, so many small or local employers will not appear.
+const EmployerSuggestField = ({ label, value, onChange, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const wrapRef = useRef(null);
+  const listId = useRef(`employer-suggestions-${Math.random().toString(36).slice(2, 7)}`).current;
+  const query = (value || '').trim();
+
+  useEffect(() => {
+    if (!open || query.length < 3) {
+      setItems([]);
+      setLoading(false);
+      return undefined;
+    }
+    const controller = new AbortController();
+    setLoading(true);
+    const timer = setTimeout(() => {
+      fetchEmployers(query, controller.signal)
+        .then((names) => {
+          setItems(names.filter((n) => n.toLowerCase() !== query.toLowerCase()));
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (err && err.name === 'AbortError') return;
+          setItems([]);
+          setLoading(false);
+        });
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [open, query]);
+
+  const showList = open && items.length > 0;
+
+  const pick = (name) => {
+    onChange(name);
+    setOpen(false);
+    setActive(-1);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown' && items.length) {
+      e.preventDefault();
+      setOpen(true);
+      setActive((i) => (i + 1) % items.length);
+    } else if (e.key === 'ArrowUp' && items.length) {
+      e.preventDefault();
+      setOpen(true);
+      setActive((i) => (i < 0 ? items.length - 1 : (i - 1 + items.length) % items.length));
+    } else if (e.key === 'Enter' && showList && active >= 0 && items[active]) {
+      e.preventDefault();
+      pick(items[active]);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      className="flex flex-col w-full relative"
+      onBlur={(e) => {
+        if (!wrapRef.current || !wrapRef.current.contains(e.relatedTarget)) setOpen(false);
+      }}
+    >
+      {label && (
+        <label htmlFor={`${listId}-input`} className="text-xs font-bold text-slate-800 mb-1.5">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <input
+          id={`${listId}-input`}
+          type="text"
+          role="combobox"
+          aria-expanded={showList}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={showList && active >= 0 ? `${listId}-opt-${active}` : undefined}
+          autoComplete="off"
+          value={value || ''}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setActive(-1);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full bg-white border border-slate-200 text-slate-900 focus:border-[#d9856b] rounded-sm py-2 pl-3 pr-8 text-xs focus:outline-none transition-all shadow-none placeholder-slate-400"
+        />
+        {loading && (
+          <span
+            aria-hidden="true"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-200 border-t-[#d9856b] animate-spin"
+          />
+        )}
+      </div>
+
+      {showList && (
+        <div
+          id={listId}
+          role="listbox"
+          aria-label="Suggested employers"
+          className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-sm max-h-56 overflow-y-auto"
+        >
+          <p className="px-3 py-1.5 text-[10px] font-medium text-slate-400 border-b border-slate-100">
+            Suggested companies · keep typing if yours isn't listed
+          </p>
+          {items.map((name, i) => (
+            <button
+              key={name}
+              id={`${listId}-opt-${i}`}
+              type="button"
+              role="option"
+              aria-selected={i === active}
+              tabIndex={-1}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => pick(name)}
+              onMouseEnter={() => setActive(i)}
+              className={`block w-full text-left px-3 py-2 text-xs transition-colors ${
+                i === active ? 'bg-slate-50 text-[#d9856b] font-semibold' : 'text-slate-700'
+              }`}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/*              Location suggestions from the Open-Meteo geocoder             */
+/* -------------------------------------------------------------------------- */
+
+const fetchPlaces = async (query, signal) => {
+  const res = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query.trim())}&count=10&language=en`,
+    { signal }
+  );
+  if (!res.ok) throw new Error(`Geocoding ${res.status}`);
+  const json = await res.json();
+  const seen = new Set();
+  return (json.results || [])
+    .map((p) => [p.name, p.admin1, p.country_code === 'US' ? '' : p.country].filter(Boolean).join(', '))
+    .filter((label) => {
+      const k = label.toLowerCase();
+      if (!label || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .slice(0, 8);
+};
+
+// Location input with a suggestions dropdown ("City, Region, Country"). Free typing always works.
+const LocationSuggestField = ({ label, value, onChange, placeholder, disabled }) => {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const wrapRef = useRef(null);
+  const listId = useRef(`location-suggestions-${Math.random().toString(36).slice(2, 7)}`).current;
+  const query = (value || '').trim();
+  const searching = open && !disabled;
+
+  useEffect(() => {
+    if (!searching || query.length < 2) {
+      setItems([]);
+      setLoading(false);
+      return undefined;
+    }
+    const controller = new AbortController();
+    setLoading(true);
+    const timer = setTimeout(() => {
+      fetchPlaces(query, controller.signal)
+        .then((labels) => {
+          setItems(labels.filter((l) => l.toLowerCase() !== query.toLowerCase()));
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (err && err.name === 'AbortError') return;
+          setItems([]);
+          setLoading(false);
+        });
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searching, query]);
+
+  const showList = searching && items.length > 0;
+
+  const pick = (place) => {
+    onChange(place);
+    setOpen(false);
+    setActive(-1);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown' && items.length) {
+      e.preventDefault();
+      setOpen(true);
+      setActive((i) => (i + 1) % items.length);
+    } else if (e.key === 'ArrowUp' && items.length) {
+      e.preventDefault();
+      setOpen(true);
+      setActive((i) => (i < 0 ? items.length - 1 : (i - 1 + items.length) % items.length));
+    } else if (e.key === 'Enter' && showList && active >= 0 && items[active]) {
+      e.preventDefault();
+      pick(items[active]);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      className="flex flex-col w-full relative"
+      onBlur={(e) => {
+        if (!wrapRef.current || !wrapRef.current.contains(e.relatedTarget)) setOpen(false);
+      }}
+    >
+      {label && (
+        <label htmlFor={`${listId}-input`} className="text-xs font-bold text-slate-800 mb-1.5">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <input
+          id={`${listId}-input`}
+          type="text"
+          role="combobox"
+          aria-expanded={showList}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={showList && active >= 0 ? `${listId}-opt-${active}` : undefined}
+          autoComplete="off"
+          disabled={disabled}
+          value={value || ''}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setActive(-1);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full bg-white border border-slate-200 text-slate-900 focus:border-[#d9856b] rounded-sm py-2 pl-3 pr-8 text-xs focus:outline-none transition-all shadow-none placeholder-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 disabled:cursor-not-allowed"
+        />
+        {loading && !disabled && (
+          <span
+            aria-hidden="true"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-slate-200 border-t-[#d9856b] animate-spin"
+          />
+        )}
+      </div>
+
+      {showList && (
+        <div
+          id={listId}
+          role="listbox"
+          aria-label="Suggested locations"
+          className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-sm max-h-56 overflow-y-auto"
+        >
+          <p className="px-3 py-1.5 text-[10px] font-medium text-slate-400 border-b border-slate-100">Suggested locations</p>
+          {items.map((place, i) => (
+            <button
+              key={place}
+              id={`${listId}-opt-${i}`}
+              type="button"
+              role="option"
+              aria-selected={i === active}
+              tabIndex={-1}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => pick(place)}
+              onMouseEnter={() => setActive(i)}
+              className={`block w-full text-left px-3 py-2 text-xs transition-colors ${
+                i === active ? 'bg-slate-50 text-[#d9856b] font-semibold' : 'text-slate-700'
+              }`}
+            >
+              {place}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const IDEAS_PER_PAGE = 5;
 const NO_IDEAS = { suggestions: [], total: 0, roleLabel: '', forTitle: '' };
 
@@ -507,15 +861,20 @@ const JobFields = ({ job, onChange, skills, previousTitles }) => {
           skills={skills}
           previousTitles={previousTitles}
         />
-        <InputField label="Employer *" value={job.employer} onChange={handleChange('employer')} placeholder="Company Name" />
+        <EmployerSuggestField
+          label="Employer *"
+          value={job.employer}
+          onChange={(v) => onChange('employer', v)}
+          placeholder="Company Name"
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-3">
-          <InputField
+          <LocationSuggestField
             label="Location"
             value={job.remote ? 'Remote' : job.location}
-            onChange={handleChange('location')}
+            onChange={(v) => onChange('location', v)}
             placeholder="City, State"
             disabled={!!job.remote}
           />

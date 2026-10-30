@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
-import brandLogo from '../assets/logo.png'; // same logo the Home footer uses; adjust the path if needed
+import brandLogo from '../assets/logo.webp'; // same logo the Home footer uses; adjust the path if needed
 
 const EMAILJS_SERVICE_ID = 'service_a7c5ag9';
 const EMAILJS_TEMPLATE_ID = 'template_5bc1mt5';

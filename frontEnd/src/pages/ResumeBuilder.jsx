@@ -9,7 +9,7 @@ import BuilderSidebar from '../components/Resume/Sections/BuilderSidebar';
 import AdditionalSections from '../components/Resume/Sections/AdditionalSections';
 import { DEFAULT_LANGUAGE_LEVEL } from '../components/Resume/Sections/LanguageLevelSelect';
 import { PHOTO_DEFAULTS } from '../components/Resume/Sections/ResumePhoto';
-import demoPhoto from '../assets/profile.png';
+import demoPhoto from '../assets/profile.webp';
 import { downloadBlob } from '../api/client';
 import { buildResumePdf } from '../utils/resumePdf';
 import {
