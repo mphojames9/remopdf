@@ -12,7 +12,7 @@ import { PHOTO_DEFAULTS } from '../components/Resume/Sections/ResumePhoto';
 import demoPhoto from '../assets/profile.webp';
 import { downloadBlob } from '../api/client';
 import { buildResumePdf } from '../utils/resumePdf';
-import {
+import { 
   TEMPLATE_COMPONENTS,
   TEMPLATE_IDS,
   DEFAULT_TEMPLATE,

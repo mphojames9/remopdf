@@ -21,7 +21,13 @@ import { parseResumeBlocks, countFilledAreas, parseDateRange, splitName, tidyCas
 
 export { parseDateRange };
 
-const ENDPOINT = import.meta.env?.VITE_RESUME_PARSER_URL || '/api/resume-parser';
+// Same backend as API_URL in client.js. In dev the Vite proxy handles /api/resume-parser;
+// in production the request goes straight to the Render backend. VITE_RESUME_PARSER_URL,
+// if set at build time, overrides both.
+const BACKEND_API = 'https://remopdf-backend.onrender.com/api';
+const ENDPOINT =
+  import.meta.env?.VITE_RESUME_PARSER_URL
+  || (import.meta.env?.DEV ? '/api/resume-parser' : `${BACKEND_API}/resume-parser`);
 
 export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 export const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx'];

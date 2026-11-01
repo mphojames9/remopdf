@@ -256,18 +256,21 @@ export async function pdfToBlocks(buffer) {
   const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
   pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
 
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
+  const task = pdfjs.getDocument({ data: new Uint8Array(buffer) });
   const lines = [];
   try {
+    const doc = await task.promise;
     const pages = Math.min(doc.numPages, MAX_PDF_PAGES);
     for (let n = 1; n <= pages; n += 1) {
       const page = await doc.getPage(n);
       const content = await page.getTextContent();
       lines.push(...itemsToLines(content.items));
-      page.cleanup();
+      try { page.cleanup(); } catch { /* cleanup must never fail the import */ }
     }
   } finally {
-    doc.destroy();
+    // Destroying the loading task also frees the document and worker.
+    // A cleanup error must never turn a successful read into a failure.
+    try { await task.destroy(); } catch { /* ignore */ }
   }
   return textToBlocks(lines);
 }

@@ -15,6 +15,7 @@ from routers.editor import router as editor_router
 from routers.tools import router as tools_router
 from routers.onet import router as onet_router
 from routers import resume
+from routers import resume_parser
 
 app = FastAPI(
     title="RemoPDF Backend",
@@ -132,6 +133,8 @@ app.include_router(editor_router)
 app.include_router(tools_router)
 app.include_router(onet_router)
 app.include_router(resume.router) 
+# POST /api/resume-parser (the other routers carry their own prefixes, this one gets /api here)
+app.include_router(resume_parser.router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn

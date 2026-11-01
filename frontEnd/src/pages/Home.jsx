@@ -1061,13 +1061,6 @@ export default function Home() {
           <div aria-hidden="true" className="blob-b pointer-events-none absolute -left-32 top-1/2 -z-10 h-[26rem] w-[26rem] rounded-full bg-[#c9d4f2]/60 blur-3xl" />
           <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-8 lg:pb-24 lg:pt-16">
             <div className="hero-out">
-              <span className="rise mb-6 inline-flex items-center gap-2 rounded-full bg-white/70 py-1.5 pl-2.5 pr-4 text-sm font-medium text-[#0e1726] shadow-sm ring-1 ring-[#0e1726]/10 backdrop-blur">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="hp-ping absolute inline-flex h-full w-full rounded-full bg-[#d9856b]" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#d9856b]" />
-                </span>
-                PDF editor + ATS resume builder
-              </span>
               <h1 className="font-display text-[2.75rem] font-extrabold leading-[1.02] tracking-[-0.035em] [text-wrap:balance] sm:text-6xl lg:text-[4.5rem]">
                 {'Edit PDFs. Build resumes.'.split(' ').map((w, i) => (
                   <span key={i}>
@@ -1093,16 +1086,6 @@ export default function Home() {
                   Build a resume
                 </Link>
               </div>
-              <ul className="rise mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-slate-600" style={{ '--d': '.35s' }}>
-                {['Works in your browser', 'ATS-friendly templates', 'Clean PDF download'].map((t) => (
-                  <li key={t} className="flex items-center gap-1.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#d9856b]/20 text-[#b5563a]">
-                      <Icon name="check" className="h-3 w-3" />
-                    </span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
             </div>
 
             <ResumeStack />

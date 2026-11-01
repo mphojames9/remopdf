@@ -36,3 +36,4 @@ pdfservices-sdk
 # pyzbar also needs the libzbar0 system package, installed in the Dockerfile
 pyzbar
 opencv-python-headless
+httpx
