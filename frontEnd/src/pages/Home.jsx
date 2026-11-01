@@ -217,10 +217,6 @@ function ScanStage() {
             ))}
           </div>
         </div>
-        <p className="flex items-center gap-2.5 px-1 pb-0.5 pt-3.5 text-sm text-slate-300">
-          <span aria-hidden="true" className="ats-led h-2 w-2 rounded-full bg-[#d9856b]" />
-          Sample ATS scan
-        </p>
       </div>
     </div>
   );
@@ -759,6 +755,7 @@ function SiteFooter() {
 }
 
 const faqTopics = ['All', 'General', 'PDFs', 'Resumes'];
+const faqTopicIcon = { All: 'grid', General: 'spark', PDFs: 'edit', Resumes: 'briefcase' };
 
 function Faq() {
   const [topic, setTopic] = useState('All');
@@ -767,17 +764,25 @@ function Faq() {
 
   return (
     <section id="faq" className="scroll-mt-20">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <div className="rounded-[2rem] bg-[#f3dbd1] p-5 sm:p-10 lg:p-14">
-          <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+      <div className="mx-auto max-w-7xl px-1.5 py-10 sm:px-6 sm:py-24 lg:px-8">
+        <div className="rounded-[1.75rem] px-2.5 pb-2.5 pt-8 sm:rounded-[2rem] sm:p-10 lg:p-14 bg-[#f3dbd1]">
+          <div className="grid gap-7 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
             <div className="lg:sticky lg:top-28 lg:self-start">
-              <h2 className="reveal font-display text-[2.75rem] font-extrabold leading-[1.02] tracking-[-0.035em] [text-wrap:balance] sm:text-6xl">
+              <h2 className="reveal font-display text-[2.5rem] font-extrabold leading-[1.02] tracking-[-0.035em] [text-wrap:balance] sm:text-6xl">
                 Questions, answered.
               </h2>
-              <p className="reveal mt-5 max-w-sm text-lg text-slate-700" style={{ '--i': 1 }}>
+              <p className="reveal mt-4 max-w-sm text-base text-slate-700 sm:mt-5 sm:text-lg" style={{ '--i': 1 }}>
                 The short version of what RemoPDF does and what you get.
               </p>
-              <div role="group" aria-label="Filter questions by topic" className="reveal mt-8 flex flex-wrap gap-2" style={{ '--i': 2 }}>
+
+              {/* Mobile: 4-up segmented control with a sliding thumb. sm and up: the original pills. */}
+              <div
+                role="group"
+                aria-label="Filter questions by topic"
+                className="reveal relative mt-6 grid grid-cols-4 gap-1 rounded-2xl border border-[#0e1726]/10 bg-white/60 p-1 shadow-[0_8px_20px_-14px_rgba(14,23,38,.45)] sm:mt-8 sm:flex sm:flex-wrap sm:gap-2 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none"
+                style={{ '--i': 2 }}
+              >
+                <span aria-hidden="true" className="faq-thumb sm:hidden" style={{ '--idx': faqTopics.indexOf(topic) }} />
                 {faqTopics.map((t) => {
                   const on = t === topic;
                   return (
@@ -786,12 +791,21 @@ function Faq() {
                       type="button"
                       aria-pressed={on}
                       onClick={() => setTopic(t)}
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e1726] ${
-                        on ? 'border-[#0e1726] bg-[#0e1726] text-white' : 'border-[#0e1726]/20 bg-white/70 text-[#0e1726] hover:border-[#0e1726] hover:bg-white'
+                      className={`relative z-10 flex min-h-[3.5rem] flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-semibold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e1726] sm:min-h-0 sm:flex-row sm:gap-2 sm:rounded-full sm:border sm:px-4 sm:py-2 sm:text-sm ${
+                        on
+                          ? 'text-white sm:border-[#0e1726] sm:bg-[#0e1726]'
+                          : 'text-[#0e1726] sm:border-[#0e1726]/20 sm:bg-white/70 sm:hover:border-[#0e1726] sm:hover:bg-white'
                       }`}
                     >
+                      <Icon name={faqTopicIcon[t]} className="h-[1.15rem] w-[1.15rem] sm:hidden" />
                       {t}
-                      <span className={`text-xs font-medium ${on ? 'text-white/70' : 'text-[#0e1726]/70'}`}>{countOf(t)}</span>
+                      <span
+                        className={`absolute right-1.5 top-1 text-[11px] font-semibold tabular-nums sm:static sm:text-xs sm:font-medium ${
+                          on ? 'text-white/70' : 'text-[#0e1726]/60 sm:text-[#0e1726]/70'
+                        }`}
+                      >
+                        {countOf(t)}
+                      </span>
                     </button>
                   );
                 })}
@@ -799,21 +813,28 @@ function Faq() {
             </div>
 
             <div className="faq-sheet-wrap reveal" style={{ '--i': 1 }}>
-              <div className="faq-sheet relative bg-white px-5 pt-3 sm:px-9 sm:pt-4">
+              {/* Mobile: separate white cards. sm and up: the paper sheet with a folded corner. */}
+              <div className="faq-sheet relative sm:bg-white sm:px-9 sm:pt-4">
                 <div aria-hidden="true" className="faq-flap" />
-                <div className="divide-y divide-[#0e1726]/10">
+                <div className="flex flex-col gap-2.5 sm:block sm:divide-y sm:divide-[#0e1726]/10">
                   {shown.map(({ q, a }, i) => (
-                    <details key={`${topic}-${q}`} name="faq" open={i === 0} style={{ '--i': i }} className="faq-row group py-5 sm:py-6">
-                      <summary className="flex cursor-pointer list-none items-center justify-between gap-6 rounded font-display text-lg font-semibold leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726] sm:text-xl [&::-webkit-details-marker]:hidden">
+                    <details
+                      key={`${topic}-${q}`}
+                      name="faq"
+                      open={i === 0}
+                      style={{ '--i': i }}
+                      className="faq-row group rounded-2xl bg-white px-4 py-4 shadow-[0_10px_24px_-16px_rgba(14,23,38,.4)] sm:rounded-none sm:bg-transparent sm:px-0 sm:py-6 sm:shadow-none"
+                    >
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded font-display text-[1.0625rem] font-semibold leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726] sm:gap-6 sm:text-xl [&::-webkit-details-marker]:hidden">
                         <span className="faq-mark">{q}</span>
                         <span
                           aria-hidden="true"
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#0e1726]/20 text-[#0e1726] transition-colors duration-200 group-hover:border-[#0e1726] group-open:border-[#d9856b] group-open:bg-[#d9856b]"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#0e1726]/20 bg-[#f3dbd1]/50 text-[#0e1726] transition-colors duration-200 group-hover:border-[#0e1726] group-open:border-[#d9856b] group-open:bg-[#d9856b] sm:h-9 sm:w-9 sm:bg-transparent"
                         >
                           <Icon name="plus" className="h-4 w-4 transition-transform duration-200 group-open:rotate-45" />
                         </span>
                       </summary>
-                      <p className="mt-3 max-w-xl pr-14 text-slate-600">{a}</p>
+                      <p className="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-slate-600 sm:pr-14 sm:text-base sm:leading-normal">{a}</p>
                     </details>
                   ))}
                 </div>
@@ -999,9 +1020,16 @@ export default function Home() {
             .ec-card { animation: ec-in linear both; animation-timeline: view(); animation-range: entry 0% entry 75%; }
           }
         }
-        .faq-sheet-wrap { filter: drop-shadow(0 18px 28px rgba(14,23,38,.14)); }
-        .faq-sheet { border-radius: .875rem; clip-path: polygon(0 0, calc(100% - 2.25rem) 0, 100% 2.25rem, 100% 100%, 0 100%); }
-        .faq-flap { position: absolute; top: 0; right: 0; width: 2.25rem; height: 2.25rem; background: linear-gradient(to bottom left, #f1ddd3, #d4b1a0 90%); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+        /* Paper-sheet look (folded corner + shadow) only from sm up; on phones each question is its own card. */
+        @media (min-width: 640px) {
+          .faq-sheet-wrap { filter: drop-shadow(0 18px 28px rgba(14,23,38,.14)); }
+          .faq-sheet { border-radius: .875rem; clip-path: polygon(0 0, calc(100% - 2.25rem) 0, 100% 2.25rem, 100% 100%, 0 100%); }
+          .faq-flap { position: absolute; top: 0; right: 0; width: 2.25rem; height: 2.25rem; background: linear-gradient(to bottom left, #f1ddd3, #d4b1a0 90%); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+        }
+        @media (max-width: 639px) { .faq-flap { display: none; } }
+        /* Sliding thumb behind the mobile filter buttons: 4 equal columns, 0.25rem padding and gaps. */
+        .faq-thumb { position: absolute; top: .25rem; bottom: .25rem; left: .25rem; width: calc((100% - 1.25rem) / 4); border-radius: .75rem; background: #0e1726; box-shadow: 0 6px 14px -6px rgba(14,23,38,.55); transform: translateX(calc(var(--idx, 0) * (100% + .25rem))); }
+        @media (prefers-reduced-motion: no-preference) { .faq-thumb { transition: transform .4s cubic-bezier(.16,1,.3,1); } }
         .faq-mark { padding: 0 .12em; margin: 0 -.12em; background-image: linear-gradient(rgba(217,133,107,.55), rgba(217,133,107,.55)); background-repeat: no-repeat; background-position: 0 90%; background-size: 0% .52em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
         details[open] > summary .faq-mark { background-size: 100% .52em; }
         @media (prefers-reduced-motion: no-preference) {
