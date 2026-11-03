@@ -163,7 +163,10 @@ export default function InvoiceBuilder() {
   const updateItem = (id, field, value) => {
     setItems(prev => prev.map(it => (it.id === id ? { ...it, [field]: value } : it)));
   };
-  const addItem = () => setItems(prev => [...prev, emptyItem()]);
+  // A line item counts as empty until it has a description or a rate
+  const isItemEmpty = (it) => !String(it.description ?? '').trim() && !(parseFloat(it.rate) > 0);
+  const hasEmptyItem = items.some(isItemEmpty);
+  const addItem = () => setItems(prev => (prev.some(isItemEmpty) ? prev : [...prev, emptyItem()]));
   const removeItem = (id) => setItems(prev => (prev.length > 1 ? prev.filter(it => it.id !== id) : prev));
 
   const subtotal = items.reduce((sum, it) => sum + (parseFloat(it.qty) || 0) * (parseFloat(it.rate) || 0), 0);
@@ -592,7 +595,12 @@ export default function InvoiceBuilder() {
         <div className={`${cardClass} mb-5`}>
           <div className="flex items-center justify-between mb-4">
             <p className={`${labelClass} mb-0`}>Line items</p>
-            <button onClick={addItem} className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 transition-colors">
+            <button
+              onClick={addItem}
+              disabled={hasEmptyItem}
+              title={hasEmptyItem ? 'Fill in the empty line item first' : undefined}
+              className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-slate-700"
+            >
               <i className="fa-solid fa-circle-plus text-amber-400"></i>
               Add item
             </button>

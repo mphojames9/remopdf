@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import JSZip from 'jszip';
+import navLogo from '../assets/logo.webp';
 
 /* ---------------------------------------------------------------------- *
  * PLATFORM DETECTION
@@ -171,24 +172,6 @@ const TOKENS = `
     opacity: 0;
     overflow: hidden;
     pointer-events: none;
-  }
-  @keyframes zsPulseRing {
-    0%   { box-shadow: 0 0 0 0 rgba(255,45,85,0.35); }
-    70%  { box-shadow: 0 0 0 16px rgba(255,45,85,0); }
-    100% { box-shadow: 0 0 0 0 rgba(255,45,85,0); }
-  }
-  @keyframes zsShine {
-    0%   { transform: translateX(-130%) skewX(-15deg); }
-    100% { transform: translateX(230%) skewX(-15deg); }
-  }
-  .zs-cta {
-    animation: zsPulseRing 2.6s ease-out infinite;
-  }
-  .zs-cta .zs-shine {
-    animation: zsShine 3.2s ease-in-out infinite;
-  }
-  .zs-cta:hover .zs-arrow {
-    transform: translateX(4px);
   }
 `;
 
@@ -678,41 +661,89 @@ const TabSwitch = ({ tab, setTab }) => (
 /* ---------------------------------------------------------------------- */
 /* FULL-WIDTH BRAND HEADER                                                 */
 /* ---------------------------------------------------------------------- */
-const BrandHeader = () => {
-  // No mobile menu on this page — kept as a no-op so the link behaves
-  // the same way it does in the site's main Navbar.
-  const closeMobileMenu = () => {};
-
-  return (
-    <header className="w-full sticky top-0 z-[70] bg-white/90 backdrop-blur-md border-b border-slate-100">
-      <div className="max-w-5xl mx-auto px-5 h-16 flex items-center">
-        {/* Logo Brand Title */}
-        <div className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2 z-[70]">
-          <Link to="/" onClick={closeMobileMenu} className="flex items-center gap-2 outline-none rounded-lg group">
-            <span className="font-black text-[1.25rem] text-slate-800 tracking-tight">
-              Remo<span className="text-red-600">PDF</span>
-            </span>
-          </Link>
-        </div>
+// Same top bar as the Invoice Builder: dark bar, logo that goes home, divider,
+// page title, and a fine amber hairline along the bottom edge.
+const BrandHeader = () => (
+  <header className="sticky top-0 z-[70] bg-slate-900/95 backdrop-blur-xl border-b border-white/10">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-4 min-w-0">
+        <Link
+          to="/"
+          aria-label="RemoPDF home"
+          className="group shrink-0 flex items-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300"
+        >
+          <img
+            src={navLogo}
+            alt="RemoPDF"
+            draggable={false}
+            className="h-8 w-auto block transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          />
+        </Link>
+        <span aria-hidden="true" className="hidden sm:block h-6 w-px bg-white/15" />
+        <h1 className="sr-only sm:not-sr-only truncate text-sm font-semibold tracking-tight text-white/90">Zip &amp; Unzip</h1>
       </div>
-    </header>
-  );
-};
+    </div>
+    {/* Fine amber hairline along the bottom edge */}
+    <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+  </header>
+);
 
 /* ---------------------------------------------------------------------- */
-/* ANIMATED RESUME CTA                                                     */
+/* SITE FOOTER                                                             */
 /* ---------------------------------------------------------------------- */
-const ResumeCTA = () => (
-  <Link
-    to="/ResumeBuilder"
-    className="zs-cta relative mt-6 w-full h-16 rounded-[1.5rem] flex items-center justify-center gap-3 overflow-hidden text-white text-[15px] font-bold transition-transform duration-300 active:scale-[0.97] hover:-translate-y-0.5"
-    style={{ background: 'linear-gradient(135deg, #17151C, #0B0A0E)' }}
-  >
-    <span className="zs-shine absolute inset-y-0 left-0 w-1/3 bg-white/10 blur-md pointer-events-none" />
-    <i className="fa-solid fa-wand-magic-sparkles" style={{ color: '#FF7A1A' }} />
-    <span>Build your resume</span>
-    <i className="fa-solid fa-arrow-right zs-arrow transition-transform duration-300" style={{ color: '#FF2D55' }} />
-  </Link>
+// Dark bar that bookends the page with the header: same slate, same amber
+// hairline. The two cards carry the original note, split into its two ideas.
+const FOOTER_POINTS = [
+  {
+    icon: 'fa-shield-halved',
+    title: 'Private by design',
+    text: 'Files are processed entirely on your device.',
+  },
+  {
+    icon: 'fa-gauge-high',
+    title: 'Smooth performance',
+    text: `Keep archives under ${MAX_ZIP_MB}MB for the best results.`,
+  },
+];
+
+const SiteFooter = () => (
+  <footer className="relative mt-auto w-full bg-slate-900 text-white">
+    {/* Fine amber hairline along the top edge */}
+    <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+
+    <div
+      className="max-w-5xl mx-auto px-4 sm:px-6 pt-8"
+      style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+    >
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {FOOTER_POINTS.map((point) => (
+          <li
+            key={point.title}
+            className="flex items-start gap-3.5 rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+          >
+            <span className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-gradient-to-br from-amber-300/20 to-amber-400/5 border border-amber-300/20">
+              <i className={`fa-solid ${point.icon} text-sm text-amber-300`} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold tracking-tight text-white/95">{point.title}</p>
+              <p className="mt-0.5 text-[12px] font-medium leading-relaxed text-white/55">{point.text}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-6 pt-5 border-t border-white/10 flex items-center justify-between gap-3">
+        <Link
+          to="/"
+          aria-label="RemoPDF home"
+          className="shrink-0 flex items-center rounded-lg opacity-80 hover:opacity-100 transition-opacity duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300"
+        >
+          <img src={navLogo} alt="RemoPDF" draggable={false} className="h-6 w-auto block" />
+        </Link>
+        <p className="text-[11px] font-medium text-white/40">© {new Date().getFullYear()} RemoPDF</p>
+      </div>
+    </div>
+  </footer>
 );
 
 /* ---------------------------------------------------------------------- */
@@ -722,12 +753,12 @@ export default function ZipTool() {
   const [tab, setTab] = useState('zip');
 
   return (
-    <div className="zs-scope" style={{ minHeight: '100vh', background: 'var(--zs-bg)' }}>
+    <div className="zs-scope flex flex-col" style={{ minHeight: '100vh', background: 'var(--zs-bg)' }}>
       <style>{TOKENS}</style>
 
       <BrandHeader />
 
-      <div className="relative max-w-md mx-auto px-5 pt-8 pb-6 flex flex-col">
+      <div className="relative w-full flex-1 max-w-md mx-auto px-5 pt-8 pb-10 flex flex-col">
 
         <TabSwitch tab={tab} setTab={setTab} />
 
@@ -738,19 +769,9 @@ export default function ZipTool() {
         >
           {tab === 'zip' ? <ZipPanel /> : <UnzipPanel />}
         </div>
-
-        <ResumeCTA />
       </div>
 
-      {/* footer */}
-      <footer className="w-full border-t border-slate-100 mt-8">
-        <div className="max-w-md mx-auto px-5 py-6 flex items-start gap-2.5 text-center sm:text-left justify-center sm:justify-start">
-          <i className="fa-solid fa-circle-info mt-0.5" style={{ color: 'var(--zs-dim)' }} />
-          <p className="text-[12px] font-medium leading-relaxed" style={{ color: 'var(--zs-dim)' }}>
-            Zip files are processed entirely on your device — for smooth performance, keep archives under {MAX_ZIP_MB}MB.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
