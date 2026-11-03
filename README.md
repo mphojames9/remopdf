@@ -8,6 +8,9 @@ One toolkit that runs in the browser and as an Android app, with the heavy lifti
 ![pdf-lib](https://img.shields.io/badge/pdf--lib-F40F02)
 ![PDF.js](https://img.shields.io/badge/PDF.js-FF5722)
 ![Capacitor](https://img.shields.io/badge/Capacitor-119EFF?logo=capacitor&logoColor=white)
+![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red)
+
+> **Proprietary software. All rights reserved.** RemoPDF is not open source. It may not be copied, sold, redistributed or reused without the owner's written permission. See [License and ownership](#license-and-ownership).
 
 ---
 
@@ -23,7 +26,7 @@ One toolkit that runs in the browser and as an Android app, with the heavy lifti
 - [Android app](#android-app)
 - [Limits and browser support](#limits-and-browser-support)
 - [Data saved in your browser](#data-saved-in-your-browser)
-- [Contributing](#contributing)
+- [License and ownership](#license-and-ownership)
 - [Attribution](#attribution)
 
 ---
@@ -108,6 +111,8 @@ Both live in `src/api/client.js`, next to the shared `downloadBlob` helper. Unlo
 ---
 
 ## Getting started
+
+> This section is for the owner and people the owner has authorised in writing. Having access to the code does not grant any right to use it. See [License and ownership](#license-and-ownership).
 
 **Prerequisites:** a current Node.js LTS release and npm.
 
@@ -243,11 +248,29 @@ Drafts live in `localStorage`, so closing the tab does not lose your work.
 
 ---
 
-## Contributing
+## License and ownership
 
-1. Fork the repository and create a feature branch.
-2. Make your change and check it at phone width and desktop width, with and without reduced motion.
-3. Open a pull request that says what changed and why.
+**Copyright © 2026 `<Your Name>`. All rights reserved.**
+
+RemoPDF was designed and written by a single author and is owned solely by that author. It is proprietary software. It is **not** open source, and no license of any kind is granted to anyone.
+
+Without the owner's prior written permission, you may **not**:
+
+- copy, clone, fork, mirror or re-host the code, in whole or in part
+- sell, resell, rent, sublicense or otherwise make money from the code, or from any app, site or service built from it
+- redistribute or publish the code, the build output, or the compiled app (including APKs and bundles)
+- modify the code or create derivative works from it
+- reuse the name, logo, branding, interface designs, resume templates or written content (including this README)
+- scrape the code or content, or use it to train machine-learning models
+- remove or alter this notice
+
+**Contributions.** This project does not accept outside contributions. Forks and pull requests are not invited and will not be merged.
+
+**Enforcement.** Unauthorised copying, sale or redistribution is a violation of the owner's rights and may lead to takedown notices (for example under the DMCA), claims for damages and other legal action.
+
+**Permission.** To ask for permission to use any part of this project, contact the owner in writing. Nothing is permitted until you have a written reply that says so.
+
+**Third-party components.** The libraries listed under [Tech stack](#tech-stack), fonts, icons and the O\*NET Web Services content remain under their own licenses and terms. This notice covers only RemoPDF's original source code, designs and content.
 
 ---
 
