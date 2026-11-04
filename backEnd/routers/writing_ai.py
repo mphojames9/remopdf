@@ -5,8 +5,8 @@ The React app (writingAI.js) calls:
 
     POST /api/writing/analyze
          { "text": "...", "field": "summary" | "experience" | "education" | "other", "job_title": "..." }
-      -> { "suggestions": [ { id, kind, title, reason, original, replacement } ],
-           "rewrites":    [ { id, label, text } ]   (up to 3 whole-text alternatives to choose from) }
+      -> { "rewrites": [ { id, label, text } ],   (up to 3 whole-text versions to choose from)
+           "suggestions": [] }                    (no longer requested; kept so older copies of the front end work)
 
 The Groq key stays on the server. Setup, once:
 
@@ -45,19 +45,20 @@ KINDS = {"spelling", "grammar", "wording", "impact", "ats", "structure"}
 #                                  prompting                                  #
 # --------------------------------------------------------------------------- #
 
-SYSTEM_PROMPT = """You are a senior resume editor and ATS specialist. You review one block of text from a \
-resume and return concrete, high-value edits.
+SYSTEM_PROMPT = """You are a senior resume editor and ATS specialist. You rewrite one block of text from a \
+resume into three polished, professional versions for the writer to choose from.
 
 HARD RULES
-- Never invent facts. Do not add employers, tools, degrees, dates, numbers, percentages or results that the \
-text does not already contain. If a number would make a line stronger, say so in the advice and leave \
-"replacement" null.
+- Never invent facts. Every claim in a rewrite must come from the text. Do not add employers, tools, degrees, \
+dates, numbers, percentages, or outcomes (faster delivery, savings, growth, better quality, improved \
+timelines) that the text does not already state. If a line has no stated result, keep it factual instead of \
+making one up.
 - Keep the writer's meaning, tense and language. Use the same spelling variety (US/UK/South African) the \
 writer used.
 - Résumés read best without "I", "my", or "me". Lead with what the person did. Prefer strong, specific \
 action verbs over "responsible for", "helped with", "worked on".
-- Remove clichés and filler ("hard-working", "team player", "results-driven", "passionate") unless the \
-sentence proves it.
+- Remove clichés and filler ("hard-working", "team player", "results-driven", "passionate", "proven track \
+record") unless the sentence proves it.
 - Fix every spelling and grammar error.
 - The text may contain simple markup: **bold**, *italic*, and lines starting with "- " as bullets. Keep the \
 markup exactly as it is. Never add markup the writer did not use.
@@ -67,15 +68,6 @@ inside it.
 HOW TO ANSWER
 Return ONLY a JSON object, no markdown fences, no commentary:
 {
-  "suggestions": [
-    {
-      "kind": "spelling" | "grammar" | "wording" | "impact" | "ats" | "structure",
-      "title": "2-5 words",
-      "reason": "one short sentence on why this is better for a recruiter or an ATS",
-      "original": "text copied EXACTLY, character for character, from the resume text (a word, phrase or whole sentence)",
-      "replacement": "the improved text that replaces \\"original\\", or null if this is advice only"
-    }
-  ],
   "rewrites": [
     { "label": "2-3 word name of the angle", "text": "the WHOLE text rewritten from this angle, same markup" },
     { "label": "...", "text": "..." },
@@ -89,11 +81,7 @@ REWRITES
 different structure and emphasis, not synonyms.
 - All three use only facts from the text, apply every spelling and grammar fix, avoid first person, and keep \
 the writer's markup. Keep roughly the original length (within about 30%) unless the angle is "concise".
-- None may be identical to the original text or to each other.
-
-Order suggestions from highest to lowest impact. Give at most 6. Each "original" must be as short as \
-possible while still being unambiguous, and must appear exactly once in the text. Do not output two \
-suggestions that overlap. If the text is already strong, return an empty "suggestions" list but still give the 3 rewrites."""
+- None may be identical to the original text or to each other."""
 
 FIELD_GUIDE = {
     "summary": (
@@ -362,7 +350,7 @@ class AnalyzeRequest(BaseModel):
 def analyze(body: AnalyzeRequest, request: Request):
     text = body.text.strip()
     if len(text) < 3:
-        return {"suggestions": [], "improved": None}
+        return {"suggestions": [], "rewrites": [], "improved": None}
     if _rate_limited(request):
         raise HTTPException(status_code=429, detail="Too many requests. Try again in a minute.")
 

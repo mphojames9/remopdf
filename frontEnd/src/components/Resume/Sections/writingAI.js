@@ -4,11 +4,8 @@
   The Groq key lives on the server (routers/writing_ai.py, env GROQ_API_KEY). Nothing secret is in
   this file, and the key must never be put in the React app: anything in the bundle is public.
 
-    analyzeWriting({ text, field, jobTitle, signal })   -> { suggestions, rewrites }
-                                                           rewrites = up to 3 whole-text versions: { id, label, text }
-    applySuggestion(text, suggestion)                   -> new text, or null if it no longer fits
-    applySuggestions(text, suggestions)                 -> new text with every edit that still fits
-    canApply(text, suggestion)                          -> true if the edit can still be applied
+    analyzeWriting({ text, field, jobTitle, signal })   -> { rewrites }
+      rewrites = up to 3 whole-text versions to choose from: { id, label, text }
 */
 
 // Same address onetSuggestions.js uses. Set VITE_API_URL to override it.
@@ -113,10 +110,7 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', sig
     if (rewrites.length === 0 && typeof data.improved === 'string' && data.improved.trim()) {
       rewrites.push({ id: 'rw1', label: 'Polished version', text: data.improved });
     }
-    const result = {
-      suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
-      rewrites,
-    };
+    const result = { rewrites };
     if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);
     cache.set(key, result);
     return result;
@@ -125,17 +119,3 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', sig
     if (signal) signal.removeEventListener('abort', onAbort);
   }
 }
-
-/* -------------------------------------------------------------------------- */
-/*                         Applying a suggestion to the text                   */
-/* -------------------------------------------------------------------------- */
-
-const occurrences = (text, part) => (part ? text.split(part).length - 1 : 0);
-
-// An edit only applies while its "original" still appears exactly once in the current text. If the
-// writer has changed that part since the review, the suggestion is out of date and is hidden.
-export const canApply = (text, s) => !!(s && s.original && typeof s.replacement === 'string' && occurrences(text, s.original) === 1);
-
-export const applySuggestion = (text, s) => (canApply(text, s) ? text.replace(s.original, () => s.replacement) : null);
-
-export const applySuggestions = (text, list) => list.reduce((current, s) => applySuggestion(current, s) ?? current, text);
