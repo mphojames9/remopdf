@@ -4,7 +4,8 @@
   The Groq key lives on the server (routers/writing_ai.py, env GROQ_API_KEY). Nothing secret is in
   this file, and the key must never be put in the React app: anything in the bundle is public.
 
-    analyzeWriting({ text, field, jobTitle, signal })   -> { suggestions, improved }
+    analyzeWriting({ text, field, jobTitle, signal })   -> { suggestions, rewrites }
+                                                           rewrites = up to 3 whole-text versions: { id, label, text }
     applySuggestion(text, suggestion)                   -> new text, or null if it no longer fits
     applySuggestions(text, suggestions)                 -> new text with every edit that still fits
     canApply(text, suggestion)                          -> true if the edit can still be applied
@@ -31,6 +32,23 @@ export class WritingAIError extends Error {
     this.code = code;
   }
 }
+
+// Developer hint only: people using the form just see the panel's short notice. The server answers
+// with {"detail": "..."} (for example "GROQ_API_KEY is not set on the server"), so the console says why.
+const logFailure = async (res) => {
+  let detail = '';
+  try {
+    const raw = await res.text();
+    try {
+      detail = JSON.parse(raw).detail || raw;
+    } catch {
+      detail = raw.slice(0, 200); // not JSON: usually Render's own page while the service wakes up or redeploys
+    }
+  } catch {
+    /* no readable body */
+  }
+  console.warn(`[writingAI] ${res.status} from ${ANALYZE_URL}${detail ? `: ${detail}` : ''}`);
+};
 
 const cacheKey = (text, field, jobTitle) => `${field}\u0000${jobTitle}\u0000${text}`;
 
@@ -71,7 +89,10 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', sig
     }
 
     if (res.status === 429) throw new WritingAIError('busy', 'Too many reviews in a short time.');
-    if (!res.ok) throw new WritingAIError('unavailable', 'AI review is unavailable right now.');
+    if (!res.ok) {
+      await logFailure(res);
+      throw new WritingAIError('unavailable', 'AI review is unavailable right now.');
+    }
 
     let data;
     try {
@@ -80,9 +101,21 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', sig
       throw new WritingAIError('unavailable', 'AI review is unavailable right now.');
     }
 
+    const rewrites = (Array.isArray(data.rewrites) ? data.rewrites : [])
+      .filter((r) => r && typeof r.text === 'string' && r.text.trim())
+      .slice(0, 3)
+      .map((r, i) => ({
+        id: r.id || `rw${i + 1}`,
+        label: typeof r.label === 'string' && r.label.trim() ? r.label.trim() : `Option ${i + 1}`,
+        text: r.text,
+      }));
+    // A server that still answers with one "improved" text counts as a single option.
+    if (rewrites.length === 0 && typeof data.improved === 'string' && data.improved.trim()) {
+      rewrites.push({ id: 'rw1', label: 'Polished version', text: data.improved });
+    }
     const result = {
       suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
-      improved: typeof data.improved === 'string' && data.improved.trim() ? data.improved : null,
+      rewrites,
     };
     if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);
     cache.set(key, result);

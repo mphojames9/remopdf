@@ -5,7 +5,8 @@ The React app (writingAI.js) calls:
 
     POST /api/writing/analyze
          { "text": "...", "field": "summary" | "experience" | "education" | "other", "job_title": "..." }
-      -> { "suggestions": [ { id, kind, title, reason, original, replacement } ], "improved": "..." | null }
+      -> { "suggestions": [ { id, kind, title, reason, original, replacement } ],
+           "rewrites":    [ { id, label, text } ]   (up to 3 whole-text alternatives to choose from) }
 
 The Groq key stays on the server. Setup, once:
 
@@ -32,7 +33,7 @@ GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 DEFAULT_MODEL = "openai/gpt-oss-20b"
 MAX_CHARS = 4000
 MAX_SUGGESTIONS = 6
-TIMEOUT_S = 25
+TIMEOUT_S = 40
 CACHE_TTL_S = 60 * 60
 CACHE_MAX = 500
 RATE_WINDOW_S = 60
@@ -75,31 +76,51 @@ Return ONLY a JSON object, no markdown fences, no commentary:
       "replacement": "the improved text that replaces \\"original\\", or null if this is advice only"
     }
   ],
-  "improved": "the whole text rewritten with every worthwhile edit applied, same markup, or null if it is already strong"
+  "rewrites": [
+    { "label": "2-3 word name of the angle", "text": "the WHOLE text rewritten from this angle, same markup" },
+    { "label": "...", "text": "..." },
+    { "label": "...", "text": "..." }
+  ]
 }
+
+REWRITES
+- Always give exactly 3 rewrites of the whole text, each ready to paste straight into a professional resume.
+- Each takes a clearly different angle (see the angles for this field below), so the writer has a real choice: \
+different structure and emphasis, not synonyms.
+- All three use only facts from the text, apply every spelling and grammar fix, avoid first person, and keep \
+the writer's markup. Keep roughly the original length (within about 30%) unless the angle is "concise".
+- None may be identical to the original text or to each other.
 
 Order suggestions from highest to lowest impact. Give at most 6. Each "original" must be as short as \
 possible while still being unambiguous, and must appear exactly once in the text. Do not output two \
-suggestions that overlap. If the text is already strong, return an empty "suggestions" list and "improved": null."""
+suggestions that overlap. If the text is already strong, return an empty "suggestions" list but still give the 3 rewrites."""
 
 FIELD_GUIDE = {
     "summary": (
         "This is the PROFESSIONAL SUMMARY at the top of a resume. Ideal: 2-4 sentences, about 40-80 words. "
         "Open with the role/seniority and years of experience if given, then 2-3 proven strengths, then the "
-        "kind of impact the person delivers. No first person."
+        "kind of impact the person delivers. No first person. "
+        "Angles to pick from: Achievement-led (open with the strongest proven result or scope), "
+        "Concise & ATS-friendly (2-3 tight sentences naming the role and key skills from the text), "
+        "Leadership-focused (open with ownership, team size and scope), Skills-focused, Career story."
     ),
     "experience": (
         "This is the ACHIEVEMENTS / DUTIES for one job. Ideal: short bullets, each starting with a strong "
         "past-tense action verb (present tense for a current job), then what was done, then the result. "
-        "Flag any bullet that has no scale or outcome and suggest what kind of number to add (do not make one up)."
+        "Flag any bullet that has no scale or outcome and suggest what kind of number to add (do not make one up). "
+        "Angles to pick from: Results-focused (each bullet ends on its outcome), Concise & ATS-friendly "
+        "(shorter bullets with the tools and keywords from the text), Action-driven (strongest verbs first), "
+        "Scope-focused (team size, budget, volume where the text gives it)."
     ),
     "education": (
         "This is the DETAILS line of an education entry (honours, relevant modules, projects, activities). "
-        "Keep it concise and relevant to employers."
+        "Keep it concise and relevant to employers. "
+        "Angles to pick from: Concise, Achievement-led, Skills-focused."
     ),
     "other": (
         "This is a free-text block from a resume (projects, references, hobbies or similar). "
-        "Keep it concise, specific and professional."
+        "Keep it concise, specific and professional. "
+        "Angles to pick from: Concise, Detailed, Professional tone."
     ),
 }
 
@@ -208,6 +229,40 @@ def clean_suggestions(data: dict, text: str):
     return out
 
 
+MAX_REWRITES = 3
+
+
+def clean_rewrites(data: dict, text: str) -> List[dict]:
+    """Up to 3 whole-text alternatives. Drops empty ones, copies of the original, duplicates and runaway lengths."""
+    items = data.get("rewrites")
+    out: List[dict] = []
+    seen = {text.strip()}
+    limit = max(len(text) * 2 + 80, 300)  # far longer than the original means the model is making things up
+
+    for item in items if isinstance(items, list) else []:
+        if isinstance(item, str):
+            item = {"text": item}
+        if not isinstance(item, dict):
+            continue
+        body = item.get("text")
+        if not isinstance(body, str):
+            continue
+        body = body.strip()
+        if not body or body in seen or len(body) > limit:
+            continue
+        seen.add(body)
+        label = _clean(item.get("label"), 32) or f"Option {len(out) + 1}"
+        out.append({"id": f"rw{len(out) + 1}", "label": label, "text": body})
+        if len(out) >= MAX_REWRITES:
+            break
+
+    if not out:  # an older style reply with a single "improved" text
+        improved = clean_improved(data, text)
+        if improved:
+            out.append({"id": "rw1", "label": "Polished version", "text": improved})
+    return out
+
+
 def clean_improved(data: dict, text: str) -> Optional[str]:
     improved = data.get("improved")
     if not isinstance(improved, str):
@@ -253,7 +308,7 @@ def _rate_limited(request: Request) -> bool:
 
 
 def _cache_key(text: str, field: str, job_title: str, model: str) -> str:
-    return hashlib.sha256(f"{model}\x00{field}\x00{job_title}\x00{text}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"v2\x00{model}\x00{field}\x00{job_title}\x00{text}".encode("utf-8")).hexdigest()
 
 
 # --------------------------------------------------------------------------- #
@@ -283,7 +338,7 @@ def call_groq(messages, model: str) -> str:
         model=model,
         messages=messages,
         temperature=0.3,
-        max_completion_tokens=1800,
+        max_completion_tokens=3500,
         response_format={"type": "json_object"},
     )
     if model.startswith("openai/gpt-oss"):
@@ -337,9 +392,11 @@ def analyze(body: AnalyzeRequest, request: Request):
         print(f"[writing_ai] unreadable reply: {err}")
         raise HTTPException(status_code=502, detail="The AI reply could not be read. Please try again.")
 
+    rewrites = clean_rewrites(data, text)
     result = {
         "suggestions": clean_suggestions(data, text),
-        "improved": clean_improved(data, text),
+        "rewrites": rewrites,
+        "improved": rewrites[0]["text"] if rewrites else None,  # kept for older copies of the front end
     }
     with _cache_lock:
         if len(_cache) >= CACHE_MAX:

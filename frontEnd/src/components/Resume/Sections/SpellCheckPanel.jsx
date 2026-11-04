@@ -13,7 +13,8 @@ import { analyzeWriting, applySuggestion, applySuggestions, canApply, MIN_CHARS 
 // the FastAPI backend, see writingAI.js). The AI returns:
 //   - suggestions: spelling and grammar fixes, stronger wording, impact and ATS advice, each with a
 //                  one-tap "Apply" when it comes with replacement text
-//   - improved:    the whole text rewritten with every worthwhile edit applied ("Use this version")
+//   - rewrites:    3 whole-text versions from different angles (achievement-led, concise & ATS-friendly,
+//                  leadership-focused...) to pick from with "Use this version"
 //
 // The panel can be hidden: tapping its header collapses it to a single line that still shows how
 // many items need a look. That choice is remembered and shared by every panel on the page.
@@ -289,10 +290,10 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
     onChange(next);
   };
 
-  const takeImproved = (improved) => {
+  const takeRewrite = (rewrite) => {
     if (!onChange) return;
-    // analyzedRef is left alone on purpose: the rewrite gets its own quick review afterwards.
-    onChange(improved);
+    // analyzedRef is left alone on purpose: the chosen version gets its own quick review afterwards.
+    onChange(rewrite);
   };
 
   const result = state.result;
@@ -316,11 +317,14 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
   const visible = filter === 'all' ? items : items.filter((s) => (KIND[s.kind] || KIND.wording).group === filter);
   const listed = expanded ? visible : visible.slice(0, MAX_LISTED);
 
-  const improved = result && result.improved && result.forText === value && result.improved.trim() !== value.trim() ? result.improved : null;
+  // The versions describe the text as it was reviewed: once it changes they are hidden until the next review.
+  const rewrites = result && result.forText === value
+    ? (result.rewrites || []).filter((r) => r.text.trim() !== value.trim())
+    : [];
 
   let message = null;
   if (!hasText) message = 'Write a sentence or two and the AI will review it, with fixes, stronger wording and ATS tips.';
-  else if (state.status === 'ready' && items.length === 0 && !improved) message = 'No issues found. Nicely written.';
+  else if (state.status === 'ready' && items.length === 0 && rewrites.length === 0) message = 'No issues found. Nicely written.';
 
   return (
     <div role="region" aria-label="Writing assistant" className="border border-slate-200 rounded-md bg-white overflow-hidden">
@@ -391,19 +395,30 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
             </div>
           )}
 
-          {improved && (
-            <div className="px-3 py-3 bg-[#d9856b]/5 border-b border-[#d9856b]/20 flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-slate-800">
-                  Polished version <span className="text-xs font-normal text-slate-500">(AI rewrite)</span>
-                </p>
-                <button type="button" onClick={() => takeImproved(improved)} className={PRIMARY_BUTTON}>
-                  Use this version
-                </button>
-              </div>
-              <p className="text-sm leading-snug text-slate-700 whitespace-pre-wrap break-words bg-white border border-[#d9856b]/25 rounded-md px-3 py-2.5">
-                {improved}
+          {rewrites.length > 0 && (
+            <div className="px-3 py-3 bg-[#d9856b]/5 border-b border-[#d9856b]/20 flex flex-col gap-2.5">
+              <p className="text-sm font-semibold text-slate-800">
+                Pick a version{' '}
+                <span className="text-xs font-normal text-slate-500">
+                  ({rewrites.length} AI {rewrites.length === 1 ? 'rewrite' : 'rewrites'})
+                </span>
               </p>
+              {rewrites.map((r, i) => (
+                <div key={r.id} className="flex flex-col gap-2 bg-white border border-[#d9856b]/25 rounded-md px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="inline-flex items-center gap-1.5 min-w-0 text-xs font-semibold text-[#8f4631]">
+                      <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#d9856b]/15 text-[11px] shrink-0">
+                        {i + 1}
+                      </span>
+                      <span className="truncate">{r.label}</span>
+                    </span>
+                    <button type="button" onClick={() => takeRewrite(r.text)} className={`shrink-0 ${PRIMARY_BUTTON}`}>
+                      Use this version
+                    </button>
+                  </div>
+                  <p className="text-sm leading-snug text-slate-700 whitespace-pre-wrap break-words">{r.text}</p>
+                </div>
+              ))}
             </div>
           )}
 
