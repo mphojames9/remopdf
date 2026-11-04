@@ -789,7 +789,7 @@ const AchievementSuggestions = ({ job, skills, onAdd, pending = [] }) => {
 /* A rich-text field with the live spelling and grammar panel underneath it.
    The panel stays mounted but hidden while the field is empty, so it keeps its state and does not
    flash a "loading" notice when the first character is typed. */
-const CheckedField = ({ value, onChange, fieldRef, ...fieldProps }) => {
+const CheckedField = ({ value, onChange, fieldRef, jobTitle, ...fieldProps }) => {
   const text = typeof value === 'string' ? value : '';
   return (
     <div className="flex flex-col gap-3">
@@ -797,7 +797,7 @@ const CheckedField = ({ value, onChange, fieldRef, ...fieldProps }) => {
         <AchievementsField {...fieldProps} value={text} onChange={onChange} />
       </div>
       <div className={text.trim() ? '[&>div]:rounded-sm' : 'hidden'}>
-        <SpellCheckPanel text={text} onChange={onChange} />
+        <SpellCheckPanel text={text} onChange={onChange} field="experience" jobTitle={jobTitle} />
       </div>
     </div>
   );
@@ -912,6 +912,7 @@ const JobFields = ({ job, onChange, skills, previousTitles }) => {
       <CheckedField
         id={`achievements-${job.id}`}
         fieldRef={fieldRef}
+        jobTitle={job.title}
         value={job.achievements}
         onChange={(v) => onChange('achievements', v)}
       />

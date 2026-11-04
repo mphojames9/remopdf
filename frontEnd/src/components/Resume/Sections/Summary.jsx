@@ -13,7 +13,12 @@ const SummarySection = ({ data, updateSummary }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
         {/* Spelling column: the live spelling and grammar check */}
         <div className="flex flex-col gap-4">
-          <SpellCheckPanel text={data.summary} onChange={updateSummary} />
+          <SpellCheckPanel
+            text={data.summary}
+            onChange={updateSummary}
+            field="summary"
+            jobTitle={data.experiences?.[0]?.title || ''}
+          />
         </div>
 
         {/* Editor Column: bold, italic and bullets, with a live preview underneath */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback } from 'react';
 import PersonalInfo from '../components/Resume/Sections/PersonalInfo';
 import ExperienceField, { createJob } from '../components/Resume/Sections/ExperienceField';
 import EducationField, { createEducation, normalizeEducation } from '../components/Resume/Sections/EducationField';
@@ -7,10 +7,17 @@ import Summary from '../components/Resume/Sections/Summary';
 import ResumeUpload from '../components/Resume/Sections/ResumeUpload';
 import BuilderSidebar from '../components/Resume/Sections/BuilderSidebar';
 import AdditionalSections from '../components/Resume/Sections/AdditionalSections';
+import AuthModal, { AuthButtons } from '../components/Auth/AuthModal';
 import { DEFAULT_LANGUAGE_LEVEL } from '../components/Resume/Sections/LanguageLevelSelect';
 import { PHOTO_DEFAULTS } from '../components/Resume/Sections/ResumePhoto';
 import demoPhoto from '../assets/profile.webp';
 import { downloadBlob } from '../api/client';
+import { fetchResume } from '../api/resume';
+import { getPaymentStatus } from '../api/payments';
+import PaymentModal from '../components/Payment/PaymentModal';
+import useResumeProfile, { getSessionUser } from '../hooks/useResumeProfile';
+import ResumeSyncDialog, { ResumeLoadingOverlay } from '../components/Auth/ResumeSyncDialog';
+import ResumePickerDialog from '../components/Auth/ResumePickerDialog';
 import { buildResumePdf } from '../utils/resumePdf';
 import { 
   TEMPLATE_COMPONENTS,
@@ -331,7 +338,7 @@ const SECTION_EDITORS = {
   certificates: { title: 'Additional sections', Component: AdditionalSections },
 };
 
-const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sectionOrder: savedSectionOrder, setSectionOrder, hiddenSections, setHiddenSections, pageNumbers, setPageNumbers, editorProps, onClose }) => {
+const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sectionOrder: savedSectionOrder, setSectionOrder, hiddenSections, setHiddenSections, pageNumbers, setPageNumbers, editorProps, requirePremium, onClose }) => {
   const sectionOrder = normalizeSectionOrder(savedSectionOrder);
   // Sections the user removed from the resume. Their information is kept, they
   // are only left out of the template (and can be added back at any time).
@@ -643,7 +650,7 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
   // Download = render the resume's A4 pages into a real PDF file and save it with the
   // app's existing download code (downloadBlob in api/client), so it also works inside
   // the Android WebView where window.print() does nothing.
-  const downloadResume = async () => {
+  const runDownload = async () => {
     if (downloading) return;
     const source = document.getElementById('resume-preview-content');
     const pageNodes = source ? Array.from(source.querySelectorAll('.a4-page')) : [];
@@ -661,6 +668,14 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
     } finally {
       setDownloading(false);
     }
+  };
+
+  // Every Download button goes through here: the PDF is only made once payment is confirmed
+  // (requirePremium opens the payment dialog when needed, then calls runDownload).
+  const downloadResume = () => {
+    if (downloading) return;
+    if (typeof requirePremium === 'function') requirePremium(runDownload);
+    else runDownload();
   };
 
   const templateProps = { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, accentColor, sectionOrder: visibleOrder, edit };
@@ -1380,47 +1395,482 @@ const emptyResumeData = {
 // Where "Build cover letter" goes when the parent doesn't pass its own handler.
 const COVER_LETTER_PATH = '/cover-letter';
 
+// ---------------------------------------------------------------------------------------------
+// Where the resume is saved: in the person's account when they are signed in (see
+// hooks/useResumeProfile.js), otherwise in localStorage on this device. Both hold the same "payload".
+// ---------------------------------------------------------------------------------------------
+
+// Turns anything saved before (from this device or from the account) into complete, valid resume data.
+const normalizeResumeData = (saved) => {
+  if (!saved || typeof saved !== 'object') return emptyResumeData;
+  // `experience` is the old single-job format; it becomes the first job.
+  const { experience: legacyJob, ...parsed } = saved;
+  const legacyHasData = legacyJob && Object.values(legacyJob).some((v) => v !== '' && v !== false && v != null);
+  const savedJobs = Array.isArray(parsed.experiences)
+    ? parsed.experiences.map((job) => createJob(job))
+    : legacyHasData ? [createJob(legacyJob)] : [];
+  return {
+    ...emptyResumeData,
+    ...parsed,
+    personal: { ...emptyResumeData.personal, ...parsed.personal },
+    experiences: savedJobs.length > 0 ? savedJobs : [createJob()],
+    // Older saves hold one education object; normalizeEducation turns it into the first qualification.
+    education: normalizeEducation(parsed.education),
+    skills: parsed.skills || [],
+    summary: parsed.summary || '',
+    hobbies: { ...emptyResumeData.hobbies, ...parsed.hobbies },
+    languages: { ...emptyResumeData.languages, ...parsed.languages },
+    projects: { ...emptyResumeData.projects, ...parsed.projects },
+    references: { ...emptyResumeData.references, ...parsed.references },
+    certificates: { ...emptyResumeData.certificates, ...parsed.certificates },
+  };
+};
+
+const normalizePayload = (saved) => {
+  const p = saved && typeof saved === 'object' ? saved : {};
+  return {
+    resumeData: normalizeResumeData(p.resumeData),
+    selectedTemplate: TEMPLATE_IDS.includes(p.selectedTemplate) ? p.selectedTemplate : DEFAULT_TEMPLATE,
+    sectionOrder: normalizeSectionOrder(p.sectionOrder),
+    hiddenSections: Array.isArray(p.hiddenSections) ? p.hiddenSections.filter((key) => DEFAULT_SECTION_ORDER.includes(key)) : [],
+    pageNumbers: normalizePageNumbers(p.pageNumbers ?? null),
+    completedSteps: Array.isArray(p.completedSteps) ? p.completedSteps : [],
+  };
+};
+
+const readStoredJson = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw == null ? null : JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+// What localStorage holds, as a complete payload (a blank one when nothing is stored).
+const readDevicePayload = () => {
+  let template = null;
+  try {
+    template = localStorage.getItem(STORAGE_KEY_TEMPLATE);
+  } catch {}
+  return normalizePayload({
+    resumeData: readStoredJson(STORAGE_KEY_DATA),
+    selectedTemplate: template,
+    sectionOrder: readStoredJson(STORAGE_KEY_SECTION_ORDER),
+    hiddenSections: readStoredJson(STORAGE_KEY_HIDDEN_SECTIONS),
+    pageNumbers: readStoredJson(STORAGE_KEY_PAGE_NUMBERS),
+    completedSteps: readStoredJson(STORAGE_KEY_COMPLETED),
+  });
+};
+
+const writeDevicePayload = (payload) => {
+  const entries = [
+    [STORAGE_KEY_DATA, JSON.stringify(payload.resumeData)],
+    [STORAGE_KEY_SECTION_ORDER, JSON.stringify(payload.sectionOrder)],
+    [STORAGE_KEY_HIDDEN_SECTIONS, JSON.stringify(payload.hiddenSections)],
+    [STORAGE_KEY_TEMPLATE, payload.selectedTemplate],
+    [STORAGE_KEY_PAGE_NUMBERS, JSON.stringify(payload.pageNumbers)],
+    [STORAGE_KEY_COMPLETED, JSON.stringify(payload.completedSteps)],
+  ];
+  entries.forEach(([key, value]) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {}
+  });
+};
+
+// Once the account holds the resume, no copy is left on this device (it could be someone else's computer).
+// The step the person is on (STORAGE_KEY_STEP) is just a position on this device and stays.
+const clearDevicePayload = () => {
+  [
+    STORAGE_KEY_DATA, STORAGE_KEY_SECTION_ORDER, STORAGE_KEY_HIDDEN_SECTIONS,
+    STORAGE_KEY_TEMPLATE, STORAGE_KEY_PAGE_NUMBERS, STORAGE_KEY_COMPLETED,
+  ].forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {}
+  });
+};
+
+// True when the person has actually typed something (the blank starter entries do not count).
+const IGNORED_KEYS = new Set(['id', 'photoStyle', 'locationBeforeRemote']);
+const hasTypedValue = (value) => {
+  if (typeof value === 'string') return value.trim() !== '';
+  if (Array.isArray(value)) return value.some(hasTypedValue);
+  if (value && typeof value === 'object') {
+    return Object.entries(value).some(([key, v]) => !IGNORED_KEYS.has(key) && hasTypedValue(v));
+  }
+  return false;
+};
+const hasResumeContent = (payload) => hasTypedValue(payload?.resumeData);
+
+// ---------------------------------------------------------------------------------------------
+// Thumbnails for the "Choose a resume" dialog: a saved payload drawn with its own template. This turns a
+// payload into template props the same way ResumePreviewModal does, so the thumbnail matches the preview.
+// ---------------------------------------------------------------------------------------------
+const buildThumbProps = (saved) => {
+  const p = normalizePayload(saved);
+  const { personal, education, skills, summary, hobbies, languages, projects, references, certificates } = p.resumeData;
+  const sectionOrder = p.sectionOrder.filter((key) => !p.hiddenSections.includes(key));
+  const jobs = (Array.isArray(p.resumeData.experiences) ? p.resumeData.experiences : []).filter((j) => j.title || j.employer);
+  const educations = (Array.isArray(education) ? education : [])
+    .filter((e) => e.institution || e.degree)
+    .map((e) => ({ ...e, date: [e.gradMonth, e.gradYear].filter(Boolean).join(' ') }));
+
+  const fullName = [personal.firstName, personal.lastName].filter(Boolean).join(' ');
+  const websiteList = (Array.isArray(personal.websites) ? personal.websites : [])
+    .map((w) => String((w && w.url) || '').trim().replace(/^https?:\/\//i, '').replace(/\/+$/, ''))
+    .filter(Boolean);
+  const birthDate = personal.dateOfBirth ? new Date(`${personal.dateOfBirth}T00:00:00`) : null;
+  const birthDateText = birthDate && !Number.isNaN(birthDate.getTime())
+    ? birthDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+  const licenceCodeText = String(personal.licenceCode || '').trim();
+  const contactList = [
+    personal.email,
+    personal.phone,
+    [personal.streetAddress, personal.city, personal.province].filter(Boolean).join(', '),
+    ...websiteList,
+    birthDateText && `Born: ${birthDateText}`,
+    personal.nationality && `Nationality: ${personal.nationality}`,
+    personal.gender && `Gender: ${personal.gender}`,
+    personal.maritalStatus && `Marital status: ${personal.maritalStatus}`,
+    personal.hasLicence && `Driver's licence${licenceCodeText ? `: Code ${licenceCodeText}` : ''}`,
+  ].filter(Boolean);
+
+  const namedSkills = (skills || []).filter((s) => s.text);
+  const hasHobbies = !!(hobbies?.enabled && hobbies.text);
+  const hasLanguages = !!(languages?.enabled && (languages.items || []).some((l) => l.name));
+  const hasProjects = !!(projects?.enabled && (projects.items || []).some((pr) => pr.title || pr.description));
+  const hasReferences = !!(references?.enabled && (references.availableUponRequest || (references.items || []).some((r) => r.name)));
+  const hasCertificates = !!(certificates?.enabled && (certificates.items || []).some((c) => c.name || c.issuer));
+  const isEmpty = !fullName && !summary && jobs.length === 0 && !educations.some((e) => e.institution) && namedSkills.length === 0
+    && !hasHobbies && !hasLanguages && !hasProjects && !hasReferences && !hasCertificates;
+
+  return {
+    template: p.selectedTemplate,
+    props: { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, sectionOrder },
+  };
+};
+
+// The real template, scaled down by TemplateThumb exactly like the "All templates" grid in the preview.
+const renderResumeThumb = (saved) => {
+  const { template, props } = buildThumbProps(saved);
+  const Template = TEMPLATE_COMPONENTS[template] || TEMPLATE_COMPONENTS[DEFAULT_TEMPLATE];
+  return (
+    <TemplateThumb>
+      <div className="pointer-events-none select-none" aria-hidden="true">
+        <Template
+          {...props}
+          accentColor={DEFAULT_ACCENT[template] || DEFAULT_ACCENT['blue-sidebar']}
+          edit={{ enabled: false }}
+        />
+      </div>
+    </TemplateThumb>
+  );
+};
+
+// The text useResumeProfile shows once a save has finished. The header replaces it with a greeting; the other
+// states ("Saving…", "Could not save…", "Cannot reach your account…", "Session expired…") still show as they are.
+const SAVED_STATUS = 'Saved to your account';
+
+const greetingFor = (date) => {
+  const hour = date.getHours();
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
+// "Upgrade to Premium" in the top bar. Once the account has paid it turns into a small "Premium" badge with the
+// days left (read from the server, which works them out from the payment in the database).
+// `dark` is for the dark bar on small screens, `compact` shortens the label so it fits there.
+const SparkIcon = ({ className = 'h-3.5 w-3.5' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2Z" />
+  </svg>
+);
+
+const PremiumButton = ({ premium, daysLeft = 0, expiresAt = null, onClick, dark = false, compact = false }) => {
+  if (premium) {
+    const endDate = expiresAt ? new Date(expiresAt) : null;
+    const endsOn =
+      endDate && !Number.isNaN(endDate.getTime())
+        ? endDate.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
+        : '';
+    return (
+      <span
+        title={endsOn ? `Premium access ends on ${endsOn}` : undefined}
+        className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold ${
+          dark ? 'bg-white/10 text-white ring-1 ring-white/20' : 'bg-[#d9856b]/10 text-[#a64a30] ring-1 ring-[#d9856b]/30'
+        }`}
+      >
+        <SparkIcon className="h-3.5 w-3.5 text-[#d9856b]" />
+        Premium
+        {daysLeft > 0 && (
+          <span className={`border-l pl-2 font-medium ${dark ? 'border-white/20 text-white/80' : 'border-[#d9856b]/30 text-[#a64a30]/80'}`}>
+            {compact ? `${daysLeft}d left` : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}
+          </span>
+        )}
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group inline-flex h-9 items-center gap-2 rounded-full px-4 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 focus-visible:ring-offset-2 ${
+        dark
+          ? 'bg-[#d9856b] text-white hover:bg-[#c9765c] focus-visible:ring-offset-slate-900'
+          : 'bg-slate-900 text-white shadow-slate-900/20 hover:bg-slate-800'
+      }`}
+    >
+      <SparkIcon className={`h-3.5 w-3.5 transition-transform group-hover:rotate-12 ${dark ? 'text-white' : 'text-[#f2a98f]'}`} />
+      {compact ? 'Upgrade' : 'Upgrade to Premium'}
+    </button>
+  );
+};
+
+// Top-bar text. Signed in: "Good evening, Mpho". It follows the clock, so it changes by itself when the time of
+// day does. Signed out: no greeting at all. A save problem or a "Saving…" notice still shows, with a coloured dot.
+const HeaderStatus = ({ status, name, signedIn = false, compact = false, className = '' }) => {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 5 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const isNotice = Boolean(status && status !== SAVED_STATUS);
+  if (!isNotice && !signedIn) return null;
+
+  const first = String(name || '').trim();
+  const text = isNotice ? status : `${greetingFor(now)}${first ? `, ${first}` : ''}`;
+  const tone = !isNotice ? '' : /could not|cannot|expired|failed/i.test(status) ? 'error' : /saving/i.test(status) ? 'busy' : 'info';
+  const dot = tone === 'error' ? 'bg-rose-500' : tone === 'busy' ? 'animate-pulse bg-amber-400' : 'bg-slate-400';
+  const size = isNotice || compact ? 'text-[13px] font-medium' : 'text-[15px] font-semibold tracking-tight';
+
+  return (
+    <span role="status" aria-live="polite" className={`inline-flex min-w-0 items-center gap-2 ${size} ${className}`}>
+      {isNotice && <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} aria-hidden="true" />}
+      <span className="truncate">{text}</span>
+    </span>
+  );
+};
+
+// Shows which resume is open and opens the list of resumes. `block` stretches it across the width.
+const ResumeTitleButton = ({ title, onClick, block = false }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-haspopup="dialog"
+    className={`group inline-flex h-9 max-w-full items-center gap-2.5 rounded-full bg-slate-100 pl-3 pr-3.5 text-[13px] font-semibold text-slate-700 transition-colors hover:bg-slate-200/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50 ${
+      block ? 'w-full justify-between' : 'sm:max-w-[16rem]'
+    }`}
+  >
+    <span className="flex min-w-0 items-center gap-2">
+      <svg className="h-4 w-4 shrink-0 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+        <path d="M14 3v5h5" />
+      </svg>
+      <span className="truncate">{title || 'My resumes'}</span>
+    </span>
+    <svg className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform group-hover:translate-y-px" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  </button>
+);
+
+const initialsOf = (user) =>
+  `${String(user?.firstName || '').trim().charAt(0)}${String(user?.lastName || '').trim().charAt(0)}`.toUpperCase() || '?';
+
+// The signed-in person: one avatar (the name is in the greeting and in the menu, so it is not repeated here).
+const AccountMenu = ({ user, onSignOut, dark = false }) => {
+  const [open, setOpen] = useState(false);
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || 'Account';
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Account menu for ${fullName}`}
+        title={fullName}
+        className={`flex h-10 items-center gap-1 rounded-full pl-1 pr-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 ${
+          dark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
+        }`}
+      >
+        <span
+          aria-hidden="true"
+          className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#e7a38b] to-[#d9856b] text-[12px] font-semibold text-white shadow-sm ring-2 ${
+            dark ? 'ring-white/20' : 'ring-white'
+          }`}
+        >
+          {initialsOf(user)}
+        </span>
+        <svg
+          className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''} ${dark ? 'text-slate-300' : 'text-slate-400'}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div role="menu" className="absolute right-0 top-full z-20 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-2 text-slate-900 shadow-[0_24px_48px_-16px_rgba(15,23,42,0.28)]">
+            <div className="flex items-center gap-3 px-3 py-3">
+              <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#e7a38b] to-[#d9856b] text-[13px] font-semibold text-white">
+                {initialsOf(user)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[14px] font-semibold">{fullName}</p>
+                {user.email && <p className="truncate text-xs text-slate-500">{user.email}</p>}
+              </div>
+            </div>
+            <div className="my-1 border-t border-slate-100" />
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                if (onSignOut) onSignOut();
+              }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50"
+            >
+              <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <path d="M16 17l5-5-5-5" />
+                <path d="M21 12H9" />
+              </svg>
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Asks before signing out. Cancel is focused first, Escape or a tap outside also cancels, and while the
+// sign-out runs (it saves the last changes first) the buttons are locked.
+const SIGN_OUT_CSS = `
+  @keyframes so-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes so-pop { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+  .so-overlay { animation: so-fade .2s ease-out; }
+  .so-card { animation: so-pop .3s cubic-bezier(.22, 1, .36, 1); }
+  @media (prefers-reduced-motion: reduce) { .so-overlay, .so-card { animation: none; } }
+`;
+
+const SignOutDialog = ({ open, busy, onConfirm, onCancel }) => {
+  const cancelRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const previous = document.activeElement;
+    cancelRef.current?.focus();
+    return () => {
+      if (previous && typeof previous.focus === 'function') previous.focus();
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="so-overlay fixed inset-0 z-[80] flex items-end justify-center bg-slate-900/30 p-4 backdrop-blur-sm sm:items-center"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !busy) onCancel();
+      }}
+    >
+      <style>{SIGN_OUT_CSS}</style>
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="sign-out-title"
+        aria-describedby="sign-out-text"
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && !busy) {
+            event.stopPropagation();
+            onCancel();
+          }
+        }}
+        className="so-card w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_32px_64px_-16px_rgba(15,23,42,0.3)] sm:p-7"
+      >
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#d9856b]/10 text-[#b9573d]">
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+        </span>
+        <h2 id="sign-out-title" className="mt-5 text-xl font-semibold tracking-tight">Sign out?</h2>
+        <p id="sign-out-text" className="mt-2 text-[14px] leading-relaxed text-slate-500">
+          Your resumes stay saved in your account. Sign back in any time to pick up where you left off.
+        </p>
+        <div className="mt-7 grid grid-cols-2 gap-3">
+          <button
+            ref={cancelRef}
+            type="button"
+            disabled={busy}
+            onClick={onCancel}
+            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-[14px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/10 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onConfirm}
+            className="h-11 rounded-xl bg-slate-900 px-4 text-[14px] font-semibold text-white shadow-lg shadow-slate-900/15 transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 disabled:opacity-60"
+          >
+            {busy ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// After signing in, the "Choose a resume" dialog opens when the account holds at least this many resumes.
+const MIN_RESUMES_FOR_PICKER = 1;
+
 export default function ResumeBuilder({ onBuildCoverLetter }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_TEMPLATE);
-      return TEMPLATE_IDS.includes(saved) ? saved : DEFAULT_TEMPLATE;
-    } catch {
-      return DEFAULT_TEMPLATE;
-    }
-  });
+  // null = closed; otherwise the tab the Sign in / Register modal is on ('signin' | 'register').
+  const [authMode, setAuthMode] = useState(null);
+  // Signed in: start blank and wait for the account's resume (the device copy is only read once that is
+  // known). Signed out: start from what this device holds.
+  const [initial] = useState(() => (getSessionUser() ? normalizePayload(null) : readDevicePayload()));
+  const [selectedTemplate, setSelectedTemplate] = useState(initial.selectedTemplate);
   const [selectedColor, setSelectedColor] = useState(null);
   const [showSkillErrors, setShowSkillErrors] = useState(false);
   const [showLanguageErrors, setShowLanguageErrors] = useState(false);
 
-  const [sectionOrder, setSectionOrder] = useState(() => {
-    try {
-      return normalizeSectionOrder(JSON.parse(localStorage.getItem(STORAGE_KEY_SECTION_ORDER)));
-    } catch {
-      return DEFAULT_SECTION_ORDER;
-    }
-  });
+  const [sectionOrder, setSectionOrder] = useState(initial.sectionOrder);
 
   // Page numbers on the resume (on/off + format), chosen in the preview.
-  const [pageNumbers, setPageNumbers] = useState(() => {
-    try {
-      return normalizePageNumbers(JSON.parse(localStorage.getItem(STORAGE_KEY_PAGE_NUMBERS)));
-    } catch {
-      return DEFAULT_PAGE_NUMBERS;
-    }
-  });
+  const [pageNumbers, setPageNumbers] = useState(initial.pageNumbers);
 
   // Sections removed from the resume in the preview (information is kept).
-  const [hiddenSections, setHiddenSections] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_HIDDEN_SECTIONS));
-      return Array.isArray(saved) ? saved.filter((key) => DEFAULT_SECTION_ORDER.includes(key)) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [hiddenSections, setHiddenSections] = useState(initial.hiddenSections);
 
   const [currentStepIndex, setCurrentStepIndex] = useState(() => {
     try {
@@ -1431,46 +1881,228 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     }
   });
 
-  const [completedSteps, setCompletedSteps] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_COMPLETED));
-      return Array.isArray(saved) ? saved : [];
-    } catch {
-      return [];
-    }
+  const [completedSteps, setCompletedSteps] = useState(initial.completedSteps);
+
+  const [resumeData, setResumeData] = useState(initial.resumeData);
+
+  // Everything that makes up the resume. Its identity changes only when something in it changes.
+  const payload = useMemo(
+    () => ({ resumeData, selectedTemplate, sectionOrder, hiddenSections, pageNumbers, completedSteps }),
+    [resumeData, selectedTemplate, sectionOrder, hiddenSections, pageNumbers, completedSteps],
+  );
+
+  // Ids of the languages already on screen, used by the "new languages start on Fluent" effect below.
+  const knownLanguageIds = useRef(null);
+
+  // Puts a saved resume (from the account or the device) into the builder.
+  const applyPayload = (saved) => {
+    const next = normalizePayload(saved);
+    // A whole resume was loaded: its languages are not "newly added", so they keep the levels they were saved with.
+    knownLanguageIds.current = null;
+    setResumeData(next.resumeData);
+    setSelectedTemplate(next.selectedTemplate);
+    setSectionOrder(next.sectionOrder);
+    setHiddenSections(next.hiddenSections);
+    setPageNumbers(next.pageNumbers);
+    setCompletedSteps(next.completedSteps);
+    return next;
+  };
+
+  // Signed in: the resume is saved to the account. Signed out: it is saved on this device (localStorage).
+  const profile = useResumeProfile({
+    payload,
+    applyPayload,
+    createBlank: () => normalizePayload(null),
+    readDevice: readDevicePayload,
+    writeDevice: writeDevicePayload,
+    clearDevice: clearDevicePayload,
+    hasContent: hasResumeContent,
   });
 
-  const [resumeData, setResumeData] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_DATA);
-      if (saved) {
-        // `experience` is the old single-job format; it becomes the first job.
-        const { experience: legacyJob, ...parsed } = JSON.parse(saved);
-        const legacyHasData = legacyJob && Object.values(legacyJob).some((v) => v !== '' && v !== false && v != null);
-        const savedJobs = Array.isArray(parsed.experiences)
-          ? parsed.experiences.map((job) => createJob(job))
-          : legacyHasData ? [createJob(legacyJob)] : [];
-        return {
-          ...emptyResumeData,
-          ...parsed,
-          personal: { ...emptyResumeData.personal, ...parsed.personal },
-          experiences: savedJobs.length > 0 ? savedJobs : [createJob()],
-          // Older saves hold one education object; normalizeEducation turns it into the first qualification.
-          education: normalizeEducation(parsed.education),
-          skills: parsed.skills || [],
-          summary: parsed.summary || '',
-          hobbies: { ...emptyResumeData.hobbies, ...parsed.hobbies },
-          languages: { ...emptyResumeData.languages, ...parsed.languages },
-          projects: { ...emptyResumeData.projects, ...parsed.projects },
-          references: { ...emptyResumeData.references, ...parsed.references },
-          certificates: { ...emptyResumeData.certificates, ...parsed.certificates },
-        };
-      }
-      return emptyResumeData;
-    } catch {
-      return emptyResumeData;
+  const showResumeSwitcher = Boolean(profile.user && profile.activeId);
+  const activeResume = profile.resumes.find((r) => r.id === profile.activeId);
+
+  // Payment: the PDF download is unlocked by a Paystack payment (see components/Payment/PaymentModal.jsx).
+  // `pendingDownloadRef` holds the download the person asked for, and runs it once the payment is confirmed.
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const pendingDownloadRef = useRef(null);
+  const [paymentFromDownload, setPaymentFromDownload] = useState(false);
+  const [premium, setPremium] = useState(false);
+  const [premiumInfo, setPremiumInfo] = useState({ daysLeft: 0, expiresAt: null });
+
+  // Takes what /api/payments/status says (or null when signed out) and updates the badge from it.
+  const applyAccess = useCallback((status) => {
+    const active = Boolean(status?.premium);
+    setPremium(active);
+    setPremiumInfo({
+      daysLeft: active ? Math.max(0, Number(status.daysLeft) || 0) : 0,
+      expiresAt: active ? status.expiresAt || null : null,
+    });
+  }, []);
+
+  // Whether this account has already paid and how many days are left, so the top bar shows "Premium" with a
+  // countdown instead of the upgrade button. It is read again whenever the person comes back to this tab, so
+  // the number stays right after a day or more, and the badge goes away by itself once the 30 days are over.
+  useEffect(() => {
+    if (!profile.user?.id) {
+      applyAccess(null);
+      return undefined;
     }
-  });
+    let cancelled = false;
+    const refresh = () => {
+      getPaymentStatus()
+        .then((status) => {
+          if (!cancelled) applyAccess(status);
+        })
+        .catch(() => {
+          /* the badge simply keeps what it showed */
+        });
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    refresh();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [profile.user?.id, applyAccess]);
+
+  // How many resumes an account may keep depends on Premium, so the limit is read again from the server
+  // whenever Premium starts (paid in this session) or runs out (the 30 days are over).
+  const premiumSeenRef = useRef(false);
+  useEffect(() => {
+    if (premiumSeenRef.current === premium) return;
+    premiumSeenRef.current = premium;
+    if (profile.user) profile.refreshLimit();
+  }, [premium, profile.user?.id, profile.refreshLimit]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The top-bar button: opens the payment dialog with no download waiting behind it.
+  const openUpgrade = () => {
+    pendingDownloadRef.current = null;
+    setPaymentFromDownload(false);
+    setPaymentOpen(true);
+  };
+
+  const requirePremium = async (proceed) => {
+    if (profile.user) {
+      try {
+        const status = await getPaymentStatus();
+        applyAccess(status);
+        if (status.premium) {
+          proceed();
+          return;
+        }
+      } catch {
+        /* the payment dialog repeats the check and shows the problem */
+      }
+    }
+    pendingDownloadRef.current = proceed;
+    setPaymentFromDownload(true);
+    setPaymentOpen(true);
+  };
+
+  const closePayment = () => {
+    pendingDownloadRef.current = null;
+    setPaymentOpen(false);
+  };
+
+  const handlePaid = () => {
+    const proceed = pendingDownloadRef.current;
+    pendingDownloadRef.current = null;
+    setPaymentOpen(false);
+    setPremium(true);
+    getPaymentStatus()
+      .then(applyAccess)
+      .catch(() => {
+        /* the badge shows "Premium" without the days until the next check */
+      });
+    if (proceed) proceed();
+  };
+
+  // Paying needs an account. The preview is closed too, so the sign-in dialog is not hidden behind it.
+  const handlePaymentSignIn = () => {
+    closePayment();
+    setPreviewOpen(false);
+    setAuthMode('signin');
+  };
+
+  // A different resume starts at the first step, and a colour picked for the old one does not carry over.
+  const afterResumeChange = (result) => {
+    if (result.ok) {
+      setCurrentStepIndex(0);
+      setSelectedColor(null);
+    }
+    return result;
+  };
+  const handleOpenResume = async (id) => (id === profile.activeId ? { ok: true } : afterResumeChange(await profile.openResume(id)));
+  const handleNewResume = async () => afterResumeChange(await profile.createNewResume());
+  const handleDeleteResume = async (id) => {
+    const result = await profile.removeResume(id);
+    if (result.ok && result.switched) afterResumeChange(result);
+    return result;
+  };
+
+  // The one dialog for opening, starting, renaming, copying and deleting resumes (ResumePickerDialog). It opens
+  // from the "My resume" button in the header, and after signing in. The account's resumes arrive a moment after the sign-in
+  // call returns, and a device-vs-account conflict (ResumeSyncDialog) has to be settled first, so the
+  // sign-in only sets `pickPending` and the effect below opens the dialog once everything is loaded.
+  const [pickPending, setPickPending] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Thumbnails need each resume's saved data, but the account list only carries id, title and a few details.
+  // A fetched resume is kept in memory under its id and last-edit time (so an edit is picked up), which
+  // means reopening the dialog does not download every resume, photos included, again. It is dropped when
+  // the person signs out or into another account.
+  const thumbCache = useRef(new Map());
+  useEffect(() => {
+    thumbCache.current.clear();
+  }, [profile.user?.id]);
+
+  const loadResumeForThumb = async (id, item) => {
+    const key = `${id}:${item?.updatedAt || ''}`;
+    const cached = thumbCache.current.get(key);
+    if (cached) return cached;
+    const { resume } = await fetchResume(id);
+    if (resume) {
+      [...thumbCache.current.keys()].forEach((k) => {
+        if (k.startsWith(`${id}:`)) thumbCache.current.delete(k); // keep only the newest copy of each resume
+      });
+      thumbCache.current.set(key, resume);
+    }
+    return resume;
+  };
+
+  const handleSignIn = async (credentials) => {
+    const result = await profile.signIn(credentials);
+    setPickPending(true);
+    return result;
+  };
+
+  useEffect(() => {
+    if (!pickPending || !profile.user || !profile.activeId || profile.conflict) return;
+    if (profile.mode === 'loading' || profile.mode === 'switching') return;
+    setPickPending(false);
+    if (profile.resumes.length >= MIN_RESUMES_FOR_PICKER) setPickerOpen(true);
+  }, [pickPending, profile.user, profile.activeId, profile.conflict, profile.mode, profile.resumes.length]);
+
+  // Every "Sign out" in the page asks first. Confirming saves the last changes, then signs out.
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const confirmSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await profile.signOutUser();
+      setPickerOpen(false);
+      setPickPending(false);
+    } finally {
+      setSigningOut(false);
+      setSignOutOpen(false);
+    }
+  };
 
   const updateData = (section, field, value) => {
     setResumeData((prev) => ({
@@ -1647,13 +2279,17 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     } catch {}
   }, [currentStepIndex]);
 
+  // The effects below write to localStorage only while signed out (profile.writesToDevice()). Signed in,
+  // the same data is saved to the account by useResumeProfile instead.
   useEffect(() => {
+    if (!profile.writesToDevice()) return;
     try {
       localStorage.setItem(STORAGE_KEY_COMPLETED, JSON.stringify(completedSteps));
     } catch {}
   }, [completedSteps]);
 
   useEffect(() => {
+    if (!profile.writesToDevice()) return;
     try {
       localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(resumeData));
     } catch (e) {
@@ -1662,24 +2298,28 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   }, [resumeData]);
 
   useEffect(() => {
+    if (!profile.writesToDevice()) return;
     try {
       localStorage.setItem(STORAGE_KEY_SECTION_ORDER, JSON.stringify(sectionOrder));
     } catch {}
   }, [sectionOrder]);
 
   useEffect(() => {
+    if (!profile.writesToDevice()) return;
     try {
       localStorage.setItem(STORAGE_KEY_HIDDEN_SECTIONS, JSON.stringify(hiddenSections));
     } catch {}
   }, [hiddenSections]);
 
   useEffect(() => {
+    if (!profile.writesToDevice()) return;
     try {
       localStorage.setItem(STORAGE_KEY_TEMPLATE, selectedTemplate);
     } catch {}
   }, [selectedTemplate]);
 
   useEffect(() => {
+    if (!profile.writesToDevice()) return;
     try {
       localStorage.setItem(STORAGE_KEY_PAGE_NUMBERS, JSON.stringify(pageNumbers));
     } catch {}
@@ -1689,7 +2329,6 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   // level, and a language that has just been added always starts on Fluent,
   // whatever initial level the form gave it. Languages that were already saved
   // keep the level the user chose.
-  const knownLanguageIds = useRef(null);
   useEffect(() => {
     const items = resumeData.languages?.items || [];
     const known = knownLanguageIds.current;
@@ -1772,18 +2411,33 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     >
       <style>{SCROLLBAR_CSS}</style>
 
-      {/* Mobile Bar */}
-      <div className="flex lg:hidden items-center justify-between bg-slate-900 text-white px-5 py-4 shrink-0 z-30">
-        <span className="text-base font-medium tracking-tight text-white">
-          
-        </span>
-        <button
-          onClick={() => setMenuOpen(true)}
-          className="p-1.5 text-slate-300 hover:text-white transition-colors focus:outline-none"
-        >
-          <IconMenu />
-        </button>
+      {/* Mobile bar */}
+      <div className="z-30 flex shrink-0 items-center justify-between gap-3 bg-slate-900 px-4 py-3 text-white lg:hidden">
+        <div className="min-w-0 flex-1">
+          <HeaderStatus status={profile.statusText} name={profile.user?.firstName} signedIn={Boolean(profile.user)} compact className="max-w-full text-slate-200" />
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {profile.user && <PremiumButton premium={premium} daysLeft={premiumInfo.daysLeft} expiresAt={premiumInfo.expiresAt} onClick={openUpgrade} dark compact />}
+          {profile.user ? (
+            <AccountMenu user={profile.user} onSignOut={() => setSignOutOpen(true)} dark />
+          ) : (
+            <AuthButtons onOpen={setAuthMode} variant="dark" />
+          )}
+          <button
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            className="rounded-full p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+          >
+            <IconMenu />
+          </button>
+        </div>
       </div>
+
+      {showResumeSwitcher && (
+        <div className="lg:hidden shrink-0 border-b border-slate-200/80 bg-white px-5 py-2">
+          <ResumeTitleButton title={activeResume?.title} onClick={() => setPickerOpen(true)} block />
+        </div>
+      )}
 
       {menuOpen && (
         <div className="fixed inset-0 bg-slate-950/60 z-40 lg:hidden" onClick={() => setMenuOpen(false)} />
@@ -1807,7 +2461,24 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col relative h-full min-h-0">
-        <div className="pro-scroll flex-1 overflow-y-auto p-5 sm:p-8 lg:p-12 pb-36 sm:pb-32">
+        {/* Top bar (large screens; small screens have the same controls in the dark bar above) */}
+        <header className="relative z-20 hidden shrink-0 items-center gap-4 border-b border-slate-200/70 bg-white px-12 py-3 lg:flex">
+          <HeaderStatus status={profile.statusText} name={profile.user?.firstName} signedIn={Boolean(profile.user)} className="text-slate-800" />
+          <div className="ml-auto flex items-center gap-3">
+            {showResumeSwitcher && <ResumeTitleButton title={activeResume?.title} onClick={() => setPickerOpen(true)} />}
+            {profile.user && <PremiumButton premium={premium} daysLeft={premiumInfo.daysLeft} expiresAt={premiumInfo.expiresAt} onClick={openUpgrade} />}
+            {profile.user ? (
+              <>
+                <span className="h-6 w-px bg-slate-200" aria-hidden="true" />
+                <AccountMenu user={profile.user} onSignOut={() => setSignOutOpen(true)} />
+              </>
+            ) : (
+              <AuthButtons onOpen={setAuthMode} />
+            )}
+          </div>
+        </header>
+
+        <div className="pro-scroll flex-1 overflow-y-auto p-5 sm:p-8 lg:p-12 lg:pt-6 pb-36 sm:pb-32">
           <ActiveComponent data={resumeData} updateData={updateData} updateSummary={updateSummary} updateSkills={updateSkills} updateExperiences={updateExperiences} updateEducation={updateEducation} updateItems={updateItems} showSkillErrors={showSkillErrors} showLanguageErrors={showLanguageErrors} />
         </div>
 
@@ -1858,9 +2529,59 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           pageNumbers={pageNumbers}
           setPageNumbers={setPageNumbers}
           editorProps={{ updateData, updateSummary, updateSkills, updateExperiences, updateEducation, updateItems }}
+          requirePremium={requirePremium}
           onClose={() => setPreviewOpen(false)} 
         />
       )}
+
+      <PaymentModal
+        open={paymentOpen}
+        user={profile.user}
+        onClose={closePayment}
+        onPaid={handlePaid}
+        onSignIn={handlePaymentSignIn}
+        doneLabel={paymentFromDownload ? 'Continue to download' : 'Done'}
+      />
+
+      <AuthModal
+        open={authMode !== null}
+        mode={authMode || 'signin'}
+        onModeChange={setAuthMode}
+        onClose={() => setAuthMode(null)}
+        onSignIn={handleSignIn}
+        onRegister={profile.register}
+      />
+
+      {(profile.mode === 'loading' || profile.mode === 'switching') && <ResumeLoadingOverlay />}
+      <SignOutDialog
+        open={signOutOpen}
+        busy={signingOut}
+        onConfirm={confirmSignOut}
+        onCancel={() => setSignOutOpen(false)}
+      />
+      <ResumePickerDialog
+        open={pickerOpen && showResumeSwitcher && !profile.conflict}
+        resumes={profile.resumes}
+        activeId={profile.activeId}
+        activePayload={payload}
+        limit={profile.resumeLimit}
+        userName={String(profile.user?.firstName || '').trim()}
+        premium={premium}
+        daysLeft={premiumInfo.daysLeft}
+        onUpgrade={() => {
+          setPickerOpen(false);
+          openUpgrade();
+        }}
+        renderPreview={renderResumeThumb}
+        loadPayload={loadResumeForThumb}
+        onSelect={handleOpenResume}
+        onCreate={handleNewResume}
+        onRename={profile.renameResume}
+        onDuplicate={profile.duplicateResume}
+        onDelete={handleDeleteResume}
+        onClose={() => setPickerOpen(false)}
+      />
+      <ResumeSyncDialog conflict={profile.conflict} onResolve={profile.resolveConflict} />
     </div>
   );
 }

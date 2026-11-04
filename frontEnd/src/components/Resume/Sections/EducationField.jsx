@@ -695,7 +695,7 @@ const CheckedField = ({ value, onChange, ...fieldProps }) => {
     <div className="flex flex-col gap-3">
       <AchievementsField {...fieldProps} value={text} onChange={onChange} />
       <div className={text.trim() ? '[&>div]:rounded-sm' : 'hidden'}>
-        <SpellCheckPanel text={text} onChange={onChange} />
+        <SpellCheckPanel text={text} onChange={onChange} field="education" />
       </div>
     </div>
   );

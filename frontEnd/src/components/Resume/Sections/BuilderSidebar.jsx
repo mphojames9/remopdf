@@ -59,9 +59,9 @@ const LogoMark = () => (
   </span>
 );
 
-// The logo image (src/assets/logo.png) is picked up by its project path, so this works wherever
+// The logo image (src/assets/logo.webp) is picked up by its project path, so this works wherever
 // this file lives. If the file is missing, LogoMark is shown instead of breaking the build.
-const logoModules = import.meta.glob('/src/assets/logo.png', { eager: true, import: 'default' });
+const logoModules = import.meta.glob('/src/assets/logo.webp', { eager: true, import: 'default' });
 const LOGO_SRC = Object.values(logoModules)[0];
 
 /* -------------------------------------------------------------------------- */

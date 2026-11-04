@@ -1,111 +1,52 @@
 import React, { useEffect, useRef, useState } from 'react';
-import nspell from 'nspell';
-import {
-  findMisspellings,
-  groupMisspellings,
-  suggestionsFor,
-  applySuggestion,
-  matchCase,
-  addTechVocabulary,
-  buildCorrections,
-  applyFixes,
-} from './spellCheck';
-import {
-  findWritingIssues,
-  withoutOverlaps,
-  analyzeText,
-  getTips,
-  applyEdit,
-  contextAround,
-} from './grammarCheck';
+import { analyzeWriting, applySuggestion, applySuggestions, canApply, MIN_CHARS } from './writingAI';
 
-// Live writing assistant: spelling, grammar, style and résumé tips, with a "Did you mean"
-// correction for real mistakes. There is no "check" button: the text is re-read a moment after the
-// last keystroke.
+// AI writing assistant. Same props and the same place in the page as the old offline panel, so
+// Summary.jsx, ExperienceField.jsx, EducationField.jsx and AdditionalSections.jsx keep working.
 //
-//   Spelling  nspell + the English Hunspell dictionary (words not in the dictionary)
-//   Grammar   grammarCheck.js (a/an, agreement, could of, its/it's, capitals, spacing, punctuation...)
-//   Style     wordy phrases, filler words, passive voice, long sentences, repetitive openings
-//   Résumé    weak openers, clichés, hedging, "I", exclamation marks, plus a few tips
+//   <SpellCheckPanel text={value} onChange={setValue} field="summary" jobTitle="Site Manager" />
+//
+//   field     'summary' | 'experience' | 'education' | 'other'  (tells the AI what it is reading)
+//   jobTitle  optional; lets the AI judge wording against the role
+//
+// A moment after the last keystroke the text is sent to POST /api/writing/analyze (Groq, through
+// the FastAPI backend, see writingAI.js). The AI returns:
+//   - suggestions: spelling and grammar fixes, stronger wording, impact and ATS advice, each with a
+//                  one-tap "Apply" when it comes with replacement text
+//   - improved:    the whole text rewritten with every worthwhile edit applied ("Use this version")
 //
 // The panel can be hidden: tapping its header collapses it to a single line that still shows how
-// many items need a look. That choice, and the ignored words / dismissed tips, are remembered and
-// shared by every panel on the page.
-//
-// Everything runs in the browser, so nothing is sent to a server and it works offline. Setup, once:
-//
-//   npm install nspell dictionary-en
-//   mkdir -p public/dictionaries/en
-//   cp node_modules/dictionary-en/index.aff node_modules/dictionary-en/index.dic public/dictionaries/en/
-//
-// For British spelling (programme, organisation) install dictionary-en-gb and copy its files instead.
-// If the dictionary cannot be loaded, the grammar, style and résumé checks keep working.
+// many items need a look. That choice is remembered and shared by every panel on the page.
 
-const DICTIONARY_URL = '/dictionaries/en'; // folder that holds index.aff and index.dic
-const IGNORED_KEY = 'resumeBuilder:ignoredWords';
-const DISMISSED_KEY = 'resumeBuilder:dismissedTips';
-const OPEN_KEY = 'resumeBuilder:writingAssistantOpen';
-const TYPING_PAUSE_MS = 300; // re-check this long after the last keystroke
-const SETTLE_MS = 1200; // after this long, a word at the very end counts as finished too
+const OPEN_KEY = 'resumeBuilder:writingAssistantOpen'; // same key as before, so the saved choice carries over
+const TYPING_PAUSE_MS = 1400; // review this long after the last keystroke
 const MAX_LISTED = 4; // cards shown before "Show more"
-const MAX_LOOKUPS = 12; // words that get suggestions looked up per check
-const MAX_SENTENCES = 3; // "Did you mean" lines shown at once
 
 const KIND = {
-  spelling: { label: 'Spelling', dot: 'bg-red-500', mark: 'bg-red-100 text-red-800' },
-  grammar: { label: 'Grammar', dot: 'bg-amber-500', mark: 'bg-amber-100 text-amber-900' },
-  style: { label: 'Style', dot: 'bg-blue-500', mark: 'bg-blue-100 text-blue-800' },
-  resume: { label: 'Résumé', dot: 'bg-emerald-500', mark: 'bg-emerald-100 text-emerald-800' },
+  spelling: { label: 'Spelling', group: 'fix', dot: 'bg-red-500', mark: 'bg-red-100 text-red-800' },
+  grammar: { label: 'Grammar', group: 'fix', dot: 'bg-amber-500', mark: 'bg-amber-100 text-amber-900' },
+  wording: { label: 'Wording', group: 'wording', dot: 'bg-blue-500', mark: 'bg-blue-100 text-blue-800' },
+  structure: { label: 'Structure', group: 'wording', dot: 'bg-slate-500', mark: 'bg-slate-200 text-slate-800' },
+  impact: { label: 'Impact', group: 'impact', dot: 'bg-emerald-500', mark: 'bg-emerald-100 text-emerald-800' },
+  ats: { label: 'ATS', group: 'impact', dot: 'bg-violet-500', mark: 'bg-violet-100 text-violet-800' },
 };
-const FILTERS = ['all', 'spelling', 'grammar', 'style', 'resume'];
-const EMPTY = { spelling: [], writing: [], corrections: [], stats: null };
+const GROUPS = [
+  ['all', 'All'],
+  ['fix', 'Fixes'],
+  ['wording', 'Wording'],
+  ['impact', 'Impact'],
+];
 
-// Advice that takes up a lot of room for little gain is not shown: the "Long sentence" cards
-// and the "reading level is dense" tip. The checks in grammarCheck.js still run; their results are
-// just filtered out here, so the counts and the filter tabs agree with what is on screen.
-const isHiddenIssue = (issue) => issue.title === 'Long sentence' || /long[-_ ]?sentence/i.test(issue.rule || '');
-const isHiddenTip = (tip) => /reading level/i.test(tip);
-const findShownIssues = (source, options) => findWritingIssues(source, options).filter((issue) => !isHiddenIssue(issue));
-
-// The dictionary loads once and is shared by every panel.
-let spellPromise = null;
-const loadSpell = () => {
-  if (!spellPromise) {
-    const get = (file) => fetch(`${DICTIONARY_URL}/${file}`).then(async (res) => {
-      const body = await res.text();
-      // A dev server answers a missing file with the app's HTML page instead of an error.
-      if (!res.ok || /^\s*<(!doctype|html)/i.test(body)) throw new Error(`Could not load ${file}`);
-      return body;
-    });
-    spellPromise = Promise.all([get('index.aff'), get('index.dic')])
-      .then(([aff, dic]) => addTechVocabulary(nspell(aff, dic)))
-      .catch((err) => {
-        spellPromise = null; // allow a retry on the next mount
-        throw err;
-      });
-  }
-  return spellPromise;
+const ERROR_TEXT = {
+  busy: 'That was a lot of reviews in a minute. Give it a moment, then try again.',
+  timeout: 'The AI took too long to answer. The server may be waking up, so try again in a few seconds.',
+  offline: 'Couldn’t reach the AI service. Check your connection and try again.',
+  unavailable: 'AI review is unavailable right now. You can keep writing and try again later.',
 };
 
 /* -------------------------------------------------------------------------- */
-/*                     Preferences shared by every panel                      */
+/*                     Hide / show, shared by every panel                      */
 /* -------------------------------------------------------------------------- */
-
-const readSet = (key) => {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(key) || '[]'));
-  } catch {
-    return new Set();
-  }
-};
-
-const saveSet = (key, set) => {
-  try {
-    localStorage.setItem(key, JSON.stringify([...set]));
-  } catch {
-    /* storage unavailable: the choice still holds for this session */
-  }
-};
 
 const readOpen = () => {
   try {
@@ -131,7 +72,7 @@ const saveOpen = (open) => {
   }
 };
 
-// A tiny shared store, so a change made in one panel shows up in all the others straight away.
+// A tiny shared store, so hiding one panel hides them all straight away.
 const createStore = (initial, persist) => {
   let value = initial;
   const listeners = new Set();
@@ -149,14 +90,12 @@ const createStore = (initial, persist) => {
   };
 };
 
-const ignoredStore = createStore(readSet(IGNORED_KEY), (set) => saveSet(IGNORED_KEY, set));
-const dismissedStore = createStore(readSet(DISMISSED_KEY), (set) => saveSet(DISMISSED_KEY, set));
 const openStore = createStore(readOpen(), saveOpen);
 
 const useStore = (store) => {
   const [value, setValue] = useState(() => store.get());
   useEffect(() => {
-    setValue(store.get()); // picks up a change made between the first render and subscribing
+    setValue(store.get());
     return store.subscribe(setValue);
   }, [store]);
   return value;
@@ -167,6 +106,11 @@ let panelCount = 0;
 /* -------------------------------------------------------------------------- */
 /*                                 Small pieces                               */
 /* -------------------------------------------------------------------------- */
+
+const FOCUS = 'focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b]';
+const TEXT_LINK = `text-[#a8553d] hover:text-[#8f4631] underline underline-offset-2 ${FOCUS}`;
+// 36px tall on phones so a thumb can hit it; compact again from the sm breakpoint up.
+const PRIMARY_BUTTON = `min-h-[36px] sm:min-h-[28px] px-3 text-xs font-semibold rounded bg-[#d9856b] text-white hover:bg-[#c97558] active:bg-[#bd6b4f] transition-colors ${FOCUS}`;
 
 const Chevron = ({ open }) => (
   <svg
@@ -180,35 +124,75 @@ const Chevron = ({ open }) => (
   </svg>
 );
 
-const FOCUS = 'focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b]';
-const TEXT_LINK = `text-[#a8553d] hover:text-[#8f4631] underline underline-offset-2 ${FOCUS}`;
-// 36px tall on phones so a thumb can hit it; compact again from the sm breakpoint up.
-const OPTION_BUTTON = `min-h-[36px] sm:min-h-[28px] px-3 sm:px-2.5 text-xs rounded border border-slate-200 bg-white text-slate-700 hover:border-[#d9856b] hover:bg-[#d9856b]/10 hover:text-[#8f4631] active:bg-[#d9856b]/10 transition-colors ${FOCUS}`;
+const Spinner = () => (
+  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+    <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+  </svg>
+);
 
-const IssueCard = ({ kind, title, note, message, context, onDismiss, dismissLabel = 'Dismiss', children }) => {
-  const meta = KIND[kind];
+const Sparkle = () => (
+  <svg className="w-3.5 h-3.5 text-[#d9856b]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zm7 11l.9 2.6 2.6.9-2.6.9L19 20l-.9-2.6-2.6-.9 2.6-.9L19 13z" />
+  </svg>
+);
+
+const Skeleton = () => (
+  <div className="px-3 py-3 flex flex-col gap-3 animate-pulse" aria-hidden="true">
+    {[0, 1, 2].map((i) => (
+      <div key={i} className="flex flex-col gap-2">
+        <div className="h-3 w-1/3 rounded bg-slate-200" />
+        <div className="h-3 w-5/6 rounded bg-slate-100" />
+        <div className="h-8 w-full rounded bg-slate-100" />
+      </div>
+    ))}
+  </div>
+);
+
+const dismissKey = (s) => `${s.kind}|${s.title}|${s.original}|${s.replacement}`;
+
+const SuggestionCard = ({ s, onApply, onDismiss }) => {
+  const meta = KIND[s.kind] || KIND.wording;
+  const editable = typeof s.replacement === 'string';
   return (
     <li className="px-3 py-3 flex flex-col gap-2">
       <div className="flex items-center gap-2 min-w-0">
         <span className={`h-2 w-2 rounded-full shrink-0 ${meta.dot}`} aria-hidden="true" />
-        <span className="text-sm font-semibold text-slate-800 truncate">{title}</span>
-        {note && <span className="text-xs text-slate-500 shrink-0">{note}</span>}
+        <span className="text-sm font-semibold text-slate-800 truncate">{s.title}</span>
+        <span className="text-xs text-slate-500 shrink-0">{meta.label}</span>
         <button
           type="button"
           onClick={onDismiss}
-          aria-label={`${dismissLabel}: ${title}`}
+          aria-label={`Dismiss: ${s.title}`}
           className={`ml-auto shrink-0 -my-1.5 -mr-2 min-h-[36px] px-2 text-xs text-slate-500 hover:text-slate-800 underline underline-offset-2 ${FOCUS}`}
         >
-          {dismissLabel}
+          Dismiss
         </button>
       </div>
-      {message && <p className="text-xs leading-relaxed text-slate-500">{message}</p>}
-      <p className="text-xs leading-relaxed text-slate-600 bg-slate-50 rounded px-2 py-1.5 break-words">
-        {context.before}
-        <mark className={`rounded px-0.5 ${meta.mark}`}>{context.hit}</mark>
-        {context.after}
-      </p>
-      {children}
+      {s.reason && <p className="text-xs leading-relaxed text-slate-500">{s.reason}</p>}
+      {s.original && (
+        <div className="text-xs leading-relaxed bg-slate-50 rounded px-2 py-1.5 break-words">
+          {editable ? (
+            <>
+              <p className="text-slate-500 line-through decoration-red-300">{s.original}</p>
+              <p className="mt-1 text-slate-800">
+                <mark className={`rounded px-0.5 ${meta.mark}`}>{s.replacement}</mark>
+              </p>
+            </>
+          ) : (
+            <p className="text-slate-600">
+              <mark className={`rounded px-0.5 ${meta.mark}`}>{s.original}</mark>
+            </p>
+          )}
+        </div>
+      )}
+      {editable && (
+        <div>
+          <button type="button" onClick={onApply} className={PRIMARY_BUTTON}>
+            Apply
+          </button>
+        </div>
+      )}
     </li>
   );
 };
@@ -217,157 +201,126 @@ const IssueCard = ({ kind, title, note, message, context, onDismiss, dismissLabe
 /*                                   Panel                                    */
 /* -------------------------------------------------------------------------- */
 
-const SpellCheckPanel = ({ text, onChange }) => {
+const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => {
   const value = typeof text === 'string' ? text : '';
-  const [spell, setSpell] = useState(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const ignored = useStore(ignoredStore);
-  const dismissed = useStore(dismissedStore);
   const open = useStore(openStore);
-  const [result, setResult] = useState(EMPTY);
+  const [state, setState] = useState({ status: 'idle', result: null, error: null });
+  const [dismissed, setDismissed] = useState(() => new Set());
   const [filter, setFilter] = useState('all');
   const [expanded, setExpanded] = useState(false);
-  const suggestionCache = useRef(new Map());
+  const [recheck, setRecheck] = useState(0);
+  const analyzedRef = useRef(null); // the exact text the current result was made for
+  const abortRef = useRef(null);
+  const immediateRef = useRef(false); // true right after "Check again": no typing pause
   const bodyId = useRef(null);
   if (bodyId.current === null) {
     panelCount += 1;
     bodyId.current = `writing-assistant-${panelCount}`;
   }
 
+  // Review the text a moment after the last keystroke. Typing again cancels a review in flight.
   useEffect(() => {
-    let alive = true;
-    loadSpell()
-      .then((s) => alive && setSpell(s))
-      .catch((err) => {
-        // Developer hint only: people using the form just see a short, friendly notice.
-        console.warn('[SpellCheckPanel] Spelling dictionary not loaded. Serve index.aff and index.dic from /dictionaries/en/.', err);
-        if (alive) setLoadFailed(true);
-      });
-    return () => { alive = false; };
-  }, []);
-
-  // One pass over the text: spelling, grammar/style/résumé issues, and the "Did you mean" sentences.
-  // Spelling hits that a grammar or style issue already covers are left out ("alot" -> "a lot").
-  const analyze = (source, skipTrailing = false) => {
-    const writing = findShownIssues(source, { dismissed, skipTrailing });
-    const rawSpelling = spell ? findMisspellings(source, spell, { ignored, skipTrailing }) : [];
-    const spelling = withoutOverlaps(rawSpelling, writing);
-    const grouped = groupMisspellings(spelling);
-    if (spell) grouped.slice(0, MAX_LOOKUPS).forEach((issue) => suggestionsFor(spell, issue, suggestionCache.current));
-
-    // Only real mistakes (spelling and grammar) feed "Did you mean". Style advice is never auto-applied.
-    const topEdit = new Map();
-    const hits = [...spelling];
-    writing.forEach((w) => {
-      if (w.kind !== 'grammar' || w.edits.length === 0) return;
-      const edit = w.edits[0];
-      topEdit.set(w.id, edit.text);
-      hits.push({ key: w.id, start: edit.start, end: edit.end, text: source.slice(edit.start, edit.end) });
-    });
-    hits.sort((a, b) => a.start - b.start);
-    const top = (hit) => topEdit.get(hit.key) ?? suggestionCache.current.get(hit.key)?.[0];
-
-    return {
-      grouped,
-      writing,
-      corrections: buildCorrections(source, hits, top),
-    };
-  };
-
-  // Re-check while typing: shortly after the last keystroke, then once more a little later so a
-  // word at the very end of the text is caught too.
-  useEffect(() => {
-    if (!value.trim()) {
-      setResult(EMPTY);
+    if (value.trim().length < MIN_CHARS) {
+      analyzedRef.current = null;
+      setState((s) => (s.status === 'idle' && !s.result && !s.error ? s : { status: 'idle', result: null, error: null }));
       return undefined;
     }
-    const run = (skipTrailing) => {
-      const { grouped, writing, corrections } = analyze(value, skipTrailing);
-      setResult({
-        spelling: grouped.map((issue) => ({
-          ...issue,
-          suggestions: suggestionCache.current.get(issue.key) || [],
-          context: contextAround(value, issue.ranges[0].start, issue.ranges[0].end),
-        })),
-        writing,
-        corrections,
-        stats: analyzeText(value),
-      });
-    };
-    const quick = setTimeout(() => run(true), TYPING_PAUSE_MS);
-    const settled = setTimeout(() => run(false), SETTLE_MS);
+    if (analyzedRef.current === value) {
+      // Nothing new to review (e.g. a suggestion was just applied). Clear a stale "reviewing" state.
+      setState((s) => (s.status === 'loading' ? { ...s, status: s.result ? 'ready' : 'idle' } : s));
+      return undefined;
+    }
+
+    const delay = immediateRef.current ? 0 : TYPING_PAUSE_MS;
+    const timer = setTimeout(() => {
+      immediateRef.current = false;
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setState((s) => ({ ...s, status: 'loading', error: null }));
+      analyzeWriting({ text: value, field, jobTitle, signal: controller.signal })
+        .then((result) => {
+          analyzedRef.current = value;
+          setDismissed(new Set());
+          setExpanded(false);
+          setFilter('all');
+          setState({ status: 'ready', result: { ...result, forText: value }, error: null });
+        })
+        .catch((err) => {
+          if (err && err.name === 'AbortError') return; // the text changed again: a newer review follows
+          setState((s) => ({ status: 'error', result: s.result, error: err }));
+        });
+    }, delay);
+
     return () => {
-      clearTimeout(quick);
-      clearTimeout(settled);
+      clearTimeout(timer);
+      if (abortRef.current) abortRef.current.abort();
     };
-  }, [value, spell, ignored, dismissed]);
+    // field and jobTitle are read when the review starts; changing them alone does not re-run it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, recheck]);
 
-  // The list can be a moment behind the text, so everything is found again in the current text
-  // before it is replaced.
-  const applyWord = (issue, suggestion) => {
-    if (!spell || !onChange) return;
-    const ranges = findMisspellings(value, spell, { ignored }).filter((r) => r.key === issue.key);
-    if (ranges.length > 0) onChange(applySuggestion(value, ranges, suggestion));
-  };
-
-  const applyWriting = (issue, edit) => {
-    if (!onChange) return;
-    const fresh = findShownIssues(value, { dismissed });
-    const match = fresh.find((w) => w.rule === issue.rule && w.text === issue.text && w.start === issue.start)
-      || fresh.find((w) => w.rule === issue.rule && w.text === issue.text);
-    const chosen = match && (match.edits.find((e) => e.label === edit.label) || match.edits[0]);
-    if (chosen) onChange(applyEdit(value, chosen));
-  };
-
-  const applySentence = (correction) => {
-    if (!onChange) return;
-    const match = analyze(value).corrections.find((c) => c.original === correction.original);
-    if (match) onChange(applyFixes(value, match.fixes));
-  };
-
-  const applyAll = () => {
-    if (!onChange) return;
-    const fixes = analyze(value).corrections.flatMap((c) => c.fixes);
-    if (fixes.length > 0) onChange(applyFixes(value, fixes));
-  };
-
-  const ignoreWord = (key) => ignoredStore.set(new Set(ignoredStore.get()).add(key));
-
-  const dismissIssue = (issue) => dismissedStore.set(new Set(dismissedStore.get()).add(issue.dismissKey));
-
-  const restoreAll = () => {
-    ignoredStore.set(new Set());
-    dismissedStore.set(new Set());
+  const checkAgain = () => {
+    analyzedRef.current = null;
+    immediateRef.current = true;
+    setRecheck((n) => n + 1);
   };
 
   const toggleOpen = () => openStore.set(!openStore.get());
 
-  // Spelling words and writing issues share one list, in the order they appear in the text.
-  const items = [
-    ...result.spelling.map((issue) => ({ kind: 'spelling', key: `s:${issue.key}`, start: issue.ranges[0].start, issue })),
-    ...result.writing.map((issue) => ({ kind: issue.kind, key: `w:${issue.id}`, start: issue.start, issue })),
-  ].sort((a, b) => a.start - b.start);
+  const dismiss = (s) => setDismissed((prev) => new Set(prev).add(dismissKey(s)));
 
-  const counts = { spelling: 0, grammar: 0, style: 0, resume: 0 };
-  items.forEach((item) => { counts[item.kind] += 1; });
-  const visible = filter === 'all' ? items : items.filter((item) => item.kind === filter);
+  const apply = (s) => {
+    const next = applySuggestion(value, s);
+    if (next === null || !onChange) return;
+    analyzedRef.current = next; // the remaining suggestions still describe this text: no new review
+    dismiss(s);
+    onChange(next);
+  };
+
+  const applyAll = (edits) => {
+    if (!onChange || edits.length === 0) return;
+    const next = applySuggestions(value, edits);
+    analyzedRef.current = next;
+    setDismissed((prev) => {
+      const all = new Set(prev);
+      edits.forEach((s) => all.add(dismissKey(s)));
+      return all;
+    });
+    onChange(next);
+  };
+
+  const takeImproved = (improved) => {
+    if (!onChange) return;
+    // analyzedRef is left alone on purpose: the rewrite gets its own quick review afterwards.
+    onChange(improved);
+  };
+
+  const result = state.result;
+  const hasText = value.trim().length >= MIN_CHARS;
+  const loading = state.status === 'loading';
+
+  // A suggestion is hidden once its text has been changed by hand, so the list always matches the box.
+  const items = (result ? result.suggestions : []).filter((s) => {
+    if (dismissed.has(dismissKey(s))) return false;
+    if (typeof s.replacement === 'string') return canApply(value, s);
+    return !s.original || value.includes(s.original);
+  });
+  const edits = items.filter((s) => typeof s.replacement === 'string');
+
+  const counts = { all: items.length, fix: 0, wording: 0, impact: 0 };
+  items.forEach((s) => {
+    const group = (KIND[s.kind] || KIND.wording).group;
+    counts[group] += 1;
+  });
+  const shownGroups = GROUPS.filter(([id]) => id === 'all' || counts[id] > 0);
+  const visible = filter === 'all' ? items : items.filter((s) => (KIND[s.kind] || KIND.wording).group === filter);
   const listed = expanded ? visible : visible.slice(0, MAX_LISTED);
-  const sentences = result.corrections.slice(0, MAX_SENTENCES);
 
-  const stats = result.stats;
-  const hasText = value.trim().length > 0;
-  const tips = getTips(stats).filter((tip) => !isHiddenTip(tip));
-
-  let notice = null;
-  if (loadFailed) {
-    notice = 'Spelling check is unavailable right now. Grammar, style and résumé checks are still running.';
-  } else if (!spell) {
-    notice = 'Loading the spelling dictionary…';
-  }
+  const improved = result && result.improved && result.forText === value && result.improved.trim() !== value.trim() ? result.improved : null;
 
   let message = null;
-  if (!hasText) message = 'Spelling, grammar and style suggestions will show up here as you type.';
-  else if (items.length === 0 && stats) message = 'No issues found. Nicely written.';
+  if (!hasText) message = 'Write a sentence or two and the AI will review it, with fixes, stronger wording and ATS tips.';
+  else if (state.status === 'ready' && items.length === 0 && !improved) message = 'No issues found. Nicely written.';
 
   return (
     <div role="region" aria-label="Writing assistant" className="border border-slate-200 rounded-md bg-white overflow-hidden">
@@ -379,11 +332,18 @@ const SpellCheckPanel = ({ text, onChange }) => {
         aria-controls={bodyId.current}
         className={`w-full min-h-[44px] px-3 py-2 flex items-center gap-2.5 text-left bg-slate-50 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#d9856b] ${open ? 'border-b border-slate-200' : ''}`}
       >
+        <Sparkle />
         <span className="truncate text-xs font-semibold text-slate-700 uppercase tracking-wide">Writing assistant</span>
-        {/* Phones get icons only (a count badge, a tick, a chevron); the words come back from the sm breakpoint up.
-            The words stay in the page for screen readers. */}
+        {/* Phones get icons only (a count badge, a tick, a spinner, a chevron); the words come back from the sm
+            breakpoint up and stay in the page for screen readers. */}
         <span aria-live="polite" className="shrink-0">
-          {items.length > 0 && (
+          {loading && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap">
+              <Spinner />
+              <span className="sr-only sm:not-sr-only">Reviewing…</span>
+            </span>
+          )}
+          {!loading && items.length > 0 && (
             <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 whitespace-nowrap">
               <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#d9856b]/15 text-[#8f4631] text-[11px] font-bold">
                 {items.length}
@@ -391,12 +351,18 @@ const SpellCheckPanel = ({ text, onChange }) => {
               <span className="sr-only sm:not-sr-only">to review</span>
             </span>
           )}
-          {items.length === 0 && hasText && stats && (
+          {!loading && items.length === 0 && state.status === 'ready' && hasText && (
             <span className="inline-flex items-center gap-1 text-xs text-emerald-700 whitespace-nowrap">
               <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
               </svg>
               <span className="sr-only sm:not-sr-only">No issues</span>
+            </span>
+          )}
+          {!loading && state.status === 'error' && (
+            <span className="text-xs text-amber-700 whitespace-nowrap">
+              <span className="sr-only sm:not-sr-only">Unavailable</span>
+              <span className="sm:hidden" aria-hidden="true">!</span>
             </span>
           )}
         </span>
@@ -408,153 +374,116 @@ const SpellCheckPanel = ({ text, onChange }) => {
 
       {open && (
         <div id={bodyId.current}>
-          {notice && (
-            <p className={`px-3 py-2.5 text-xs border-b border-slate-100 ${loadFailed ? 'text-amber-700' : 'text-slate-500'}`}>{notice}</p>
-          )}
-
           {message && <p className="px-3 py-2.5 text-xs text-slate-500">{message}</p>}
 
-          {sentences.length > 0 && (
+          {hasText && loading && !result && <Skeleton />}
+
+          {state.status === 'error' && (
+            <div className="px-3 py-3 flex flex-col gap-2 border-b border-slate-100">
+              <p className="text-xs leading-relaxed text-amber-700">
+                {ERROR_TEXT[state.error && state.error.code] || ERROR_TEXT.unavailable}
+              </p>
+              <div>
+                <button type="button" onClick={checkAgain} className={PRIMARY_BUTTON}>
+                  Try again
+                </button>
+              </div>
+            </div>
+          )}
+
+          {improved && (
             <div className="px-3 py-3 bg-[#d9856b]/5 border-b border-[#d9856b]/20 flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-slate-800">
-                  Did you mean <span className="text-xs font-normal text-slate-500">(tap to apply)</span>
+                  Polished version <span className="text-xs font-normal text-slate-500">(AI rewrite)</span>
                 </p>
-                {result.corrections.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={applyAll}
-                    className={`shrink-0 -my-1.5 -mr-2 min-h-[36px] px-2 text-xs font-semibold ${TEXT_LINK}`}
-                  >
-                    Fix all
-                  </button>
-                )}
-              </div>
-              {sentences.map((c) => (
-                <button
-                  key={c.original}
-                  type="button"
-                  onClick={() => applySentence(c)}
-                  className={`text-left text-sm leading-snug text-slate-700 bg-white border border-[#d9856b]/25 rounded-md px-3 py-2.5 hover:border-[#d9856b] hover:bg-[#d9856b]/5 transition-colors ${FOCUS}`}
-                >
-                  {c.parts.map((p, i) => (p.changed
-                    ? <strong key={i} className="font-semibold italic text-[#a8553d]">{p.text}</strong>
-                    : <span key={i}>{p.text}</span>))}
+                <button type="button" onClick={() => takeImproved(improved)} className={PRIMARY_BUTTON}>
+                  Use this version
                 </button>
-              ))}
-              {result.corrections.length > sentences.length && (
-                <p className="text-xs text-slate-500">
-                  and {result.corrections.length - sentences.length} more {result.corrections.length - sentences.length === 1 ? 'sentence' : 'sentences'}
-                </p>
-              )}
+              </div>
+              <p className="text-sm leading-snug text-slate-700 whitespace-pre-wrap break-words bg-white border border-[#d9856b]/25 rounded-md px-3 py-2.5">
+                {improved}
+              </p>
             </div>
           )}
 
           {items.length > 0 && (
-            <div
-              role="tablist"
-              aria-label="Filter suggestions"
-              className="px-3 pt-2.5 pb-1 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {FILTERS.map((id) => {
-                const n = id === 'all' ? items.length : counts[id];
-                if (id !== 'all' && n === 0) return null;
-                const active = filter === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => { setFilter(id); setExpanded(false); }}
-                    className={`shrink-0 min-h-[32px] px-3 text-xs rounded-full border transition-colors ${FOCUS} ${active
-                      ? 'bg-slate-800 text-white border-slate-800'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}`}
-                  >
-                    {id === 'all' ? 'All' : KIND[id].label}
-                    <span className="ml-1 opacity-70">{n}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {listed.length > 0 && (
-            <ul className="divide-y divide-slate-100">
-              {listed.map(({ kind, key, issue }) => (kind === 'spelling' ? (
-                <IssueCard
-                  key={key}
-                  kind="spelling"
-                  title={issue.word}
-                  note={issue.ranges.length > 1 ? `${issue.ranges.length} places` : null}
-                  message={issue.fix ? 'A real word, but probably a slip here.' : null}
-                  context={issue.context}
-                  onDismiss={() => ignoreWord(issue.key)}
-                  dismissLabel="Ignore"
+            <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+              {shownGroups.length > 2 && (
+                <div
+                  role="tablist"
+                  aria-label="Filter suggestions"
+                  className="px-3 pt-2.5 pb-1 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {issue.suggestions.length > 0 ? issue.suggestions.map((s) => (
-                      <button key={s} type="button" onClick={() => applyWord(issue, s)} className={OPTION_BUTTON}>
-                        {matchCase(issue.word, s)}
+                  {shownGroups.map(([id, label]) => {
+                    const active = filter === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => {
+                          setFilter(id);
+                          setExpanded(false);
+                        }}
+                        className={`shrink-0 min-h-[32px] px-3 text-xs rounded-full border transition-colors ${FOCUS} ${active
+                          ? 'bg-slate-800 text-white border-slate-800'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}`}
+                      >
+                        {label}
+                        <span className="ml-1 opacity-70">{counts[id]}</span>
                       </button>
-                    )) : <span className="text-xs text-slate-500">No suggestions</span>}
-                  </div>
-                </IssueCard>
-              ) : (
-                <IssueCard
-                  key={key}
-                  kind={kind}
-                  title={issue.title}
-                  message={issue.message}
-                  context={issue.context}
-                  onDismiss={() => dismissIssue(issue)}
-                >
-                  {issue.edits.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {issue.edits.map((edit) => (
-                        <button key={edit.label} type="button" onClick={() => applyWriting(issue, edit)} className={OPTION_BUTTON}>
-                          {edit.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </IssueCard>
-              )))}
-            </ul>
-          )}
+                    );
+                  })}
+                </div>
+              )}
 
-          {(visible.length > MAX_LISTED || ignored.size > 0 || dismissed.size > 0) && (
-            <div className="px-3 py-1 text-xs text-slate-500 border-t border-slate-100 flex flex-wrap items-center justify-between gap-x-4">
-              {visible.length > MAX_LISTED ? (
-                <button
-                  type="button"
-                  onClick={() => setExpanded((isOpen) => !isOpen)}
-                  className={`min-h-[36px] font-semibold ${TEXT_LINK}`}
-                >
-                  {expanded ? 'Show fewer' : `Show ${visible.length - MAX_LISTED} more`}
-                </button>
-              ) : <span />}
-              {(ignored.size > 0 || dismissed.size > 0) && (
-                <button type="button" onClick={restoreAll} className={`min-h-[36px] hover:text-slate-800 underline underline-offset-2 ${FOCUS}`}>
-                  Bring back ignored items
-                </button>
+              {edits.length > 1 && (
+                <div className="px-3 pt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
+                  <span>{edits.length} edits ready</span>
+                  <button
+                    type="button"
+                    onClick={() => applyAll(edits)}
+                    className={`-my-1.5 -mr-2 min-h-[36px] px-2 font-semibold ${TEXT_LINK}`}
+                  >
+                    Apply all
+                  </button>
+                </div>
+              )}
+
+              <ul className="divide-y divide-slate-100">
+                {listed.map((s) => (
+                  <SuggestionCard key={dismissKey(s)} s={s} onApply={() => apply(s)} onDismiss={() => dismiss(s)} />
+                ))}
+              </ul>
+
+              {visible.length > MAX_LISTED && (
+                <div className="px-3 py-1 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((isOpen) => !isOpen)}
+                    className={`min-h-[36px] text-xs font-semibold ${TEXT_LINK}`}
+                  >
+                    {expanded ? 'Show fewer' : `Show ${visible.length - MAX_LISTED} more`}
+                  </button>
+                </div>
               )}
             </div>
           )}
 
-          {/* Tips come last: fixes first. Phones get the top tip only. */}
-          {tips.length > 0 && (
-            <ul className="px-3 py-2.5 border-t border-slate-100 flex flex-col gap-1">
-              {tips.map((tip, i) => (
-                <li
-                  key={tip}
-                  className={`${i > 0 ? 'hidden sm:flex' : 'flex'} items-start gap-2 text-xs leading-relaxed text-slate-600`}
-                >
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" aria-hidden="true" />
-                  {tip}
-                </li>
-              ))}
-            </ul>
+          {hasText && state.status !== 'error' && (
+            <div className="px-3 py-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <p className="text-[11px] leading-snug text-slate-400">AI can make mistakes. Check names, dates and numbers before applying.</p>
+              <button
+                type="button"
+                onClick={checkAgain}
+                disabled={loading}
+                className={`-my-1 min-h-[32px] text-xs text-slate-500 hover:text-slate-800 underline underline-offset-2 disabled:opacity-50 disabled:no-underline ${FOCUS}`}
+              >
+                Check again
+              </button>
+            </div>
           )}
         </div>
       )}
