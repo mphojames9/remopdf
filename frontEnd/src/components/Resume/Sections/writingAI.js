@@ -4,9 +4,16 @@
   The Groq key lives on the server (routers/writing_ai.py, env GROQ_API_KEY). Nothing secret is in
   this file, and the key must never be put in the React app: anything in the bundle is public.
 
+  The AI is a Premium feature. The sign-in token goes along with every request and the server checks
+  Premium itself before it uses the key, so this file only reports what the server said:
+    401 -> WritingAIError('signin')     not signed in, or the session ran out
+    403 -> WritingAIError('premium')    signed in, but no active Premium payment
+
     analyzeWriting({ text, field, jobTitle, signal })   -> { rewrites }
       rewrites = up to 3 whole-text versions to choose from: { id, label, text }
 */
+
+import { getToken } from '../../../api/auth';
 
 // Same address onetSuggestions.js uses. Set VITE_API_URL to override it.
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://remopdf-backend.onrender.com').replace(/\/$/, '');
@@ -22,7 +29,7 @@ export const MAX_CHARS = 4000; // the server rejects more than this
 const cache = new Map();
 
 export class WritingAIError extends Error {
-  // code: 'busy' | 'timeout' | 'offline' | 'unavailable'
+  // code: 'busy' | 'timeout' | 'offline' | 'unavailable' | 'signin' | 'premium'
   constructor(code, message) {
     super(message);
     this.name = 'WritingAIError';
@@ -50,6 +57,11 @@ const logFailure = async (res) => {
 const cacheKey = (text, field, jobTitle) => `${field}\u0000${jobTitle}\u0000${text}`;
 
 export async function analyzeWriting({ text, field = 'other', jobTitle = '', signal } = {}) {
+  // No sign-in, no request: the server would refuse it anyway. Checked before the cache so a result kept
+  // from an earlier account is never shown to someone who is signed out.
+  const token = getToken();
+  if (!token) throw new WritingAIError('signin', 'Sign in to use AI suggestions.');
+
   const body = String(text || '').slice(0, MAX_CHARS);
   const title = String(jobTitle || '').trim().slice(0, 120);
   const key = cacheKey(body, field, title);
@@ -73,7 +85,7 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', sig
     try {
       res = await fetch(ANALYZE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ text: body, field, job_title: title || null }),
         signal: controller.signal,
       });
@@ -85,6 +97,11 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', sig
       throw new WritingAIError('offline', 'Could not reach the AI service.');
     }
 
+    if (res.status === 401) throw new WritingAIError('signin', 'Sign in to use AI suggestions.');
+    if (res.status === 403) {
+      cache.clear(); // Premium is over (or was never there): nothing kept from before is shown again
+      throw new WritingAIError('premium', 'AI suggestions are a Premium feature.');
+    }
     if (res.status === 429) throw new WritingAIError('busy', 'Too many reviews in a short time.');
     if (!res.ok) {
       await logFailure(res);

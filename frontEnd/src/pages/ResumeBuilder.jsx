@@ -14,6 +14,7 @@ import demoPhoto from '../assets/profile.webp';
 import { downloadBlob } from '../api/client';
 import { fetchResume } from '../api/resume';
 import { getPaymentStatus } from '../api/payments';
+import { setPremiumAccess, onUpgradeRequest } from '../hooks/premiumAccess';
 import PaymentModal from '../components/Payment/PaymentModal';
 import useResumeProfile, { getSessionUser } from '../hooks/useResumeProfile';
 import ResumeSyncDialog, { ResumeLoadingOverlay } from '../components/Auth/ResumeSyncDialog';
@@ -1934,6 +1935,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   const applyAccess = useCallback((status) => {
     const active = Boolean(status?.premium);
     setPremium(active);
+    setPremiumAccess(active); // also tells the AI writing assistant (signed out counts as "no Premium")
     setPremiumInfo({
       daysLeft: active ? Math.max(0, Number(status.daysLeft) || 0) : 0,
       expiresAt: active ? status.expiresAt || null : null,
@@ -1949,6 +1951,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
       return undefined;
     }
     let cancelled = false;
+    setPremiumAccess(null); // a different account: not known until the server has answered for it
     const refresh = () => {
       getPaymentStatus()
         .then((status) => {
@@ -1985,6 +1988,10 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     setPaymentOpen(true);
   };
 
+  // The AI writing assistant (in every section of the form) asks for the payment dialog through this.
+  // openUpgrade only touches a ref and state setters, so the copy from the first render keeps working.
+  useEffect(() => onUpgradeRequest(openUpgrade), []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const requirePremium = async (proceed) => {
     if (profile.user) {
       try {
@@ -2013,6 +2020,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     pendingDownloadRef.current = null;
     setPaymentOpen(false);
     setPremium(true);
+    setPremiumAccess(true);
     getPaymentStatus()
       .then(applyAccess)
       .catch(() => {

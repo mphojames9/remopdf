@@ -13,6 +13,13 @@ The Groq key stays on the server. Setup, once:
     Render -> Environment:  GROQ_API_KEY = <your key>
     (optional)              GROQ_MODEL   = openai/gpt-oss-20b   (this is the default)
 
+Premium only. The key is never used for a free account. The request must carry the person's sign-in
+token ("Authorization: Bearer <token>"). This service has no accounts of its own, so it asks the
+accounts server (the one that serves /api/payments/status) whether that account has an active Premium
+payment, and answers 401 (not signed in), 403 (not Premium) or 503 (could not check) without calling Groq:
+
+    Render -> Environment:  ACCOUNTS_API_URL = https://<your accounts server>   (no trailing slash)
+
 If the key is missing or Groq is down, the route answers with an error status and the panel
 shows a short notice with a Retry button, so the form itself never breaks.
 """
@@ -24,6 +31,7 @@ import threading
 import time
 from typing import List, Literal, Optional
 
+import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -300,6 +308,79 @@ def _cache_key(text: str, field: str, job_title: str, model: str) -> str:
 
 
 # --------------------------------------------------------------------------- #
+#                     Premium only: who may use the Groq key                  #
+# --------------------------------------------------------------------------- #
+# The Premium decision is made in one place only, accessFor() in the accounts server's
+# routes/payments.js. This service forwards the person's own token to GET /api/payments/status and
+# believes only a clear `"premium": true`. Anything else (no token, expired token, not Premium, the
+# accounts server down or not configured) means Groq is not called.
+
+ACCOUNTS_TIMEOUT_S = 8
+PREMIUM_CACHE_TTL_S = 60  # a "yes" is reused this long, so typing does not ask the accounts server every time
+FREE_CACHE_TTL_S = 10  # a "no" is kept briefly, so someone who has just paid is not kept waiting
+PREMIUM_CACHE_MAX = 2000
+UNAVAILABLE = "AI suggestions are unavailable right now. Please try again later."
+TOKEN_RE = re.compile(r"^[A-Za-z0-9._~+/=-]{10,4096}$")  # what a JWT looks like; nothing else is forwarded
+
+_premium_cache: dict = {}  # sha256(token) -> (is_premium, valid_until)
+_premium_lock = threading.Lock()
+
+
+def _bearer_token(request: Request) -> str:
+    scheme, _, token = request.headers.get("authorization", "").partition(" ")
+    token = token.strip()
+    if scheme.lower() != "bearer" or not TOKEN_RE.match(token):
+        raise HTTPException(status_code=401, detail="Sign in to use AI suggestions.")
+    return token
+
+
+def _ask_accounts_server(token: str) -> bool:
+    """True only when the accounts server says this sign-in has an active Premium payment."""
+    base = (os.getenv("ACCOUNTS_API_URL") or "").strip().rstrip("/")
+    if not base:
+        print("[writing_ai] ACCOUNTS_API_URL is not set, so Premium cannot be checked and AI suggestions are off.")
+        raise HTTPException(status_code=503, detail=UNAVAILABLE)
+    try:
+        res = httpx.get(
+            f"{base}/api/payments/status",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=ACCOUNTS_TIMEOUT_S,
+        )
+    except (httpx.HTTPError, httpx.InvalidURL) as err:
+        print(f"[writing_ai] could not reach the accounts server: {type(err).__name__}: {err}")
+        raise HTTPException(status_code=503, detail=UNAVAILABLE)
+    if res.status_code == 401:
+        raise HTTPException(status_code=401, detail="Your session has expired. Please sign in again.")
+    if res.status_code != 200:
+        print(f"[writing_ai] the accounts server answered {res.status_code} to the Premium check")
+        raise HTTPException(status_code=503, detail=UNAVAILABLE)
+    try:
+        data = res.json()
+    except ValueError:
+        print("[writing_ai] the accounts server sent an unreadable Premium answer")
+        raise HTTPException(status_code=503, detail=UNAVAILABLE)
+    return isinstance(data, dict) and data.get("premium") is True
+
+
+def require_premium(token: str) -> None:
+    """Returns when the token belongs to a Premium account; raises 401 / 403 / 503 otherwise."""
+    key = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    now = time.time()
+    with _premium_lock:
+        hit = _premium_cache.get(key)
+    if hit and hit[1] > now:
+        premium = hit[0]
+    else:
+        premium = _ask_accounts_server(token)  # a failed check raises here and is never cached
+        with _premium_lock:
+            if len(_premium_cache) >= PREMIUM_CACHE_MAX:
+                _premium_cache.clear()
+            _premium_cache[key] = (premium, now + (PREMIUM_CACHE_TTL_S if premium else FREE_CACHE_TTL_S))
+    if not premium:
+        raise HTTPException(status_code=403, detail="AI suggestions are a Premium feature. Upgrade to use them.")
+
+
+# --------------------------------------------------------------------------- #
 #                                   Groq call                                 #
 # --------------------------------------------------------------------------- #
 
@@ -348,11 +429,15 @@ class AnalyzeRequest(BaseModel):
 
 @router.post("/analyze")
 def analyze(body: AnalyzeRequest, request: Request):
+    # Gate first: nothing below (the reply cache, the Groq key) is reachable without Premium.
+    token = _bearer_token(request)
+    if _rate_limited(request):  # before the accounts-server call, so random tokens cannot be used to hammer it
+        raise HTTPException(status_code=429, detail="Too many requests. Try again in a minute.")
+    require_premium(token)
+
     text = body.text.strip()
     if len(text) < 3:
         return {"suggestions": [], "rewrites": [], "improved": None}
-    if _rate_limited(request):
-        raise HTTPException(status_code=429, detail="Too many requests. Try again in a minute.")
 
     model = os.getenv("GROQ_MODEL", DEFAULT_MODEL)
     job_title = (body.job_title or "").strip()

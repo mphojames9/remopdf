@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { analyzeWriting, MIN_CHARS } from './writingAI';
+import { usePremiumAccess, requestUpgrade, setPremiumAccess } from '../../../hooks/premiumAccess';
 
 // AI writing assistant. Same props and the same place in the page as the old offline panel, so
 // Summary.jsx, ExperienceField.jsx, EducationField.jsx and AdditionalSections.jsx keep working.
@@ -14,6 +15,10 @@ import { analyzeWriting, MIN_CHARS } from './writingAI';
 // angles (achievement-led, concise & ATS-friendly, leadership-focused...). Every version already has
 // the spelling and grammar fixed, and one tap on "Use this version" puts it in the text box.
 //
+// AI suggestions are a Premium feature. Without Premium the panel shows an upgrade note and sends nothing
+// (the server refuses and never uses its AI key either way). Premium status comes from the builder through
+// hooks/premiumAccess.js: false = locked, true = on, null = not known yet (the server decides).
+//
 // The panel can be hidden: tapping its header collapses it to a single line that still shows how
 // many versions are ready. That choice is remembered and shared by every panel on the page.
 
@@ -25,6 +30,7 @@ const ERROR_TEXT = {
   timeout: 'The AI took too long to answer. The server may be waking up, so try again in a few seconds.',
   offline: 'Couldn’t reach the AI service. Check your connection and try again.',
   unavailable: 'AI review is unavailable right now. You can keep writing and try again later.',
+  signin: 'Your session has expired. Sign in again to use AI suggestions.',
 };
 
 /* -------------------------------------------------------------------------- */
@@ -113,6 +119,22 @@ const Spinner = () => (
   </svg>
 );
 
+const Lock = () => (
+  <svg
+    className="w-3.5 h-3.5"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="5" y="11" width="14" height="9" rx="2" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </svg>
+);
+
 const Sparkle = () => (
   <svg className="w-3.5 h-3.5 text-[#d9856b]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
     <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zm7 11l.9 2.6 2.6.9-2.6.9L19 20l-.9-2.6-2.6-.9 2.6-.9L19 13z" />
@@ -139,12 +161,14 @@ const Skeleton = () => (
 const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => {
   const value = typeof text === 'string' ? text : '';
   const open = useStore(openStore);
+  const premium = usePremiumAccess();
+  const locked = premium === false; // known to be without Premium: nothing is sent to the AI
   const [state, setState] = useState({ status: 'idle', result: null, error: null });
   const [applied, setApplied] = useState(false); // a version was just chosen and nothing has changed since
   const [recheck, setRecheck] = useState(0);
   const analyzedRef = useRef(null); // the exact text the current result was made for
   const abortRef = useRef(null);
-  const immediateRef = useRef(false); // true right after "Check again": no typing pause
+  const immediateRef = useRef(false); // true right after "Try again": no typing pause
   const bodyId = useRef(null);
   if (bodyId.current === null) {
     panelCount += 1;
@@ -153,6 +177,13 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
 
   // Review the text a moment after the last keystroke. Typing again cancels a review in flight.
   useEffect(() => {
+    if (locked) {
+      // No Premium: no review, and nothing from an earlier one stays on screen. Paying flips `locked` and this runs again.
+      analyzedRef.current = null;
+      setApplied(false);
+      setState((s) => (s.status === 'idle' && !s.result && !s.error ? s : { status: 'idle', result: null, error: null }));
+      return undefined;
+    }
     if (value.trim().length < MIN_CHARS) {
       analyzedRef.current = null;
       setApplied(false);
@@ -179,6 +210,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
         })
         .catch((err) => {
           if (err && err.name === 'AbortError') return; // the text changed again: a newer review follows
+          if (err && err.code === 'premium') setPremiumAccess(false); // the server says no Premium: lock every panel
           setState((s) => ({ status: 'error', result: s.result, error: err }));
         });
     }, delay);
@@ -189,7 +221,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
     };
     // field and jobTitle are read when the review starts; changing them alone does not re-run it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, recheck]);
+  }, [value, recheck, locked]);
 
   const checkAgain = () => {
     analyzedRef.current = null;
@@ -211,14 +243,15 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
   const loading = state.status === 'loading';
 
   // The versions describe the text as it was reviewed: once it changes they are hidden until the next review.
-  const rewrites = result && result.forText === value
+  const rewrites = !locked && result && result.forText === value
     ? (result.rewrites || []).filter((r) => r.text.trim() !== value.trim())
     : [];
 
   let message = null;
   if (!hasText) message = 'Write a sentence or two and the AI will suggest three polished versions to choose from.';
-  else if (applied) message = 'Version applied. Keep editing, or press “Check again” for fresh options.';
+  else if (applied) message = 'Version applied. Edit the text any time and new versions will appear.';
   else if (state.status === 'ready' && rewrites.length === 0) message = 'Nicely written. No changes needed.';
+  if (locked) message = null; // the upgrade note below takes its place
 
   return (
     <div role="region" aria-label="Writing assistant" className="border border-slate-200 rounded-md bg-white overflow-hidden">
@@ -249,7 +282,13 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
               <span className="sr-only sm:not-sr-only">{rewrites.length === 1 ? 'version ready' : 'versions ready'}</span>
             </span>
           )}
-          {!loading && state.status === 'error' && (
+          {locked && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-[#8f4631] whitespace-nowrap">
+              <Lock />
+              <span className="sr-only sm:not-sr-only">Premium</span>
+            </span>
+          )}
+          {!locked && !loading && state.status === 'error' && (
             <span className="text-xs text-amber-700 whitespace-nowrap">
               <span className="sr-only sm:not-sr-only">Unavailable</span>
               <span className="sm:hidden" aria-hidden="true">!</span>
@@ -264,31 +303,41 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
 
       {open && (
         <div id={bodyId.current}>
-          {message && <p className="px-3 py-2.5 text-xs text-slate-500">{message}</p>}
-
-          {hasText && loading && rewrites.length === 0 && <Skeleton />}
-
-          {state.status === 'error' && (
-            <div className="px-3 py-3 flex flex-col gap-2 border-b border-slate-100">
-              <p className="text-xs leading-relaxed text-amber-700">
-                {ERROR_TEXT[state.error && state.error.code] || ERROR_TEXT.unavailable}
+          {locked && (
+            <div className="px-3 py-3 flex flex-col gap-2">
+              <p className="text-xs leading-relaxed text-slate-600">
+                AI suggestions are a Premium feature. Upgrade to get three polished versions of your text to choose from.
               </p>
               <div>
-                <button type="button" onClick={checkAgain} className={PRIMARY_BUTTON}>
-                  Try again
+                <button type="button" onClick={requestUpgrade} className={PRIMARY_BUTTON}>
+                  Upgrade to Premium
                 </button>
               </div>
             </div>
           )}
 
+          {message && <p className="px-3 py-2.5 text-xs text-slate-500">{message}</p>}
+
+          {hasText && loading && rewrites.length === 0 && <Skeleton />}
+
+          {state.status === 'error' && !locked && (
+            <div className="px-3 py-3 flex flex-col gap-2 border-b border-slate-100">
+              <p className="text-xs leading-relaxed text-amber-700">
+                {ERROR_TEXT[state.error && state.error.code] || ERROR_TEXT.unavailable}
+              </p>
+              {/* An expired sign-in cannot be fixed by retrying: the message says to sign in again. */}
+              {!(state.error && state.error.code === 'signin') && (
+                <div>
+                  <button type="button" onClick={checkAgain} className={PRIMARY_BUTTON}>
+                    Try again
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {rewrites.length > 0 && (
             <div className={`px-3 py-3 bg-[#d9856b]/5 flex flex-col gap-2.5 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-              <p className="text-sm font-semibold text-slate-800">
-                Pick a version{' '}
-                <span className="text-xs font-normal text-slate-500">
-                  ({rewrites.length} AI {rewrites.length === 1 ? 'rewrite' : 'rewrites'})
-                </span>
-              </p>
               {rewrites.map((r, i) => (
                 <div key={r.id} className="flex flex-col gap-2 bg-white border border-[#d9856b]/25 rounded-md px-3 py-2.5">
                   <div className="flex items-center justify-between gap-3">
@@ -308,19 +357,6 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
             </div>
           )}
 
-          {hasText && state.status !== 'error' && (
-            <div className="px-3 py-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-              <p className="text-[11px] leading-snug text-slate-400">AI can make mistakes. Check names, dates and numbers before using a version.</p>
-              <button
-                type="button"
-                onClick={checkAgain}
-                disabled={loading}
-                className={`-my-1 min-h-[32px] text-xs text-slate-500 hover:text-slate-800 underline underline-offset-2 disabled:opacity-50 disabled:no-underline ${FOCUS}`}
-              >
-                Check again
-              </button>
-            </div>
-          )}
         </div>
       )}
     </div>
