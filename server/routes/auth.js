@@ -3,20 +3,22 @@ import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import requireAuth from '../middleware/requireAuth.js';
-import { verifiedPhoneFromToken } from '../lib/firebaseAdmin.js';
+import { verifiedEmailFromToken } from '../lib/firebaseAdmin.js';
 
 /*
  * Accounts.
  *
- *   POST /api/auth/register  { firstName, lastName, email, password, phoneToken }  -> 201 { token, user }
- *   POST /api/auth/login     { email, password, remember }                         -> { token, user }
- *   GET  /api/auth/me        (Authorization: Bearer <token>)                       -> { user }
+ *   POST /api/auth/register  { firstName, lastName, email, password, phone, emailToken }  -> 201 { token, user }
+ *   POST /api/auth/login     { email, password, remember }                                -> { token, user }
+ *   GET  /api/auth/me        (Authorization: Bearer <token>)                              -> { user }
  *
  * The token is a JWT signed with JWT_SECRET whose `sub` is the account id (requireAuth reads it from there).
  * "Remember me" only changes how long the token lives; the browser decides where it is kept.
  *
- * phoneToken is the Firebase ID token the browser got after the person typed the SMS code. The server checks it
- * itself (lib/firebaseAdmin.js); a phone number in the request body is never used.
+ * emailToken is the Firebase ID token the browser got after the person opened the link in the verification email.
+ * The server checks it itself (lib/firebaseAdmin.js) and takes the email address ONLY from it. An `email` in the
+ * request body is optional, and if it is there and different from the verified one, the request is refused.
+ * `phone` is optional, saved as +27XXXXXXXXX and treated as unverified.
  */
 
 // Uses bcryptjs if it is installed, otherwise bcrypt. Both make and read the same $2a/$2b hashes, so accounts
@@ -35,6 +37,14 @@ const TOKEN_LIFETIME = { remember: '30d', session: '1d' };
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', BCRYPT_COST);
 
 const text = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+
+// South African numbers in any of the usual ways people type them (082 123 4567, +27 82 123 4567,
+// 27821234567, 0027821234567, +27 (0)82 123 4567) become +27821234567. Anything else gives null.
+const normalizePhone = (value) => {
+  const compact = text(value, 40).replace(/[\s().-]/g, '');
+  const match = compact.match(/^(?:(?:\+27|0027|27)0?|0)([1-9]\d{8})$/);
+  return match ? `+27${match[1]}` : null;
+};
 
 const issueToken = (user, remember) =>
   jwt.sign({}, process.env.JWT_SECRET, {
@@ -62,24 +72,44 @@ router.post('/register', authLimiter, async (req, res, next) => {
   try {
     const firstName = text(req.body?.firstName, 60);
     const lastName = text(req.body?.lastName, 60);
-    const email = text(req.body?.email, 254).toLowerCase();
+    const bodyEmail = text(req.body?.email, 254).toLowerCase(); // only compared with the verified one, never used
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    const rawPhone = text(req.body?.phone, 40);
 
     if (!firstName || !lastName) return res.status(400).json({ message: 'Enter your first and last name.' });
-    if (!EMAIL_RE.test(email)) return res.status(400).json({ message: 'Enter a valid email address.' });
     if (password.length < MIN_PASSWORD) return res.status(400).json({ message: `Use at least ${MIN_PASSWORD} characters for your password.` });
     if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES) return res.status(400).json({ message: `Your password is too long. Use at most ${MAX_PASSWORD_BYTES} characters.` });
 
-    // The number is only ever taken from the verified token.
-    const phone = await verifiedPhoneFromToken(req.body?.phoneToken);
-    if (!phone) return res.status(400).json({ message: 'We could not confirm your mobile number. Please request a new code and try again.' });
+    // The email address is only ever taken from the verified token.
+    const email = await verifiedEmailFromToken(req.body?.emailToken);
+    if (!email || email.length > 254 || !EMAIL_RE.test(email)) {
+      return res.status(400).json({ message: 'We could not confirm your email address. Please verify it and try again.' });
+    }
+    if (bodyEmail && bodyEmail !== email) {
+      return res.status(400).json({ message: 'The email address does not match the one you verified. Please check it and try again.' });
+    }
+
+    // Optional, and never proof of anything: no SMS is sent, so it is saved as typed (in +27 form).
+    let phone;
+    if (rawPhone) {
+      phone = normalizePhone(rawPhone);
+      if (!phone) return res.status(400).json({ message: 'Enter a valid mobile number, for example 082 123 4567.' });
+    }
 
     if (await User.exists({ email })) return res.status(409).json({ message: 'An account with this email already exists. Try signing in instead.' });
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
     let user;
     try {
-      user = await User.create({ firstName, lastName, email, passwordHash, lastLoginAt: new Date() });
+      user = await User.create({
+        firstName,
+        lastName,
+        email,
+        emailVerified: true,
+        ...(phone ? { phone } : {}),
+        passwordHash,
+        lastLoginAt: new Date(),
+      });
     } catch (err) {
       // Two requests with the same email can both pass the check above; the unique index stops the second one.
       if (err?.code === 11000) return res.status(409).json({ message: 'An account with this email already exists. Try signing in instead.' });

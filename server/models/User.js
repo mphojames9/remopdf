@@ -6,6 +6,12 @@ const userSchema = new mongoose.Schema(
     lastName: { type: String, required: true, trim: true, maxlength: 60 },
     // The unique index is what really stops two accounts sharing one email, even if two requests arrive together.
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 254 },
+    // True once the person has opened the link in the verification email. New accounts are only created after
+    // that, so it is true for everyone who registers now; accounts made before this field existed read as false.
+    emailVerified: { type: Boolean, default: false },
+    // The mobile number the person typed at sign-up, saved as +27XXXXXXXXX. It is NOT verified (no SMS is sent),
+    // so it must never be used to prove who someone is. Optional, and not part of toJSON below.
+    phone: { type: String, trim: true, maxlength: 20 },
     // Only the bcrypt hash is stored, and it is left out of queries unless asked for with .select('+passwordHash').
     passwordHash: { type: String, required: true, select: false },
     lastLoginAt: { type: Date },
