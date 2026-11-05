@@ -24,11 +24,23 @@ if (!process.env.PAYSTACK_SECRET_KEY) {
 }
 
 const app = express();
+// Render (like most hosts) puts a proxy in front of the app. Without this, every visitor looks like the same
+// IP address to the rate limiters, so they would all share one limit.
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet());
 
 // The web app and the Android (Capacitor) WebView are the only places allowed to call this API.
-const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+// Set CLIENT_ORIGIN (comma-separated, no trailing slashes) on Render to override this list.
+const DEFAULT_ORIGINS = [
+  'https://remopdf.site',
+  'https://www.remopdf.site',
+  'https://localhost', // Android WebView (Capacitor 6+)
+  'http://localhost', // Android WebView (older Capacitor)
+  'capacitor://localhost', // iOS WebView
+  'http://localhost:5173', // Vite dev server
+].join(',');
+const allowedOrigins = (process.env.CLIENT_ORIGIN || DEFAULT_ORIGINS)
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -79,7 +91,7 @@ mongoose
   .connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
   .then(() => {
     console.log('Connected to MongoDB');
-    app.listen(PORT, () => console.log(`RemoPDF server listening on http://localhost:${PORT}`));
+    app.listen(PORT, () => console.log(`RemoPDF server listening on port ${PORT}`));
   })
   .catch((err) => {
     // Print only the reason, never the connection string.
