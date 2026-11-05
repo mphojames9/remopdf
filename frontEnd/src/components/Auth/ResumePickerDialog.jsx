@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import logo from '../../assets/logo.webp';
+import logo from '../../assets/logo1.webp';
 import logoMobile from '../../assets/logo1.webp';
 
 /**

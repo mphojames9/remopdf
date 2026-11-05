@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Payment from '../models/Payment.js';
 import requireAuth from '../middleware/requireAuth.js';
@@ -9,6 +10,7 @@ import requireAuth from '../middleware/requireAuth.js';
  * Paystack payments.
  *
  *   GET  /api/payments/status               -> { premium, expiresAt, daysLeft, testMode, plan }
+ *   GET  /api/payments/ai-pass              -> { pass, expiresIn }   (Premium only: a signed pass for the AI service)
  *   POST /api/payments/initialize           -> { accessCode, reference }   (or { premium: true } if already paid)
  *   GET  /api/payments/verify/:reference    -> { status: 'success' | 'failed' | 'pending', ... }
  *   POST /api/payments/webhook              (Paystack -> us; see paystackWebhook, mounted in index.js)
@@ -158,6 +160,21 @@ const verifyLimiter = rateLimit({
   message: { message: 'Too many checks. Please wait a moment.' },
 });
 
+/*
+ * AI suggestions run on a separate service (it holds the Groq key and cannot see this database), and it may not be
+ * able to reach this server at all. So a Premium account asks for an "AI pass" here: a short signed note saying
+ * "this account has Premium right now". The browser hands it to the AI service, which checks the signature with the
+ * same AI_PASS_SECRET and never has to call this server. A pass never outlives the paid access it was made from.
+ *
+ * AI_PASS_SECRET: at least 32 random characters, the SAME value in server/.env and on the AI service (Render), and
+ * not the JWT_SECRET, so that service can never make sign-in tokens.
+ *   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ */
+const AI_PASS_SECONDS = 5 * 60;
+const AI_PASS_AUDIENCE = 'remopdf-ai'; // the AI service refuses a pass made for anything else
+const AI_PASS_MIN_SECRET = 32;
+const aiPassSecret = () => (process.env.AI_PASS_SECRET || '').trim();
+
 const router = Router();
 
 /* GET /api/payments/status */
@@ -165,6 +182,34 @@ router.get('/status', requireAuth, async (req, res, next) => {
   try {
     const access = await accessFor(req.userId);
     return res.json({ ...access, testMode: secretKey().startsWith('sk_test_'), plan: getPlan() });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/* GET /api/payments/ai-pass  ->  { pass, expiresIn }   (403 unless the account has Premium right now) */
+router.get('/ai-pass', requireAuth, verifyLimiter, async (req, res, next) => {
+  try {
+    const secret = aiPassSecret();
+    if (secret.length < AI_PASS_MIN_SECRET) {
+      console.error(`AI_PASS_SECRET is missing or shorter than ${AI_PASS_MIN_SECRET} characters, so no AI passes can be made.`);
+      return res.status(503).json({ message: 'AI suggestions are not set up yet. Please try again later.' });
+    }
+
+    const access = await accessFor(req.userId);
+    if (!access.premium) {
+      return res.status(403).json({ message: 'AI suggestions are a Premium feature.', premiumRequired: true });
+    }
+
+    const secondsLeft = Math.floor((access.expiresAt.getTime() - Date.now()) / 1000);
+    const expiresIn = Math.max(1, Math.min(AI_PASS_SECONDS, secondsLeft));
+    const pass = jwt.sign({ premium: true }, secret, {
+      algorithm: 'HS256',
+      expiresIn,
+      audience: AI_PASS_AUDIENCE,
+      subject: String(req.userId),
+    });
+    return res.json({ pass, expiresIn });
   } catch (err) {
     return next(err);
   }

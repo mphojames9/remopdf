@@ -48,3 +48,33 @@ export const startPayment = (details = {}) => request('POST', '/initialize', det
 
 /** Asks the server to confirm a payment with Paystack. Resolves to { status: 'success' | 'failed' | 'pending', ... }. */
 export const verifyPayment = (reference) => request('GET', `/verify/${encodeURIComponent(reference)}`);
+
+/*
+ * The AI pass: a short signed note from the accounts server saying this account has Premium right now. The AI
+ * service checks the signature itself, so it never has to reach the accounts server (which may only run on this
+ * computer). Kept in memory until half a minute before it runs out; the accounts server answers 403 to an account
+ * without Premium, which reaches the caller as a PaymentApiError with status 403.
+ */
+let aiPass = null; // { value, until, forToken }
+let aiPassRequest = null; // one request at a time, however many panels ask together
+
+export const forgetAiPass = () => {
+  aiPass = null;
+};
+
+/** Resolves to the pass (a string). */
+export function getAiPass() {
+  const token = getToken();
+  if (aiPass && aiPass.forToken === token && aiPass.until - Date.now() > 30000) return Promise.resolve(aiPass.value);
+  if (!aiPassRequest) {
+    aiPassRequest = request('GET', '/ai-pass')
+      .then((data) => {
+        aiPass = { value: data.pass, until: Date.now() + (Number(data.expiresIn) || 0) * 1000, forToken: token };
+        return data.pass;
+      })
+      .finally(() => {
+        aiPassRequest = null;
+      });
+  }
+  return aiPassRequest;
+}

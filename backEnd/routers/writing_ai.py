@@ -13,17 +13,23 @@ The Groq key stays on the server. Setup, once:
     Render -> Environment:  GROQ_API_KEY = <your key>
     (optional)              GROQ_MODEL   = openai/gpt-oss-20b   (this is the default)
 
-Premium only. The key is never used for a free account. The request must carry the person's sign-in
-token ("Authorization: Bearer <token>"). This service has no accounts of its own, so it asks the
-accounts server (the one that serves /api/payments/status) whether that account has an active Premium
-payment, and answers 401 (not signed in), 403 (not Premium) or 503 (could not check) without calling Groq:
+Premium only. The key is never used for a free account. The request must carry an "AI pass"
+("Authorization: Bearer <pass>"): a short-lived signed note that the accounts server (the Node app with
+sign-in and Paystack) hands to Premium accounts at GET /api/payments/ai-pass. This service has no accounts
+of its own and never calls the accounts server (which may not even be reachable from here); it only checks
+the pass's signature with a secret both sides share. Answers: 401 (no valid pass), 403 (not Premium) or
+503 (secret not set), always without calling Groq. Setup, once, the SAME value in both places:
 
-    Render -> Environment:  ACCOUNTS_API_URL = https://<your accounts server>   (no trailing slash)
+    Render -> Environment:  AI_PASS_SECRET = <32+ random characters>
+    accounts server .env:   AI_PASS_SECRET = <the same value>
+        (make one with:  python -c "import secrets; print(secrets.token_hex(32))" ; it is not the JWT_SECRET)
 
 If the key is missing or Groq is down, the route answers with an error status and the panel
 shows a short notice with a Retry button, so the form itself never breaks.
 """
+import base64
 import hashlib
+import hmac
 import json
 import os
 import re
@@ -31,7 +37,6 @@ import threading
 import time
 from typing import List, Literal, Optional
 
-import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -310,73 +315,64 @@ def _cache_key(text: str, field: str, job_title: str, model: str) -> str:
 # --------------------------------------------------------------------------- #
 #                     Premium only: who may use the Groq key                  #
 # --------------------------------------------------------------------------- #
-# The Premium decision is made in one place only, accessFor() in the accounts server's
-# routes/payments.js. This service forwards the person's own token to GET /api/payments/status and
-# believes only a clear `"premium": true`. Anything else (no token, expired token, not Premium, the
-# accounts server down or not configured) means Groq is not called.
+# The Premium decision is made in one place only, accessFor() in the accounts server's routes/payments.js.
+# It signs a short "AI pass" (HS256 JWT, a few minutes long, never longer than the paid access) for Premium
+# accounts only. Here the pass is checked, with nothing but the shared secret: no network call, no database.
+# Anything else (no pass, a pass signed by someone else, changed, expired, made for another purpose, not
+# Premium, secret not set) means Groq is not called.
 
-ACCOUNTS_TIMEOUT_S = 8
-PREMIUM_CACHE_TTL_S = 60  # a "yes" is reused this long, so typing does not ask the accounts server every time
-FREE_CACHE_TTL_S = 10  # a "no" is kept briefly, so someone who has just paid is not kept waiting
-PREMIUM_CACHE_MAX = 2000
 UNAVAILABLE = "AI suggestions are unavailable right now. Please try again later."
-TOKEN_RE = re.compile(r"^[A-Za-z0-9._~+/=-]{10,4096}$")  # what a JWT looks like; nothing else is forwarded
+MIN_SECRET_CHARS = 32  # a short secret could be guessed, and anyone who guesses it could use the Groq key for free
+PASS_AUDIENCE = "remopdf-ai"  # the accounts server makes the pass for this service only
+PASS_RE = re.compile(r"^[A-Za-z0-9_-]{1,2048}\.[A-Za-z0-9_-]{1,2048}\.[A-Za-z0-9_-]{1,2048}$")  # header.payload.signature
 
-_premium_cache: dict = {}  # sha256(token) -> (is_premium, valid_until)
-_premium_lock = threading.Lock()
+
+def _unavailable(reason: str) -> HTTPException:
+    # The reason is for whoever runs the server: the app only logs it to the browser console, people never see it.
+    return HTTPException(status_code=503, detail=f"{UNAVAILABLE} ({reason})")
 
 
-def _bearer_token(request: Request) -> str:
+def _pass_secret() -> bytes:
+    secret = (os.getenv("AI_PASS_SECRET") or "").strip()
+    if len(secret) < MIN_SECRET_CHARS:
+        print(f"[writing_ai] AI_PASS_SECRET is not set (or shorter than {MIN_SECRET_CHARS} characters), so AI suggestions are off.")
+        raise _unavailable(f"AI_PASS_SECRET is not set, or is shorter than {MIN_SECRET_CHARS} characters, on the server")
+    return secret.encode("utf-8")
+
+
+def _b64url_decode(part: str) -> bytes:
+    return base64.urlsafe_b64decode(part + "=" * (-len(part) % 4))
+
+
+def _bearer_pass(request: Request) -> str:
     scheme, _, token = request.headers.get("authorization", "").partition(" ")
     token = token.strip()
-    if scheme.lower() != "bearer" or not TOKEN_RE.match(token):
+    if scheme.lower() != "bearer" or not PASS_RE.match(token):
         raise HTTPException(status_code=401, detail="Sign in to use AI suggestions.")
     return token
 
 
-def _ask_accounts_server(token: str) -> bool:
-    """True only when the accounts server says this sign-in has an active Premium payment."""
-    base = (os.getenv("ACCOUNTS_API_URL") or "").strip().rstrip("/")
-    if not base:
-        print("[writing_ai] ACCOUNTS_API_URL is not set, so Premium cannot be checked and AI suggestions are off.")
-        raise HTTPException(status_code=503, detail=UNAVAILABLE)
-    try:
-        res = httpx.get(
-            f"{base}/api/payments/status",
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=ACCOUNTS_TIMEOUT_S,
-        )
-    except (httpx.HTTPError, httpx.InvalidURL) as err:
-        print(f"[writing_ai] could not reach the accounts server: {type(err).__name__}: {err}")
-        raise HTTPException(status_code=503, detail=UNAVAILABLE)
-    if res.status_code == 401:
-        raise HTTPException(status_code=401, detail="Your session has expired. Please sign in again.")
-    if res.status_code != 200:
-        print(f"[writing_ai] the accounts server answered {res.status_code} to the Premium check")
-        raise HTTPException(status_code=503, detail=UNAVAILABLE)
-    try:
-        data = res.json()
-    except ValueError:
-        print("[writing_ai] the accounts server sent an unreadable Premium answer")
-        raise HTTPException(status_code=503, detail=UNAVAILABLE)
-    return isinstance(data, dict) and data.get("premium") is True
-
-
 def require_premium(token: str) -> None:
-    """Returns when the token belongs to a Premium account; raises 401 / 403 / 503 otherwise."""
-    key = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    now = time.time()
-    with _premium_lock:
-        hit = _premium_cache.get(key)
-    if hit and hit[1] > now:
-        premium = hit[0]
-    else:
-        premium = _ask_accounts_server(token)  # a failed check raises here and is never cached
-        with _premium_lock:
-            if len(_premium_cache) >= PREMIUM_CACHE_MAX:
-                _premium_cache.clear()
-            _premium_cache[key] = (premium, now + (PREMIUM_CACHE_TTL_S if premium else FREE_CACHE_TTL_S))
-    if not premium:
+    """Returns when the pass is genuine, not expired and says Premium; raises 401 / 403 / 503 otherwise."""
+    secret = _pass_secret()
+    head_b64, payload_b64, sig_b64 = token.split(".")  # PASS_RE guarantees exactly three parts
+    try:
+        header = json.loads(_b64url_decode(head_b64))
+        payload = json.loads(_b64url_decode(payload_b64))
+        signature = _b64url_decode(sig_b64)
+    except ValueError:  # bad base64, bad UTF-8 and bad JSON are all ValueErrors
+        raise HTTPException(status_code=401, detail="Your AI access is not valid. Please reload the page.")
+    # The algorithm is fixed here, never trusted from the pass itself ("alg": "none" and friends).
+    if not isinstance(header, dict) or header.get("alg") != "HS256" or not isinstance(payload, dict):
+        raise HTTPException(status_code=401, detail="Your AI access is not valid. Please reload the page.")
+    expected = hmac.new(secret, f"{head_b64}.{payload_b64}".encode("ascii"), hashlib.sha256).digest()
+    if not hmac.compare_digest(expected, signature):
+        raise HTTPException(status_code=401, detail="Your AI access is not valid. Please reload the page.")
+    exp = payload.get("exp")
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)) or exp <= time.time():
+        # The app asks for a fresh pass and tries once more, so people do not see this.
+        raise HTTPException(status_code=401, detail="Your AI access has expired.")
+    if payload.get("aud") != PASS_AUDIENCE or payload.get("premium") is not True:
         raise HTTPException(status_code=403, detail="AI suggestions are a Premium feature. Upgrade to use them.")
 
 
@@ -429,9 +425,9 @@ class AnalyzeRequest(BaseModel):
 
 @router.post("/analyze")
 def analyze(body: AnalyzeRequest, request: Request):
-    # Gate first: nothing below (the reply cache, the Groq key) is reachable without Premium.
-    token = _bearer_token(request)
-    if _rate_limited(request):  # before the accounts-server call, so random tokens cannot be used to hammer it
+    # Gate first: nothing below (the reply cache, the Groq key) is reachable without a valid Premium pass.
+    token = _bearer_pass(request)
+    if _rate_limited(request):
         raise HTTPException(status_code=429, detail="Too many requests. Try again in a minute.")
     require_premium(token)
 

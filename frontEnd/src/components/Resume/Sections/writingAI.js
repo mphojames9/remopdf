@@ -4,16 +4,19 @@
   The Groq key lives on the server (routers/writing_ai.py, env GROQ_API_KEY). Nothing secret is in
   this file, and the key must never be put in the React app: anything in the bundle is public.
 
-  The AI is a Premium feature. The sign-in token goes along with every request and the server checks
-  Premium itself before it uses the key, so this file only reports what the server said:
-    401 -> WritingAIError('signin')     not signed in, or the session ran out
+  The AI is a Premium feature. Before a review the app gets a short-lived "AI pass" from the accounts server
+  (getAiPass in api/payments.js): a signed note that this account has Premium right now. The AI service checks
+  the pass itself before it uses the key, so it never has to reach the accounts server. This file only reports
+  what was said:
     403 -> WritingAIError('premium')    signed in, but no active Premium payment
+    401 -> WritingAIError('signin')     not signed in, or the session ran out
 
     analyzeWriting({ text, field, jobTitle, signal })   -> { rewrites }
       rewrites = up to 3 whole-text versions to choose from: { id, label, text }
 */
 
 import { getToken } from '../../../api/auth';
+import { getAiPass, forgetAiPass, PaymentApiError } from '../../../api/payments';
 
 // Same address onetSuggestions.js uses. Set VITE_API_URL to override it.
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://remopdf-backend.onrender.com').replace(/\/$/, '');
@@ -56,6 +59,24 @@ const logFailure = async (res) => {
 
 const cacheKey = (text, field, jobTitle) => `${field}\u0000${jobTitle}\u0000${text}`;
 
+// The Premium pass from the accounts server (see getAiPass). What goes wrong becomes the panel's error codes.
+async function passOrThrow() {
+  try {
+    return await getAiPass();
+  } catch (err) {
+    if (err instanceof PaymentApiError) {
+      if (err.status === 401) throw new WritingAIError('signin', 'Sign in to use AI suggestions.');
+      if (err.status === 403) {
+        cache.clear(); // Premium is over (or was never there): nothing kept from before is shown again
+        throw new WritingAIError('premium', 'AI suggestions are a Premium feature.');
+      }
+      if (err.status === 0) throw new WritingAIError('offline', 'Could not reach the accounts server.');
+      console.warn(`[writingAI] ${err.status} from the accounts server when asking for the AI pass: ${err.message}`);
+    }
+    throw new WritingAIError('unavailable', 'AI review is unavailable right now.');
+  }
+}
+
 export async function analyzeWriting({ text, field = 'other', jobTitle = '', signal } = {}) {
   // No sign-in, no request: the server would refuse it anyway. Checked before the cache so a result kept
   // from an earlier account is never shown to someone who is signed out.
@@ -81,15 +102,24 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', sig
   }
 
   try {
-    let res;
-    try {
-      res = await fetch(ANALYZE_URL, {
+    const send = (pass) =>
+      fetch(ANALYZE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pass}` }, // the pass, never the sign-in token
         body: JSON.stringify({ text: body, field, job_title: title || null }),
         signal: controller.signal,
       });
+
+    let res;
+    try {
+      res = await send(await passOrThrow());
+      if (res.status === 401) {
+        // The pass ran out between two reviews (it lasts a few minutes): get a fresh one and try once more.
+        forgetAiPass();
+        res = await send(await passOrThrow());
+      }
     } catch (err) {
+      if (err instanceof WritingAIError) throw err;
       if (err && err.name === 'AbortError') {
         if (timedOut) throw new WritingAIError('timeout', 'The AI took too long to answer.');
         throw err; // the caller cancelled: let it ignore this
