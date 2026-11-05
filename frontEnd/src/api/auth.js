@@ -51,9 +51,13 @@ async function post(path, body) {
   return data;
 }
 
-/** Creates the account (saved in MongoDB) and signs the person in. Throws an Error with a readable message. */
-export async function registerUser({ firstName, lastName, email, password, phoneToken }) {
-  const data = await post('/api/auth/register', { firstName, lastName, email, password, phoneToken });
+/**
+ * Creates the account (saved in MongoDB) and signs the person in. Throws an Error with a readable message.
+ * emailToken is the Firebase ID token from api/emailVerify.js (proof the person opened the verification link);
+ * the server takes the email address from it. phone is saved as typed (+27 form) and is not verified.
+ */
+export async function registerUser({ firstName, lastName, email, password, phone, emailToken }) {
+  const data = await post('/api/auth/register', { firstName, lastName, email, password, phone, emailToken });
   saveSession(data, true);
   return data.user;
 }

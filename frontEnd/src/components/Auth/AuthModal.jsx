@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from '../../assets/logo.webp';
 import logoMobile from '../../assets/logo1.webp';
-import { normalizePhone, sendPhoneCode, confirmPhoneCode, resetPhoneVerification } from '../../api/phone';
+import {
+  RESEND_COOLDOWN_SECONDS,
+  confirmEmailVerified,
+  endEmailVerification,
+  friendlyAuthError,
+  normalizePhone,
+  resendVerificationEmail,
+  startEmailVerification,
+} from '../../api/emailVerify';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
@@ -293,8 +301,9 @@ const MODAL_CSS = `
  *  - onModeChange:   (mode) => void, called when the person switches tabs
  *  - onClose:        () => void
  *  - onSignIn:       async ({ email, password, remember }) => void. Throw an Error to show its message in the form.
- *  - onRegister:     async ({ firstName, lastName, email, phone, phoneToken, password }) => void. Throw an Error to show its message in the form.
- *                    phoneToken is a Firebase ID token proving the person typed the SMS code sent to `phone`; the server checks it.
+ *  - onRegister:     async ({ firstName, lastName, email, phone, emailToken, password }) => void. Throw an Error to show its message in the form.
+ *                    emailToken is a Firebase ID token proving the person opened the link in the verification email sent to `email`;
+ *                    the server checks it. `phone` is saved as typed (+27 form) and is not verified.
  *  - onForgotPassword (optional): when given, a "Forgot password?" link is shown on the Sign in form.
  *  - termsHref / privacyHref (optional): where the links in the Register form point.
  */
@@ -316,14 +325,13 @@ export default function AuthModal({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const firstFieldRef = useRef(null);
-  // Sign-up has two steps: the details form, then the 6-digit SMS code.
-  const [step, setStep] = useState('form'); // 'form' | 'code'
-  const [code, setCode] = useState('');
+  // Sign-up has two steps: the details form, then "Check your inbox" (open the link in the verification email).
+  const [step, setStep] = useState('form'); // 'form' | 'verify'
   const [resendIn, setResendIn] = useState(0);
-  const codeRef = useRef(null);
-  // Remembers a number that was already confirmed, so fixing a typo elsewhere (say, an email that is taken)
-  // does not send a second SMS. { phone, token, at }
-  const verifiedRef = useRef(null);
+  // True when this email was already verified in an earlier attempt, so no new email was sent.
+  const [emailAlreadyVerified, setEmailAlreadyVerified] = useState(false);
+  // A calm, non-error message on the "Check your inbox" step (not verified yet, a new email was sent, ...).
+  const [formNotice, setFormNotice] = useState('');
 
   const isRegister = mode === 'register';
   const copy = COPY[isRegister ? 'register' : 'signin'];
@@ -331,6 +339,10 @@ export default function AuthModal({
   const errors = isRegister ? validateRegister(register) : validateSignIn(signIn);
   const errorFor = (name) => (submitAttempted || touched[name] ? errors[name] : undefined);
   const phoneE164 = isRegister ? normalizePhone(register.phone) : '';
+  const emailAddress = isRegister ? register.email.trim().toLowerCase() : '';
+  const onVerifyStep = isRegister && step === 'verify';
+  const title = onVerifyStep ? 'Check your inbox' : copy.title;
+  const subtitle = onVerifyStep ? 'One last step to finish creating your account.' : copy.subtitle;
 
   // Start clean every time the modal is closed, so a password is never left behind.
   useEffect(() => {
@@ -341,26 +353,19 @@ export default function AuthModal({
     setSubmitAttempted(false);
     setSubmitting(false);
     setFormError('');
+    setFormNotice('');
     setStep('form');
-    setCode('');
     setResendIn(0);
-    verifiedRef.current = null;
-    resetPhoneVerification();
+    setEmailAlreadyVerified(false);
+    endEmailVerification(); // closes the Firebase session used to check the email
   }, [open]);
 
-  // "Resend code" unlocks after a short countdown.
+  // "Resend email" unlocks after a short countdown.
   useEffect(() => {
     if (resendIn <= 0) return undefined;
     const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
     return () => clearTimeout(t);
   }, [resendIn]);
-
-  // When the code step appears, put the cursor in the code box.
-  useEffect(() => {
-    if (step !== 'code') return undefined;
-    const t = setTimeout(() => codeRef.current?.focus(), 80);
-    return () => clearTimeout(t);
-  }, [step]);
 
   // Escape closes the modal and the page behind it does not scroll while it is open.
   useEffect(() => {
@@ -406,52 +411,53 @@ export default function AuthModal({
     setTouched({});
     setSubmitAttempted(false);
     setFormError('');
+    setFormNotice('');
     setStep('form');
-    setCode('');
     setResendIn(0);
-    verifiedRef.current = null;
-    resetPhoneVerification();
+    setEmailAlreadyVerified(false);
+    endEmailVerification();
     onModeChange?.(next);
   };
 
-  // Creates the account once the number is proven. The server re-checks the token; nothing here is trusted on its own.
-  const finishRegister = async (phone, phoneToken) => {
+  // Creates the account once the email is proven. The server re-checks the token; nothing here is trusted on its own.
+  const finishRegister = async (emailToken) => {
     await onRegister?.({
       firstName: register.firstName.trim(),
       lastName: register.lastName.trim(),
-      email: register.email.trim().toLowerCase(),
+      email: emailAddress,
       password: register.password,
-      phone,
-      phoneToken,
+      phone: phoneE164,
+      emailToken,
     });
-    verifiedRef.current = null;
-    resetPhoneVerification();
     onClose();
-  };
-
-  const alreadyVerified = (phone) => {
-    const v = verifiedRef.current;
-    return v && v.phone === phone && Date.now() - v.at < 8 * 60 * 1000 ? v.token : null;
   };
 
   const backToDetails = () => {
     if (submitting) return;
     setStep('form');
-    setCode('');
     setFormError('');
-    resetPhoneVerification();
+    setFormNotice('');
+    setResendIn(0);
+    setEmailAlreadyVerified(false);
+    endEmailVerification();
   };
 
-  const resendCode = async () => {
+  const resendEmail = async () => {
     if (submitting || resendIn > 0) return;
     setFormError('');
+    setFormNotice('');
     setSubmitting(true);
     try {
-      await sendPhoneCode(phoneE164);
-      setCode('');
-      setResendIn(30);
+      const result = await resendVerificationEmail(emailAddress, register.password);
+      if (result.alreadyVerified) {
+        setEmailAlreadyVerified(true);
+        setFormNotice('This email is already verified. Tap "I\'ve verified my email" to continue.');
+      } else {
+        setFormNotice('We sent you a new email. If you do not see it, check your spam folder.');
+        setResendIn(RESEND_COOLDOWN_SECONDS);
+      }
     } catch (err) {
-      setFormError((err && err.message) || 'Could not send the code. Please try again.');
+      setFormError(friendlyAuthError(err));
     } finally {
       setSubmitting(false);
     }
@@ -461,21 +467,20 @@ export default function AuthModal({
     e.preventDefault();
     if (submitting) return;
     setFormError('');
+    setFormNotice('');
 
-    // Step 2 (sign-up): check the SMS code, then create the account.
-    if (isRegister && step === 'code') {
-      if (!/^\d{6}$/.test(code)) {
-        setFormError('Enter the 6-digit code we sent you.');
-        codeRef.current?.focus();
-        return;
-      }
+    // Step 2 (sign-up): has the link in the email been opened? If so, create the account.
+    if (isRegister && step === 'verify') {
       setSubmitting(true);
       try {
-        const token = await confirmPhoneCode(code);
-        verifiedRef.current = { phone: phoneE164, token, at: Date.now() };
-        await finishRegister(phoneE164, token);
+        const result = await confirmEmailVerified(emailAddress, register.password);
+        if (!result.verified) {
+          setFormNotice('Your email is not verified yet. Open the link in the email we sent you first, then tap the button again.');
+          return;
+        }
+        await finishRegister(result.emailToken);
       } catch (err) {
-        setFormError((err && err.message) || 'Something went wrong. Please try again.');
+        setFormError(friendlyAuthError(err));
       } finally {
         setSubmitting(false);
       }
@@ -492,17 +497,11 @@ export default function AuthModal({
     setSubmitting(true);
     try {
       if (isRegister) {
-        const token = alreadyVerified(phoneE164);
-        if (token) {
-          // This number was confirmed a moment ago (the person came back to fix something else).
-          await finishRegister(phoneE164, token);
-        } else {
-          // Step 1 (sign-up): text the code, then show the code box.
-          await sendPhoneCode(phoneE164);
-          setCode('');
-          setResendIn(30);
-          setStep('code');
-        }
+        // Step 1 (sign-up): create (or pick up) the Firebase account, send the verification email, show "Check your inbox".
+        const result = await startEmailVerification(emailAddress, register.password);
+        setEmailAlreadyVerified(result.alreadyVerified);
+        setResendIn(result.alreadyVerified ? 0 : RESEND_COOLDOWN_SECONDS);
+        setStep('verify');
       } else {
         await onSignIn?.({
           email: signIn.email.trim().toLowerCase(),
@@ -512,7 +511,7 @@ export default function AuthModal({
         onClose();
       }
     } catch (err) {
-      setFormError((err && err.message) || 'Something went wrong. Please try again.');
+      setFormError(isRegister ? friendlyAuthError(err) : ((err && err.message) || 'Something went wrong. Please try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -592,8 +591,8 @@ export default function AuthModal({
                 </div>
 
                 <div key={mode} className="auth-swap mt-6">
-                  <h2 id="auth-title" className="text-xl font-semibold leading-tight tracking-tight text-slate-900 md:text-[22px]">{copy.title}</h2>
-                  <p className="mb-5 mt-1 text-[13px] text-slate-500">{copy.subtitle}</p>
+                  <h2 id="auth-title" className="text-xl font-semibold leading-tight tracking-tight text-slate-900 md:text-[22px]">{title}</h2>
+                  <p className="mb-5 mt-1 text-[13px] text-slate-500">{subtitle}</p>
 
                   <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
                     {formError && (
@@ -603,26 +602,33 @@ export default function AuthModal({
                       </div>
                     )}
 
-                    {isRegister && step === 'code' ? (
+                    {formNotice && (
+                      <div role="status" className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[12.5px] leading-snug text-amber-800">
+                        <IconAlert className="mt-px h-4 w-4 shrink-0" />
+                        <span>{formNotice}</span>
+                      </div>
+                    )}
+
+                    {onVerifyStep ? (
                       <>
-                        <p className="text-[13px] leading-relaxed text-slate-600">
-                          We sent a 6-digit code by SMS to{' '}
-                          <span className="font-semibold text-slate-900">{phoneE164}</span>.
-                        </p>
-                        <Field
-                          id="auth-code"
-                          label="Verification code"
-                          icon={IconPhone}
-                          value={code}
-                          onChange={(e) => {
-                            setCode(e.target.value.replace(/\D/g, '').slice(0, 6));
-                            if (formError) setFormError('');
-                          }}
-                          autoComplete="one-time-code"
-                          inputMode="numeric"
-                          placeholder="123456"
-                          inputRef={codeRef}
-                        />
+                        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
+                          <span aria-hidden="true" className="mt-0.5 text-[#d9856b]">
+                            <IconMail className="h-5 w-5" />
+                          </span>
+                          <p className="text-[13px] leading-relaxed text-slate-600">
+                            {emailAlreadyVerified ? (
+                              <>
+                                <span className="font-semibold text-slate-900">{emailAddress}</span> is already verified. Tap the button below to
+                                finish creating your account.
+                              </>
+                            ) : (
+                              <>
+                                We sent a verification link to <span className="font-semibold text-slate-900">{emailAddress}</span>. Open the link,
+                                then come back here and tap the button below. Can&apos;t find it? Check your spam or junk folder.
+                              </>
+                            )}
+                          </p>
+                        </div>
                         <div className="flex items-center justify-between text-[12.5px]">
                           <button
                             type="button"
@@ -630,15 +636,15 @@ export default function AuthModal({
                             disabled={submitting}
                             className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline focus:outline-none focus-visible:underline disabled:opacity-50"
                           >
-                            Change number
+                            Change email
                           </button>
                           <button
                             type="button"
-                            onClick={resendCode}
+                            onClick={resendEmail}
                             disabled={submitting || resendIn > 0}
                             className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline focus:outline-none focus-visible:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline"
                           >
-                            {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+                            {resendIn > 0 ? `Resend email in ${resendIn}s` : 'Resend email'}
                           </button>
                         </div>
                       </>
@@ -690,7 +696,7 @@ export default function AuthModal({
                           inputMode="tel"
                           placeholder="082 123 4567"
                         >
-                          <p className="mt-1.5 text-[11.5px] text-slate-500">We will text you a code to confirm it.</p>
+                          <p className="mt-1.5 text-[11.5px] text-slate-500">Saved with your account. We will not send you a code by SMS.</p>
                         </Field>
                         <Field
                           id="auth-password"
@@ -781,9 +787,6 @@ export default function AuthModal({
                       </>
                     )}
 
-                    {/* Firebase's invisible reCAPTCHA attaches here when the SMS is requested. */}
-                    <div id="recaptcha-container" />
-
                     <button
                       type="submit"
                       disabled={submitting}
@@ -791,8 +794,8 @@ export default function AuthModal({
                     >
                       {submitting && <IconSpinner />}
                       {submitting
-                        ? (isRegister ? (step === 'code' ? 'Verifying…' : 'Please wait…') : 'Signing in…')
-                        : (isRegister ? (step === 'code' ? 'Verify and create account' : 'Continue') : 'Sign in')}
+                        ? (isRegister ? (step === 'verify' ? 'Checking…' : 'Please wait…') : 'Signing in…')
+                        : (isRegister ? (step === 'verify' ? "I've verified my email" : 'Continue') : 'Sign in')}
                     </button>
                   </form>
 
