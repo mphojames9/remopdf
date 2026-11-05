@@ -95,6 +95,7 @@ export {
   DEFAULT_PAGE_NUMBERS,
   normalizePageNumbers,
   PageNumberContext,
+  WatermarkContext,
   SECTION_META,
   PAGE_WIDTH_PX,
   DEFAULT_ACCENT,

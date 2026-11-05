@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from '../../assets/logo.webp';
 import logoMobile from '../../assets/logo1.webp';
+import { normalizePhone, sendPhoneCode, confirmPhoneCode, resetPhoneVerification } from '../../api/phone';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
 
 const EMPTY_SIGN_IN = { email: '', password: '', remember: true };
-const EMPTY_REGISTER = { firstName: '', lastName: '', email: '', password: '', confirm: '', terms: false };
+const EMPTY_REGISTER = { firstName: '', lastName: '', email: '', phone: '', password: '', confirm: '', terms: false };
 
 const COPY = {
   signin: {
@@ -57,6 +58,13 @@ const IconMail = ({ className }) => (
   <Svg className={className}>
     <rect x="3" y="5" width="18" height="14" rx="2" />
     <path d="m3 7 9 6 9-6" />
+  </Svg>
+);
+
+const IconPhone = ({ className }) => (
+  <Svg className={className}>
+    <rect x="7" y="2.5" width="10" height="19" rx="2.2" />
+    <path d="M11 18.5h2" />
   </Svg>
 );
 
@@ -119,6 +127,8 @@ const validateRegister = (v) => {
   if (!v.lastName.trim()) errors.lastName = 'Enter your last name.';
   if (!email) errors.email = 'Enter your email address.';
   else if (!EMAIL_RE.test(email)) errors.email = 'Enter a valid email address.';
+  if (!v.phone.trim()) errors.phone = 'Enter your mobile number.';
+  else if (!normalizePhone(v.phone)) errors.phone = 'Enter a valid number, like 082 123 4567 or +27 82 123 4567.';
   if (!v.password) errors.password = 'Create a password.';
   else if (v.password.length < MIN_PASSWORD) errors.password = `Use at least ${MIN_PASSWORD} characters.`;
   if (!v.confirm) errors.confirm = 'Confirm your password.';
@@ -164,7 +174,7 @@ const PasswordStrength = ({ password }) => {
 };
 
 /* A labelled input with an optional leading icon and an error line. Password fields get a show / hide button. */
-const Field = ({ id, label, type = 'text', value, onChange, onBlur, error, autoComplete, placeholder, inputRef, icon: Icon, children }) => {
+const Field = ({ id, label, type = 'text', value, onChange, onBlur, error, autoComplete, inputMode, placeholder, inputRef, icon: Icon, children }) => {
   const [show, setShow] = useState(false);
   const isPassword = type === 'password';
   return (
@@ -189,6 +199,7 @@ const Field = ({ id, label, type = 'text', value, onChange, onBlur, error, autoC
           onChange={onChange}
           onBlur={onBlur}
           autoComplete={autoComplete}
+          inputMode={inputMode}
           placeholder={placeholder}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? `${id}-error` : undefined}
@@ -282,7 +293,8 @@ const MODAL_CSS = `
  *  - onModeChange:   (mode) => void, called when the person switches tabs
  *  - onClose:        () => void
  *  - onSignIn:       async ({ email, password, remember }) => void. Throw an Error to show its message in the form.
- *  - onRegister:     async ({ firstName, lastName, email, password }) => void. Throw an Error to show its message in the form.
+ *  - onRegister:     async ({ firstName, lastName, email, phone, phoneToken, password }) => void. Throw an Error to show its message in the form.
+ *                    phoneToken is a Firebase ID token proving the person typed the SMS code sent to `phone`; the server checks it.
  *  - onForgotPassword (optional): when given, a "Forgot password?" link is shown on the Sign in form.
  *  - termsHref / privacyHref (optional): where the links in the Register form point.
  */
@@ -304,12 +316,21 @@ export default function AuthModal({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const firstFieldRef = useRef(null);
+  // Sign-up has two steps: the details form, then the 6-digit SMS code.
+  const [step, setStep] = useState('form'); // 'form' | 'code'
+  const [code, setCode] = useState('');
+  const [resendIn, setResendIn] = useState(0);
+  const codeRef = useRef(null);
+  // Remembers a number that was already confirmed, so fixing a typo elsewhere (say, an email that is taken)
+  // does not send a second SMS. { phone, token, at }
+  const verifiedRef = useRef(null);
 
   const isRegister = mode === 'register';
   const copy = COPY[isRegister ? 'register' : 'signin'];
   const values = isRegister ? register : signIn;
   const errors = isRegister ? validateRegister(register) : validateSignIn(signIn);
   const errorFor = (name) => (submitAttempted || touched[name] ? errors[name] : undefined);
+  const phoneE164 = isRegister ? normalizePhone(register.phone) : '';
 
   // Start clean every time the modal is closed, so a password is never left behind.
   useEffect(() => {
@@ -320,7 +341,26 @@ export default function AuthModal({
     setSubmitAttempted(false);
     setSubmitting(false);
     setFormError('');
+    setStep('form');
+    setCode('');
+    setResendIn(0);
+    verifiedRef.current = null;
+    resetPhoneVerification();
   }, [open]);
+
+  // "Resend code" unlocks after a short countdown.
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  // When the code step appears, put the cursor in the code box.
+  useEffect(() => {
+    if (step !== 'code') return undefined;
+    const t = setTimeout(() => codeRef.current?.focus(), 80);
+    return () => clearTimeout(t);
+  }, [step]);
 
   // Escape closes the modal and the page behind it does not scroll while it is open.
   useEffect(() => {
@@ -366,15 +406,83 @@ export default function AuthModal({
     setTouched({});
     setSubmitAttempted(false);
     setFormError('');
+    setStep('form');
+    setCode('');
+    setResendIn(0);
+    verifiedRef.current = null;
+    resetPhoneVerification();
     onModeChange?.(next);
+  };
+
+  // Creates the account once the number is proven. The server re-checks the token; nothing here is trusted on its own.
+  const finishRegister = async (phone, phoneToken) => {
+    await onRegister?.({
+      firstName: register.firstName.trim(),
+      lastName: register.lastName.trim(),
+      email: register.email.trim().toLowerCase(),
+      password: register.password,
+      phone,
+      phoneToken,
+    });
+    verifiedRef.current = null;
+    resetPhoneVerification();
+    onClose();
+  };
+
+  const alreadyVerified = (phone) => {
+    const v = verifiedRef.current;
+    return v && v.phone === phone && Date.now() - v.at < 8 * 60 * 1000 ? v.token : null;
+  };
+
+  const backToDetails = () => {
+    if (submitting) return;
+    setStep('form');
+    setCode('');
+    setFormError('');
+    resetPhoneVerification();
+  };
+
+  const resendCode = async () => {
+    if (submitting || resendIn > 0) return;
+    setFormError('');
+    setSubmitting(true);
+    try {
+      await sendPhoneCode(phoneE164);
+      setCode('');
+      setResendIn(30);
+    } catch (err) {
+      setFormError((err && err.message) || 'Could not send the code. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
-    setSubmitAttempted(true);
     setFormError('');
 
+    // Step 2 (sign-up): check the SMS code, then create the account.
+    if (isRegister && step === 'code') {
+      if (!/^\d{6}$/.test(code)) {
+        setFormError('Enter the 6-digit code we sent you.');
+        codeRef.current?.focus();
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const token = await confirmPhoneCode(code);
+        verifiedRef.current = { phone: phoneE164, token, at: Date.now() };
+        await finishRegister(phoneE164, token);
+      } catch (err) {
+        setFormError((err && err.message) || 'Something went wrong. Please try again.');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    setSubmitAttempted(true);
     const firstInvalid = Object.keys(errors)[0];
     if (firstInvalid) {
       document.getElementById(`auth-${firstInvalid}`)?.focus();
@@ -384,20 +492,25 @@ export default function AuthModal({
     setSubmitting(true);
     try {
       if (isRegister) {
-        await onRegister?.({
-          firstName: register.firstName.trim(),
-          lastName: register.lastName.trim(),
-          email: register.email.trim().toLowerCase(),
-          password: register.password,
-        });
+        const token = alreadyVerified(phoneE164);
+        if (token) {
+          // This number was confirmed a moment ago (the person came back to fix something else).
+          await finishRegister(phoneE164, token);
+        } else {
+          // Step 1 (sign-up): text the code, then show the code box.
+          await sendPhoneCode(phoneE164);
+          setCode('');
+          setResendIn(30);
+          setStep('code');
+        }
       } else {
         await onSignIn?.({
           email: signIn.email.trim().toLowerCase(),
           password: signIn.password,
           remember: signIn.remember,
         });
+        onClose();
       }
-      onClose();
     } catch (err) {
       setFormError((err && err.message) || 'Something went wrong. Please try again.');
     } finally {
@@ -490,7 +603,46 @@ export default function AuthModal({
                       </div>
                     )}
 
-                    {isRegister ? (
+                    {isRegister && step === 'code' ? (
+                      <>
+                        <p className="text-[13px] leading-relaxed text-slate-600">
+                          We sent a 6-digit code by SMS to{' '}
+                          <span className="font-semibold text-slate-900">{phoneE164}</span>.
+                        </p>
+                        <Field
+                          id="auth-code"
+                          label="Verification code"
+                          icon={IconPhone}
+                          value={code}
+                          onChange={(e) => {
+                            setCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                            if (formError) setFormError('');
+                          }}
+                          autoComplete="one-time-code"
+                          inputMode="numeric"
+                          placeholder="123456"
+                          inputRef={codeRef}
+                        />
+                        <div className="flex items-center justify-between text-[12.5px]">
+                          <button
+                            type="button"
+                            onClick={backToDetails}
+                            disabled={submitting}
+                            className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline focus:outline-none focus-visible:underline disabled:opacity-50"
+                          >
+                            Change number
+                          </button>
+                          <button
+                            type="button"
+                            onClick={resendCode}
+                            disabled={submitting || resendIn > 0}
+                            className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline focus:outline-none focus-visible:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline"
+                          >
+                            {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+                          </button>
+                        </div>
+                      </>
+                    ) : isRegister ? (
                       <>
                         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                           <Field
@@ -525,6 +677,21 @@ export default function AuthModal({
                           autoComplete="email"
                           placeholder="you@example.com"
                         />
+                        <Field
+                          id="auth-phone"
+                          label="Mobile number"
+                          type="tel"
+                          icon={IconPhone}
+                          value={register.phone}
+                          onChange={(e) => setField('phone', e.target.value)}
+                          onBlur={blur('phone')}
+                          error={errorFor('phone')}
+                          autoComplete="tel"
+                          inputMode="tel"
+                          placeholder="082 123 4567"
+                        >
+                          <p className="mt-1.5 text-[11.5px] text-slate-500">We will text you a code to confirm it.</p>
+                        </Field>
                         <Field
                           id="auth-password"
                           label="Password"
@@ -614,6 +781,9 @@ export default function AuthModal({
                       </>
                     )}
 
+                    {/* Firebase's invisible reCAPTCHA attaches here when the SMS is requested. */}
+                    <div id="recaptcha-container" />
+
                     <button
                       type="submit"
                       disabled={submitting}
@@ -621,8 +791,8 @@ export default function AuthModal({
                     >
                       {submitting && <IconSpinner />}
                       {submitting
-                        ? (isRegister ? 'Creating account…' : 'Signing in…')
-                        : (isRegister ? 'Create account' : 'Sign in')}
+                        ? (isRegister ? (step === 'code' ? 'Verifying…' : 'Please wait…') : 'Signing in…')
+                        : (isRegister ? (step === 'code' ? 'Verify and create account' : 'Continue') : 'Sign in')}
                     </button>
                   </form>
 

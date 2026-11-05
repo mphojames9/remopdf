@@ -14,7 +14,7 @@ import demoPhoto from '../assets/profile.webp';
 import { downloadBlob } from '../api/client';
 import { fetchResume } from '../api/resume';
 import { getPaymentStatus } from '../api/payments';
-import { setPremiumAccess, onUpgradeRequest } from '../hooks/premiumAccess';
+import { setPremiumAccess, onUpgradeRequest, usePremiumAccess, setSignedIn, onSignInRequest } from '../hooks/premiumAccess';
 import PaymentModal from '../components/Payment/PaymentModal';
 import useResumeProfile, { getSessionUser } from '../hooks/useResumeProfile';
 import ResumeSyncDialog, { ResumeLoadingOverlay } from '../components/Auth/ResumeSyncDialog';
@@ -32,6 +32,7 @@ import {
   DEFAULT_PAGE_NUMBERS,
   normalizePageNumbers,
   PageNumberContext,
+  WatermarkContext,
   SECTION_META,
   PAGE_WIDTH_PX,
   DEFAULT_ACCENT,
@@ -110,6 +111,9 @@ const STORAGE_KEY_HIDDEN_SECTIONS = 'resumeBuilder:hiddenSections';
 const STORAGE_KEY_SECTION_ORDER = 'resumeBuilder:sectionOrder';
 const STORAGE_KEY_TEMPLATE = 'resumeBuilder:selectedTemplate';
 const STORAGE_KEY_PAGE_NUMBERS = 'resumeBuilder:pageNumbers';
+
+// Printed at the bottom of every page of a downloaded PDF when the account does not have Premium.
+const DOWNLOAD_WATERMARK = 'Created with RemoPDF \u00b7 remopdf.site';
 
 const DEFAULT_SECTION_ORDER = ['summary', 'experience', 'education', 'certificates', 'skills', 'projects', 'languages', 'hobbies', 'references'];
 
@@ -339,7 +343,7 @@ const SECTION_EDITORS = {
   certificates: { title: 'Additional sections', Component: AdditionalSections },
 };
 
-const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sectionOrder: savedSectionOrder, setSectionOrder, hiddenSections, setHiddenSections, pageNumbers, setPageNumbers, editorProps, requirePremium, onClose }) => {
+const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sectionOrder: savedSectionOrder, setSectionOrder, hiddenSections, setHiddenSections, pageNumbers, setPageNumbers, editorProps, checkPremium, onClose }) => {
   const sectionOrder = normalizeSectionOrder(savedSectionOrder);
   // Sections the user removed from the resume. Their information is kept, they
   // are only left out of the template (and can be added back at any time).
@@ -648,6 +652,11 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
   const isEmpty = !fullName && !summary && jobs.length === 0 && !educations.some((e) => e.institution) && namedSkills.length === 0
     && !hasHobbies && !hasLanguages && !hasProjects && !hasReferences && !hasCertificates;
 
+  // The watermark is part of the template pages, so it is visible in the preview too. Shown until Premium is
+  // confirmed; the download asks the server again (checkPremium) before it decides.
+  const premiumAccess = usePremiumAccess();
+  const previewWatermark = premiumAccess === true ? '' : DOWNLOAD_WATERMARK;
+
   // Download = render the resume's A4 pages into a real PDF file and save it with the
   // app's existing download code (downloadBlob in api/client), so it also works inside
   // the Android WebView where window.print() does nothing.
@@ -660,8 +669,14 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
     const baseName = (fullName ? `${fullName} - Resume` : 'Resume').replace(/[\\/:*?"<>|]/g, '').trim() || 'Resume';
     setDownloading(true);
     try {
+      // Premium gets a clean PDF; everyone else gets a small "Created with RemoPDF" label at the bottom of each page.
+      const isPremium = typeof checkPremium === 'function' ? await checkPremium() : false;
       await nextPaint();
-      const bytes = await buildResumePdf(pageNodes, { pageWidthPx: PAGE_WIDTH_PX, title: baseName });
+      const bytes = await buildResumePdf(pageNodes, {
+        pageWidthPx: PAGE_WIDTH_PX,
+        title: baseName,
+        watermark: isPremium ? null : DOWNLOAD_WATERMARK,
+      });
       downloadBlob(new Blob([bytes], { type: 'application/pdf' }), `${baseName}.pdf`);
     } catch (err) {
       console.error('Resume PDF export failed', err);
@@ -671,12 +686,11 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
     }
   };
 
-  // Every Download button goes through here: the PDF is only made once payment is confirmed
-  // (requirePremium opens the payment dialog when needed, then calls runDownload).
+  // Every Download button goes through here. Nobody is blocked: runDownload asks checkPremium and adds the
+  // watermark when the account is not Premium.
   const downloadResume = () => {
     if (downloading) return;
-    if (typeof requirePremium === 'function') requirePremium(runDownload);
-    else runDownload();
+    runDownload();
   };
 
   const templateProps = { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, accentColor, sectionOrder: visibleOrder, edit };
@@ -976,7 +990,9 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
                     onMouseLeave={editMode ? () => setHoverSection(null) : undefined}
                   >
                     <PageNumberContext.Provider value={pageNumbers}>
-                      {renderActiveTemplate()}
+                      <WatermarkContext.Provider value={previewWatermark}>
+                        {renderActiveTemplate()}
+                      </WatermarkContext.Provider>
                     </PageNumberContext.Provider>
                   </div>
                 </div>
@@ -1795,7 +1811,7 @@ const SignOutDialog = ({ open, busy, onConfirm, onCancel }) => {
 
   return (
     <div
-      className="so-overlay fixed inset-0 z-[80] flex items-end justify-center bg-slate-900/30 p-4 backdrop-blur-sm sm:items-center"
+      className="so-overlay fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !busy) onCancel();
       }}
@@ -1942,6 +1958,16 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     });
   }, []);
 
+  // Tells the locked parts of the page (writing assistant, Import resume) whether anyone is signed in, so they say
+  // "Sign in" instead of "Upgrade to Premium". Declared before the Premium check below so it runs first.
+  useEffect(() => {
+    setSignedIn(Boolean(profile.user?.id));
+  }, [profile.user?.id]);
+  useEffect(() => () => setSignedIn(null), []);
+
+  // Those same locked parts ask for the sign-in dialog through this. setAuthMode never changes between renders.
+  useEffect(() => onSignInRequest(() => setAuthMode('signin')), []);
+
   // Whether this account has already paid and how many days are left, so the top bar shows "Premium" with a
   // countdown instead of the upgrade button. It is read again whenever the person comes back to this tab, so
   // the number stays right after a day or more, and the badge goes away by itself once the 30 days are over.
@@ -1992,22 +2018,17 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   // openUpgrade only touches a ref and state setters, so the copy from the first render keeps working.
   useEffect(() => onUpgradeRequest(openUpgrade), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const requirePremium = async (proceed) => {
-    if (profile.user) {
-      try {
-        const status = await getPaymentStatus();
-        applyAccess(status);
-        if (status.premium) {
-          proceed();
-          return;
-        }
-      } catch {
-        /* the payment dialog repeats the check and shows the problem */
-      }
+  // Asks the server whether this account has Premium right now (it can run out between visits). Signed out is
+  // always "no Premium". If the server cannot be reached, the last known answer is used.
+  const checkPremium = async () => {
+    if (!profile.user) return false;
+    try {
+      const status = await getPaymentStatus();
+      applyAccess(status);
+      return Boolean(status?.premium);
+    } catch {
+      return premium;
     }
-    pendingDownloadRef.current = proceed;
-    setPaymentFromDownload(true);
-    setPaymentOpen(true);
   };
 
   const closePayment = () => {
@@ -2537,7 +2558,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           pageNumbers={pageNumbers}
           setPageNumbers={setPageNumbers}
           editorProps={{ updateData, updateSummary, updateSkills, updateExperiences, updateEducation, updateItems }}
-          requirePremium={requirePremium}
+          checkPremium={checkPremium}
           onClose={() => setPreviewOpen(false)} 
         />
       )}

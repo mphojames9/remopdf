@@ -9,6 +9,14 @@ import { useEffect, useState } from 'react';
     requestUpgrade()                        asks the builder to open the payment dialog
     onUpgradeRequest(handler)               the builder registers here; returns an unsubscribe function
 
+    setSignedIn(true | false | null)        called by the builder whenever the signed-in account changes
+    useSignedIn()                           -> true | false | null   (null = not known yet)
+    requestSignIn()                         asks the builder to open the sign-in dialog
+    onSignInRequest(handler)                the builder registers here; returns an unsubscribe function
+
+  Locked parts of the page say "Sign in" to someone who is signed out, and "Upgrade to Premium" to someone
+  who is signed in without Premium: paying needs an account, so signing in comes first.
+
   null means "not known yet". Nothing here grants anything: the server checks Premium again on every AI
   request, so this only decides what the page shows and whether it bothers to ask.
 */
@@ -48,4 +56,39 @@ export const onUpgradeRequest = (handler) => {
 
 export const requestUpgrade = () => {
   upgradeHandlers.forEach((handler) => handler());
+};
+
+let signedIn = null;
+const signedInListeners = new Set();
+
+export const setSignedIn = (value) => {
+  const next = value === true ? true : value === false ? false : null;
+  if (next === signedIn) return;
+  signedIn = next;
+  signedInListeners.forEach((listener) => listener(next));
+};
+
+export function useSignedIn() {
+  const [value, setValue] = useState(signedIn);
+  useEffect(() => {
+    setValue(signedIn); // it may have changed between the first render and this effect
+    signedInListeners.add(setValue);
+    return () => {
+      signedInListeners.delete(setValue);
+    };
+  }, []);
+  return value;
+}
+
+const signInHandlers = new Set();
+
+export const onSignInRequest = (handler) => {
+  signInHandlers.add(handler);
+  return () => {
+    signInHandlers.delete(handler);
+  };
+};
+
+export const requestSignIn = () => {
+  signInHandlers.forEach((handler) => handler());
 };

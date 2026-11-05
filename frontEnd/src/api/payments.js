@@ -1,7 +1,7 @@
 import { getToken } from './auth';
 
-// Same address auth.js and resume.js use: VITE_API_URL in the front-end .env (default: the local accounts server).
-const API_URL = String(import.meta.env?.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
+// Same address auth.js uses: the accounts server on Render (override with VITE_ACCOUNTS_URL for local development).
+const API_URL = String(import.meta.env?.VITE_ACCOUNTS_URL || 'https://remopdf-server.onrender.com').replace(/\/+$/, '');
 
 export class PaymentApiError extends Error {
   constructor(message, status) {

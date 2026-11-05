@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { analyzeWriting, MIN_CHARS } from './writingAI';
-import { usePremiumAccess, requestUpgrade, setPremiumAccess } from '../../../hooks/premiumAccess';
+import { usePremiumAccess, requestUpgrade, setPremiumAccess, useSignedIn, requestSignIn } from '../../../hooks/premiumAccess';
 
 // AI writing assistant. Same props and the same place in the page as the old offline panel, so
 // Summary.jsx, ExperienceField.jsx, EducationField.jsx and AdditionalSections.jsx keep working.
@@ -163,6 +163,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
   const open = useStore(openStore);
   const premium = usePremiumAccess();
   const locked = premium === false; // known to be without Premium: nothing is sent to the AI
+  const signedOut = useSignedIn() === false; // signed out: the lock says "Sign in" instead of "Premium"
   const [state, setState] = useState({ status: 'idle', result: null, error: null });
   const [applied, setApplied] = useState(false); // a version was just chosen and nothing has changed since
   const [recheck, setRecheck] = useState(0);
@@ -285,7 +286,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
           {locked && (
             <span className="inline-flex items-center gap-1.5 text-xs text-[#8f4631] whitespace-nowrap">
               <Lock />
-              <span className="sr-only sm:not-sr-only">Premium</span>
+              <span className="sr-only sm:not-sr-only">{signedOut ? 'Sign in' : 'Premium'}</span>
             </span>
           )}
           {!locked && !loading && state.status === 'error' && (
@@ -306,11 +307,13 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
           {locked && (
             <div className="px-3 py-3 flex flex-col gap-2">
               <p className="text-xs leading-relaxed text-slate-600">
-                AI suggestions are a Premium feature. Upgrade to get three polished versions of your text to choose from.
+                {signedOut
+                  ? 'Sign in to use AI suggestions and get three polished versions of your text to choose from.'
+                  : 'AI suggestions are a Premium feature. Upgrade to get three polished versions of your text to choose from.'}
               </p>
               <div>
-                <button type="button" onClick={requestUpgrade} className={PRIMARY_BUTTON}>
-                  Upgrade to Premium
+                <button type="button" onClick={signedOut ? requestSignIn : requestUpgrade} className={PRIMARY_BUTTON}>
+                  {signedOut ? 'Sign in' : 'Upgrade to Premium'}
                 </button>
               </div>
             </div>

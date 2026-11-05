@@ -34,6 +34,7 @@ function addTextLayer(page, root, font, pxToPt) {
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const parent = node.parentElement;
     if (!parent || /^(SCRIPT|STYLE|NOSCRIPT)$/.test(parent.tagName)) continue;
+    if (parent.closest('[data-watermark]')) continue; // not part of the resume's own text
     const cs = window.getComputedStyle(parent);
     if (cs.display === 'none' || cs.visibility === 'hidden') continue;
     const upper = cs.textTransform === 'uppercase';
@@ -65,12 +66,33 @@ function addTextLayer(page, root, font, pxToPt) {
   }
 }
 
+// Puts the watermark on a cloned page, bottom centre, replacing any watermark the preview already had so the
+// PDF never shows two. It is part of the page image, so it cannot be selected or deleted from the PDF. Styled
+// like the page numbers (10px, medium weight, slate-500, no border or background) and it sits inside the page's
+// bottom padding so it never covers content. Keep the styles in step with WATERMARK_*_STYLE in templateShared.jsx.
+function applyWatermark(pageEl, text) {
+  pageEl.querySelectorAll('[data-watermark]').forEach((node) => node.remove());
+  if (!text) return;
+
+  const wrap = document.createElement('div');
+  wrap.setAttribute('data-watermark', '');
+  wrap.style.cssText = 'position:absolute;left:0;right:0;bottom:8px;text-align:center;pointer-events:none;z-index:50;';
+
+  const label = document.createElement('span');
+  label.textContent = text;
+  label.style.cssText = 'font-size:10px;font-weight:500;color:#64748b;white-space:nowrap;';
+
+  wrap.appendChild(label);
+  pageEl.appendChild(wrap);
+}
+
 /**
  * @param {HTMLElement[]} pageNodes  the `.a4-page` elements of the preview, in order
- * @param {{ pageWidthPx: number, title?: string }} options
+ * @param {{ pageWidthPx: number, title?: string, watermark?: string | null }} options
+ *   watermark: text printed at the bottom of every page (free accounts); leave empty for a clean PDF
  * @returns {Promise<Uint8Array>} the PDF bytes
  */
-export async function buildResumePdf(pageNodes, { pageWidthPx, title = 'Resume' }) {
+export async function buildResumePdf(pageNodes, { pageWidthPx, title = 'Resume', watermark = null }) {
   const pageHeightPx = Math.round((pageWidthPx * A4_H) / A4_W);
   const pxToPt = A4_W / pageWidthPx;
 
@@ -108,6 +130,7 @@ export async function buildResumePdf(pageNodes, { pageWidthPx, title = 'Resume' 
         transform: 'none',
       });
       stage.appendChild(el);
+      applyWatermark(el, watermark);
 
       const canvas = await html2canvas(el, {
         scale: 2,

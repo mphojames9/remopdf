@@ -1,6 +1,6 @@
-// Talks to the accounts server in /server. Set VITE_API_URL in your front-end .env to the server's address
-// (for the Android app this must be a reachable address, not localhost on the phone).
-const API_URL = String(import.meta.env?.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
+// Talks to the accounts server (server/ folder), hosted on Render. To point at a local server while developing, set
+// VITE_ACCOUNTS_URL=http://localhost:5000 in your front-end .env. VITE_API_URL is NOT used here: it belongs to the AI backend.
+const API_URL = String(import.meta.env?.VITE_ACCOUNTS_URL || 'https://remopdf-server.onrender.com').replace(/\/+$/, '');
 
 const TOKEN_KEY = 'remopdf:authToken';
 const USER_KEY = 'remopdf:authUser';
@@ -52,8 +52,8 @@ async function post(path, body) {
 }
 
 /** Creates the account (saved in MongoDB) and signs the person in. Throws an Error with a readable message. */
-export async function registerUser({ firstName, lastName, email, password }) {
-  const data = await post('/api/auth/register', { firstName, lastName, email, password });
+export async function registerUser({ firstName, lastName, email, password, phoneToken }) {
+  const data = await post('/api/auth/register', { firstName, lastName, email, password, phoneToken });
   saveSession(data, true);
   return data.user;
 }

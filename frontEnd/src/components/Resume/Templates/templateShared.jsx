@@ -54,6 +54,16 @@ const formatPageNumber = (format, page, total) => {
 // template having to pass it down.
 const PageNumberContext = createContext(DEFAULT_PAGE_NUMBERS);
 
+// The text printed at the bottom of every page for accounts without Premium ('' = no watermark). The preview
+// provides it, so the watermark shows on the template itself; utils/resumePdf.js adds the same label (and
+// removes this one) when it builds the PDF, so the download is right whatever the preview showed.
+const WatermarkContext = createContext('');
+
+// Styled like the page numbers (10px, medium weight, slate-500, no border or background), bottom centre so it never
+// meets the page number on the right. Keep these in step with applyWatermark() in utils/resumePdf.js.
+const WATERMARK_WRAP_STYLE = { position: 'absolute', left: 0, right: 0, bottom: 8, textAlign: 'center', pointerEvents: 'none', zIndex: 50 };
+const WATERMARK_TEXT_STYLE = { fontSize: 10, fontWeight: 500, color: '#64748b', whiteSpace: 'nowrap', userSelect: 'none' };
+
 const SECTION_META = {
   summary: { label: 'Summary' },
   experience: { label: 'Experience' },
@@ -368,6 +378,7 @@ function usePaginatedBlocks(blocks, contentMaxHeight = 980) {
 // A4 Page Wrapper Component
 const A4Page = ({ children, pageNum, totalPages }) => {
   const pageNumbers = useContext(PageNumberContext);
+  const watermark = useContext(WatermarkContext);
   return (
     <div
       className="a4-page relative bg-white shadow-md overflow-hidden mb-8 print:mb-0 print:shadow-none print:break-after-page"
@@ -383,6 +394,11 @@ const A4Page = ({ children, pageNum, totalPages }) => {
       {pageNumbers.enabled && (
         <div className="absolute bottom-2 right-6 text-[10px] text-slate-500 select-none font-medium">
           {formatPageNumber(pageNumbers.format, pageNum, totalPages)}
+        </div>
+      )}
+      {watermark && (
+        <div data-watermark="" style={WATERMARK_WRAP_STYLE}>
+          <span style={WATERMARK_TEXT_STYLE}>{watermark}</span>
         </div>
       )}
     </div>
@@ -542,6 +558,7 @@ export {
   normalizePageNumbers,
   formatPageNumber,
   PageNumberContext,
+  WatermarkContext,
   SECTION_META,
   PAGE_WIDTH_PX,
   PAGE_HEIGHT_PX,

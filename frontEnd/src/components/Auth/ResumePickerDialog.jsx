@@ -46,17 +46,49 @@ const BUSY_LABEL = {
 
 const PICKER_CSS = `
   @keyframes rp-fade { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes rp-pop { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes rp-pop { from { opacity: 0; transform: translateY(26px) scale(.985); } to { opacity: 1; transform: none; } }
   @keyframes rp-in { from { opacity: 0; transform: translateY(18px) scale(.975); } to { opacity: 1; transform: none; } }
   @keyframes rp-drift { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(28px, -20px, 0); } }
   @keyframes rp-sheen { from { background-position: 160% 0; } to { background-position: -60% 0; } }
   @keyframes rp-toast { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
 
+  /* Opening sequence: the page settles, the top bar drops in, the heading and numbers arrive, then the sheets of paper are dealt and print. */
+  @keyframes rp-drop { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+  @keyframes rp-deal { from { opacity: 0; transform: translateY(42px) rotate(var(--tilt, -1.4deg)) scale(.94); } to { opacity: 1; transform: none; } }
+  @keyframes rp-wipe { 0% { transform: translateY(0); opacity: 1; } 88% { opacity: 1; } 100% { transform: translateY(100%); opacity: 0; } }
+  @keyframes rp-ring {
+    0% { box-shadow: 0 0 0 2px #d9856b, 0 2px 4px rgba(217, 133, 107, .18), 0 22px 44px -18px rgba(217, 133, 107, .65), 0 0 0 0 rgba(217, 133, 107, .5); }
+    100% { box-shadow: 0 0 0 2px #d9856b, 0 2px 4px rgba(217, 133, 107, .18), 0 22px 44px -18px rgba(217, 133, 107, .65), 0 0 0 18px rgba(217, 133, 107, 0); }
+  }
+  @keyframes rp-bloom { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rp-hairline { from { opacity: 0; transform: scaleX(.2); } to { opacity: 1; transform: none; } }
+  @keyframes rp-grow { from { transform: scaleX(0); } to { transform: none; } }
+  @keyframes rp-fill { from { transform: scaleX(0); } to { transform: none; } }
+  @keyframes rp-twinkle { 0% { transform: scale(0) rotate(-90deg); } 60% { transform: scale(1.4) rotate(15deg); } 100% { transform: none; } }
+  @keyframes rp-shine { from { background-position: 100% 0, 0 0; } to { background-position: 0% 0, 0 0; } }
+
   .rp-overlay { animation: rp-fade .25s ease-out; }
-  .rp-panel { animation: rp-pop .45s cubic-bezier(.22, 1, .36, 1); }
+  .rp-panel { animation: rp-pop .6s cubic-bezier(.22, 1, .36, 1); }
   .rp-in { animation: rp-in .6s cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(var(--i, 0) * 60ms + 120ms); }
-  .rp-blob { animation: rp-drift 18s ease-in-out infinite; }
+  .rp-blob { animation: rp-drift 18s ease-in-out infinite, rp-bloom 1.6s ease-out both; }
   .rp-toast { animation: rp-toast .35s cubic-bezier(.22, 1, .36, 1) both; }
+  .rp-drop { animation: rp-drop .6s cubic-bezier(.22, 1, .36, 1) .1s backwards; }
+  .rp-hairline { animation: rp-hairline 1.2s cubic-bezier(.22, 1, .36, 1) .2s backwards; }
+  .rp-grow { transform-origin: left center; animation: rp-grow .7s cubic-bezier(.22, 1, .36, 1) .35s backwards; }
+  .rp-fill { transform-origin: left center; animation: rp-fill .9s cubic-bezier(.22, 1, .36, 1) .6s backwards; }
+  .rp-twinkle { animation: rp-twinkle .8s cubic-bezier(.22, 1, .36, 1) .8s backwards; }
+  /* Each card is dealt like a sheet of paper (a slight tilt, a small overshoot), one after another. */
+  .rp-deal { animation: rp-deal .75s cubic-bezier(.22, 1.15, .36, 1) backwards; animation-delay: calc(var(--i, 0) * 60ms + 160ms); }
+  /* A white sheet slides off a thumbnail from the top, so the resume looks like it is being printed. */
+  .rp-curtain { border-top: 2px solid rgba(217, 133, 107, .75); box-shadow: 0 -8px 18px -6px rgba(217, 133, 107, .5); animation: rp-wipe .8s cubic-bezier(.65, 0, .35, 1) both; }
+  /* The name in the heading: its gradient, with one pass of light across it. */
+  .rp-name {
+    background-image: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, .9) 50%, transparent 58%), linear-gradient(90deg, #a64a30, #d9856b, #eaa892);
+    background-size: 250% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    background-position: 0% 0, 0 0;
+    animation: rp-shine 1.4s ease-in-out .75s backwards;
+  }
   .rp-shimmer {
     background-image: linear-gradient(100deg, transparent 25%, rgba(255, 255, 255, .75) 50%, transparent 75%);
     background-size: 220% 100%;
@@ -72,6 +104,7 @@ const PICKER_CSS = `
   .rp-paper:focus-visible { outline: 2px solid #d9856b; outline-offset: 3px; }
   .rp-paper-active {
     box-shadow: 0 0 0 2px #d9856b, 0 2px 4px rgba(217, 133, 107, .18), 0 22px 44px -18px rgba(217, 133, 107, .65);
+    animation: rp-ring 1.6s ease-out calc(var(--i, 0) * 60ms + 800ms);
   }
 
   /* Hover layer on a thumbnail: a soft dark veil and the Open button. */
@@ -90,7 +123,9 @@ const PICKER_CSS = `
   }
   @media (hover: hover) and (prefers-reduced-motion: no-preference) { .rp-group:hover .rp-lift { transform: translateY(-6px); } }
   @media (prefers-reduced-motion: reduce) {
-    .rp-overlay, .rp-panel, .rp-in, .rp-blob, .rp-toast, .rp-shimmer { animation: none; }
+    .rp-overlay, .rp-panel, .rp-in, .rp-blob, .rp-toast, .rp-shimmer,
+    .rp-drop, .rp-hairline, .rp-grow, .rp-fill, .rp-twinkle, .rp-deal, .rp-name, .rp-paper-active { animation: none; }
+    .rp-curtain { display: none; }
   }
 `;
 
@@ -237,6 +272,36 @@ const useSeen = () => {
   return [ref, seen];
 };
 
+const prefersReducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+// Counts up to `to` once when the page opens. The number is hidden from screen readers while it counts, so they only hear the final one.
+const CountUp = ({ to, delay = 0, duration = 700 }) => {
+  const [value, setValue] = useState(() => (prefersReducedMotion() || to <= 1 ? to : 0));
+
+  useEffect(() => {
+    if (prefersReducedMotion() || to <= 1) {
+      setValue(to);
+      return undefined;
+    }
+    let frame = 0;
+    const timer = setTimeout(() => {
+      const startedAt = performance.now();
+      const tick = (now) => {
+        const progress = Math.min((now - startedAt) / duration, 1);
+        setValue(Math.round(to * (1 - Math.pow(1 - progress, 3)))); // ease-out
+        if (progress < 1) frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
+    }, delay);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(frame);
+    };
+  }, [to, delay, duration]);
+
+  return <>{value}</>;
+};
+
 const onActivate = (handler) => (e) => {
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
@@ -254,7 +319,7 @@ const HeroStats = ({ count, limit, premium, daysLeft }) => {
     <div className="rp-in flex flex-wrap items-center gap-2" style={{ '--i': 2 }}>
       {premium && (
         <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#d9856b]/10 px-3 text-[12.5px] font-medium text-[#a64a30] ring-1 ring-[#d9856b]/25">
-          <SparkIcon className="h-3 w-3 text-[#d9856b]" />
+          <SparkIcon className="rp-twinkle h-3 w-3 text-[#d9856b]" />
           Premium
           {daysLeft > 0 && (
             <span className="font-normal text-[#a64a30]/75">
@@ -265,7 +330,12 @@ const HeroStats = ({ count, limit, premium, daysLeft }) => {
       )}
       <span className="inline-flex h-8 items-center gap-2.5 rounded-full bg-white/70 px-3 text-[12.5px] text-slate-600 ring-1 ring-slate-200">
         <span>
-          <span className="font-medium tabular-nums text-slate-900">{count}</span>
+          <span className="font-medium tabular-nums text-slate-900">
+            <span aria-hidden="true">
+              <CountUp to={count} delay={450} />
+            </span>
+            <span className="sr-only">{count}</span>
+          </span>
           {hasLimit && <> of {limit}</>} {count === 1 ? 'resume' : 'resumes'}
         </span>
         {hasLimit && (
@@ -277,7 +347,7 @@ const HeroStats = ({ count, limit, premium, daysLeft }) => {
             aria-valuemax={limit}
             aria-valuenow={used}
           >
-            <span className="block h-full rounded-full bg-gradient-to-r from-[#e8a38c] to-[#d9856b] transition-[width] duration-700" style={{ width: `${(used / limit) * 100}%` }} />
+            <span className="rp-fill block h-full rounded-full bg-gradient-to-r from-[#e8a38c] to-[#d9856b] transition-[width] duration-700" style={{ width: `${(used / limit) * 100}%` }} />
           </span>
         )}
       </span>
@@ -383,6 +453,8 @@ const ResumeCard = ({
   onStartRename, onCommitRename, onCancelRename, onAskDelete, onCancelDelete, onConfirmDelete,
 }) => {
   const [ref, seen] = useSeen();
+  // A thumbnail that is ready the moment the page opens prints a little later, once its card has been dealt.
+  const readyAtMount = useRef(Boolean(payload));
   useEffect(() => {
     if (seen && !payload) onNeedPayload(resume);
   }, [seen, Boolean(payload)]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -395,7 +467,10 @@ const ResumeCard = ({
   };
 
   return (
-    <div className={`rp-in rp-group group relative transition-opacity ${locked && !busyKind ? 'opacity-50' : ''}`} style={{ '--i': index + 2 }}>
+    <div
+      className={`rp-deal rp-group group relative transition-opacity ${locked && !busyKind ? 'opacity-50' : ''}`}
+      style={{ '--i': Math.min(index + 2, 14), '--tilt': index % 2 ? '1.4deg' : '-1.4deg' }}
+    >
       <div className="rp-lift relative">
         <div
           ref={ref}
@@ -410,9 +485,16 @@ const ResumeCard = ({
           } ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
         >
           {seen && payload ? (
-            <div className="pointer-events-none select-none" aria-hidden="true">
-              {renderPreview(payload, resume.id)}
-            </div>
+            <>
+              <div className="pointer-events-none select-none" aria-hidden="true">
+                {renderPreview(payload, resume.id)}
+              </div>
+              <span
+                aria-hidden="true"
+                className="rp-curtain pointer-events-none absolute inset-0 z-10 bg-white"
+                style={readyAtMount.current ? { animationDelay: 'calc(var(--i, 0) * 60ms + 420ms)' } : undefined}
+              />
+            </>
           ) : (
             <ThumbPlaceholder status={seen ? status : 'loading'} />
           )}
@@ -541,7 +623,7 @@ const NewResumeCard = ({ index, busy, locked, atLimit, limit, premium, onCreate,
     else if (!atLimit) onCreate();
   };
   return (
-    <div className="rp-in" style={{ '--i': index + 2 }}>
+    <div className="rp-deal" style={{ '--i': Math.min(index + 2, 14), '--tilt': '-1.4deg' }}>
       <div
         role="button"
         tabIndex={disabled ? -1 : 0}
@@ -770,11 +852,11 @@ export default function ResumePickerDialog({
       >
         {/* Soft colour behind the page, and a hairline highlight along the top edge. */}
         <div aria-hidden="true" className="rp-blob pointer-events-none absolute -right-24 -top-28 h-96 w-96 rounded-full bg-[#d9856b]/15 blur-3xl" />
-        <div aria-hidden="true" className="rp-blob pointer-events-none absolute -bottom-40 -left-28 h-[26rem] w-[26rem] rounded-full bg-sky-200/50 blur-3xl" style={{ animationDelay: '-9s' }} />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#d9856b]/30 to-transparent" />
+        <div aria-hidden="true" className="rp-blob pointer-events-none absolute -bottom-40 -left-28 h-[26rem] w-[26rem] rounded-full bg-sky-200/50 blur-3xl" style={{ animationDelay: '-9s, 0s' }} />
+        <div aria-hidden="true" className="rp-hairline pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#d9856b]/30 to-transparent" />
 
         <header
-          className={`relative z-20 shrink-0 border-b pt-[env(safe-area-inset-top)] transition-[background-color,border-color,backdrop-filter] duration-300 ${
+          className={`rp-drop relative z-20 shrink-0 border-b pt-[env(safe-area-inset-top)] transition-[background-color,border-color,backdrop-filter] duration-300 ${
             scrolled ? 'border-slate-200/80 bg-white/75 backdrop-blur-xl' : 'border-transparent bg-transparent'
           }`}
         >
@@ -816,7 +898,7 @@ export default function ResumePickerDialog({
             <section className="flex flex-col gap-5 pb-8 pt-5 md:flex-row md:items-end md:justify-between md:gap-10 md:pb-10 md:pt-12">
               <div className="min-w-0 max-w-2xl">
                 <p className="rp-in mb-3.5 inline-flex items-center gap-2.5 text-[11.5px] font-medium uppercase tracking-[0.16em] text-[#a64a30]/80" style={{ '--i': 0 }}>
-                  <span aria-hidden="true" className="h-px w-6 bg-[#d9856b]/60" />
+                  <span aria-hidden="true" className="rp-grow h-px w-6 bg-[#d9856b]/60" />
                   Resume library
                 </p>
                 <h1
@@ -827,7 +909,7 @@ export default function ResumePickerDialog({
                   {userName ? (
                     <>
                       Welcome back,{' '}
-                      <span className="bg-gradient-to-r from-[#a64a30] via-[#d9856b] to-[#eaa892] bg-clip-text text-transparent">{userName}</span>
+                      <span className="rp-name bg-clip-text text-transparent">{userName}</span>
                     </>
                   ) : (
                     'Your resumes'
@@ -841,7 +923,7 @@ export default function ResumePickerDialog({
             </section>
 
             <section aria-labelledby="resume-picker-all">
-              <div className="mb-6 flex items-center justify-between gap-4 border-t border-slate-200/80 pt-5">
+              <div className="rp-in mb-6 flex items-center justify-between gap-4 border-t border-slate-200/80 pt-5" style={{ '--i': 3 }}>
                 <h2 id="resume-picker-all" className="flex items-center gap-2 text-[13.5px] font-medium text-slate-900">
                   All resumes
                   <span className="rounded-full bg-slate-900/[0.06] px-2 py-0.5 text-[11px] font-medium tabular-nums text-slate-600">{resumes.length}</span>
