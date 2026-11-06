@@ -2109,6 +2109,13 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     return result;
   };
 
+  // Forgot password signs the person in once the new password is saved, so it ends the same way a sign-in does.
+  const handleResetPassword = async (details) => {
+    const result = await profile.resetUserPassword(details);
+    setPickPending(true);
+    return result;
+  };
+
   useEffect(() => {
     if (!pickPending || !profile.user || !profile.activeId || profile.conflict) return;
     if (profile.mode === 'loading' || profile.mode === 'switching') return;
@@ -2579,6 +2586,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         onClose={() => setAuthMode(null)}
         onSignIn={handleSignIn}
         onRegister={profile.register}
+        onResetPassword={handleResetPassword}
       />
 
       {(profile.mode === 'loading' || profile.mode === 'switching') && <ResumeLoadingOverlay />}

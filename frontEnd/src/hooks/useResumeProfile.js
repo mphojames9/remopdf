@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getCurrentUser, getToken, loginUser, registerUser, signOut } from '../api/auth';
+import { getCurrentUser, getToken, loginUser, registerUser, resetPassword, signOut } from '../api/auth';
 import * as resumeApi from '../api/resume';
 
 /*
@@ -446,6 +446,11 @@ export default function useResumeProfile({ payload, applyPayload, createBlank, r
     beginSession(await registerUser(details));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Forgot password: the server changes the password, then this signs the person in with it.
+  const resetUserPassword = useCallback(async (details) => {
+    beginSession(await resetPassword(details));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const signOutUser = useCallback(async () => {
     // Push the last changes to the account first (if that fails they stay on this device).
     if (modeRef.current === 'account') {
@@ -493,6 +498,7 @@ export default function useResumeProfile({ payload, applyPayload, createBlank, r
     writesToDevice,
     signIn,
     register,
+    resetUserPassword,
     signOutUser,
     resolveConflict,
     openResume,

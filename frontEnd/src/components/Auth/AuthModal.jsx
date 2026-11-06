@@ -4,11 +4,13 @@ import logoMobile from '../../assets/logo1.webp';
 import {
   RESEND_COOLDOWN_SECONDS,
   confirmEmailVerified,
+  confirmPasswordReset,
   endEmailVerification,
   friendlyAuthError,
   normalizePhone,
   resendVerificationEmail,
   startEmailVerification,
+  startPasswordReset,
 } from '../../api/emailVerify';
 import { wakeServer } from '../../api/auth';
 
@@ -16,6 +18,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
 
 const EMPTY_SIGN_IN = { email: '', password: '', remember: true };
+const EMPTY_RESET = { password: '', confirm: '' };
 const EMPTY_REGISTER = { firstName: '', lastName: '', email: '', phone: '', password: '', confirm: '', terms: false };
 
 const COPY = {
@@ -126,6 +129,25 @@ const validateSignIn = (v) => {
   if (!email) errors.email = 'Enter your email address.';
   else if (!EMAIL_RE.test(email)) errors.email = 'Enter a valid email address.';
   if (!v.password) errors.password = 'Enter your password.';
+  return errors;
+};
+
+// Forgot password, step 1: only the email address is asked for.
+const validateForgotEmail = (v) => {
+  const errors = {};
+  const email = v.email.trim();
+  if (!email) errors.email = 'Enter your email address.';
+  else if (!EMAIL_RE.test(email)) errors.email = 'Enter a valid email address.';
+  return errors;
+};
+
+// Forgot password, step 2: the new password, typed twice.
+const validateForgotPassword = (v) => {
+  const errors = {};
+  if (!v.password) errors.newPassword = 'Enter your new password.';
+  else if (v.password.length < MIN_PASSWORD) errors.newPassword = `Use at least ${MIN_PASSWORD} characters.`;
+  if (!v.confirm) errors.newConfirm = 'Confirm your new password.';
+  else if (v.confirm !== v.password) errors.newConfirm = 'The passwords do not match.';
   return errors;
 };
 
@@ -305,7 +327,10 @@ const MODAL_CSS = `
  *  - onRegister:     async ({ firstName, lastName, email, phone, emailToken, password }) => void. Throw an Error to show its message in the form.
  *                    emailToken is a Firebase ID token proving the person opened the link in the verification email sent to `email`;
  *                    the server checks it. `phone` is saved as typed (+27 form) and is not verified.
- *  - onForgotPassword (optional): when given, a "Forgot password?" link is shown on the Sign in form.
+ *  - onResetPassword (optional): async ({ email, password, emailToken }) => void. When given, a "Forgot password?" link is
+ *                    shown on the Sign in form. The person asks for a reset email, opens its link, then enters the new password
+ *                    here; emailToken is the Firebase ID token proving they opened it. The handler saves the new password on the
+ *                    server and signs the person in (see api/auth.js resetPassword). Throw an Error to show its message in the form.
  *  - termsHref / privacyHref (optional): where the links in the Register form point.
  */
 export default function AuthModal({
@@ -315,7 +340,7 @@ export default function AuthModal({
   onClose,
   onSignIn,
   onRegister,
-  onForgotPassword,
+  onResetPassword,
   termsHref = '/terms',
   privacyHref = '/privacy',
 }) {
@@ -333,17 +358,35 @@ export default function AuthModal({
   const [emailAlreadyVerified, setEmailAlreadyVerified] = useState(false);
   // A calm, non-error message on the "Check your inbox" step (not verified yet, a new email was sent, ...).
   const [formNotice, setFormNotice] = useState('');
+  // Forgot password (Sign in tab only): '' = normal sign in, 'email' = asking for the reset email,
+  // 'confirm' = "check your inbox", where the new password is entered after the link was opened.
+  const [forgotStep, setForgotStep] = useState('');
+  const [resetForm, setResetForm] = useState(EMPTY_RESET);
 
   const isRegister = mode === 'register';
   const copy = COPY[isRegister ? 'register' : 'signin'];
   const values = isRegister ? register : signIn;
-  const errors = isRegister ? validateRegister(register) : validateSignIn(signIn);
+  const onForgotEmail = !isRegister && forgotStep === 'email';
+  const onForgotConfirm = !isRegister && forgotStep === 'confirm';
+  const forgotAddress = signIn.email.trim().toLowerCase();
+  let errors;
+  if (isRegister) errors = validateRegister(register);
+  else if (onForgotEmail) errors = validateForgotEmail(signIn);
+  else if (onForgotConfirm) errors = validateForgotPassword(resetForm);
+  else errors = validateSignIn(signIn);
   const errorFor = (name) => (submitAttempted || touched[name] ? errors[name] : undefined);
   const phoneE164 = isRegister ? normalizePhone(register.phone) : '';
   const emailAddress = isRegister ? register.email.trim().toLowerCase() : '';
   const onVerifyStep = isRegister && step === 'verify';
-  const title = onVerifyStep ? 'Check your inbox' : copy.title;
-  const subtitle = onVerifyStep ? 'One last step to finish creating your account.' : copy.subtitle;
+  let title = onVerifyStep ? 'Check your inbox' : copy.title;
+  let subtitle = onVerifyStep ? 'One last step to finish creating your account.' : copy.subtitle;
+  if (onForgotEmail) {
+    title = 'Reset your password';
+    subtitle = 'Enter your email and we will send you a reset link.';
+  } else if (onForgotConfirm) {
+    title = 'Check your inbox';
+    subtitle = 'One last step to choose your new password.';
+  }
 
   // Start clean every time the modal is closed, so a password is never left behind.
   useEffect(() => {
@@ -358,6 +401,8 @@ export default function AuthModal({
     setStep('form');
     setResendIn(0);
     setEmailAlreadyVerified(false);
+    setForgotStep('');
+    setResetForm(EMPTY_RESET);
     endEmailVerification(); // closes the Firebase session used to check the email
   }, [open]);
 
@@ -392,7 +437,7 @@ export default function AuthModal({
       firstFieldRef.current?.focus();
     }, 60);
     return () => clearTimeout(t);
-  }, [open, mode]);
+  }, [open, mode, forgotStep]);
 
   if (!open) return null;
 
@@ -401,10 +446,16 @@ export default function AuthModal({
     if (formError) setFormError('');
   };
 
+  const setResetField = (name, value) => {
+    setResetForm((prev) => ({ ...prev, [name]: value }));
+    if (formError) setFormError('');
+  };
+
   const blur = (name) => () => setTouched((t) => ({ ...t, [name]: true }));
 
   const switchMode = (next) => {
-    if (next === mode || submitting) return;
+    // Tapping "Sign in" while on the forgot-password steps leads back to the normal sign-in form.
+    if (submitting || (next === mode && !forgotStep)) return;
     // Keep the email the person already typed, drop everything else.
     const email = values.email;
     setSignIn({ ...EMPTY_SIGN_IN, email });
@@ -416,8 +467,53 @@ export default function AuthModal({
     setStep('form');
     setResendIn(0);
     setEmailAlreadyVerified(false);
+    setForgotStep('');
+    setResetForm(EMPTY_RESET);
     endEmailVerification();
-    onModeChange?.(next);
+    if (next !== mode) onModeChange?.(next);
+  };
+
+  /* ---- Forgot password ---- */
+
+  // The sign-in form's "Forgot password?" link. The email typed so far is kept.
+  const openForgot = () => {
+    if (submitting) return;
+    setSignIn((prev) => ({ ...prev, password: '' }));
+    setResetForm(EMPTY_RESET);
+    setTouched({});
+    setSubmitAttempted(false);
+    setFormError('');
+    setFormNotice('');
+    setResendIn(0);
+    setForgotStep('email');
+  };
+
+  // Back to the normal sign-in form, or (from "Check your inbox") back to the email box to fix a typo.
+  const backFromForgot = (toStep) => {
+    if (submitting) return;
+    setResetForm(EMPTY_RESET);
+    setTouched({});
+    setSubmitAttempted(false);
+    setFormError('');
+    setFormNotice('');
+    setResendIn(0);
+    setForgotStep(toStep);
+  };
+
+  const resendResetEmail = async () => {
+    if (submitting || resendIn > 0) return;
+    setFormError('');
+    setFormNotice('');
+    setSubmitting(true);
+    try {
+      await startPasswordReset(forgotAddress);
+      setFormNotice('We sent you a new email. If you do not see it, check your spam folder.');
+      setResendIn(RESEND_COOLDOWN_SECONDS);
+    } catch (err) {
+      setFormError(friendlyAuthError(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Creates the account once the email is proven. The server re-checks the token; nothing here is trusted on its own.
@@ -501,6 +597,50 @@ export default function AuthModal({
     const firstInvalid = Object.keys(errors)[0];
     if (firstInvalid) {
       document.getElementById(`auth-${firstInvalid}`)?.focus();
+      return;
+    }
+
+    // Forgot password, step 2: the link was opened and a new password chosen. Prove that with Firebase,
+    // then have the server save the same password on the account and sign the person in.
+    if (onForgotConfirm) {
+      setSubmitting(true);
+      try {
+        const { emailToken } = await confirmPasswordReset(forgotAddress, resetForm.password);
+        const awake = await wakeServer({
+          onSlow: () => setFormNotice('Almost done. Starting our server, this can take up to a minute…'),
+        });
+        if (!awake) {
+          setFormNotice('');
+          setFormError('Our server is taking a long time to start. Please wait a moment and tap the button again.');
+          return;
+        }
+        setFormNotice('');
+        await onResetPassword?.({ email: forgotAddress, password: resetForm.password, emailToken });
+        onClose();
+      } catch (err) {
+        setFormNotice('');
+        setFormError(friendlyAuthError(err));
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // Forgot password, step 1: send the reset email, then show "Check your inbox".
+    if (onForgotEmail) {
+      setSubmitting(true);
+      try {
+        wakeServer(); // the accounts server may be asleep: wake it while the person opens the email
+        await startPasswordReset(forgotAddress);
+        setSubmitAttempted(false);
+        setTouched({});
+        setResendIn(RESEND_COOLDOWN_SECONDS);
+        setForgotStep('confirm');
+      } catch (err) {
+        setFormError(friendlyAuthError(err));
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 
@@ -603,7 +743,7 @@ export default function AuthModal({
                   })}
                 </div>
 
-                <div key={mode} className="auth-swap mt-6">
+                <div key={`${mode}-${forgotStep}`} className="auth-swap mt-6">
                   <h2 id="auth-title" className="text-xl font-semibold leading-tight tracking-tight text-slate-900 md:text-[22px]">{title}</h2>
                   <p className="mb-5 mt-1 text-[13px] text-slate-500">{subtitle}</p>
 
@@ -654,6 +794,89 @@ export default function AuthModal({
                           <button
                             type="button"
                             onClick={resendEmail}
+                            disabled={submitting || resendIn > 0}
+                            className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline focus:outline-none focus-visible:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline"
+                          >
+                            {resendIn > 0 ? `Resend email in ${resendIn}s` : 'Resend email'}
+                          </button>
+                        </div>
+                      </>
+                    ) : onForgotEmail ? (
+                      <>
+                        <Field
+                          id="auth-email"
+                          label="Email"
+                          type="email"
+                          icon={IconMail}
+                          value={signIn.email}
+                          onChange={(e) => setField('email', e.target.value)}
+                          onBlur={blur('email')}
+                          error={errorFor('email')}
+                          autoComplete="email"
+                          placeholder="you@example.com"
+                          inputRef={firstFieldRef}
+                        />
+                        <div className="text-[12.5px]">
+                          <button
+                            type="button"
+                            onClick={() => backFromForgot('')}
+                            disabled={submitting}
+                            className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline focus:outline-none focus-visible:underline disabled:opacity-50"
+                          >
+                            Back to sign in
+                          </button>
+                        </div>
+                      </>
+                    ) : onForgotConfirm ? (
+                      <>
+                        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
+                          <span aria-hidden="true" className="mt-0.5 text-[#d9856b]">
+                            <IconMail className="h-5 w-5" />
+                          </span>
+                          <p className="text-[13px] leading-relaxed text-slate-600">
+                            If <span className="font-semibold text-slate-900">{forgotAddress}</span> has an account, we sent a reset link to it.
+                            Open the link and choose your new password on that page, then enter the same password below.
+                            Can&apos;t find it? Check your spam or junk folder.
+                          </p>
+                        </div>
+                        <Field
+                          id="auth-newPassword"
+                          label="New password"
+                          type="password"
+                          icon={IconLock}
+                          value={resetForm.password}
+                          onChange={(e) => setResetField('password', e.target.value)}
+                          onBlur={blur('newPassword')}
+                          error={errorFor('newPassword')}
+                          autoComplete="new-password"
+                          placeholder={`At least ${MIN_PASSWORD} characters`}
+                          inputRef={firstFieldRef}
+                        >
+                          <PasswordStrength password={resetForm.password} />
+                        </Field>
+                        <Field
+                          id="auth-newConfirm"
+                          label="Confirm new password"
+                          type="password"
+                          icon={IconLock}
+                          value={resetForm.confirm}
+                          onChange={(e) => setResetField('confirm', e.target.value)}
+                          onBlur={blur('newConfirm')}
+                          error={errorFor('newConfirm')}
+                          autoComplete="new-password"
+                        />
+                        <div className="flex items-center justify-between text-[12.5px]">
+                          <button
+                            type="button"
+                            onClick={() => backFromForgot('email')}
+                            disabled={submitting}
+                            className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline focus:outline-none focus-visible:underline disabled:opacity-50"
+                          >
+                            Change email
+                          </button>
+                          <button
+                            type="button"
+                            onClick={resendResetEmail}
                             disabled={submitting || resendIn > 0}
                             className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline focus:outline-none focus-visible:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline"
                           >
@@ -787,10 +1010,10 @@ export default function AuthModal({
                           <Checkbox id="auth-remember" checked={signIn.remember} onChange={(e) => setField('remember', e.target.checked)}>
                             Remember me
                           </Checkbox>
-                          {onForgotPassword && (
+                          {onResetPassword && (
                             <button
                               type="button"
-                              onClick={onForgotPassword}
+                              onClick={openForgot}
                               className="text-[12.5px] font-semibold text-[#1e3a8a] underline-offset-2 hover:underline focus:outline-none focus-visible:underline"
                             >
                               Forgot password?
@@ -807,8 +1030,12 @@ export default function AuthModal({
                     >
                       {submitting && <IconSpinner />}
                       {submitting
-                        ? (isRegister ? (step === 'verify' ? 'Checking…' : 'Please wait…') : 'Signing in…')
-                        : (isRegister ? (step === 'verify' ? "I've verified my email" : 'Continue') : 'Sign in')}
+                        ? (isRegister
+                            ? (step === 'verify' ? 'Checking…' : 'Please wait…')
+                            : (onForgotEmail ? 'Sending…' : onForgotConfirm ? 'Saving…' : 'Signing in…'))
+                        : (isRegister
+                            ? (step === 'verify' ? "I've verified my email" : 'Continue')
+                            : (onForgotEmail ? 'Send reset link' : onForgotConfirm ? 'Save new password' : 'Sign in'))}
                     </button>
                   </form>
 

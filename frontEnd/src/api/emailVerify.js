@@ -1,6 +1,7 @@
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -20,6 +21,15 @@ import { auth } from '../firebase';
  *                                               as `emailToken`.
  *
  * Firebase is only used to prove the email address. The real account (and the login) stay in our own database.
+ *
+ * Forgot password uses the same idea:
+ *
+ *   1. startPasswordReset(email)               Firebase emails a reset link (nothing is revealed about whether the
+ *                                              address has an account).
+ *   2. The person opens the link and picks a new password on Firebase's hosted page.
+ *   3. confirmPasswordReset(email, newPassword) signs in with that new password (which also proves the link was
+ *                                              used) and returns a fresh ID token. Send it to /api/auth/reset-password
+ *                                              (api/auth.js resetPassword) so the password in our own database changes too.
  */
 
 export const RESEND_COOLDOWN_SECONDS = 60;
@@ -158,5 +168,54 @@ export async function endEmailVerification() {
     await signOut(auth);
   } catch {
     // nothing to do: there was no session to close
+  }
+}
+
+const RESET_NOT_DONE =
+  'That password does not match yet. Open the link in the email we sent you, choose your new password there, then enter the same password here.';
+
+/**
+ * Forgot password, step 1. Sends Firebase's reset email to this address.
+ * An address with no account looks exactly like one that has an account (nothing is thrown), so nobody can use this
+ * form to find out who is registered. Throws the Firebase error otherwise (pass it to friendlyAuthError).
+ */
+export async function startPasswordReset(email) {
+  try {
+    await sendPasswordResetEmail(auth, cleanEmail(email));
+  } catch (err) {
+    if (err?.code === 'auth/user-not-found') return;
+    throw err;
+  }
+}
+
+/**
+ * Forgot password, step 2: "I've reset my password".
+ * newPassword is the password just chosen on the reset page. Returns { emailToken } for /api/auth/reset-password.
+ * Throws an EmailVerifyError when that password does not work yet (the link was not opened, or it was typed differently).
+ * The Firebase session is closed before returning: only the token is needed from here on.
+ */
+export async function confirmPasswordReset(email, newPassword) {
+  const address = cleanEmail(email);
+  let user;
+  try {
+    user = (await signInWithEmailAndPassword(auth, address, newPassword)).user;
+  } catch (err) {
+    if (WRONG_PASSWORD_CODES.has(err?.code) || err?.code === 'auth/user-not-found') {
+      throw new EmailVerifyError(RESET_NOT_DONE, 'reset-not-done');
+    }
+    throw err;
+  }
+
+  try {
+    await user.reload();
+    if (!user.emailVerified) {
+      throw new EmailVerifyError('This email address is not verified yet. Use the link in the email we sent you.', 'not-verified');
+    }
+    // true = ask Firebase for a new token, so it carries email_verified: true. The sign-in above is seconds old,
+    // well inside the 30 minutes the server accepts.
+    const result = await user.getIdTokenResult(true);
+    return { emailToken: result.token };
+  } finally {
+    await endEmailVerification();
   }
 }

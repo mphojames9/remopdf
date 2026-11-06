@@ -91,6 +91,16 @@ export async function registerUser({ firstName, lastName, email, password, phone
   return data.user;
 }
 
+/**
+ * Sets a new password for an existing account, then signs the person in with it. Throws an Error with a readable message.
+ * emailToken is the Firebase ID token from api/emailVerify.js (confirmPasswordReset): proof the person opened the reset
+ * link sent to their inbox. The server takes the email address from the token, so no email is sent in the body.
+ */
+export async function resetPassword({ email, password, emailToken }) {
+  await post('/api/auth/reset-password', { password, emailToken });
+  return loginUser({ email, password, remember: true });
+}
+
 /** Signs in to an existing account. Throws an Error with a readable message. */
 export async function loginUser({ email, password, remember }) {
   const data = await post('/api/auth/login', { email, password, remember: !!remember });
