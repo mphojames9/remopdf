@@ -52,6 +52,35 @@ async function post(path, body) {
 }
 
 /**
+ * Render's free plan puts the accounts server to sleep after a while. The first request afterwards either fails
+ * (the browser sees "Cannot reach the server") or takes up to a minute. This calls the health check until the
+ * server answers, so sign-up is only sent once it is awake. Resolves true when awake, false after timeoutMs.
+ * onSlow (optional) is called once if the server has not answered within 3 seconds. Never throws.
+ */
+export async function wakeServer({ timeoutMs = 75000, retryMs = 3000, onSlow } = {}) {
+  const started = Date.now();
+  const slowTimer = onSlow ? setTimeout(onSlow, 3000) : null;
+  try {
+    while (Date.now() - started < timeoutMs) {
+      const controller = new AbortController();
+      const abortTimer = setTimeout(() => controller.abort(), 15000);
+      try {
+        const res = await fetch(`${API_URL}/api/health`, { signal: controller.signal, cache: 'no-store' });
+        if (res.ok) return true;
+      } catch {
+        /* still asleep: try again */
+      } finally {
+        clearTimeout(abortTimer);
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryMs));
+    }
+    return false;
+  } finally {
+    if (slowTimer) clearTimeout(slowTimer);
+  }
+}
+
+/**
  * Creates the account (saved in MongoDB) and signs the person in. Throws an Error with a readable message.
  * emailToken is the Firebase ID token from api/emailVerify.js (proof the person opened the verification link);
  * the server takes the email address from it. phone is saved as typed (+27 form) and is not verified.

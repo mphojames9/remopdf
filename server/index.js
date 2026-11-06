@@ -7,7 +7,7 @@ import authRoutes from './routes/auth.js';
 import profileRoutes, { profileMiddleware } from './routes/profile.js';
 import paymentRoutes, { paystackWebhook } from './routes/payments.js';
 
-const { MONGO_URI, JWT_SECRET } = process.env;
+const { MONGO_URI, JWT_SECRET, MONGO_DB_NAME } = process.env;
 const PORT = Number(process.env.PORT) || 5000;
 
 if (!MONGO_URI) {
@@ -87,10 +87,14 @@ app.use((err, req, res, next) => {
   return res.status(500).json({ message: 'Something went wrong on our side. Please try again.' });
 });
 
+// MONGO_DB_NAME (optional) picks the database by name, whatever MONGO_URI ends with. Without it, the database named in
+// MONGO_URI is used (or "test" if the URI names none). MongoDB creates the database and collections on the first save.
+const dbName = (MONGO_DB_NAME || '').trim();
+
 mongoose
-  .connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
+  .connect(MONGO_URI, { serverSelectionTimeoutMS: 10000, ...(dbName ? { dbName } : {}) })
   .then(() => {
-    console.log('Connected to MongoDB');
+    console.log(`Connected to MongoDB (database "${mongoose.connection.name}")`);
     app.listen(PORT, () => console.log(`RemoPDF server listening on port ${PORT}`));
   })
   .catch((err) => {

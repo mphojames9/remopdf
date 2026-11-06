@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import requireAuth from '../middleware/requireAuth.js';
-import { verifiedEmailFromToken } from '../lib/firebaseAdmin.js';
+import { checkEmailToken } from '../lib/firebaseAdmin.js';
 
 /*
  * Accounts.
@@ -81,9 +81,14 @@ router.post('/register', authLimiter, async (req, res, next) => {
     if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES) return res.status(400).json({ message: `Your password is too long. Use at most ${MAX_PASSWORD_BYTES} characters.` });
 
     // The email address is only ever taken from the verified token.
-    const email = await verifiedEmailFromToken(req.body?.emailToken);
+    const check = await checkEmailToken(req.body?.emailToken);
+    const email = check.email;
     if (!email || email.length > 254 || !EMAIL_RE.test(email)) {
-      return res.status(400).json({ message: 'We could not confirm your email address. Please verify it and try again.' });
+      // `reason` is for whoever is debugging (the Network tab, the Render logs); the form only shows `message`.
+      return res.status(400).json({
+        message: 'We could not confirm your email address. Please verify it and try again.',
+        reason: check.reason || 'the verified address is not a usable email',
+      });
     }
     if (bodyEmail && bodyEmail !== email) {
       return res.status(400).json({ message: 'The email address does not match the one you verified. Please check it and try again.' });

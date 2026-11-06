@@ -10,6 +10,7 @@ import {
   resendVerificationEmail,
   startEmailVerification,
 } from '../../api/emailVerify';
+import { wakeServer } from '../../api/auth';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
@@ -478,6 +479,15 @@ export default function AuthModal({
           setFormNotice('Your email is not verified yet. Open the link in the email we sent you first, then tap the button again.');
           return;
         }
+        const awake = await wakeServer({
+          onSlow: () => setFormNotice('Almost done. Starting our server, this can take up to a minute…'),
+        });
+        if (!awake) {
+          setFormNotice('');
+          setFormError('Our server is taking a long time to start. Please wait a moment and tap the button again.');
+          return;
+        }
+        setFormNotice('');
         await finishRegister(result.emailToken);
       } catch (err) {
         setFormError(friendlyAuthError(err));
@@ -498,6 +508,9 @@ export default function AuthModal({
     try {
       if (isRegister) {
         // Step 1 (sign-up): create (or pick up) the Firebase account, send the verification email, show "Check your inbox".
+        // The accounts server may be asleep (Render free plan), so it is woken in the background: by the time the
+        // person has opened the email, it is ready to save the account.
+        wakeServer();
         const result = await startEmailVerification(emailAddress, register.password);
         setEmailAlreadyVerified(result.alreadyVerified);
         setResendIn(result.alreadyVerified ? 0 : RESEND_COOLDOWN_SECONDS);
