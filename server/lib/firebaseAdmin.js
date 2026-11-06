@@ -1,11 +1,50 @@
-import admin from 'firebase-admin';
-
 // Checking a Firebase ID token only needs the project id: the token is verified against Google's public keys,
 // so no service-account file is required for this.
-const getApp = () =>
-  admin.apps[0] || admin.initializeApp({ projectId: (process.env.FIREBASE_PROJECT_ID || 'remopdf-125a').trim() });
+//
+// firebase-admin is loaded here, on first use, instead of at the top of the file: if it can not be loaded, only
+// sign-up is refused (with the reason in the log) and the rest of the server keeps running.
+
+const projectId = () => (process.env.FIREBASE_PROJECT_ID || 'remopdf-125a').trim();
 
 const MAX_TOKEN_AGE_SECONDS = 30 * 60; // the person must have signed in to Firebase in the last 30 minutes
+
+// Newer firebase-admin versions export these by name; with some module setups they sit under `default`.
+const pick = (ns, name) => ns?.[name] ?? ns?.default?.[name];
+
+// The Firebase Auth client, created once. Uses the modern entry points (firebase-admin/app and /auth) and falls
+// back to the classic `admin` namespace for very old versions. Only the project id is given: no credentials.
+async function loadAuth() {
+  let getApps;
+  let initializeApp;
+  let getAuth;
+  try {
+    const app = await import('firebase-admin/app');
+    const auth = await import('firebase-admin/auth');
+    getApps = pick(app, 'getApps');
+    initializeApp = pick(app, 'initializeApp');
+    getAuth = pick(auth, 'getAuth');
+  } catch {
+    // firebase-admin older than version 10 has no such entry points
+  }
+
+  if (typeof getApps === 'function' && typeof initializeApp === 'function' && typeof getAuth === 'function') {
+    return getAuth(getApps()[0] || initializeApp({ projectId: projectId() }));
+  }
+
+  const mod = await import('firebase-admin');
+  const admin = mod.default || mod;
+  const app = (admin.apps && admin.apps[0]) || admin.initializeApp({ projectId: projectId() });
+  return admin.auth(app);
+}
+
+let authPromise = null;
+const getAuthClient = () => {
+  authPromise ||= loadAuth().catch((err) => {
+    authPromise = null; // a failed start is tried again on the next request
+    throw err;
+  });
+  return authPromise;
+};
 
 /**
  * Checks the Firebase ID token the browser got after the person opened the link in the verification email.
@@ -16,14 +55,15 @@ const MAX_TOKEN_AGE_SECONDS = 30 * 60; // the person must have signed in to Fire
  * The email address is only ever taken from here, never from the request body.
  */
 export async function checkEmailToken(idToken) {
-  const refuse = (reason) => {
+  const refuse = (reason, err) => {
     console.warn(`verifiedEmailFromToken: refused - ${reason}`);
+    if (err?.stack) console.warn(err.stack); // server log only, never sent to the browser
     return { email: null, reason };
   };
 
   if (typeof idToken !== 'string' || !idToken) return refuse('the request had no emailToken');
   try {
-    const decoded = await admin.auth(getApp()).verifyIdToken(idToken);
+    const decoded = await (await getAuthClient()).verifyIdToken(idToken);
     if (decoded.email_verified !== true) return refuse('the token says the email is not verified');
     const provider = decoded.firebase?.sign_in_provider;
     if (provider !== 'password') return refuse(`sign_in_provider is "${provider}", expected "password"`);
@@ -35,7 +75,7 @@ export async function checkEmailToken(idToken) {
     return { email: decoded.email.toLowerCase(), reason: null };
   } catch (err) {
     const detail = String(err?.message || '').slice(0, 300);
-    return refuse(`verifyIdToken failed: ${err?.code || 'error'}${detail ? ` - ${detail}` : ''}`);
+    return refuse(`verifyIdToken failed: ${err?.code || 'error'}${detail ? ` - ${detail}` : ''}`, err);
   }
 }
 
