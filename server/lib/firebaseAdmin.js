@@ -48,7 +48,8 @@ const getAuthClient = () => {
 
 /**
  * Checks the Firebase ID token the browser got after the person opened the link in the verification email.
- * Returns { email } (lowercased) when the token proves a verified email address, or { email: null, reason }
+ * Returns { email, authTime } (email lowercased; authTime = when the person signed in to Firebase, in seconds)
+ * when the token proves a verified email address, or { email: null, reason }
  * when it is missing, forged, expired, old, was not made by email/password sign-in, or the address is not
  * verified yet. The reason is written to the server log (never the token or the email address) and is also
  * sent back by /register, so a refusal can be traced from the browser's Network tab or the Render logs.
@@ -72,7 +73,7 @@ export async function checkEmailToken(idToken) {
     if (signedInSeconds > MAX_TOKEN_AGE_SECONDS) {
       return refuse(`the Firebase sign-in is ${signedInSeconds}s old, the limit is ${MAX_TOKEN_AGE_SECONDS}s`);
     }
-    return { email: decoded.email.toLowerCase(), reason: null };
+    return { email: decoded.email.toLowerCase(), authTime: Number(decoded.auth_time), reason: null };
   } catch (err) {
     const detail = String(err?.message || '').slice(0, 300);
     return refuse(`verifyIdToken failed: ${err?.code || 'error'}${detail ? ` - ${detail}` : ''}`, err);

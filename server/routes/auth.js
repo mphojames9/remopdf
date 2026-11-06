@@ -11,6 +11,7 @@ import { checkEmailToken } from '../lib/firebaseAdmin.js';
  *   POST /api/auth/register  { firstName, lastName, email, password, phone, emailToken }  -> 201 { token, user }
  *   POST /api/auth/login     { email, password, remember }                                -> { token, user }
  *   GET  /api/auth/me        (Authorization: Bearer <token>)                              -> { user }
+ *   POST /api/auth/reset-password  { emailToken, password }                               -> { ok: true }
  *
  * The token is a JWT signed with JWT_SECRET whose `sub` is the account id (requireAuth reads it from there).
  * "Remember me" only changes how long the token lives; the browser decides where it is kept.
@@ -19,6 +20,15 @@ import { checkEmailToken } from '../lib/firebaseAdmin.js';
  * The server checks it itself (lib/firebaseAdmin.js) and takes the email address ONLY from it. An `email` in the
  * request body is optional, and if it is there and different from the verified one, the request is refused.
  * `phone` is optional, saved as +27XXXXXXXXX and treated as unverified.
+ *
+ * Resetting a forgotten password uses the same proof of email ownership, so the server sends no email itself:
+ *   1. The browser asks Firebase to email a sign-in link: sendSignInLinkToEmail(auth, email, { url: <reset page>,
+ *      handleCodeInApp: true }). (Firebase console > Authentication > Sign-in method: turn on "Email link".)
+ *   2. The person opens the link on the reset page; the browser calls signInWithEmailLink and gets an ID token.
+ *   3. The browser sends { emailToken, password } to /reset-password. The account is found by the verified email
+ *      in the token, never by anything in the body.
+ * A token works once: it is refused unless the Firebase sign-in is newer than the account's last password reset.
+ * After a reset every earlier sign-in token is refused (requireAuth), so other devices must sign in again.
  */
 
 // Uses bcryptjs if it is installed, otherwise bcrypt. Both make and read the same $2a/$2b hashes, so accounts
@@ -37,6 +47,13 @@ const TOKEN_LIFETIME = { remember: '30d', session: '1d' };
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', BCRYPT_COST);
 
 const text = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+
+// The one rule for a new password (sign-up and reset). Returns the message to show, or null when it is fine.
+const passwordProblem = (password) => {
+  if (password.length < MIN_PASSWORD) return `Use at least ${MIN_PASSWORD} characters for your password.`;
+  if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES) return `Your password is too long. Use at most ${MAX_PASSWORD_BYTES} characters.`;
+  return null;
+};
 
 // South African numbers in any of the usual ways people type them (082 123 4567, +27 82 123 4567,
 // 27821234567, 0027821234567, +27 (0)82 123 4567) become +27821234567. Anything else gives null.
@@ -77,8 +94,8 @@ router.post('/register', authLimiter, async (req, res, next) => {
     const rawPhone = text(req.body?.phone, 40);
 
     if (!firstName || !lastName) return res.status(400).json({ message: 'Enter your first and last name.' });
-    if (password.length < MIN_PASSWORD) return res.status(400).json({ message: `Use at least ${MIN_PASSWORD} characters for your password.` });
-    if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES) return res.status(400).json({ message: `Your password is too long. Use at most ${MAX_PASSWORD_BYTES} characters.` });
+    const problem = passwordProblem(password);
+    if (problem) return res.status(400).json({ message: problem });
 
     // The email address is only ever taken from the verified token.
     const check = await checkEmailToken(req.body?.emailToken);
@@ -143,6 +160,49 @@ router.post('/login', authLimiter, async (req, res, next) => {
 
     await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
     return res.json({ token: issueToken(user, remember), user });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/* POST /api/auth/reset-password  { emailToken, password }  ->  { ok: true }   (the person then signs in as usual) */
+router.post('/reset-password', authLimiter, async (req, res, next) => {
+  try {
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    const problem = passwordProblem(password);
+    if (problem) return res.status(400).json({ message: problem });
+
+    // The account is found by the email address in the verified token, and only by that.
+    const check = await checkEmailToken(req.body?.emailToken);
+    const email = check.email;
+    if (!email || !Number.isFinite(check.authTime)) {
+      return res.status(400).json({
+        message: 'We could not confirm your email address. Please open the link in your email again.',
+        reason: check.reason || 'the token has no sign-in time',
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+    const now = new Date();
+
+    // One atomic update: it only matches when no reset has happened since this Firebase sign-in, so the same email
+    // link (or two requests arriving together) can set a password only once.
+    const result = await User.updateOne(
+      {
+        email,
+        $or: [{ passwordChangedAt: null }, { passwordChangedAt: { $lt: new Date(check.authTime * 1000) } }],
+      },
+      { $set: { passwordHash, passwordChangedAt: now } }
+    );
+
+    if (result.matchedCount === 0) {
+      if (!(await User.exists({ email }))) {
+        return res.status(404).json({ message: 'No account uses this email address. Try signing up instead.' });
+      }
+      return res.status(409).json({ message: 'This reset link was already used. Please request a new one.' });
+    }
+
+    return res.json({ ok: true });
   } catch (err) {
     return next(err);
   }

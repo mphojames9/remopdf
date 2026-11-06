@@ -15,6 +15,9 @@ const userSchema = new mongoose.Schema(
     // Only the bcrypt hash is stored, and it is left out of queries unless asked for with .select('+passwordHash').
     passwordHash: { type: String, required: true, select: false },
     lastLoginAt: { type: Date },
+    // Set when the password is reset. Sign-in tokens issued before this moment are refused (requireAuth), and a
+    // reset is only accepted from a Firebase sign-in made after it, so one email link can reset the password once.
+    passwordChangedAt: { type: Date },
     // The person's saved resume (everything the builder keeps), stored as one JSON string. A string cannot
     // carry keys like "$set" or "a.b" into MongoDB, and it is left out of queries unless asked for with
     // .select('+resumeJson'), so /api/auth/me and the login responses never carry it.
