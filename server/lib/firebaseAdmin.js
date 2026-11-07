@@ -2,11 +2,16 @@
 // so no service-account file is required for this.
 //
 // firebase-admin is loaded here, on first use, instead of at the top of the file: if it can not be loaded, only
-// sign-up is refused (with the reason in the log) and the rest of the server keeps running.
+// sign-in is refused (with the reason in the log) and the rest of the server keeps running.
 
 const projectId = () => (process.env.FIREBASE_PROJECT_ID || 'remopdf-125a').trim();
 
-const MAX_TOKEN_AGE_SECONDS = 30 * 60; // the person must have signed in to Firebase in the last 30 minutes
+// Only these addresses may sign in. Google accounts on any other domain (Outlook, Yahoo, a company domain) are refused.
+const GMAIL_DOMAINS = new Set(['gmail.com', 'googlemail.com']);
+
+// The person must have completed the Google sign-in window in the last 10 minutes. The browser sends the token
+// straight after that, so a real sign-in is always well inside this; an old, leaked token is not.
+const MAX_SIGN_IN_AGE_SECONDS = 10 * 60;
 
 // Newer firebase-admin versions export these by name; with some module setups they sit under `default`.
 const pick = (ns, name) => ns?.[name] ?? ns?.default?.[name];
@@ -46,41 +51,48 @@ const getAuthClient = () => {
   return authPromise;
 };
 
+const NOT_CONFIRMED = 'We could not confirm your Google account. Please try signing in again.';
+const NOT_GMAIL = 'Only Gmail accounts can sign in. Please choose an @gmail.com address.';
+
 /**
- * Checks the Firebase ID token the browser got after the person opened the link in the verification email.
- * Returns { email, authTime } (email lowercased; authTime = when the person signed in to Firebase, in seconds)
- * when the token proves a verified email address, or { email: null, reason }
- * when it is missing, forged, expired, old, was not made by email/password sign-in, or the address is not
- * verified yet. The reason is written to the server log (never the token or the email address) and is also
- * sent back by /register, so a refusal can be traced from the browser's Network tab or the Render logs.
+ * Checks the Firebase ID token the browser got after the person signed in with Google.
+ * Returns { ok: true, email, name } (email lowercased) when the token proves a verified Gmail address that signed
+ * in with Google a moment ago. Otherwise returns { ok: false, code, message, reason }:
+ *   code     'not-gmail' (a real Google account, but not a Gmail address) or 'invalid' (anything else)
+ *   message  what the person sees
+ *   reason   for whoever is debugging; written to the server log (never the token or the email address) and
+ *            also sent back by /api/auth/google, so a refusal can be traced from the browser's Network tab
+ *            or the Render logs
  * The email address is only ever taken from here, never from the request body.
  */
-export async function checkEmailToken(idToken) {
-  const refuse = (reason, err) => {
-    console.warn(`verifiedEmailFromToken: refused - ${reason}`);
+export async function checkGoogleToken(idToken) {
+  const refuse = (reason, { code = 'invalid', message = NOT_CONFIRMED, err } = {}) => {
+    console.warn(`checkGoogleToken: refused - ${reason}`);
     if (err?.stack) console.warn(err.stack); // server log only, never sent to the browser
-    return { email: null, reason };
+    return { ok: false, code, message, reason };
   };
 
-  if (typeof idToken !== 'string' || !idToken) return refuse('the request had no emailToken');
+  if (typeof idToken !== 'string' || !idToken) return refuse('the request had no idToken');
   try {
     const decoded = await (await getAuthClient()).verifyIdToken(idToken);
-    if (decoded.email_verified !== true) return refuse('the token says the email is not verified');
+
     const provider = decoded.firebase?.sign_in_provider;
-    if (provider !== 'password') return refuse(`sign_in_provider is "${provider}", expected "password"`);
+    if (provider !== 'google.com') return refuse(`sign_in_provider is "${provider}", expected "google.com"`);
+    if (decoded.email_verified !== true) return refuse('the token says the email is not verified');
     if (typeof decoded.email !== 'string' || !decoded.email) return refuse('the token has no email');
+
+    const email = decoded.email.trim().toLowerCase();
+    const domain = email.slice(email.lastIndexOf('@') + 1);
+    if (!GMAIL_DOMAINS.has(domain)) return refuse('the Google account is not a Gmail address', { code: 'not-gmail', message: NOT_GMAIL });
+
     const signedInSeconds = Math.round(Date.now() / 1000 - Number(decoded.auth_time || 0));
-    if (signedInSeconds > MAX_TOKEN_AGE_SECONDS) {
-      return refuse(`the Firebase sign-in is ${signedInSeconds}s old, the limit is ${MAX_TOKEN_AGE_SECONDS}s`);
+    if (signedInSeconds > MAX_SIGN_IN_AGE_SECONDS) {
+      return refuse(`the Google sign-in is ${signedInSeconds}s old, the limit is ${MAX_SIGN_IN_AGE_SECONDS}s`);
     }
-    return { email: decoded.email.toLowerCase(), authTime: Number(decoded.auth_time), reason: null };
+
+    return { ok: true, email, name: typeof decoded.name === 'string' ? decoded.name : '' };
   } catch (err) {
     const detail = String(err?.message || '').slice(0, 300);
-    return refuse(`verifyIdToken failed: ${err?.code || 'error'}${detail ? ` - ${detail}` : ''}`, err);
+    return refuse(`verifyIdToken failed: ${err?.code || 'error'}${detail ? ` - ${detail}` : ''}`, { err });
   }
-}
-
-/** The verified email address (lowercased), or null. See checkEmailToken for the rules and the reason. */
-export async function verifiedEmailFromToken(idToken) {
-  return (await checkEmailToken(idToken)).email;
 }

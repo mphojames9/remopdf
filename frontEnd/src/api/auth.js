@@ -5,10 +5,11 @@ const API_URL = String(import.meta.env?.VITE_ACCOUNTS_URL || 'https://remopdf-se
 const TOKEN_KEY = 'remopdf:authToken';
 const USER_KEY = 'remopdf:authUser';
 
-// "Remember me" keeps the sign-in in localStorage; otherwise it lasts until the tab is closed.
+// A sign-in is kept in localStorage (it lasts until the person signs out). sessionStorage is still cleared too, in case
+// an older version of the app left a sign-in there.
 const stores = () => [window.localStorage, window.sessionStorage];
 
-const saveSession = ({ token, user }, remember) => {
+const saveSession = ({ token, user }, remember = true) => {
   try {
     clearSession();
     const store = remember ? window.localStorage : window.sessionStorage;
@@ -81,30 +82,14 @@ export async function wakeServer({ timeoutMs = 75000, retryMs = 3000, onSlow } =
 }
 
 /**
- * Creates the account (saved in MongoDB) and signs the person in. Throws an Error with a readable message.
- * emailToken is the Firebase ID token from api/emailVerify.js (proof the person opened the verification link);
- * the server takes the email address from it. phone is saved as typed (+27 form) and is not verified.
+ * Signs in with Google. idToken is the Firebase ID token from api/googleAuth.js (getGoogleIdToken); the server checks it,
+ * takes the Gmail address from it, creates the account the first time and signs the person in. Throws an Error with a
+ * readable message (for example when the address is not a Gmail address).
+ * The sign-in is kept in localStorage, so it lasts until the person signs out or it expires after 30 days.
  */
-export async function registerUser({ firstName, lastName, email, password, phone, emailToken }) {
-  const data = await post('/api/auth/register', { firstName, lastName, email, password, phone, emailToken });
+export async function loginWithGoogle(idToken) {
+  const data = await post('/api/auth/google', { idToken });
   saveSession(data, true);
-  return data.user;
-}
-
-/**
- * Sets a new password for an existing account, then signs the person in with it. Throws an Error with a readable message.
- * emailToken is the Firebase ID token from api/emailVerify.js (confirmPasswordReset): proof the person opened the reset
- * link sent to their inbox. The server takes the email address from the token, so no email is sent in the body.
- */
-export async function resetPassword({ email, password, emailToken }) {
-  await post('/api/auth/reset-password', { password, emailToken });
-  return loginUser({ email, password, remember: true });
-}
-
-/** Signs in to an existing account. Throws an Error with a readable message. */
-export async function loginUser({ email, password, remember }) {
-  const data = await post('/api/auth/login', { email, password, remember: !!remember });
-  saveSession(data, !!remember);
   return data.user;
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getCurrentUser, getToken, loginUser, registerUser, resetPassword, signOut } from '../api/auth';
+import { getCurrentUser, getToken, loginWithGoogle, signOut } from '../api/auth';
 import * as resumeApi from '../api/resume';
 
 /*
@@ -438,17 +438,10 @@ export default function useResumeProfile({ payload, applyPayload, createBlank, r
     setUser(nextUser);
   };
 
-  const signIn = useCallback(async (credentials) => {
-    beginSession(await loginUser(credentials));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const register = useCallback(async (details) => {
-    beginSession(await registerUser(details));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Forgot password: the server changes the password, then this signs the person in with it.
-  const resetUserPassword = useCallback(async (details) => {
-    beginSession(await resetPassword(details));
+  // Sign in with Google. idToken is the Firebase ID token from api/googleAuth.js (getGoogleIdToken). The server creates
+  // the account the first time, so there is no separate "register".
+  const signIn = useCallback(async (idToken) => {
+    beginSession(await loginWithGoogle(idToken));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const signOutUser = useCallback(async () => {
@@ -497,8 +490,6 @@ export default function useResumeProfile({ payload, applyPayload, createBlank, r
     refreshLimit,
     writesToDevice,
     signIn,
-    register,
-    resetUserPassword,
     signOutUser,
     resolveConflict,
     openResume,

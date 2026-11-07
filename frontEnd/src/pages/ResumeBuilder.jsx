@@ -1871,7 +1871,7 @@ const MIN_RESUMES_FOR_PICKER = 1;
 export default function ResumeBuilder({ onBuildCoverLetter }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  // null = closed; otherwise the tab the Sign in / Register modal is on ('signin' | 'register').
+  // null = closed; anything else = the Sign in with Google dialog is open (the value is not used any more).
   const [authMode, setAuthMode] = useState(null);
   // Signed in: start blank and wait for the account's resume (the device copy is only read once that is
   // known). Signed out: start from what this device holds.
@@ -2103,15 +2103,9 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     return resume;
   };
 
-  const handleSignIn = async (credentials) => {
-    const result = await profile.signIn(credentials);
-    setPickPending(true);
-    return result;
-  };
-
-  // Forgot password signs the person in once the new password is saved, so it ends the same way a sign-in does.
-  const handleResetPassword = async (details) => {
-    const result = await profile.resetUserPassword(details);
+  // idToken comes from the Google sign-in window (see AuthModal). New accounts are created by the server on first sign-in.
+  const handleSignIn = async (idToken) => {
+    const result = await profile.signIn(idToken);
     setPickPending(true);
     return result;
   };
@@ -2581,12 +2575,8 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
 
       <AuthModal
         open={authMode !== null}
-        mode={authMode || 'signin'}
-        onModeChange={setAuthMode}
         onClose={() => setAuthMode(null)}
         onSignIn={handleSignIn}
-        onRegister={profile.register}
-        onResetPassword={handleResetPassword}
       />
 
       {(profile.mode === 'loading' || profile.mode === 'switching') && <ResumeLoadingOverlay />}

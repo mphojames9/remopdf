@@ -470,10 +470,10 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
             </span>
             <h3 className="mt-5 text-xl font-semibold tracking-tight">Sign in to continue</h3>
             <p className="mt-1.5 text-[14px] leading-relaxed text-slate-500">
-              Create a free account or sign in first, so your payment is saved to you and works on every device.
+              Sign in with Google first, so your payment is saved to you and works on every device.
             </p>
             <button ref={primaryRef} type="button" onClick={() => onSignIn?.()} className={`${primaryButton} mt-6`}>
-              Sign in or create an account
+              Sign in with Google
             </button>
             <button
               type="button"

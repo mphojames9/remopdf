@@ -3,31 +3,28 @@ import mongoose from 'mongoose';
 const userSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true, trim: true, maxlength: 60 },
-    lastName: { type: String, required: true, trim: true, maxlength: 60 },
-    // The unique index is what really stops two accounts sharing one email, even if two requests arrive together.
+    // Can be empty: some Google accounts have a single name.
+    lastName: { type: String, trim: true, maxlength: 60, default: '' },
+    // The Gmail address of the Google account the person signs in with. The unique index is what really stops two
+    // accounts sharing one email, even if two requests arrive together.
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 254 },
-    // True once the person has opened the link in the verification email. New accounts are only created after
-    // that, so it is true for everyone who registers now; accounts made before this field existed read as false.
+    // Google has confirmed the address, so this is true for everyone who signs in now. Accounts made before this
+    // field existed read as false until their owner signs in again.
     emailVerified: { type: Boolean, default: false },
-    // The mobile number the person typed at sign-up, saved as +27XXXXXXXXX. It is NOT verified (no SMS is sent),
-    // so it must never be used to prove who someone is. Optional, and not part of toJSON below.
+    // Older accounts may hold a mobile number typed at sign-up (+27XXXXXXXXX). It was never verified, so it must
+    // never be used to prove who someone is. New accounts do not have one. Not part of toJSON below.
     phone: { type: String, trim: true, maxlength: 20 },
-    // Only the bcrypt hash is stored, and it is left out of queries unless asked for with .select('+passwordHash').
-    passwordHash: { type: String, required: true, select: false },
     lastLoginAt: { type: Date },
-    // Set when the password is reset. Sign-in tokens issued before this moment are refused (requireAuth), and a
-    // reset is only accepted from a Firebase sign-in made after it, so one email link can reset the password once.
-    passwordChangedAt: { type: Date },
-    // The person's saved resume (everything the builder keeps), stored as one JSON string. A string cannot
-    // carry keys like "$set" or "a.b" into MongoDB, and it is left out of queries unless asked for with
-    // .select('+resumeJson'), so /api/auth/me and the login responses never carry it.
+    // The person's resume from before multiple resumes existed, stored as one JSON string. routes/profile.js moves it
+    // into the Resume collection the first time the account asks for its resumes. A string cannot carry keys like
+    // "$set" or "a.b" into MongoDB, and it is left out of queries unless asked for with .select('+resumeJson').
     resumeJson: { type: String, select: false },
     resumeUpdatedAt: { type: Date },
   },
   { timestamps: true }
 );
 
-// What the API sends back about an account. The hash never leaves the server.
+// What the API sends back about an account.
 userSchema.set('toJSON', {
   transform: (doc, ret) => ({
     id: ret._id.toString(),
