@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { downloadBlob } from '../../api/client';
+import logo from '../../assets/logo1.webp'; // the logo for light bars (logo.webp is the white one for dark bars)
 import { usePremiumAccess, useSignedIn, requestUpgrade, requestSignIn } from '../../hooks/premiumAccess';
 import {
   TONES,
@@ -481,8 +482,9 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
 
   const postingBusy = posting.state === 'loading';
 
+  // The same pill as the resume builder's main buttons (Next, Download).
   const downloadButtonClass =
-    'inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[#1e3a8a] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-blue-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25 disabled:cursor-not-allowed disabled:opacity-40';
+    'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-[#d9856b] px-5 text-xs font-bold text-white shadow-lg shadow-[#d9856b]/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#d9856b]/35 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#d9856b]/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none';
 
   return (
     <div
@@ -494,27 +496,30 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
       className="fixed inset-0 z-[60] flex flex-col bg-slate-50 text-slate-900 focus:outline-none"
       style={{ fontFamily: "'Outfit', ui-sans-serif, system-ui, sans-serif" }}
     >
-      {/* Top bar */}
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white pl-2 pr-3 pt-[env(safe-area-inset-top)] sm:pl-4 sm:pr-6">
+      {/* Top bar: the resume builder's header (white, thin border, the RemoPDF logo), with this page's own controls */}
+      <header className="relative z-20 flex shrink-0 items-center gap-3 border-b border-slate-200/70 bg-white px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:gap-4 sm:px-6 lg:px-12 lg:py-3 lg:pt-3">
+        <img src={logo} alt="RemoPDF" draggable={false} className="h-8 w-auto max-w-[40vw] shrink-0 select-none object-contain object-left sm:h-9" />
+        <span aria-hidden="true" className="h-6 w-px shrink-0 bg-slate-200" />
+
         <button
           type="button"
           onClick={onClose}
           disabled={downloading}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full pl-2 pr-3.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 disabled:opacity-40"
+          className="group -ml-1 inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full pl-2 pr-3.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 disabled:opacity-40"
         >
-          <IconBack className="h-4 w-4" />
+          <IconBack className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5 motion-reduce:transform-none" />
           <span className="hidden sm:inline">Back to resume</span>
           <span className="sm:hidden">Back</span>
         </button>
 
-        <div className="mx-auto flex min-w-0 items-center gap-2.5 sm:mx-0 sm:ml-2">
+        <div className="hidden min-w-0 items-center gap-2.5 sm:flex">
           <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: accentColor || '#1e3a8a' }} />
           <h1 id="cover-letter-title" className="truncate text-[15px] font-semibold tracking-tight text-slate-900">
             Cover letter
           </h1>
         </div>
 
-        <button type="button" onClick={download} disabled={!hasText || downloading || writing} className={`${downloadButtonClass} sm:ml-auto`}>
+        <button type="button" onClick={download} disabled={!hasText || downloading || writing} className={`${downloadButtonClass} ml-auto`}>
           <IconDownload className="h-4 w-4" />
           {downloading ? 'Preparing PDF…' : 'Download PDF'}
         </button>
