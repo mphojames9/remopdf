@@ -19,6 +19,7 @@ import PaymentModal from '../components/Payment/PaymentModal';
 import useResumeProfile, { getSessionUser } from '../hooks/useResumeProfile';
 import ResumeSyncDialog, { ResumeLoadingOverlay } from '../components/Auth/ResumeSyncDialog';
 import ResumePickerDialog from '../components/Auth/ResumePickerDialog';
+import CoverLetterBuilder from '../components/CoverLetter/CoverLetterBuilder';
 import { buildResumePdf } from '../utils/resumePdf';
 import { 
   TEMPLATE_COMPONENTS,
@@ -1409,9 +1410,6 @@ const emptyResumeData = {
   certificates: { enabled: false, items: [] },
 };
 
-// Where "Build cover letter" goes when the parent doesn't pass its own handler.
-const COVER_LETTER_PATH = '/cover-letter';
-
 // ---------------------------------------------------------------------------------------------
 // Where the resume is saved: in the person's account when they are signed in (see
 // hooks/useResumeProfile.js), otherwise in localStorage on this device. Both hold the same "payload".
@@ -1868,9 +1866,38 @@ const SignOutDialog = ({ open, busy, onConfirm, onCancel }) => {
 // After signing in, the "Choose a resume" dialog opens when the account holds at least this many resumes.
 const MIN_RESUMES_FOR_PICKER = 1;
 
+// The resume library greets a brand-new account with "Welcome" and everyone else with "Welcome back". An account
+// counts as brand new for the first 30 minutes after the server created it, and only until the library has been
+// shown once on this device (a few minutes of clock difference between the phone and the server are tolerated).
+const NEW_ACCOUNT_WINDOW_MS = 30 * 60 * 1000;
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
+const GREETED_KEY_PREFIX = 'remopdf:greeted:';
+
+const isFirstVisit = (user) => {
+  if (!user?.id) return false;
+  const created = Date.parse(user.createdAt);
+  if (!Number.isFinite(created)) return false;
+  const age = Date.now() - created;
+  if (age < -CLOCK_SKEW_MS || age > NEW_ACCOUNT_WINDOW_MS) return false;
+  try {
+    return !localStorage.getItem(GREETED_KEY_PREFIX + user.id);
+  } catch {
+    return true;
+  }
+};
+
+const markGreeted = (userId) => {
+  try {
+    localStorage.setItem(GREETED_KEY_PREFIX + userId, '1');
+  } catch {
+    /* storage blocked: the 30-minute window still ends the "Welcome" greeting */
+  }
+};
+
 export default function ResumeBuilder({ onBuildCoverLetter }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [coverLetterOpen, setCoverLetterOpen] = useState(false);
   // null = closed; anything else = the Sign in with Google dialog is open (the value is not used any more).
   const [authMode, setAuthMode] = useState(null);
   // Signed in: start blank and wait for the account's resume (the device copy is only read once that is
@@ -1937,6 +1964,8 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   });
 
   const showResumeSwitcher = Boolean(profile.user && profile.activeId);
+  // One cover letter is kept per resume (on this device), under the open resume's id.
+  const coverLetterKey = String(profile.activeId || 'device');
   const activeResume = profile.resumes.find((r) => r.id === profile.activeId);
 
   // Payment: the PDF download is unlocked by a Paystack payment (see components/Payment/PaymentModal.jsx).
@@ -2079,6 +2108,19 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   // sign-in only sets `pickPending` and the effect below opens the dialog once everything is loaded.
   const [pickPending, setPickPending] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Decided once, at the moment the library opens, so the heading never changes while it is on screen. When it
+  // closes the account is marked as greeted, so every later visit says "Welcome back".
+  const pickerShown = pickerOpen && showResumeSwitcher && !profile.conflict;
+  const pickerUserId = profile.user?.id;
+  const pickerFirstVisit = useMemo(
+    () => (pickerShown ? isFirstVisit(profile.user) : false),
+    [pickerShown, pickerUserId], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  useEffect(() => {
+    if (!pickerShown || !pickerUserId) return undefined;
+    return () => markGreeted(pickerUserId);
+  }, [pickerShown, pickerUserId]);
 
   // Thumbnails need each resume's saved data, but the account list only carries id, title and a few details.
   // A fetched resume is kept in memory under its id and last-edit time (so an edit is picked up), which
@@ -2425,9 +2467,12 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     }
   };
 
+  // "Build cover letter" in the sidebar. A parent can still take over with its own handler; otherwise the cover
+  // letter page opens right here, on top of the builder, and reads the resume that is being edited.
   const handleBuildCoverLetter = () => {
+    setMenuOpen(false);
     if (onBuildCoverLetter) onBuildCoverLetter(resumeData);
-    else window.location.assign(COVER_LETTER_PATH);
+    else setCoverLetterOpen(true);
   };
 
   const progressPercentage = Math.round((completedSteps.length / stepsConfig.length) * 100);
@@ -2564,6 +2609,17 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         />
       )}
 
+      {coverLetterOpen && (
+        <CoverLetterBuilder
+          key={coverLetterKey}
+          resumeData={resumeData}
+          accentColor={selectedColor || DEFAULT_ACCENT[selectedTemplate] || DEFAULT_ACCENT['blue-sidebar']}
+          storageKey={coverLetterKey}
+          checkPremium={checkPremium}
+          onClose={() => setCoverLetterOpen(false)}
+        />
+      )}
+
       <PaymentModal
         open={paymentOpen}
         user={profile.user}
@@ -2587,12 +2643,13 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         onCancel={() => setSignOutOpen(false)}
       />
       <ResumePickerDialog
-        open={pickerOpen && showResumeSwitcher && !profile.conflict}
+        open={pickerShown}
         resumes={profile.resumes}
         activeId={profile.activeId}
         activePayload={payload}
         limit={profile.resumeLimit}
         userName={String(profile.user?.firstName || '').trim()}
+        firstVisit={pickerFirstVisit}
         premium={premium}
         daysLeft={premiumInfo.daysLeft}
         onUpgrade={() => {

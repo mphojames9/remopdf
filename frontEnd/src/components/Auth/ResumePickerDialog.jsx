@@ -15,6 +15,8 @@ import logoMobile from '../../assets/logo1.webp';
  *  - activePayload:  the open resume's live payload (so its thumbnail always matches what is on screen)
  *  - limit:          most resumes an account may hold (New resume and Duplicate are disabled once reached)
  *  - userName:       first name for the greeting (optional)
+ *  - firstVisit:     true when this account has just been created. The page then says "Welcome" instead of
+ *                    "Welcome back" (nobody is coming back to an account they made a minute ago)
  *  - premium:        whether the account has an active Premium payment (shows the Premium card)
  *  - daysLeft:       days of Premium left, shown in the Premium card (optional)
  *  - onUpgrade:      (optional) () => void, opens the upgrade dialog. A free account that has reached its limit
@@ -672,6 +674,7 @@ export default function ResumePickerDialog({
   activePayload,
   limit,
   userName,
+  firstVisit = false,
   premium = false,
   daysLeft = 0,
   onUpgrade,
@@ -837,7 +840,13 @@ export default function ResumePickerDialog({
   const locked = pending !== null;
   const activeTitle = resumes.find((r) => r.id === activeId)?.title;
   const closeLabel = activeTitle ? 'Keep current resume' : 'Not now';
-  const subtitle = resumes.length > 0 ? 'Pick up where you left off, or start something new.' : 'Start your first resume. It only takes a few minutes.';
+  const subtitle = firstVisit
+    ? resumes.length > 0
+      ? 'Your account is ready. Open your resume below, or start a new one.'
+      : 'Your account is ready. Start your first resume. It only takes a few minutes.'
+    : resumes.length > 0
+      ? 'Pick up where you left off, or start something new.'
+      : 'Start a new resume. It only takes a few minutes.';
 
   return (
     <div className="rp-overlay fixed inset-0 z-[70] bg-slate-50">
@@ -908,9 +917,11 @@ export default function ResumePickerDialog({
                 >
                   {userName ? (
                     <>
-                      Welcome back,{' '}
+                      {firstVisit ? 'Welcome,' : 'Welcome back,'}{' '}
                       <span className="rp-name bg-clip-text text-transparent">{userName}</span>
                     </>
+                  ) : firstVisit ? (
+                    'Welcome to RemoPDF'
                   ) : (
                     'Your resumes'
                   )}

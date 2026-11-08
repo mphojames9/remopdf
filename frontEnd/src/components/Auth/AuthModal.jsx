@@ -34,10 +34,10 @@ const GoogleLogo = ({ className = 'h-5 w-5' }) => (
   </svg>
 );
 
-const IconMail = ({ className }) => (
+const IconLock = ({ className }) => (
   <Svg className={className}>
-    <rect x="3" y="5" width="18" height="14" rx="2" />
-    <path d="m3 7 9 6 9-6" />
+    <rect x="4" y="11" width="16" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
   </Svg>
 );
 
@@ -253,7 +253,7 @@ export default function AuthModal({ open, onClose, onSignIn, termsHref = '/terms
                   Sign in to RemoPDF
                 </h2>
                 <p className="mb-6 mt-1 text-[13px] leading-relaxed text-slate-500">
-                  Use your Gmail account. If you are new here, your account is created automatically.
+                  Sign in with your Gmail account (name@gmail.com). New to RemoPDF? Your account is created automatically.
                 </p>
 
                 <div className="space-y-3.5">
@@ -284,8 +284,8 @@ export default function AuthModal({ open, onClose, onSignIn, termsHref = '/terms
                 </div>
 
                 <p className="mt-4 flex items-start gap-2 text-[12.5px] leading-relaxed text-slate-500">
-                  <IconMail className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                  <span>Only Gmail addresses (name@gmail.com) work. There is no separate password to create or reset.</span>
+                  <IconLock className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                  <span>Secure sign-in with Google. RemoPDF never sees or stores your Google password.</span>
                 </p>
 
                 <p className="mt-6 text-center text-[11.5px] leading-relaxed text-slate-400">
