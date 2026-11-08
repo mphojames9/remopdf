@@ -124,11 +124,12 @@ const IconSpinner = ({ className }) => (
 const inputClass =
   'h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-[13.5px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#d9856b] focus:outline-none focus:ring-4 focus:ring-[#d9856b]/15';
 
-const Field = ({ id, label, optional = false, children }) => (
+const Field = ({ id, label, optional = false, note = '', children }) => (
   <div>
     <label htmlFor={id} className="mb-1.5 flex items-baseline justify-between text-[12.5px] font-medium text-slate-700">
       <span>{label}</span>
       {optional && <span className="text-[11px] font-normal text-slate-400">Optional</span>}
+      {!optional && note && <span className="text-[11px] font-normal text-amber-700">{note}</span>}
     </label>
     {children}
   </div>
@@ -301,6 +302,13 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
     setAiStatus('loading');
     setConfirm('');
     const target = { ...letterRef.current, ...(details || {}) };
+    // A letter written for an advert must name the position. When the advert does not state one (a pasted job
+    // description often has no title), ask for it instead of writing "the role you are offering".
+    if ((target.requirements || []).length > 0 && !String(target.jobTitle || '').trim()) {
+      setAiStatus('error', 'position');
+      if (typeof document !== 'undefined') document.getElementById('cl-job')?.focus();
+      return;
+    }
     const wroteFor = aiSignature(resumeData, target);
     try {
       const text = await generateCoverLetterBody({
@@ -601,6 +609,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                           const filled = [posting.found.title && 'position', posting.found.company && 'company', posting.found.address && 'address'].filter(Boolean);
                           return filled.length > 0 ? `, and filled in the ${joinList(filled)} below. Check them before you send the letter.` : '. Check the details below.';
                         })()}
+                        {!posting.found.title && ' The advert does not state the position, so type it under “Position you are applying for”: the letter names it in its first sentence.'}
                         {!posting.found.address && ' The advert gives no address, so add one under Company address if you want it on the letter.'}
                       </span>
                     </div>
@@ -672,7 +681,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
             <section>
               <SectionTitle>Who is it for</SectionTitle>
               <div className="space-y-4">
-                <Field id="cl-job" label="Position you are applying for">
+                <Field id="cl-job" label="Position you are applying for" note={letter.requirements.length > 0 && !letter.jobTitle.trim() ? 'Needed for the letter' : ''}>
                   <input id="cl-job" type="text" value={letter.jobTitle} onChange={setField('jobTitle')} placeholder="e.g. Front-End Developer" className={inputClass} autoComplete="off" />
                 </Field>
                 <Field id="cl-company" label="Company">
@@ -802,6 +811,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                         timeout: 'The AI took too long to answer. A starter draft is shown below.',
                         offline: 'Could not reach the AI service. Check your connection. A starter draft is shown below.',
                         empty: 'Add your experience, skills or education to the resume and the AI can write the letter from them.',
+                        position: 'Type the position you are applying for under “Who is it for” (for example CRM Lead). The letter names it in its first sentence.',
                       }[ai.code] || 'The AI writer is unavailable right now. A starter draft is shown below.'}
                     </span>
                     {ai.code !== 'empty' && (
@@ -810,7 +820,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                         onClick={() => generate({ fresh: true })}
                         className="shrink-0 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-amber-900 ring-1 ring-amber-300 transition-colors hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                       >
-                        Try again
+                        {ai.code === 'position' ? 'Write letter' : 'Try again'}
                       </button>
                     )}
                   </div>

@@ -53,10 +53,28 @@ export function loadFontMetrics() {
 
 // Standard PDF fonts only hold Western European characters. Anything else is simplified (ā -> a) or left out
 // instead of making the whole PDF fail.
+// Hyphen-like characters (the AI likes U+2011, the non-breaking hyphen) have no glyph in Helvetica and used to be left
+// out, so "high-gloss" printed as "highgloss". They become a plain hyphen; invisible characters disappear.
+const LOOKALIKES = new Map([
+  ['\u2010', '-'],
+  ['\u2011', '-'],
+  ['\u2012', '-'],
+  ['\u2015', '-'],
+  ['\u2043', '-'],
+  ['\u2212', '-'],
+  ['\u00ad', ''],
+  ['\u200b', ''],
+  ['\u200c', ''],
+  ['\u200d', ''],
+  ['\ufeff', ''],
+]);
+
 const makeSafe = (value, supported) => {
   let out = '';
   let lost = false;
-  for (const ch of String(value ?? '')) {
+  for (const original of String(value ?? '')) {
+    const ch = LOOKALIKES.has(original) ? LOOKALIKES.get(original) : original;
+    if (ch === '') continue;
     const cp = ch.codePointAt(0);
     if (supported.has(cp)) {
       out += ch;
