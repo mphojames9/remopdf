@@ -10,8 +10,10 @@
   The starter draft only repeats what is in the resume (names, job titles, employers, skills, qualification). It never
   invents achievements or claims. Everything in it can be edited by the person.
 
-  When the cover letter page opens, the AI (Groq, through utils/coverLetterAI.js) writes the letter body from
-  buildResumeBrief(). The result is kept in letter.aiBody. The starter draft stays as the fallback for people who are
+  The AI (Groq, through utils/coverLetterAI.js) writes the letter body from buildResumeBrief(). When the person has
+  pasted the link to the job advert, the server reads it (readJobPosting) and the position, company, address and what
+  the job asks for are kept in the letter (jobUrl, requirements, duties); the AI then answers those requirements with
+  what the resume says. The result is kept in letter.aiBody. The starter draft stays as the fallback for people who are
   signed out, not on Premium, or when the AI cannot be reached.
 */
 
@@ -23,6 +25,10 @@ export const TONES = [
 const TONE_IDS = TONES.map((t) => t.id);
 
 const MAX_FIELD = 200;
+const MAX_URL = 2000;
+const MAX_REQUIREMENTS = 15;
+const MAX_DUTIES = 8;
+const MAX_ITEM = 240;
 const MAX_BODY = 8000;
 const MAX_BULLETS = 3;
 const MAX_SKILLS = 5;
@@ -60,6 +66,25 @@ export const article = (word) => {
   if (/^(hono|hour|heir)/i.test(w)) return 'an';
   return /^[aeiou]/i.test(w) ? 'an' : 'a';
 };
+
+// A company address as the lines of a letter's address block. "12 Rivonia Road, Sandton, Gauteng, 2196, South Africa"
+// becomes "12 Rivonia Road" and "Sandton, Gauteng, 2196, South Africa"; an address typed on several lines (or split
+// with ";" or " | ") keeps its own lines; a short one such as "Cape Town" stays one line.
+export const addressLines = (address) => {
+  const raw = String(address ?? '');
+  const rows = raw.split(/\r?\n|\s*;\s*|\s+\|\s+/).map(clean).filter(Boolean);
+  if (rows.length > 1) return rows;
+  const parts = clean(raw).split(/\s*,\s*/).filter(Boolean);
+  if (parts.length >= 3 && /\d/.test(parts[0])) return [parts[0], parts.slice(1).join(', ')];
+  return parts.length > 0 ? [parts.join(', ')] : [];
+};
+
+// What a list in a saved letter must look like: short plain strings, no empties, no more than `max`.
+const cleanList = (value, max) =>
+  (Array.isArray(value) ? value : [])
+    .map((item) => clean(item).slice(0, MAX_ITEM))
+    .filter(Boolean)
+    .slice(0, max);
 
 /* ------------------------------------------------------------------ what the resume says */
 
@@ -284,7 +309,7 @@ export function buildLetterModel(resumeData, letter, body) {
     profession: clean(personal.profession),
     contacts,
     dateText: formatLetterDate(letter?.dateOverride || todayISO()),
-    recipient: [manager, clean(letter?.company), clean(letter?.companyAddress)].filter(Boolean),
+    recipient: [manager, clean(letter?.company), ...addressLines(letter?.companyAddress)].filter(Boolean),
     salutation: manager ? `Dear ${manager},` : 'Dear Hiring Manager,',
     blocks: parseBody(body),
     closing: 'Yours sincerely,',
@@ -361,13 +386,20 @@ const hashText = (text) => {
   return (h >>> 0).toString(36);
 };
 
-export const aiSignature = (resumeData, letter) =>
-  [
+export const aiSignature = (resumeData, letter) => {
+  const parts = [
     TONE_IDS.includes(letter?.tone) ? letter.tone : 'formal',
     clean(letter?.jobTitle).toLowerCase(),
     clean(letter?.company).toLowerCase(),
     hashText(JSON.stringify(buildResumeBrief(resumeData).resume)),
-  ].join('|');
+  ];
+  // What the job asks for counts too. A letter with no requirements keeps the signature it always had, so letters
+  // saved before this existed are not suddenly reported as out of date.
+  const requirements = cleanList(letter?.requirements, MAX_REQUIREMENTS);
+  const duties = cleanList(letter?.duties, MAX_DUTIES);
+  if (requirements.length > 0 || duties.length > 0) parts.push(hashText(JSON.stringify([requirements, duties])));
+  return parts.join('|');
+};
 
 /* ------------------------------------------------------------------ saving */
 
@@ -377,6 +409,9 @@ export const defaultLetter = () => ({
   jobTitle: '',
   company: '',
   companyAddress: '',
+  jobUrl: '', // the link to the job advert the person pasted
+  requirements: [], // what the advert asks for (read from jobUrl; the person can remove items)
+  duties: [], // what the role involves (read from the advert)
   hiringManager: '',
   dateOverride: '', // '' = today
   tone: 'formal',
@@ -397,6 +432,9 @@ export const normalizeLetter = (saved) => {
     jobTitle: text(saved.jobTitle, MAX_FIELD),
     company: text(saved.company, MAX_FIELD),
     companyAddress: text(saved.companyAddress, MAX_FIELD),
+    jobUrl: text(saved.jobUrl, MAX_URL),
+    requirements: cleanList(saved.requirements, MAX_REQUIREMENTS),
+    duties: cleanList(saved.duties, MAX_DUTIES),
     hiringManager: text(saved.hiringManager, MAX_FIELD),
     dateOverride: /^\d{4}-\d{2}-\d{2}$/.test(saved.dateOverride || '') ? saved.dateOverride : '',
     tone: TONE_IDS.includes(saved.tone) ? saved.tone : base.tone,
@@ -426,4 +464,8 @@ export const saveLetter = (key, letter) => {
 
 export const MAX_BODY_CHARS = MAX_BODY;
 export const MAX_FIELD_CHARS = MAX_FIELD;
+export const MAX_URL_CHARS = MAX_URL;
+export const MAX_REQUIREMENT_ITEMS = MAX_REQUIREMENTS;
+export const MAX_DUTY_ITEMS = MAX_DUTIES;
+export const MAX_ITEM_CHARS = MAX_ITEM;
 export const todayIso = todayISO;

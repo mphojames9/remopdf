@@ -5,15 +5,17 @@ import {
   TONES,
   MAX_BODY_CHARS,
   MAX_FIELD_CHARS,
+  MAX_URL_CHARS,
   aiSignature,
   buildDraft,
   buildLetterModel,
   fullNameOf,
+  joinList,
   loadLetter,
   saveLetter,
   todayIso,
 } from '../../utils/coverLetter';
-import { generateCoverLetterBody } from '../../utils/coverLetterAI';
+import { generateCoverLetterBody, readJobPosting } from '../../utils/coverLetterAI';
 import {
   PAGE_W,
   PAGE_H,
@@ -27,9 +29,14 @@ import {
 /**
  * Full-screen cover letter page, opened from "Build cover letter" in the builder's sidebar.
  *
- * As soon as the page opens, the AI (Groq, via utils/coverLetterAI.js) writes the letter from the resume. The
- * position, company and tone typed on the left are used the next time it writes ("Rewrite with AI"); the page says
- * when they have changed since. People who are signed out or not on Premium, or when the AI cannot be reached,
+ * The page first asks for the link to the job advert. The server reads it (readJobPosting in
+ * utils/coverLetterAI.js) and the position, company, address and what the job asks for fill in on the left; the AI
+ * (Groq) then writes the letter so that it answers those requirements with what the resume says, and the address
+ * goes into the letter's address block. When a site cannot be read by a server, a box to paste the job description
+ * takes its place. Without a link, "Write with AI" writes a general letter from the resume alone
+ * (AUTO_WRITE_WITHOUT_JOB below writes it as soon as the page opens, as this page used to).
+ * The position, company, tone and requirements are used the next time the AI writes ("Rewrite with AI"); the page
+ * says when they have changed since. People who are signed out or not on Premium, or when the AI cannot be reached,
  * start from a plain draft built from the resume (name, job titles, skills, qualification) instead. Either way the
  * person can edit the text; once they do, nothing replaces it without asking.
  * The preview is the real layout of the PDF (utils/coverLetterPdf.js), so the download matches it exactly.
@@ -41,6 +48,10 @@ import {
  *  - checkPremium: async () => boolean, asked at download time. Premium gets a clean page; others get a small label.
  *  - onClose:      () => void
  */
+
+// false: opening the page asks for the job link first and writes nothing until there is a link (or the person
+// chooses "Write with AI"). true: the AI writes a general letter the moment the page opens, link or no link.
+const AUTO_WRITE_WITHOUT_JOB = false;
 
 const PREVIEW_FONT = "Helvetica, Arial, 'Liberation Sans', sans-serif";
 const ASCENT = 0.8465; // where Arial/Helvetica put the baseline inside a line box of height = font size
@@ -86,6 +97,19 @@ const IconSparkle = ({ className }) => (
   <Svg className={className}>
     <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
     <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" />
+  </Svg>
+);
+
+const IconCheck = ({ className }) => (
+  <Svg className={className}>
+    <path d="M20 6 9 17l-5-5" />
+  </Svg>
+);
+
+const IconClose = ({ className }) => (
+  <Svg className={className}>
+    <path d="M18 6 6 18" />
+    <path d="M6 6l12 12" />
   </Svg>
 );
 
@@ -163,6 +187,12 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
   const [ai, setAi] = useState({ state: 'idle', code: '' }); // state: idle | loading | done | blocked | error
   const aiStateRef = useRef('idle'); // the same state, readable inside effects and callbacks
   const [previewWidth, setPreviewWidth] = useState(0);
+  const [posting, setPosting] = useState({ state: 'idle', code: '', message: '', found: null }); // state: idle | loading | done | error
+  const postingStateRef = useRef('idle');
+  const [pasteOpen, setPasteOpen] = useState(false); // the "paste the job description" box
+  const [pasteText, setPasteText] = useState('');
+  const letterRef = useRef(letter); // the latest letter, readable after an await
+  letterRef.current = letter;
 
   const dialogRef = useRef(null);
   const previewRef = useRef(null);
@@ -258,18 +288,28 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
     setAi({ state, code });
   };
 
+  const setPostingStatus = (next) => {
+    postingStateRef.current = next.state;
+    setPosting({ state: 'idle', code: '', message: '', found: null, ...next });
+  };
+
   // Asks the AI for the letter. The reply replaces whatever is shown (callers ask first when the person has edits).
-  const generate = async ({ fresh = false } = {}) => {
+  // details: position, company and requirements to use instead of the saved ones (an advert was just read, and the
+  // page has not drawn the new values yet).
+  const generate = async ({ fresh = false, details } = {}) => {
     if (aiStateRef.current === 'loading') return;
     setAiStatus('loading');
     setConfirm('');
-    const wroteFor = signature;
+    const target = { ...letterRef.current, ...(details || {}) };
+    const wroteFor = aiSignature(resumeData, target);
     try {
       const text = await generateCoverLetterBody({
         resumeData,
-        jobTitle: letter.jobTitle,
-        company: letter.company,
-        tone: letter.tone,
+        jobTitle: target.jobTitle,
+        company: target.company,
+        tone: target.tone,
+        requirements: target.requirements,
+        duties: target.duties,
         fresh,
       });
       if (!alive.current) return;
@@ -283,21 +323,103 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
     }
   };
 
-  // The automatic part: opening the page writes the letter. Nothing is asked when the person already has a letter
-  // (an AI one kept from before, or their own), so reopening the page costs nothing and never overwrites anything.
+  // The automatic part. Nothing is asked when the person already has a letter (an AI one kept from before, or
+  // their own), so reopening the page costs nothing and never overwrites anything.
   // Signed out, or no Premium: say so instead of asking. If either changes while the page is open (they sign in
-  // or pay in the dialog on top), the letter is written then.
+  // or pay in the dialog on top), this runs again.
+  // With no position or requirements to write for, the AI waits for the job link (see AUTO_WRITE_WITHOUT_JOB);
+  // with them (the person read an advert on an earlier visit) the letter is written now.
   useEffect(() => {
     if (letter.bodyEdited || letter.aiBody) return;
     if (aiStateRef.current === 'loading' || aiStateRef.current === 'error') return;
+    const hasTarget = letter.requirements.length > 0 || Boolean(letter.jobTitle.trim());
     if (signedIn === false) setAiStatus('blocked', 'signin');
     else if (premium === false) setAiStatus('blocked', 'premium');
-    else generate();
+    else if (AUTO_WRITE_WITHOUT_JOB || hasTarget) generate();
+    else if (aiStateRef.current === 'blocked') setAiStatus('idle'); // they signed in or upgraded: the buttons come back
   }, [premium, signedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rewrite = () => {
     if (letter.bodyEdited) setConfirm('regen');
     else generate({ fresh: true });
+  };
+
+  // Reads the advert (the link, or the text pasted instead), fills in the position, company and address, keeps what
+  // the job asks for, and has the AI write the letter from it (unless the person has written their own text).
+  const readPosting = async () => {
+    if (postingStateRef.current === 'loading') return;
+    if (signedIn === false) {
+      requestSignIn();
+      return;
+    }
+    if (premium === false) {
+      requestUpgrade();
+      return;
+    }
+
+    const url = letter.jobUrl.trim();
+    const text = pasteOpen ? pasteText.trim() : '';
+    if (!url && !text) {
+      setPostingStatus({ state: 'error', code: 'badlink', message: pasteOpen ? 'Paste the job description first.' : 'Paste the link to the job advert first.' });
+      return;
+    }
+
+    setPostingStatus({ state: 'loading' });
+    try {
+      const found = await readJobPosting({ url, text });
+      if (!alive.current) return;
+      const current = letterRef.current;
+      const details = {
+        jobTitle: found.jobTitle || current.jobTitle,
+        company: found.company || current.company,
+        companyAddress: found.address || current.companyAddress,
+        requirements: found.requirements,
+        duties: found.duties,
+      };
+      setLetter((prev) => ({ ...prev, ...details }));
+      setPostingStatus({
+        state: 'done',
+        found: { title: Boolean(found.jobTitle), company: Boolean(found.company), address: Boolean(found.address), count: found.requirements.length, source: found.source },
+      });
+      if (!current.bodyEdited) generate({ fresh: true, details });
+    } catch (err) {
+      if (!alive.current) return;
+      const code = err?.code || 'unavailable';
+      if (code === 'signin' || code === 'premium') {
+        setAiStatus('blocked', code);
+        setPostingStatus({ state: 'idle' });
+        return;
+      }
+      const messages = {
+        busy: 'Too many adverts in a short time. Please try again in a minute.',
+        timeout: 'That took too long. Try again, or paste the job description instead.',
+        offline: 'Could not reach the server. Check your connection and try again.',
+      };
+      const own = ['badlink', 'unreadable', 'nodetails'].includes(code) ? err.message : '';
+      const message = messages[code] || own || 'The advert reader is unavailable right now. You can paste the job description instead.';
+      // A page that cannot be read is the moment the paste box is useful.
+      if (['unreadable', 'nodetails', 'timeout', 'unavailable'].includes(code)) setPasteOpen(true);
+      setPostingStatus({ state: 'error', code, message });
+    }
+  };
+
+  const removeRequirement = (index) => {
+    setLetter((prev) => {
+      const requirements = prev.requirements.filter((_, i) => i !== index);
+      return { ...prev, requirements, duties: requirements.length > 0 ? prev.duties : [] };
+    });
+  };
+
+  const clearPosting = () => {
+    setLetter((prev) => ({ ...prev, jobUrl: '', requirements: [], duties: [] }));
+    setPasteText('');
+    setPasteOpen(false);
+    setPostingStatus({ state: 'idle' });
+  };
+
+  const setJobUrl = (e) => {
+    const value = e.target.value.slice(0, MAX_URL_CHARS);
+    setLetter((prev) => ({ ...prev, jobUrl: value }));
   };
 
   const padding = previewWidth >= 640 ? 64 : 32;
@@ -345,6 +467,11 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
       if (alive.current) setDownloading(false);
     }
   };
+
+  const readButtonClass =
+    'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-[#1e3a8a] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-blue-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25 disabled:cursor-not-allowed disabled:opacity-60';
+
+  const postingBusy = posting.state === 'loading';
 
   const downloadButtonClass =
     'inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[#1e3a8a] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-blue-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25 disabled:cursor-not-allowed disabled:opacity-40';
@@ -418,6 +545,131 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
             )}
 
             <section>
+              <SectionTitle>Job advert</SectionTitle>
+              <div className="space-y-3">
+                <Field id="cl-link" label="Link to the job you are applying for" optional>
+                  <div className="flex gap-2">
+                    <input
+                      id="cl-link"
+                      type="text"
+                      inputMode="url"
+                      value={letter.jobUrl}
+                      onChange={setJobUrl}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          readPosting();
+                        }
+                      }}
+                      placeholder="Paste the link to the advert"
+                      className={`${inputClass} min-w-0 flex-1`}
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                    />
+                    <button type="button" onClick={readPosting} disabled={postingBusy} className={readButtonClass}>
+                      {postingBusy ? <IconSpinner className="h-4 w-4" /> : null}
+                      {postingBusy ? 'Reading…' : 'Read advert'}
+                    </button>
+                  </div>
+                </Field>
+                <p className="text-[12px] leading-relaxed text-slate-400">
+                  We read the position, company, address and what the job asks for, then write the letter to answer those requirements with what is on your resume.
+                </p>
+
+                <div role="status" aria-live="polite">
+                  {postingBusy && (
+                    <div className="flex items-start gap-2.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
+                      <IconSpinner className="mt-px h-4 w-4 shrink-0 text-[#d9856b]" />
+                      <span>Reading the advert. The first one can take up to a minute while the server wakes up.</span>
+                    </div>
+                  )}
+
+                  {!postingBusy && posting.state === 'error' && (
+                    <div className="flex items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12.5px] leading-snug text-amber-800">
+                      <IconInfo className="mt-px h-4 w-4 shrink-0" />
+                      <span>{posting.message}</span>
+                    </div>
+                  )}
+
+                  {!postingBusy && posting.state === 'done' && posting.found && (
+                    <div className="flex items-start gap-2.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-[12.5px] leading-snug text-emerald-900">
+                      <IconCheck className="mt-px h-4 w-4 shrink-0" />
+                      <span>
+                        {`Found ${posting.found.count} ${posting.found.count === 1 ? 'requirement' : 'requirements'}${posting.found.source === 'text' ? ' in the text you pasted' : ''}`}
+                        {(() => {
+                          const filled = [posting.found.title && 'position', posting.found.company && 'company', posting.found.address && 'address'].filter(Boolean);
+                          return filled.length > 0 ? `, and filled in the ${joinList(filled)} below. Check them before you send the letter.` : '. Check the details below.';
+                        })()}
+                        {!posting.found.address && ' The advert gives no address, so add one under Company address if you want it on the letter.'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPasteOpen((open) => !open)}
+                  aria-expanded={pasteOpen}
+                  aria-controls="cl-paste-box"
+                  className="rounded text-[12.5px] font-medium text-[#a64a30] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                >
+                  {pasteOpen ? 'Hide the paste box' : 'Link not working? Paste the job description instead'}
+                </button>
+
+                {pasteOpen && (
+                  <div id="cl-paste-box">
+                    <label htmlFor="cl-paste" className="sr-only">
+                      Job description
+                    </label>
+                    <textarea
+                      id="cl-paste"
+                      value={pasteText}
+                      onChange={(e) => setPasteText(e.target.value.slice(0, 20000))}
+                      rows={6}
+                      placeholder="Paste the whole advert here, including the requirements."
+                      className="w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2.5 text-[13.5px] leading-relaxed text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#d9856b] focus:outline-none focus:ring-4 focus:ring-[#d9856b]/15"
+                    />
+                    <p className="mt-2 text-[12px] leading-relaxed text-slate-400">“Read advert” uses this text instead of the link while the box is open.</p>
+                  </div>
+                )}
+
+                {letter.requirements.length > 0 && (
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <h3 className="text-[12.5px] font-medium text-slate-700">The letter will answer these</h3>
+                      <button
+                        type="button"
+                        onClick={clearPosting}
+                        className="rounded-full px-2.5 py-1 text-[12px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {letter.requirements.map((item, i) => (
+                        <li key={`${i}-${item}`} className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50 py-1.5 pl-2.5 pr-1 text-[12.5px] leading-snug text-slate-700">
+                          <span className="min-w-0 flex-1 py-0.5">{item}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeRequirement(i)}
+                            aria-label={`Remove: ${item}`}
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                          >
+                            <IconClose className="h-3.5 w-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
+                      Remove any that don’t apply to you. The letter only claims what your resume supports: a requirement your resume doesn’t cover is left out, never made up.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section>
               <SectionTitle>Who is it for</SectionTitle>
               <div className="space-y-4">
                 <Field id="cl-job" label="Position you are applying for">
@@ -435,7 +687,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                   </Field>
                 </div>
                 <Field id="cl-address" label="Company address" optional>
-                  <input id="cl-address" type="text" value={letter.companyAddress} onChange={setField('companyAddress')} placeholder="e.g. Cape Town" className={inputClass} autoComplete="off" />
+                  <input id="cl-address" type="text" value={letter.companyAddress} onChange={setField('companyAddress')} placeholder="e.g. 12 Rivonia Road, Sandton" className={inputClass} autoComplete="off" />
                 </Field>
               </div>
             </section>
@@ -517,7 +769,9 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                 {writing && (
                   <div className="mb-3 flex items-start gap-2.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
                     <IconSpinner className="mt-px h-4 w-4 shrink-0 text-[#d9856b]" />
-                    <span>Writing your letter from your resume. The first one can take up to a minute while the server wakes up.</span>
+                    <span>
+                      {letter.requirements.length > 0 ? 'Writing your letter from your resume and what the job asks for.' : 'Writing your letter from your resume.'} The first one can take up to a minute while the server wakes up.
+                    </span>
                   </div>
                 )}
 
@@ -562,10 +816,19 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                   </div>
                 )}
 
+                {!writing && !postingBusy && ai.state === 'idle' && !letter.aiBody && !letter.bodyEdited && (
+                  <div className="mb-3 flex items-start gap-2.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
+                    <IconInfo className="mt-px h-4 w-4 shrink-0 text-slate-400" />
+                    <span>
+                      Paste the link to the job advert above for a letter that answers what the job asks for. Or choose “Write with AI” for a general letter from your resume. Until then, this is a starter draft.
+                    </span>
+                  </div>
+                )}
+
                 {stale && ai.state !== 'blocked' && (
                   <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
                     <IconInfo className="h-4 w-4 shrink-0 text-slate-400" />
-                    <span className="min-w-0 flex-1">The position, company, tone or resume changed since this letter was written.</span>
+                    <span className="min-w-0 flex-1">The position, company, tone, job requirements or resume changed since this letter was written.</span>
                     <button
                       type="button"
                       onClick={() => generate({ fresh: true })}
