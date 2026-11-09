@@ -2,7 +2,9 @@
   Client for job targeting (the FastAPI backend, routers/job_match.py). Premium only.
 
     buildJobTarget({ url, text, title, signal })              -> { target, notice }
-    suggestJobSkills({ target, resumeData, signal })          -> { supported: [{ skill, evidence }], toConfirm: [{ skill, reason }] }
+    suggestJobSkills({ target, resumeData, signal })          -> { supported: [{ skill, jobItem, evidence }], toConfirm: [{ skill, jobItem, reason }] }
+                                                                 skills only: qualifications never come back (see skillFilter.js)
+    writeSummary({ target, resumeData, variant, signal })     -> { summary }   a professional summary written from the work history
     rewriteForJob({ text, field, jobTitle, target, signal })  -> { rewrites: [{ id, label, text, adds }] }
 
   Plus the small helpers the rest of the app needs: sanitizeJobTarget (anything read back from a saved resume is
@@ -12,12 +14,13 @@
   "AI pass" from the accounts server (getAiPass), and the AI service checks it before doing anything. Errors use
   the same codes the writing panel already understands:
     'signin' | 'premium' | 'busy' | 'timeout' | 'offline' | 'unavailable'
-  and, for reading a job advert, 'badlink' | 'unreadable' | 'nodetails' with a message a person can act on.
+  and, for reading a job advert or writing a summary, 'badlink' | 'unreadable' | 'nodetails' | 'needhistory' with a message a person can act on.
 */
 
 import { getToken } from '../../../api/auth';
 import { getAiPass, forgetAiPass, PaymentApiError } from '../../../api/payments';
 import { collectStrings, hasJobTarget, stripMarkup, norm } from './atsScore';
+import { isSkillTerm } from './skillFilter';
 
 export { hasJobTarget };
 
@@ -26,15 +29,16 @@ const URLS = {
   target: `${API_ORIGIN}/api/jobmatch/target`,
   skills: `${API_ORIGIN}/api/jobmatch/skills`,
   rewrite: `${API_ORIGIN}/api/jobmatch/rewrite`,
+  summary: `${API_ORIGIN}/api/jobmatch/summary`,
 };
 
 // Reading a page, asking Groq and asking O*NET happen one after the other, and Render's free tier can need
 // 30-50 s to wake up, so the first target of a session gets a long timeout.
-const TIMEOUT_MS = { target: 75000, skills: 45000, rewrite: 45000 };
+const TIMEOUT_MS = { target: 75000, skills: 45000, rewrite: 45000, summary: 45000 };
 const CACHE_MAX = 40;
 
 export class JobMatchError extends Error {
-  // code: 'busy' | 'timeout' | 'offline' | 'unavailable' | 'signin' | 'premium' | 'badlink' | 'unreadable' | 'nodetails'
+  // code: 'busy' | 'timeout' | 'offline' | 'unavailable' | 'signin' | 'premium' | 'badlink' | 'unreadable' | 'nodetails' | 'needhistory'
   constructor(code, message) {
     super(message);
     this.name = 'JobMatchError';
@@ -109,7 +113,7 @@ const targetPayload = (t) => ({
   company: t.company || '',
   requirements: t.requirements || [],
   duties: t.duties || [],
-  keywords: (t.keywords || []).slice(0, 40).map((k) => ({ term: k.term, must: Boolean(k.must) })),
+  keywords: (t.keywords || []).slice(0, 40).map((k) => ({ term: k.term, must: Boolean(k.must), kind: KINDS.has(k.kind) ? k.kind : 'skill' })),
   onet_skills: t.onet?.skills || [],
   onet_technology: t.onet?.technology || [],
 });
@@ -200,7 +204,7 @@ async function post(kind, body, signal) {
     if (res.status === 429) throw new JobMatchError('busy', 'Too many requests in a short time.');
     if (!res.ok) {
       const { code, message } = await readDetail(res);
-      if ((res.status === 400 || res.status === 422) && ['badlink', 'unreadable', 'nodetails'].includes(code)) {
+      if ((res.status === 400 || res.status === 422) && ['badlink', 'unreadable', 'nodetails', 'needhistory'].includes(code)) {
         throw new JobMatchError(code, message || 'That job could not be read.');
       }
       console.warn(`[jobMatch] ${res.status} from ${URLS[kind]}${message ? `: ${message}` : ''}`);
@@ -237,34 +241,45 @@ export async function buildJobTarget({ url = '', text = '', title = '', signal }
   return { target, notice };
 }
 
+// What the server needs to know about the resume to write from it (the person's contact details are never sent).
+const resumePayload = (d, { withSummary = true } = {}) => ({
+  summary: withSummary ? stripMarkup(d.summary).slice(0, 4000) : '',
+  skills: (Array.isArray(d.skills) ? d.skills : []).map((s) => str(s && s.text, 60)).filter(Boolean).slice(0, 60),
+  jobs: (Array.isArray(d.experiences) ? d.experiences : []).slice(0, 6).map((j) => ({
+    title: str(j && j.title, 120),
+    employer: str(j && j.employer, 120),
+    achievements: stripMarkup(j && j.achievements).slice(0, 4000),
+  })),
+  education: collectStrings(d.education).map((t) => t.slice(0, 120)).slice(0, 6),
+});
+
 export async function suggestJobSkills({ target, resumeData, signal } = {}) {
   if (!hasJobTarget(target)) return { supported: [], toConfirm: [] };
-  const d = resumeData || {};
-  const body = {
-    target: targetPayload(target),
-    resume: {
-      summary: stripMarkup(d.summary).slice(0, 4000),
-      skills: (Array.isArray(d.skills) ? d.skills : []).map((s) => str(s && s.text, 60)).filter(Boolean).slice(0, 60),
-      jobs: (Array.isArray(d.experiences) ? d.experiences : []).slice(0, 6).map((j) => ({
-        title: str(j && j.title, 120),
-        employer: str(j && j.employer, 120),
-        achievements: stripMarkup(j && j.achievements).slice(0, 4000),
-      })),
-      education: collectStrings(d.education).map((t) => t.slice(0, 120)).slice(0, 6),
-    },
-  };
+  const body = { target: targetPayload(target), resume: resumePayload(resumeData || {}) };
   const key = JSON.stringify(body);
   const cache = caches.skills;
   if (cache.has(key)) return cache.get(key);
 
   const data = await post('skills', body, signal);
-  const supported = (Array.isArray(data.supported) ? data.supported : [])
-    .filter((s) => s && typeof s.skill === 'string' && s.skill.trim())
-    .map((s) => ({ skill: s.skill.trim(), evidence: str(s.evidence, 160) }));
-  const toConfirm = (Array.isArray(data.to_confirm) ? data.to_confirm : [])
-    .filter((s) => s && typeof s.skill === 'string' && s.skill.trim())
-    .map((s) => ({ skill: s.skill.trim(), reason: str(s.reason, 140) }));
+  // Skills only: the server already drops qualifications, and this keeps them out even if an older server answers.
+  const named = (list) => (Array.isArray(list) ? list : []).filter((s) => s && typeof s.skill === 'string' && isSkillTerm(s.skill));
+  const supported = named(data.supported).map((s) => ({ skill: s.skill.trim(), jobItem: str(s.job_item, 200), evidence: str(s.evidence, 160) }));
+  const toConfirm = named(data.to_confirm).map((s) => ({ skill: s.skill.trim(), jobItem: str(s.job_item, 200), reason: str(s.reason, 140) }));
   return remember(cache, key, { supported, toConfirm });
+}
+
+// A professional summary written from the work history (and shaped for the job, when there is a job target).
+// Not cached here: "Write another" must give a different one (the variant number tells the server).
+export async function writeSummary({ target, resumeData, variant = 0, signal } = {}) {
+  const body = {
+    target: hasJobTarget(target) ? targetPayload(target) : null,
+    resume: resumePayload(resumeData || {}, { withSummary: false }),
+    variant: Math.max(0, Math.min(5, Number(variant) || 0)),
+  };
+  const data = await post('summary', body, signal);
+  const summary = data && typeof data.summary === 'string' ? data.summary.trim() : '';
+  if (!summary) throw new JobMatchError('unavailable', 'Job matching is unavailable right now.');
+  return { summary };
 }
 
 export async function rewriteForJob({ text, field = 'experience', jobTitle = '', target, signal } = {}) {

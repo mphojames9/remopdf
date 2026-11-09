@@ -15,6 +15,10 @@ import {
   loadLetter,
   saveLetter,
   todayIso,
+  syncWithTarget,
+  applyTarget,
+  jobFromTarget,
+  targetKeyOf,
 } from '../../utils/coverLetter';
 import { generateCoverLetterBody, readJobPosting } from '../../utils/coverLetterAI';
 import {
@@ -49,7 +53,11 @@ import {
  * behaviour is the same.
  *
  * Props
- *  - resumeData:   the resume being built (same object the builder holds)
+ *  - resumeData:   the resume being built (same object the builder holds). Its jobTarget (position, company, address,
+ *                  requirements, duties) is imported into the letter when the page opens, so the advert is not read
+ *                  twice; removing the job target on the resume takes the imported details out of the letter too.
+ *  - accountFirstName, accountLastName: the signed-in account's name. Used for the letter's heading and signature
+ *                  when the resume's Heading step has no name yet.
  *  - accentColor:  the resume's colour (#rrggbb); the letter's header line and bullets use it
  *  - storageKey:   one letter is kept per resume under this key (localStorage, on this device)
  *  - checkPremium: async () => boolean, asked at download time. Premium gets a clean page; others get a small label.
@@ -295,8 +303,10 @@ const PreviewPage = ({ page, scale, index, total }) => (
 
 /* ------------------------------------------------------------------ the page */
 
-export default function CoverLetterBuilder({ resumeData, accentColor, storageKey, checkPremium, onClose }) {
-  const [letter, setLetter] = useState(() => loadLetter(storageKey));
+export default function CoverLetterBuilder({ resumeData, accountFirstName = '', accountLastName = '', accentColor, storageKey, checkPremium, onClose }) {
+  // The job target on the resume is brought in before anything is drawn, so the letter (and the AI's first letter)
+  // already know the position, company and requirements.
+  const [letter, setLetter] = useState(() => syncWithTarget(loadLetter(storageKey), resumeData?.jobTarget));
   const [view, setView] = useState('edit'); // small screens show one side at a time
   const [open, setOpen] = useState({ job: true, who: false, tone: false, letter: true }); // which dropdown steps are open
   const [fonts, setFonts] = useState(null);
@@ -376,27 +386,36 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
   const signedIn = useSignedIn();
   const watermark = premium === true ? null : COVER_LETTER_WATERMARK;
 
+  // The letter is written for the name in the resume's Heading step. With no name there yet, the account's name
+  // stands in, so the heading and signature are never blank for someone who is signed in.
+  const resume = useMemo(() => {
+    const first = String(accountFirstName || '').trim();
+    if (fullNameOf(resumeData?.personal) || !first) return resumeData;
+    return { ...resumeData, personal: { ...(resumeData?.personal || {}), firstName: first, lastName: String(accountLastName || '').trim() } };
+  }, [resumeData, accountFirstName, accountLastName]);
+  const usingAccountName = resume !== resumeData;
+
   const draft = useMemo(
-    () => buildDraft(resumeData, { tone: letter.tone, jobTitle: letter.jobTitle, company: letter.company }),
-    [resumeData, letter.tone, letter.jobTitle, letter.company],
+    () => buildDraft(resume, { tone: letter.tone, jobTitle: letter.jobTitle, company: letter.company }),
+    [resume, letter.tone, letter.jobTitle, letter.company],
   );
   // The person's own text, else the AI's letter, else the plain draft.
   const body = letter.bodyEdited ? letter.body : letter.aiBody || draft;
 
   // What the AI letter is written from. When it stops matching, the page offers to write it again.
   const signature = useMemo(
-    () => aiSignature(resumeData, { tone: letter.tone, jobTitle: letter.jobTitle, company: letter.company }),
-    [resumeData, letter.tone, letter.jobTitle, letter.company],
+    () => aiSignature(resume, { tone: letter.tone, jobTitle: letter.jobTitle, company: letter.company }),
+    [resume, letter.tone, letter.jobTitle, letter.company],
   );
 
-  const model = useMemo(() => buildLetterModel(resumeData, letter, body), [resumeData, letter, body]);
+  const model = useMemo(() => buildLetterModel(resume, letter, body), [resume, letter, body]);
   const prepared = useMemo(() => (fonts ? sanitizeModel(model, fonts) : null), [fonts, model]);
   const layout = useMemo(
     () => (prepared ? layoutLetter(prepared.model, fonts, { accent: accentColor, watermark }) : null),
     [prepared, fonts, accentColor, watermark],
   );
 
-  const fullName = fullNameOf(resumeData?.personal);
+  const fullName = fullNameOf(resume?.personal);
   const hasText = model.blocks.length > 0;
   const wordCount = useMemo(() => {
     const text = String(body || '').trim();
@@ -436,10 +455,10 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
       if (typeof window !== 'undefined') window.setTimeout(() => document.getElementById('cl-job')?.focus(), 80);
       return;
     }
-    const wroteFor = aiSignature(resumeData, target);
+    const wroteFor = aiSignature(resume, target);
     try {
       const text = await generateCoverLetterBody({
-        resumeData,
+        resumeData: resume,
         jobTitle: target.jobTitle,
         company: target.company,
         tone: target.tone,
@@ -511,7 +530,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
         requirements: found.requirements,
         duties: found.duties,
       };
-      setLetter((prev) => ({ ...prev, ...details }));
+      setLetter((prev) => ({ ...prev, ...details, imported: null }));
       setPostingStatus({
         state: 'done',
         found: { title: Boolean(found.jobTitle), company: Boolean(found.company), address: Boolean(found.address), count: found.requirements.length, source: found.source },
@@ -539,6 +558,19 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
     }
   };
 
+  // The job target set on the resume (Premium): what it holds, and whether the letter already has it.
+  const targetJob = useMemo(() => jobFromTarget(resumeData?.jobTarget), [resumeData?.jobTarget]);
+  const targetKey = useMemo(() => targetKeyOf(resumeData?.jobTarget), [resumeData?.jobTarget]);
+  const offerTarget = Boolean(targetJob) && letter.imported?.key !== targetKey; // only when the person has details of their own
+
+  const importTargetJob = () => {
+    if (!targetJob) return;
+    setLetter((prev) => applyTarget(prev, resumeData.jobTarget));
+    setPostingStatus({ state: 'idle' });
+    openSection('who');
+    if (!letterRef.current.bodyEdited && premium === true && signedIn !== false) generate({ fresh: true, details: targetJob });
+  };
+
   const removeRequirement = (index) => {
     setLetter((prev) => {
       const requirements = prev.requirements.filter((_, i) => i !== index);
@@ -547,7 +579,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
   };
 
   const clearPosting = () => {
-    setLetter((prev) => ({ ...prev, jobUrl: '', requirements: [], duties: [] }));
+    setLetter((prev) => ({ ...prev, jobUrl: '', requirements: [], duties: [], imported: null }));
     setPasteText('');
     setPasteOpen(false);
     setPostingStatus({ state: 'idle' });
@@ -613,7 +645,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
   const jobSummary = postingBusy
     ? 'Reading the advert…'
     : reqCount > 0
-      ? `${reqCount} ${reqCount === 1 ? 'requirement' : 'requirements'} found`
+      ? `${reqCount} ${reqCount === 1 ? 'requirement' : 'requirements'} ${letter.imported ? 'from your resume' : 'found'}`
       : letter.jobUrl.trim()
         ? 'Link added'
         : 'Paste a link to the advert';
@@ -698,10 +730,33 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                 Add your name in the Heading step of your resume. It appears at the top of the letter and in the signature.
               </Notice>
             )}
+            {fullName && usingAccountName && (
+              <Notice role="status" tone="info" icon={<IconInfo className="h-3.5 w-3.5" />}>
+                {`The letter uses the name on your account, ${fullName}. Add your name in the Heading step of your resume to change it. It appears at the top of the letter and in the signature.`}
+              </Notice>
+            )}
 
             {/* 1 · Job advert */}
             <Accordion id="cl-sec-job" step="1" title="Job advert" summary={jobSummary} open={open.job} onToggle={() => toggleSection('job')} busy={postingBusy}>
               <div className="space-y-3">
+                {letter.imported && (
+                  <Notice tone="ok" icon={<IconCheck className="h-3.5 w-3.5" />}>
+                    {`Imported from the job target on your resume: ${[letter.imported.jobTitle, letter.imported.company].filter(Boolean).join(' · ') || 'your target job'}. Change or remove that job target and this letter follows.`}
+                  </Notice>
+                )}
+                {offerTarget && (
+                  <Notice
+                    tone="info"
+                    icon={<IconInfo className="h-3.5 w-3.5" />}
+                    action={
+                      <button type="button" onClick={importTargetJob} className={navyPillClass}>
+                        Use it
+                      </button>
+                    }
+                  >
+                    {`Your resume has a job target: ${[targetJob.jobTitle, targetJob.company].filter(Boolean).join(' · ') || 'a target job'}. Use it for this letter?`}
+                  </Notice>
+                )}
                 <Field id="cl-link" label="Link to the job you are applying for" optional>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <div className="relative min-w-0 flex-1">

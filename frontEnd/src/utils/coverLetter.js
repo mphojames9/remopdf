@@ -15,6 +15,11 @@
   the job asks for are kept in the letter (jobUrl, requirements, duties); the AI then answers those requirements with
   what the resume says. The result is kept in letter.aiBody. The starter draft stays as the fallback for people who are
   signed out, not on Premium, or when the AI cannot be reached.
+
+  The job target the person set on the resume (resumeData.jobTarget: position, company, address, requirements, duties)
+  is imported into the letter when the page opens (syncWithTarget), so the advert is not read twice. What was imported
+  is remembered in letter.imported. Change the target on the resume and the imported details follow; remove it and
+  they are taken out of the letter too, unless the person has edited them in the letter since.
 */
 
 export const TONES = [
@@ -401,6 +406,67 @@ export const aiSignature = (resumeData, letter) => {
   return parts.join('|');
 };
 
+/* ------------------------------------------------------------------ the resume's job target */
+
+// Same test as hasJobTarget() in the builder: a target the person skipped or removed is { skipped: true }.
+const isLiveTarget = (target) => Boolean(target && !target.skipped && Array.isArray(target.keywords) && target.keywords.length > 0);
+
+// The job details of a target, in the shape the letter keeps them. null when there is no target.
+export const jobFromTarget = (target) => {
+  if (!isLiveTarget(target)) return null;
+  return {
+    jobTitle: clean(target.title).slice(0, MAX_FIELD),
+    company: clean(target.company).slice(0, MAX_FIELD),
+    companyAddress: clean(target.address).slice(0, MAX_FIELD),
+    requirements: cleanList(target.requirements, MAX_REQUIREMENTS),
+    duties: cleanList(target.duties, MAX_DUTIES),
+  };
+};
+
+// A short fingerprint of the job, so the letter can tell when the target on the resume has changed.
+export const targetKeyOf = (target) => {
+  const job = jobFromTarget(target);
+  return job ? hashText(JSON.stringify([job.jobTitle, job.company, job.companyAddress, job.requirements, job.duties])) : '';
+};
+
+const sameList = (a, b) => JSON.stringify(a || []) === JSON.stringify(b || []);
+const JOB_FIELDS = ['jobTitle', 'company', 'companyAddress'];
+const JOB_LISTS = ['requirements', 'duties'];
+
+// Puts the target's job into the letter and remembers what was put there.
+export const applyTarget = (letter, target) => {
+  const job = jobFromTarget(target);
+  if (!job) return letter;
+  return { ...letter, ...job, imported: { key: targetKeyOf(target), ...job } };
+};
+
+// Run when the cover letter page opens. Keeps the letter in step with the job target on the resume:
+//   - a target and an empty letter (or one still holding exactly what was imported before): import it
+//   - a target and details the person wrote or changed themselves: leave them (the page offers the import)
+//   - no target any more (removed or skipped) and the letter holds an import: take the imported details out,
+//     field by field, but only the ones the person has not edited since
+export const syncWithTarget = (letter, target) => {
+  const job = jobFromTarget(target);
+  const snap = letter.imported;
+
+  if (job) {
+    if (snap && snap.key === targetKeyOf(target)) return letter;
+    const empty = JOB_FIELDS.every((f) => !clean(letter[f])) && JOB_LISTS.every((f) => (letter[f] || []).length === 0);
+    const untouched = Boolean(snap) && JOB_FIELDS.every((f) => letter[f] === snap[f]) && JOB_LISTS.every((f) => sameList(letter[f], snap[f]));
+    return empty || untouched ? applyTarget(letter, target) : letter;
+  }
+
+  if (!snap) return letter;
+  const next = { ...letter, imported: null };
+  JOB_FIELDS.forEach((f) => {
+    if (letter[f] === snap[f]) next[f] = '';
+  });
+  JOB_LISTS.forEach((f) => {
+    if (sameList(letter[f], snap[f])) next[f] = [];
+  });
+  return next;
+};
+
 /* ------------------------------------------------------------------ saving */
 
 const STORAGE_PREFIX = 'remopdf:coverLetter:';
@@ -419,9 +485,22 @@ export const defaultLetter = () => ({
   bodyEdited: false, // false: the text is the AI letter (or the starter draft); true: the person has written their own
   aiBody: '', // the letter the AI wrote from the resume ('' = none yet)
   aiFor: '', // aiSignature() of what aiBody was written from
+  imported: null, // { key, jobTitle, company, companyAddress, requirements, duties }: what was taken from the resume's job target
 });
 
 const text = (value, max) => String(value ?? '').slice(0, max);
+
+const normalizeImported = (value) => {
+  if (!value || typeof value !== 'object' || typeof value.key !== 'string' || !value.key) return null;
+  return {
+    key: text(value.key, 40),
+    jobTitle: text(value.jobTitle, MAX_FIELD),
+    company: text(value.company, MAX_FIELD),
+    companyAddress: text(value.companyAddress, MAX_FIELD),
+    requirements: cleanList(value.requirements, MAX_REQUIREMENTS),
+    duties: cleanList(value.duties, MAX_DUTIES),
+  };
+};
 
 // Anything read back from storage becomes a complete, valid letter.
 export const normalizeLetter = (saved) => {
@@ -442,6 +521,7 @@ export const normalizeLetter = (saved) => {
     bodyEdited: edited,
     aiBody: typeof saved.aiBody === 'string' ? text(saved.aiBody, MAX_BODY) : '',
     aiFor: typeof saved.aiBody === 'string' && saved.aiBody ? text(saved.aiFor, 600) : '',
+    imported: normalizeImported(saved.imported),
   };
 };
 

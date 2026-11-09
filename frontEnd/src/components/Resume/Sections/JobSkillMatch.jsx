@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { suggestJobSkills } from './jobMatchAI';
 import { hasJobTarget, norm, scoreResume } from './atsScore';
+import { isSkillTerm } from './skillFilter';
 import { usePremiumAccess, requestUpgrade, setPremiumAccess } from '../../../hooks/premiumAccess';
 
 /*
@@ -12,8 +13,10 @@ import { usePremiumAccess, requestUpgrade, setPremiumAccess } from '../../../hoo
   person's own work history and sorts the skills into two groups:
     - "Your experience backs these": the history really shows them. Each comes with the line it is based on.
     - "The job also asks for these": nothing in the history shows them. The person adds one only if it is true.
-  A tap adds the skill to the resume and takes it out of the list. The server never suggests a skill that is not
-  about this job, and drops "evidence" that is not in the person's own text (routers/job_match.py).
+  SKILLS ONLY: degrees, diplomas, certificates, licences and years of experience are never listed here (they
+  belong under Education). Every skill answers a real item of the job, and the server drops "evidence" that is
+  not in the person's own text (routers/job_match.py; skillFilter.js is the same rule on the device).
+  A tap adds the skill to the resume and takes it out of the list.
 
   It runs once when the step opens (answers are kept, so coming back is instant) and again on "Check again".
   If the AI cannot be reached, the job's own keywords that are still missing from the resume are listed instead.
@@ -105,7 +108,9 @@ const JobSkillMatch = ({ data, onAdd }) => {
   // No AI answer: the job's own keywords the resume is still missing.
   const fallback = useMemo(() => {
     const result = scoreResume(target, data);
-    return result ? result.keywords.missing.filter((k) => k.kind !== 'soft' && notHave(k.term)).slice(0, 8).map((k) => k.term) : [];
+    return result
+      ? result.keywords.missing.filter((k) => k.kind !== 'soft' && k.kind !== 'credential' && isSkillTerm(k.term) && notHave(k.term)).slice(0, 8).map((k) => k.term)
+      : [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target, data, have]);
 
@@ -139,7 +144,7 @@ const JobSkillMatch = ({ data, onAdd }) => {
         <span className="mt-0.5"><Sparkle /></span>
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-slate-900">Matched to {target.title || 'your target job'}</h2>
-          <p className="mt-0.5 text-xs leading-snug text-slate-600">What the job asks for, compared with your work history.</p>
+          <p className="mt-0.5 text-xs leading-snug text-slate-600">What the job asks for, compared with your work history. Skills only: degrees and certificates go under Education.</p>
         </div>
         <button
           type="button"
@@ -188,7 +193,7 @@ const JobSkillMatch = ({ data, onAdd }) => {
             <p className="px-2 pb-1 pt-1 text-xs font-semibold text-slate-700">The job also asks for these. Add only what’s true for you.</p>
             <ul>
               {toConfirm.map((s) => (
-                <Row key={s.skill} skill={s.skill} note={s.reason} onAdd={onAdd} />
+                <Row key={s.skill} skill={s.skill} note={s.reason || (s.jobItem ? `The job asks for: ${s.jobItem}` : '')} onAdd={onAdd} />
               ))}
             </ul>
           </div>
