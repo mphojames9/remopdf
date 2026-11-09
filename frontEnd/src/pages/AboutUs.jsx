@@ -53,74 +53,159 @@ function FooterLink({ link }) {
   return <a href={link.to} className={FOOTER_LINK}>{link.label}</a>;
 }
 
-const PLATFORM_METRICS = [
-  { value: '100%', label: 'Data Destruction Rate', subtext: 'Files are scrubbed instantly after execution.' },
-  { value: 'Zero', label: 'Persistent Logs', subtext: 'We never read, analyze, or cache content.' },
-  { value: '256-Bit', label: 'SSL Architecture', subtext: 'Bank-grade transit layer encryption protocols.' },
-  { value: 'ATS', label: 'Compliant Outputs', subtext: 'Engineered for parsing engine algorithms.' }
+// --- Page content ----------------------------------------------------------
+// Everything below is plain data so the wording can be changed without touching the layout.
+// Statements about files, logs, AI and pricing follow what the backend and the Privacy page do today;
+// if either changes, update the matching lines here.
+
+const TEMPLATE_COUNT = 32;
+
+const FACTS = [
+  { term: 'Started', detail: '9 December 2025' },
+  { term: 'Founder', detail: 'Mpho James Matli' },
+  { term: 'Named after', detail: 'Remoratile Vanessa, the founder’s daughter' },
+  { term: 'Resume templates', detail: `${TEMPLATE_COUNT}, all built to be read by an ATS` },
 ];
 
-const CORE_UTILITIES = [
+const TOOL_GROUPS = [
   {
-    category: 'Advanced PDF Processing',
-    icon: 'fa-layer-group',
-    color: 'text-[#c4694e]',
-    bg: 'bg-[#d9856b]/10',
-    description: 'Professional grade utility workflows optimized for speed, precision, and high-fidelity structural data preservation.',
+    id: 'edit',
+    tab: 'Edit and sign',
+    title: 'Change a PDF without starting over',
+    intro: 'Open a file in the editor, fix what is wrong, and download it again. Every page appears in a sidebar so you always know where you are.',
+    links: [{ label: 'Open the PDF editor', to: PDF_EDITOR_ROUTE }],
     items: [
-      { name: 'Multi-Document Merging', detail: 'Combine disparate layouts into a single optimized file path without text vector distortion.' },
-      { name: 'Precision Content Splitting', detail: 'Isolate pages or ranges dynamically based on data density thresholds.' },
-      { name: 'Intelligent Compression Engines', detail: 'Reduce total byte weight up to 90% while preserving raster imagery resolution patterns.' },
-      { name: 'Visual Page Reordering', detail: 'Manipulate structural indices directly using interactive browser layout state viewports.' }
-    ]
+      { name: 'Edit text', detail: 'Click a line to fix it, or place new text anywhere on the page.' },
+      { name: 'Highlight', detail: 'Mark the lines that matter before you share the file.' },
+      { name: 'Sign', detail: 'Add your signature to a contract or a form.' },
+      { name: 'Add images', detail: 'Place a logo, a stamp or a photo on the page.' },
+      { name: 'Watermark and page numbers', detail: 'Finish the file, then download it.' },
+    ],
   },
   {
-    category: 'Universal Format Engines',
-    icon: 'fa-arrow-rotate-left',
-    color: 'text-blue-500',
-    bg: 'bg-blue-50',
-    description: 'Bidirectional document serialization systems designed to maintain complete paragraph alignments, typography systems, and data matrices.',
+    id: 'organize',
+    tab: 'Organize',
+    title: 'Put the pages in order',
+    intro: 'Combine files, pull them apart, and rearrange pages with a preview of each one in front of you.',
+    links: [{ label: 'Open the PDF editor', to: PDF_EDITOR_ROUTE }],
     items: [
-      { name: 'PDF To Highly Structured Word', detail: 'Convert rigid text lines into native dynamic layout flow editable paragraphs.' },
-      { name: 'Data Matrix Extract to Excel', detail: 'Locate tabular cells visually and convert grid data directly into flawless formulas.' },
-      { name: 'Interactive PowerPoint Matrix', detail: 'Deconstruct vectorized canvas coordinates into separate editable native slide items.' },
-      { name: 'Raster Image Pipeline Exports', detail: 'Generate isolated high-resolution sub-pixel PNG or JPEG document page blocks.' }
-    ]
+      { name: 'Merge', detail: 'Combine several PDFs into one file.' },
+      { name: 'Split', detail: 'Break a big file into smaller ones, ready to send on their own.' },
+      { name: 'Add, remove and rotate pages', detail: 'Change the page order of a file, with every page shown before you commit.' },
+    ],
   },
   {
-    category: 'Cryptographic Security Core',
-    icon: 'fa-shield-halved',
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-50',
-    description: 'Enterprise access security mechanics deployed at runtime to safeguard highly confidential system documentation pipelines.',
+    id: 'convert',
+    tab: 'Convert',
+    title: 'Move between file types',
+    intro: 'Switch a document to the format the next person needs, and back again when it comes back edited.',
+    links: [{ label: 'Open the PDF editor', to: PDF_EDITOR_ROUTE }],
     items: [
-      { name: 'RC4/AES Password Locking', detail: 'Apply deep byte-level security keys to restrict global operational reading permissions.' },
-      { name: 'Credential Authorization Removal', detail: 'Unlock authenticated document trees seamlessly given valid local credentials.' },
-      { name: 'Dynamic Encryption Changing', detail: 'Cycle structural keys quickly without modifying underlying data structures.' },
-      { name: 'Compliance Integrity Auditing', detail: 'Evaluate incoming file structural layouts instantly to flag permission problems.' }
-    ]
-  }
+      { name: 'PDF to Word', detail: 'Turn a PDF into a document you can edit.' },
+      { name: 'PDF to Excel', detail: 'Pull tables out of a PDF and into a spreadsheet.' },
+      { name: 'PDF to PowerPoint', detail: 'Turn pages into slides you can change.' },
+      { name: 'Word and Excel to PDF', detail: 'Make a finished file that looks the same on every screen.' },
+      { name: 'Images and PDF', detail: 'Turn pictures into a PDF, or save each PDF page as an image.' },
+    ],
+  },
+  {
+    id: 'protect',
+    tab: 'Compress and protect',
+    title: 'Make files lighter and safer',
+    intro: 'Shrink a file so it goes through email, and lock the ones that should only be opened by the right person.',
+    links: [{ label: 'Open the PDF editor', to: PDF_EDITOR_ROUTE }],
+    items: [
+      { name: 'Compress', detail: 'Shrink heavy files so they are easy to email and upload.' },
+      { name: 'Lock with a password', detail: 'Protect a PDF with AES-256 encryption.' },
+      { name: 'Unlock', detail: 'Remove the password from a file when you know it.' },
+      { name: 'Change a password', detail: 'Swap an old password for a new one.' },
+    ],
+  },
+  {
+    id: 'more',
+    tab: 'Scan, zip and invoice',
+    title: 'Small jobs that come up all the time',
+    intro: 'Three extras for the things that do not fit anywhere else.',
+    links: [
+      { label: 'Open the ZIP tool', to: '/ZipTool' },
+      { label: 'Open the invoice builder', to: '/InvoiceBuilder' },
+    ],
+    items: [
+      { name: 'QR codes', detail: 'Scan a QR code, or make your own.' },
+      { name: 'ZIP tool', detail: 'Bundle several files into one ZIP, in your browser.' },
+      { name: 'Invoice builder', detail: 'Put together a clean invoice from a simple form.' },
+    ],
+  },
 ];
 
-const RESUME_ENGINE_PARADIGMS = [
-  { title: 'Interactive Multi-Step Progress Builders', description: 'Fluid, state-tracked interface wizards that guide candidate data collection cleanly across custom visual sections.' },
-  { title: 'ATS Parsing Parameter Optimizations', description: 'Semantic DOM configurations generated explicitly to rank beautifully across corporate scanning algorithms.' },
-  { title: 'A4 Proportionate Workspace Canvases', description: 'Strict layout ratio containers rendered dynamically via modern browser viewports for paper accurate prints.' },
-  { title: 'Asynchronous Playwright Render Engines', description: 'Server managed background headless routines ensuring perfect layouts on standard downloads.' }
+const RESUME_FEATURES = [
+  { name: `${TEMPLATE_COUNT} templates`, detail: 'Change the colour, reorder sections and hide the ones you do not need.' },
+  { name: 'Start from a resume you already have', detail: 'Upload a PDF or Word file and the form fills itself in, so you edit instead of retyping.' },
+  { name: 'Spelling and grammar checks', detail: 'A misspelled skill can be skipped by a scan, so mistakes are flagged as you type.' },
+  { name: 'Job title and achievement ideas', detail: 'Suggestions come from O*NET, a large occupational database, so you are not staring at a blank box.' },
+  { name: 'Saved resumes', detail: 'Sign in to keep your resumes in your account and pick them up on another device.' },
+  { name: 'Job target', detail: 'Add the job you are applying for to see which skills it asks for and which your resume already shows, with a summary written to fit.', premium: true },
+  { name: 'Cover letter', detail: 'Write a cover letter from the details already in your resume.', premium: true },
 ];
 
-const ENCRYPTED_WORKFLOW_STEPS = [
-  { step: '01', title: 'Local File Initialization', description: 'Documents are loaded via secure sandboxed memory channels.' },
-  { step: '02', title: 'Transit Layer Shielding', description: 'Files stream using isolated bank-grade 256-bit transport layer protocols.' },
-  { step: '03', title: 'Volatile RAM Execution', description: 'Calculations occur completely in high-speed, volatile temporary system buffers.' },
-  { step: '04', title: 'Instant Destruction Routine', description: 'Memory caches purge instantly upon operational delivery to your client browser.' }
+const FILE_STEPS = [
+  { title: 'You choose a file', detail: 'It travels to RemoPDF over HTTPS.' },
+  { title: 'It is processed', detail: 'The work happens in memory or in a private temporary folder.' },
+  { title: 'You get the result', detail: 'The finished file is sent back to your browser to download.' },
+  { title: 'Temporary files go', detail: 'Conversions delete their temporary files when they finish. We keep no backups or copies.' },
 ];
 
-const FAQ_ACCORDIONS = [
-  { q: 'How does RemoPDF guarantee files are completely safe?', a: 'Every single transaction utilizes isolated volatile processing pipelines. We do not provision persistent database records for structural data assets. Files exist only for the brief milliseconds required to transform context, followed by automated kernel memory scrubs.' },
-  { q: 'What makes the premium Resume Builder unique compared to alternative platforms?', a: 'Traditional builders produce messy layouts that break applicant tracking systems. RemoPDF enforces strict, native serialization rules and structural metadata formatting. This satisfies parsing checks while delivering stunning visual layouts.' },
-  { q: 'Why was the application named RemoPDF?', a: 'The platform is named directly after Remoratile Vanessa, the daughter of our founder Mpho James Matli. It serves as a reminder to engineering excellence, absolute trust, and creating reliable, high-performance web systems.' },
-  { q: 'Are there hidden subscription costs or file size paywalls?', a: 'No. RemoPDF is designed as an accessible, high-efficiency utility ecosystem. We prioritize extreme performance, clean interface interactions, and uncompromised productivity layout paths.' }
+const KEPT_NOTES = [
+  {
+    title: 'Ordinary server logs',
+    detail: 'Timestamps, status codes, file sizes and a rough location help us find and fix errors. They never include the contents of your files or the text you type.',
+  },
+  {
+    title: 'Your account, if you make one',
+    detail: 'Signing in lets you save resumes and manage Premium. Saved resumes are stored with your account.',
+  },
+  {
+    title: 'AI features',
+    detail: 'The writing assistant, job target and cover letter tools send the text you are working on to an AI provider to produce suggestions. They run only when you use them.',
+  },
+  {
+    title: 'Ads',
+    detail: 'RemoPDF shows ads through Google AdSense to help cover server costs. AdSense uses cookies, and you can limit them in your browser or in your Google ad settings.',
+  },
+];
+
+const PRINCIPLES = [
+  { title: 'Say what happens to your files', detail: 'You should not have to guess. We write down how files are handled, and we update it when it changes.' },
+  { title: 'Keep the tools plain', detail: 'Short names, few steps and no jargon. If a button needs an explanation, the button is wrong.' },
+  { title: 'Make resumes that get read', detail: 'Clear headings and readable text, so a scan finds your experience before a person does.' },
+  { title: 'Build it to last', detail: 'RemoPDF carries a family name. That is a good reason to make it dependable.' },
+];
+
+const FAQS = [
+  {
+    q: 'Is my file safe on RemoPDF?',
+    a: 'Files are sent over HTTPS and processed in memory or in a private temporary folder. We keep no backups or archives of what you upload, and our logs never contain file contents. The section above and the privacy policy explain what we do keep.',
+  },
+  {
+    q: 'What does ATS-friendly mean?',
+    a: 'Many employers use an applicant tracking system (ATS) to scan resumes before a person reads them. Our templates use clear headings and readable text so those systems pick up your details in the right place.',
+  },
+  {
+    q: 'Is RemoPDF free?',
+    a: 'You can build and download a resume for free. Free downloads carry a small “Created with RemoPDF” note at the foot of each page. Premium removes the note and adds the AI tools: job target, cover letter and writing analysis. Ads help cover our server costs.',
+  },
+  {
+    q: 'Why is it called RemoPDF?',
+    a: 'It is named after Remoratile Vanessa, the founder’s daughter.',
+  },
+  {
+    q: 'Who is behind RemoPDF?',
+    a: 'RemoPDF was started on 9 December 2025 by Mpho James Matli, a backend software engineer who spent nine years in manufacturing management before building it.',
+  },
+  {
+    q: 'How do I report a problem or ask for a feature?',
+    a: 'Use the contact page. Tell us which tool you were using and what you expected to happen, and we will take it from there.',
+  },
 ];
 
 // --- Animated footer ------------------------------------------------------
@@ -264,12 +349,69 @@ function SiteFooter() {
   );
 }
 
+const SECTION = 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8';
+const H2 = 'text-3xl font-semibold leading-tight tracking-tight text-[#0e1726] [text-wrap:balance] sm:text-4xl';
+const FOCUS = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726]';
+
+const EDITOR_TOOLS = [
+  { icon: 'fa-i-cursor', label: 'Text' },
+  { icon: 'fa-highlighter', label: 'Highlight', active: true },
+  { icon: 'fa-signature', label: 'Sign' },
+  { icon: 'fa-image', label: 'Image' },
+];
+
+// The hero is drawn like a page open in the RemoPDF editor: the highlight tool is selected and the
+// sentence that matters gets marked once, when the page loads. Decorative only, so hidden from screen readers.
+function EditorPage() {
+  return (
+    <div aria-hidden="true" className="relative mx-auto w-full max-w-md lg:max-w-none">
+      <div className="absolute inset-x-6 bottom-[-0.9rem] top-10 rotate-[3deg] rounded-xl bg-[#f3dbd1]" />
+      <div className="relative -rotate-1 rounded-xl border border-[#0e1726]/10 bg-white shadow-[0_30px_60px_-30px_rgba(14,23,38,0.45)]">
+        <div className="flex items-center gap-1.5 border-b border-[#0e1726]/10 px-3 py-2.5">
+          {EDITOR_TOOLS.map((tool) => (
+            <span
+              key={tool.label}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg text-[13px] ${
+                tool.active ? 'bg-[#d9856b] text-[#0e1726]' : 'text-slate-500'
+              }`}
+            >
+              <i className={`fa-solid ${tool.icon}`}></i>
+            </span>
+          ))}
+          <span className="ml-auto text-xs text-slate-400">why-remopdf.pdf</span>
+        </div>
+        <div className="px-6 pb-8 pt-8 sm:px-10 sm:pb-10 sm:pt-10">
+          <p className="text-xl font-semibold tracking-tight text-[#0e1726]">Why RemoPDF exists</p>
+          <div className="mt-4 space-y-3 text-[15px] leading-7 text-slate-600">
+            <p>Everyone ends up with a PDF they need to change, sign, shrink or send.</p>
+            <p>
+              Most tools ask for a desktop licence, or for an upload to a service you know little about. RemoPDF does the same jobs in
+              your browser, with <span className="ab-mark">a plain account of what happens to your file.</span>
+            </p>
+          </div>
+          <div className="mt-10 flex items-end justify-between gap-4 border-t border-dashed border-[#0e1726]/20 pt-4">
+            <span className="ab-sign text-2xl text-[#1f2e49]">Mpho James Matli</span>
+            <span className="text-xs text-slate-400">Founder, RemoPDF</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4 transition-transform duration-200 group-open:rotate-45" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
 export default function About() {
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-  const [openFaq, setOpenFaq] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -283,7 +425,7 @@ export default function About() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY, isMobileMenuOpen]);
 
-// Bulletproof mobile scroll lock
+  // Mobile scroll lock while the menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -292,8 +434,8 @@ export default function About() {
       document.body.style.overflow = 'unset';
       document.body.style.overscrollBehavior = 'unset';
     }
-    return () => { 
-      document.body.style.overflow = 'unset'; 
+    return () => {
+      document.body.style.overflow = 'unset';
       document.body.style.overscrollBehavior = 'unset';
     };
   }, [isMobileMenuOpen]);
@@ -302,80 +444,114 @@ export default function About() {
     window.scrollTo(0, 0);
   }, []);
 
+  const group = TOOL_GROUPS[activeTab];
+
+  // Arrow keys, Home and End move between the tool tabs.
+  const onTabKey = (e) => {
+    const last = TOOL_GROUPS.length - 1;
+    let next = null;
+    if (e.key === 'ArrowRight') next = activeTab === last ? 0 : activeTab + 1;
+    if (e.key === 'ArrowLeft') next = activeTab === 0 ? last : activeTab - 1;
+    if (e.key === 'Home') next = 0;
+    if (e.key === 'End') next = last;
+    if (next === null) return;
+    e.preventDefault();
+    setActiveTab(next);
+    document.getElementById(`tool-tab-${TOOL_GROUPS[next].id}`)?.focus();
+  };
+
   return (
-    <div 
-      className="min-h-screen w-full flex flex-col bg-[#FAFAFA] overflow-x-hidden antialiased relative selection:bg-[#d9856b]/30 min-w-[330px]"
+    <div
+      className="relative flex min-h-screen w-full min-w-[330px] flex-col overflow-x-hidden bg-[#FAFAFA] antialiased selection:bg-[#d9856b]/30"
       style={{ fontFamily: "'Outfit', 'Metropolis', sans-serif" }}
     >
-      {/* Dynamic Background Design Elements */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[140vw] lg:max-w-7xl h-[600px] bg-gradient-to-b from-[#d9856b]/10 via-[#d9856b]/5 to-transparent rounded-full filter blur-[120px] lg:blur-[160px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]"></div>
-      <div className="absolute top-[25%] right-[-20%] w-72 lg:w-[500px] h-72 lg:h-[500px] bg-blue-400/5 rounded-full filter blur-[100px] lg:blur-[140px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite_alternate]"></div>
-      <div className="absolute bottom-[20%] left-[-15%] w-64 lg:w-[450px] h-64 lg:h-[450px] bg-[#d9856b]/5 rounded-full filter blur-[90px] lg:blur-[130px] pointer-events-none"></div>
+      <style>{`
+        .ab-sign { font-family: 'Segoe Script', 'Snell Roundhand', 'Brush Script MT', cursive; }
+        .ab-mark {
+          background-image: linear-gradient(rgba(217, 133, 107, .4), rgba(217, 133, 107, .4));
+          background-repeat: no-repeat;
+          background-position: 0 90%;
+          background-size: 100% .72em;
+          -webkit-box-decoration-break: clone;
+          box-decoration-break: clone;
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          .ab-mark { animation: ab-mark 1.2s cubic-bezier(.65, 0, .35, 1) .9s backwards; }
+          @keyframes ab-mark { from { background-size: 0% .72em; } }
+        }
+      `}</style>
 
-      {/* Modern Navigation Header */}
-      <nav 
-        className={`w-full flex justify-between items-center py-3 lg:py-4 px-4 lg:px-12 z-50 fixed top-0 transition-all duration-500 ease-out border-b border-[#d9856b]/20 bg-[#fbf3f0]/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.02)] ${
-          isNavVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
+      {/* Navigation */}
+      <nav
+        className={`fixed top-0 z-50 flex w-full items-center justify-between border-b border-[#d9856b]/20 bg-[#fbf3f0]/80 px-4 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.02)] backdrop-blur-2xl transition-all duration-500 ease-out lg:px-12 lg:py-4 ${
+          isNavVisible ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-full opacity-0'
         }`}
       >
-        <div className="nav-logo shrink-0 relative z-50">
-          <Link to="/" aria-label="RemoPDF home" className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b] rounded-lg">
-            <img src={navLogo} alt="RemoPDF" draggable={false} className="h-8 lg:h-9 w-auto block" />
+        <div className="nav-logo relative z-50 shrink-0">
+          <Link to="/" aria-label="RemoPDF home" className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]">
+            <img src={navLogo} alt="RemoPDF" draggable={false} className="block h-8 w-auto lg:h-9" />
           </Link>
         </div>
-  
-        <div className="hidden lg:flex items-center gap-10">
-          {NAV_LINKS.map((link, idx) => (
-            <Link 
-              key={idx}
-              to={link.path} 
-              className="text-[0.95rem] font-medium tracking-wide transition-colors duration-200 text-slate-500 hover:text-slate-900"
-            >
+
+        <div className="hidden items-center gap-10 lg:flex">
+          {NAV_LINKS.map((link) => (
+            <Link key={link.path} to={link.path} className="text-[0.95rem] font-medium tracking-wide text-slate-500 transition-colors duration-200 hover:text-slate-900">
               {link.label}
             </Link>
           ))}
         </div>
-  
-        <div className="flex items-center gap-4 shrink-0 relative z-50">
-          <Link 
-            to="/ResumeBuilder" 
-            className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-[#d9856b] text-[#0e1726] text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(217,133,107,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(217,133,107,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
+
+        <div className="relative z-50 flex shrink-0 items-center gap-4">
+          <Link
+            to="/ResumeBuilder"
+            className="group relative isolate hidden items-center justify-center gap-2.5 overflow-hidden rounded-full bg-[#d9856b] px-6 py-2.5 text-[14px] font-bold tracking-wide text-[#0e1726] shadow-[0_8px_20px_-6px_rgba(217,133,107,0.6)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_25px_-6px_rgba(217,133,107,0.8)] lg:flex"
           >
-            <div className="absolute inset-0 z-[-1] bg-[#c9735a] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="absolute top-0 left-0 w-full h-full -translate-x-full group-hover:translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 transition-transform duration-1000 ease-in-out z-[-1]" />
-            <div className="absolute inset-0 rounded-full border border-white/20 mix-blend-overlay"></div>
-            <span className="relative z-10 drop-shadow-sm">Build Resume</span>
-            <i className="fa-solid fa-wand-magic-sparkles text-[12px] relative z-10 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 drop-shadow-sm"></i>
+            <div className="absolute inset-0 z-[-1] bg-[#c9735a] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
+            <div className="absolute left-0 top-0 z-[-1] h-full w-full -translate-x-full skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-1000 ease-in-out group-hover:translate-x-[150%]" />
+            <span className="relative z-10">Build Resume</span>
+            <i className="fa-solid fa-wand-magic-sparkles relative z-10 text-[12px] transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"></i>
           </Link>
 
-          <button 
+          <button
+            type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden relative w-10 h-10 flex items-center justify-center bg-slate-50 border border-slate-200/60 backdrop-blur-md rounded-full shadow-sm hover:bg-slate-100/80 transition-colors"
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMobileMenuOpen}
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/60 bg-slate-50 shadow-sm backdrop-blur-md transition-colors hover:bg-slate-100/80 lg:hidden"
           >
-            <div className="flex flex-col gap-[4.5px] items-center justify-center w-5">
-              <span className={`h-[2px] bg-slate-800 rounded-full transition-all duration-300 origin-center ${isMobileMenuOpen ? 'w-5 translate-y-[6.5px] rotate-45 bg-slate-900' : 'w-5'}`} />
-              <span className={`h-[2px] bg-slate-800 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0 scale-x-0' : 'w-5 opacity-100 scale-x-100'}`} />
-              <span className={`h-[2px] bg-slate-800 rounded-full transition-all duration-300 origin-center ${isMobileMenuOpen ? 'w-5 -translate-y-[6.5px] -rotate-45 bg-slate-900' : 'w-5'}`} />
+            <div className="flex w-5 flex-col items-center justify-center gap-[4.5px]">
+              <span className={`h-[2px] origin-center rounded-full bg-slate-800 transition-all duration-300 ${isMobileMenuOpen ? 'w-5 translate-y-[6.5px] rotate-45 bg-slate-900' : 'w-5'}`} />
+              <span className={`h-[2px] rounded-full bg-slate-800 transition-all duration-300 ${isMobileMenuOpen ? 'scale-x-0 opacity-0' : 'w-5 scale-x-100 opacity-100'}`} />
+              <span className={`h-[2px] origin-center rounded-full bg-slate-800 transition-all duration-300 ${isMobileMenuOpen ? 'w-5 -translate-y-[6.5px] -rotate-45 bg-slate-900' : 'w-5'}`} />
             </div>
           </button>
         </div>
       </nav>
 
-      {/* Drawer Overlay for Mobile Interfaces */}
-      <div 
-        className={`fixed inset-0 z-50 lg:hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      {/* Mobile menu */}
+      <div
+        className={`fixed inset-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden ${
+          isMobileMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
         <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-sm transition-opacity duration-500" onClick={() => setIsMobileMenuOpen(false)} />
-        <div className={`absolute top-0 right-0 w-full max-w-[260px] h-full bg-white/95 backdrop-blur-3xl shadow-[-25px_0_50px_-15px_rgba(15,23,42,0.06)] border-l border-slate-200/60 p-6 flex flex-col justify-between transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div
+          className={`absolute right-0 top-0 flex h-full w-full max-w-[260px] flex-col justify-between border-l border-slate-200/60 bg-white/95 p-6 shadow-[-25px_0_50px_-15px_rgba(15,23,42,0.06)] backdrop-blur-3xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
           <div className="flex flex-col pt-16">
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400 mb-6 px-1">Navigation</p>
+            <p className="mb-6 px-1 text-sm font-semibold text-slate-500">Menu</p>
             <div className="flex flex-col gap-1">
-              {NAV_LINKS.map((link, idx) => (
-                <Link key={idx} to={link.path} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between text-[1.15rem] font-medium tracking-wide py-3.5 px-2 rounded-xl text-slate-800 hover:text-[#c4694e] hover:bg-slate-50/60 transition-all duration-200">
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between rounded-xl px-2 py-3.5 text-[1.15rem] font-medium tracking-wide text-slate-800 transition-all duration-200 hover:bg-slate-50/60 hover:text-[#c4694e]"
+                >
                   <span>{link.label}</span>
-                  <i className="fa-solid fa-chevron-right text-[10px] text-slate-300 mr-1"></i>
+                  <i className="fa-solid fa-chevron-right mr-1 text-[10px] text-slate-300"></i>
                 </Link>
               ))}
             </div>
@@ -383,230 +559,274 @@ export default function About() {
         </div>
       </div>
 
-      {/* Core Operational Layout Container */}
-      <main className="max-w-6xl mx-auto w-full px-4 lg:px-8 relative z-10 pt-28 lg:pt-40 pb-24 flex-1">
-        
-        {/* Visual Badge and Page Title */}
-        <div className="text-center mb-16 lg:mb-24">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 mb-6 text-[10px] lg:text-xs font-semibold tracking-[0.2em] uppercase text-[#b85a40] bg-[#d9856b]/10 backdrop-blur-md border border-[#d9856b]/30 rounded-full shadow-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d9856b] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#d9856b]"></span>
-            </span>
-            Enterprise Utility Suite
+      <main className="relative z-10 flex-1">
+        {/* Hero */}
+        <section className="pt-28 lg:pt-36">
+          <div className={`${SECTION} grid items-center gap-14 pb-16 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pb-24`}>
+            <div>
+              <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[#0e1726] [text-wrap:balance] sm:text-5xl lg:text-[3.5rem]">
+                Paperwork tools that treat your files with care
+              </h1>
+              <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+                RemoPDF is a set of browser tools for editing, converting and protecting PDFs, and for building resumes that applicant tracking
+                systems can read. It was started on 9 December 2025 and is named after the founder’s daughter.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  to={PDF_EDITOR_ROUTE}
+                  className={`inline-flex items-center justify-center rounded-lg bg-[#0e1726] px-6 py-3 text-[15px] font-bold text-white transition-colors hover:bg-[#1f2e49] ${FOCUS}`}
+                >
+                  Open PDF editor
+                </Link>
+                <Link
+                  to="/ResumeBuilder"
+                  className={`inline-flex items-center justify-center rounded-lg border border-[#0e1726]/15 bg-white px-6 py-3 text-[15px] font-bold text-[#0e1726] transition-colors hover:bg-slate-100 ${FOCUS}`}
+                >
+                  Build a resume
+                </Link>
+              </div>
+            </div>
+            <EditorPage />
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extralight text-slate-900 tracking-tight mb-6 leading-[1.1]">
-            Next-Gen Architecture.<br />
-            <span className="font-medium text-[#d9856b]">Uncompromised Privacy.</span>
-          </h1>
-          <p className="max-w-2xl mx-auto text-sm sm:text-base lg:text-lg text-slate-500 font-light leading-relaxed px-2">
-            Engineered from the ground up to solve complex enterprise file translations, system layouts, and premium document compilation in fractions of a second.
-          </p>
-        </div>
 
-        {/* Executive Core Metrics Display Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-16 lg:mb-28">
-          {PLATFORM_METRICS.map((metric, index) => (
-            <div 
-              key={index} 
-              className="bg-white/60 backdrop-blur-3xl border border-slate-200/50 shadow-[0_15px_40px_-20px_rgba(0,0,0,0.04)] rounded-2xl p-5 lg:p-6 text-center group hover:border-[#d9856b]/50 transition-all duration-300"
-            >
-              <div className="text-2xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-slate-900 to-slate-700 tracking-tight mb-1 group-hover:scale-105 transition-transform duration-300">
-                {metric.value}
-              </div>
-              <div className="text-xs font-semibold text-slate-800 tracking-wide mb-2">
-                {metric.label}
-              </div>
-              <div className="text-[11px] lg:text-xs text-slate-400 font-light leading-normal">
-                {metric.subtext}
-              </div>
-            </div>
-          ))}
-        </div>
+          <div className={`${SECTION} pb-16 lg:pb-24`}>
+            <dl className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+              {FACTS.map((fact) => (
+                <div key={fact.term} className="border-t border-[#0e1726]/20 pt-4">
+                  <dt className="text-sm text-slate-500">{fact.term}</dt>
+                  <dd className="mt-1 text-base font-semibold leading-snug text-[#0e1726]">{fact.detail}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
 
-        {/* Founding Executive Profile Section */}
-        <section className="bg-white/60 backdrop-blur-3xl border border-slate-200/60 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.04)] rounded-[2rem] p-6 sm:p-8 lg:p-14 relative overflow-hidden mb-16 lg:mb-28">
-          <div className="absolute top-0 left-0 w-32 h-32 bg-[#d9856b]/5 rounded-full blur-3xl pointer-events-none"></div>
-          
-          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12 relative z-10">
-            <div className="w-36 h-36 lg:w-44 lg:h-44 shrink-0 relative">
-              <div className="absolute inset-0 bg-[#d9856b] rounded-[2.5rem] rotate-6 opacity-15 animate-pulse"></div>
-              <img 
-               src={profile}
-                alt="Mpho James Matli" 
-                className="w-full h-full object-cover rounded-[2.5rem] border-4 border-white shadow-xl relative z-10"
-              />
-            </div>
-            
-            <div className="text-center lg:text-left flex-1">
-              <div className="text-xs font-bold text-[#b85a40] tracking-[0.15em] uppercase mb-1">Founding Visionary</div>
-              <h2 className="text-3xl font-semibold text-slate-900 tracking-tight mb-2">Mpho James Matli</h2>
-              <div className="h-[2px] w-12 bg-gradient-to-r from-[#d9856b] to-transparent mx-auto lg:mx-0 mb-6" />
-              
-              <div className="space-y-4 text-slate-600 text-[14px] lg:text-[15px] font-light leading-relaxed text-justify sm:text-left">
-                <p>
-                  Established on 9 December 2025, RemoPDF was ideated to resolve a critical tech industry missing link: the bridge between advanced automated PDF operations and client side data protection infrastructure models. 
-                </p>
-                <p>
-                  The platform carries a deeply important foundational history. It was named intentionally after Remoratile Vanessa, the daughter of our founder. This core lineage drives our product standard. We approach system scaling, micro-service architecture engineering, and customer workflows with long-term care and extreme reliability.
-                </p>
-                <p>
-                  Our primary mission remains simple: ensuring you never need to purchase expensive desktop licenses or surrender private information tracking maps to untrusted legacy cloud infrastructure providers again.
-                </p>
+        {/* Story */}
+        <section id="story" aria-labelledby="story-title" className="border-t border-[#0e1726]/10 bg-white">
+          <div className={`${SECTION} grid gap-10 py-16 lg:grid-cols-[1fr_1.7fr] lg:gap-20 lg:py-24`}>
+            <h2 id="story-title" className={`${H2} lg:sticky lg:top-28 lg:self-start`}>
+              Where RemoPDF comes from
+            </h2>
+            <div className="max-w-[62ch] space-y-6 text-[17px] leading-8 text-slate-700">
+              <p>
+                RemoPDF began on 9 December 2025 with a simple aim: bring powerful PDF tools together with real care for the privacy of the
+                documents people put through them.
+              </p>
+              <p>
+                Good PDF software is often an expensive desktop licence. Free online tools are quick, but they ask you to hand over a
+                contract, an ID or a payslip to a service you know little about. RemoPDF is meant to be the third option: tools that work in
+                your browser, and a plain account of what happens to your file.
+              </p>
+
+              <h3 className="pt-4 text-2xl font-semibold tracking-tight text-[#0e1726]">Why the name</h3>
+              <p>
+                RemoPDF is named after Remoratile Vanessa, the founder’s daughter. It is a reminder of the standard the product has to meet:
+                reliable, honest with the people who use it, and built to last.
+              </p>
+
+              <h3 className="pt-4 text-2xl font-semibold tracking-tight text-[#0e1726]">Who is behind it</h3>
+              <div className="flex flex-col gap-6 rounded-2xl bg-[#fbf3f0] p-6 sm:flex-row sm:p-8">
+                <img
+                  src={profile}
+                  alt="Mpho James Matli"
+                  className="h-32 w-32 shrink-0 rounded-2xl object-cover sm:h-36 sm:w-36"
+                />
+                <div>
+                  <p className="text-xl font-semibold text-[#0e1726]">Mpho James Matli</p>
+                  <p className="text-[15px] text-slate-500">Founder</p>
+                  <p className="mt-3 text-base leading-7 text-slate-700">
+                    Mpho spent nine years in manufacturing, moving from quality controller to senior manager, where checking the work before it
+                    ships is part of the job. In 2024 he completed a software engineering qualification specialising in backend development.
+                    RemoPDF is where the two meet.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Interactive Feature Deep Dive Area */}
-        <section className="mb-16 lg:mb-28">
-          <div className="text-center mb-10 lg:mb-14">
-            <h2 className="text-2xl lg:text-4xl font-bold text-slate-900 tracking-tight mb-3">Granular Tool Suite Specifications</h2>
-            <p className="text-xs lg:text-sm text-slate-400 font-light max-w-xl mx-auto">
-              Click through our active product pillars to examine core structural file management system layouts.
+        {/* Toolbox */}
+        <section id="toolbox" aria-labelledby="toolbox-title" className="border-t border-[#0e1726]/10">
+          <div className={`${SECTION} py-16 lg:py-24`}>
+            <div className="max-w-2xl">
+              <h2 id="toolbox-title" className={H2}>What you can do with it</h2>
+              <p className="mt-4 text-lg leading-relaxed text-slate-600">
+                One place for the PDF jobs that come up most, and a few extras for everything around them.
+              </p>
+            </div>
+
+            <div role="tablist" aria-label="Tool groups" className="-mx-4 mt-10 flex gap-1 overflow-x-auto border-b border-[#0e1726]/15 px-4 sm:mx-0 sm:px-0">
+              {TOOL_GROUPS.map((g, idx) => {
+                const selected = activeTab === idx;
+                return (
+                  <button
+                    key={g.id}
+                    id={`tool-tab-${g.id}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    aria-controls="tool-panel"
+                    tabIndex={selected ? 0 : -1}
+                    onClick={() => setActiveTab(idx)}
+                    onKeyDown={onTabKey}
+                    className={`relative shrink-0 whitespace-nowrap px-4 py-3 text-[15px] font-semibold transition-colors ${FOCUS} ${
+                      selected ? 'text-[#0e1726]' : 'text-slate-500 hover:text-[#0e1726]'
+                    }`}
+                  >
+                    {g.tab}
+                    {selected && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-[#d9856b]" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div id="tool-panel" role="tabpanel" aria-labelledby={`tool-tab-${group.id}`} className="grid gap-10 pt-10 lg:grid-cols-[1fr_1.7fr] lg:gap-20">
+              <div>
+                <h3 className="text-2xl font-semibold leading-snug tracking-tight text-[#0e1726]">{group.title}</h3>
+                <p className="mt-3 max-w-md text-base leading-relaxed text-slate-600">{group.intro}</p>
+                <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3">
+                  {group.links.map((l) => (
+                    <Link key={l.to + l.label} to={l.to} className={`inline-flex items-center gap-2 rounded text-[15px] font-bold text-[#0e1726] underline decoration-[#d9856b] decoration-2 underline-offset-4 hover:decoration-[#0e1726] ${FOCUS}`}>
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <ul className="divide-y divide-[#0e1726]/10 border-y border-[#0e1726]/10">
+                {group.items.map((item) => (
+                  <li key={item.name} className="grid gap-1 py-4 sm:grid-cols-[14rem_1fr] sm:gap-6">
+                    <span className="text-base font-semibold text-[#0e1726]">{item.name}</span>
+                    <span className="text-[15px] leading-relaxed text-slate-600">{item.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Resume builder */}
+        <section id="resume" aria-labelledby="resume-title" className="bg-[#0e1726] text-white">
+          <div className={`${SECTION} grid gap-12 py-16 lg:grid-cols-[1fr_1.7fr] lg:gap-20 lg:py-24`}>
+            <div className="lg:sticky lg:top-28 lg:self-start">
+              <h2 id="resume-title" className="text-3xl font-semibold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
+                A resume builder that thinks about the scan
+              </h2>
+              <p className="mt-4 max-w-md text-base leading-relaxed text-slate-300">
+                Many employers run resumes through an applicant tracking system before a person reads them. Every template uses clear headings
+                and plain, readable text, so your details land in the right place.
+              </p>
+              <Link
+                to="/ResumeBuilder"
+                className="mt-8 inline-flex items-center justify-center rounded-lg bg-[#d9856b] px-6 py-3 text-[15px] font-bold text-[#0e1726] transition-colors hover:bg-[#e9a38e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              >
+                Build a resume
+              </Link>
+              <p className="mt-5 max-w-md text-sm leading-relaxed text-slate-400">
+                Free downloads carry a small “Created with RemoPDF” note at the foot of each page. Premium removes it.
+              </p>
+            </div>
+
+            <ul className="divide-y divide-white/10 border-y border-white/10">
+              {RESUME_FEATURES.map((f) => (
+                <li key={f.name} className="py-5">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h3 className="text-lg font-semibold text-white">{f.name}</h3>
+                    {f.premium && (
+                      <span className="rounded-full border border-[#d9856b]/60 px-2 py-0.5 text-xs font-semibold text-[#e9a38e]">Premium</span>
+                    )}
+                  </div>
+                  <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-slate-300">{f.detail}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* Privacy */}
+        <section id="privacy" aria-labelledby="privacy-title">
+          <div className={`${SECTION} py-16 lg:py-24`}>
+            <div className="max-w-2xl">
+              <h2 id="privacy-title" className={H2}>What happens to your files</h2>
+              <p className="mt-4 text-lg leading-relaxed text-slate-600">
+                Documents are often private. This is the route a file takes through RemoPDF, and what we do keep.
+              </p>
+            </div>
+
+            <ol className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+              {FILE_STEPS.map((s, i) => (
+                <li key={s.title} className="border-t-2 border-[#0e1726] pt-5">
+                  <span className="text-sm font-semibold tabular-nums text-[#b85a40]">{i + 1}</span>
+                  <h3 className="mt-2 text-lg font-semibold text-[#0e1726]">{s.title}</h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-slate-600">{s.detail}</p>
+                </li>
+              ))}
+            </ol>
+
+            <h3 className="mt-16 text-2xl font-semibold tracking-tight text-[#0e1726]">What we do keep</h3>
+            <dl className="mt-6 grid gap-x-12 gap-y-8 md:grid-cols-2">
+              {KEPT_NOTES.map((n) => (
+                <div key={n.title} className="border-t border-[#0e1726]/15 pt-4">
+                  <dt className="text-base font-semibold text-[#0e1726]">{n.title}</dt>
+                  <dd className="mt-1.5 text-[15px] leading-relaxed text-slate-600">{n.detail}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-10 text-[15px] text-slate-600">
+              The full detail is in the{' '}
+              <Link to="/PrivacyPolicy" className={`rounded font-bold text-[#0e1726] underline decoration-[#d9856b] decoration-2 underline-offset-4 hover:decoration-[#0e1726] ${FOCUS}`}>
+                privacy policy
+              </Link>
+              .
             </p>
           </div>
+        </section>
 
-          {/* Interactive Navigation Tabs */}
-          <div className="flex border-b border-slate-200/60 max-w-md mx-auto mb-10 justify-between gap-2 px-1">
-            {CORE_UTILITIES.map((tab, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveTab(idx)}
-                className={`pb-3 text-xs font-semibold tracking-wider transition-all relative px-2 ${
-                  activeTab === idx ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                {idx === 0 ? 'Utilities' : idx === 1 ? 'Formats' : 'Security'}
-                {activeTab === idx && (
-                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#d9856b] rounded-full" />
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Active Tab Viewport */}
-          <div className="bg-white/60 backdrop-blur-3xl border border-slate-200/60 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.04)] rounded-3xl p-6 lg:p-10 transition-all duration-300">
-            <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-10">
-              <div className="lg:w-1/3">
-                <div className={`w-12 h-12 rounded-2xl ${CORE_UTILITIES[activeTab].bg} border border-slate-100 shadow-sm flex items-center justify-center mb-4 ${CORE_UTILITIES[activeTab].color}`}>
-                  <i className={`fa-solid ${CORE_UTILITIES[activeTab].icon} text-lg`}></i>
+        {/* Principles */}
+        <section id="principles" aria-labelledby="principles-title" className="border-t border-[#0e1726]/10 bg-white">
+          <div className={`${SECTION} py-16 lg:py-24`}>
+            <h2 id="principles-title" className={`${H2} max-w-2xl`}>What we hold ourselves to</h2>
+            <dl className="mt-10 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+              {PRINCIPLES.map((p) => (
+                <div key={p.title} className="border-t border-[#0e1726]/20 pt-4">
+                  <dt className="text-lg font-semibold leading-snug text-[#0e1726]">{p.title}</dt>
+                  <dd className="mt-2 text-[15px] leading-relaxed text-slate-600">{p.detail}</dd>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-2">{CORE_UTILITIES[activeTab].category}</h3>
-                <p className="text-xs lg:text-sm text-slate-500 font-light leading-relaxed">{CORE_UTILITIES[activeTab].description}</p>
-              </div>
-              
-              <div className="w-full lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {CORE_UTILITIES[activeTab].items.map((item, idx) => (
-                  <div key={idx} className="bg-slate-50/50 border border-slate-100 p-4 rounded-xl hover:bg-white transition-colors duration-200">
-                    <h4 className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-[#d9856b] rounded-full"></div>
-                      {item.name}
-                    </h4>
-                    <p className="text-[11px] lg:text-xs text-slate-400 font-light leading-normal">{item.detail}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+              ))}
+            </dl>
           </div>
         </section>
 
-        {/* Premium Resume Builder Technical Showcase */}
-        <section className="bg-[#0e1726] border border-[#1f2e49] rounded-[2rem] p-6 sm:p-8 lg:p-12 relative overflow-hidden group mb-16 lg:mb-28 shadow-xl">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#d9856b]/10 rounded-full blur-[80px] group-hover:bg-[#d9856b]/20 transition-all duration-700 pointer-events-none"></div>
-          
-          <div className="relative z-10">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 border-b border-slate-800 pb-8 mb-8">
-              <div>
-                <div className="text-xs font-bold text-[#d9856b] tracking-wider uppercase mb-1">Advanced Automation Integration</div>
-                <h2 className="text-2xl lg:text-4xl font-bold text-white tracking-tight">The Interactive Resume Builder</h2>
-              </div>
-              <Link 
-                to="/ResumeBuilder" 
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-slate-950 text-xs font-bold hover:bg-slate-100 transition-colors shadow-md shrink-0"
-              >
-                Launch Resume Workspace
-                <i className="fa-solid fa-arrow-right text-[11px]"></i>
-              </Link>
+        {/* FAQ */}
+        <section id="faq" aria-labelledby="faq-title" className="border-t border-[#0e1726]/10">
+          <div className={`${SECTION} grid gap-10 py-16 lg:grid-cols-[1fr_1.7fr] lg:gap-20 lg:py-24`}>
+            <div className="lg:sticky lg:top-28 lg:self-start">
+              <h2 id="faq-title" className={H2}>Questions people ask</h2>
+              <p className="mt-4 max-w-sm text-base leading-relaxed text-slate-600">
+                Something missing?{' '}
+                <Link to="/contact" className={`rounded font-bold text-[#0e1726] underline decoration-[#d9856b] decoration-2 underline-offset-4 hover:decoration-[#0e1726] ${FOCUS}`}>
+                  Contact us
+                </Link>
+                .
+              </p>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
-              {RESUME_ENGINE_PARADIGMS.map((paradigm, idx) => (
-                <div key={idx} className="flex gap-4">
-                  <div className="text-[#d9856b] text-sm font-mono font-bold mt-0.5">[{idx + 1}]</div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white mb-1.5 tracking-wide">{paradigm.title}</h3>
-                    <p className="text-[11px] lg:text-xs text-slate-400 font-light leading-relaxed">{paradigm.description}</p>
-                  </div>
-                </div>
+            <div className="divide-y divide-[#0e1726]/10 border-y border-[#0e1726]/10">
+              {FAQS.map((faq) => (
+                <details key={faq.q} className="group py-5">
+                  <summary className={`flex cursor-pointer list-none items-center justify-between gap-4 rounded text-left text-lg font-semibold text-[#0e1726] marker:content-none [&::-webkit-details-marker]:hidden ${FOCUS}`}>
+                    <span>{faq.q}</span>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#0e1726]/20 text-[#0e1726] transition-colors group-open:border-[#d9856b] group-open:bg-[#d9856b]">
+                      <PlusIcon />
+                    </span>
+                  </summary>
+                  <p className="mt-3 max-w-[62ch] text-base leading-7 text-slate-600">{faq.a}</p>
+                </details>
               ))}
             </div>
           </div>
         </section>
-
-        {/* Security and Privacy Framework Visualization */}
-        <section className="mb-16 lg:mb-28">
-          <div className="text-center mb-12">
-            <div className="text-xs font-bold text-emerald-500 tracking-[0.15em] uppercase mb-1">Zero Trust Architecture</div>
-            <h2 className="text-2xl lg:text-4xl font-bold text-slate-900 tracking-tight">Our Absolute Priority: Data Privacy</h2>
-            <p className="text-xs lg:text-sm text-slate-400 font-light max-w-xl mx-auto mt-2">
-              We process records securely through volatile RAM modules without allocating long-term storage footprints.
-            </p>
-          </div>
-
-          {/* Workflow Architecture Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {ENCRYPTED_WORKFLOW_STEPS.map((step, idx) => (
-              <div key={idx} className="bg-white/60 backdrop-blur-3xl border border-slate-200/50 p-6 rounded-2xl shadow-sm relative group hover:shadow-md transition-shadow">
-                <div className="text-3xl font-black text-slate-100 absolute top-4 right-4 group-hover:text-[#d9856b]/25 transition-colors duration-300">{step.step}</div>
-                <h3 className="text-xs font-bold text-slate-800 tracking-wide mb-2 mt-4 relative z-10">{step.title}</h3>
-                <p className="text-[11px] lg:text-xs text-slate-400 font-light leading-relaxed relative z-10">{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* FAQ Accordion Section */}
-        <section className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-xl lg:text-3xl font-bold text-slate-900 tracking-tight">Frequently Answered Protocols</h2>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {FAQ_ACCORDIONS.map((faq, idx) => {
-              const isOpen = openFaq === idx;
-              return (
-                <div 
-                  key={idx} 
-                  className="bg-white/60 backdrop-blur-3xl border border-slate-200/50 rounded-2xl overflow-hidden shadow-sm transition-all duration-300"
-                >
-                  <button
-                    onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="w-full flex justify-between items-center py-4 px-5 text-left text-xs lg:text-sm font-semibold text-slate-800 hover:text-slate-900 transition-colors"
-                  >
-                    <span>{faq.q}</span>
-                    <i className={`fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#d9856b]' : ''}`}></i>
-                  </button>
-                  
-                  <div 
-                    className={`transition-all duration-300 ease-in-out px-5 overflow-hidden text-[11px] lg:text-xs text-slate-400 font-light leading-relaxed ${
-                      isOpen ? 'pb-5 max-h-40 opacity-100' : 'max-h-0 opacity-0'
-                    }`}
-                  >
-                    <div className="border-t border-slate-100 pt-3">
-                      {faq.Fa}
-                      {faq.a}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
       </main>
 
-      {/* --- Call to action band (same as the home page) --- */}
+      {/* Call to action band (same as the home page) */}
       <section className="relative z-10 bg-gradient-to-br from-[#e9a38e] to-[#d9856b]">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-4 py-14 sm:px-6 sm:py-16 lg:flex-row lg:items-center lg:px-8">
           <h2 className="max-w-xl text-3xl font-bold leading-tight tracking-tight text-[#0e1726] [text-wrap:balance] sm:text-4xl">
@@ -629,7 +849,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* --- Footer --- */}
+      {/* Footer */}
       <SiteFooter />
     </div>
   );
