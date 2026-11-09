@@ -18,6 +18,7 @@ const SummarySection = ({ data, updateSummary }) => {
             onChange={updateSummary}
             field="summary"
             jobTitle={data.experiences?.[0]?.title || ''}
+            jobTarget={data.jobTarget}
           />
         </div>
 

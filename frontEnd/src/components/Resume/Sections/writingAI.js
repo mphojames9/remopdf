@@ -11,12 +11,17 @@
     403 -> WritingAIError('premium')    signed in, but no active Premium payment
     401 -> WritingAIError('signin')     not signed in, or the session ran out
 
-    analyzeWriting({ text, field, jobTitle, signal })   -> { rewrites }
+    analyzeWriting({ text, field, jobTitle, jobTarget, signal })   -> { rewrites }
+      jobTarget (optional): when the person has told the builder which job they are applying for, a summary or
+      a job's achievements are rewritten for that job instead (POST /api/jobmatch/rewrite, see jobMatchAI.js).
+      The result has the same shape and the errors use the same codes, so the panel needs nothing else.
       rewrites = up to 3 whole-text versions to choose from: { id, label, text }
 */
 
 import { getToken } from '../../../api/auth';
 import { getAiPass, forgetAiPass, PaymentApiError } from '../../../api/payments';
+import { rewriteForJob } from './jobMatchAI';
+import { hasJobTarget } from './atsScore';
 
 // Same address onetSuggestions.js uses. Set VITE_API_URL to override it.
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://remopdf-backend.onrender.com').replace(/\/$/, '');
@@ -77,11 +82,16 @@ async function passOrThrow() {
   }
 }
 
-export async function analyzeWriting({ text, field = 'other', jobTitle = '', signal } = {}) {
+export async function analyzeWriting({ text, field = 'other', jobTitle = '', jobTarget = null, signal } = {}) {
   // No sign-in, no request: the server would refuse it anyway. Checked before the cache so a result kept
   // from an earlier account is never shown to someone who is signed out.
   const token = getToken();
   if (!token) throw new WritingAIError('signin', 'Sign in to use AI suggestions.');
+
+  // A job target is set and this is text it can be tailored to: the job-aware rewrite answers instead.
+  if (hasJobTarget(jobTarget) && (field === 'summary' || field === 'experience')) {
+    return rewriteForJob({ text: String(text || '').slice(0, MAX_CHARS), field, jobTitle, target: jobTarget, signal });
+  }
 
   const body = String(text || '').slice(0, MAX_CHARS);
   const title = String(jobTitle || '').trim().slice(0, 120);

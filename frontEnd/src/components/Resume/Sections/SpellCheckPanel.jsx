@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { analyzeWriting, MIN_CHARS } from './writingAI';
+import { hasJobTarget } from './atsScore';
 import { usePremiumAccess, requestUpgrade, setPremiumAccess, useSignedIn, requestSignIn } from '../../../hooks/premiumAccess';
 
 // AI writing assistant. Same props and the same place in the page as the old offline panel, so
@@ -9,6 +10,8 @@ import { usePremiumAccess, requestUpgrade, setPremiumAccess, useSignedIn, reques
 //
 //   field     'summary' | 'experience' | 'education' | 'other'  (tells the AI what it is reading)
 //   jobTitle  optional; lets the AI judge wording against the role
+//   jobTarget optional; the job the person is applying for (resumeData.jobTarget). For a summary or a job's
+//             achievements the three versions are then tailored to that job and say which of its keywords they add.
 //
 // A moment after the last keystroke the text is sent to POST /api/writing/analyze (Groq, through
 // the FastAPI backend, see writingAI.js). The AI answers with 3 whole-text versions from different
@@ -158,8 +161,10 @@ const Skeleton = () => (
 /*                                   Panel                                    */
 /* -------------------------------------------------------------------------- */
 
-const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => {
+const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTarget = null }) => {
   const value = typeof text === 'string' ? text : '';
+  const tailored = hasJobTarget(jobTarget) && (field === 'summary' || field === 'experience');
+  const targetKey = tailored ? `${jobTarget.title}|${jobTarget.keywords.map((k) => k.term).join(',')}` : '';
   const open = useStore(openStore);
   const premium = usePremiumAccess();
   const locked = premium === false; // known to be without Premium: nothing is sent to the AI
@@ -204,7 +209,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
       const controller = new AbortController();
       abortRef.current = controller;
       setState((s) => ({ ...s, status: 'loading', error: null }));
-      analyzeWriting({ text: value, field, jobTitle, signal: controller.signal })
+      analyzeWriting({ text: value, field, jobTitle, jobTarget, signal: controller.signal })
         .then((result) => {
           analyzedRef.current = value;
           setState({ status: 'ready', result: { ...result, forText: value }, error: null });
@@ -223,6 +228,16 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
     // field and jobTitle are read when the review starts; changing them alone does not re-run it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, recheck, locked]);
+
+  // A different job target means the versions already shown are for the old one: review again.
+  const targetSeenRef = useRef(targetKey);
+  useEffect(() => {
+    if (targetSeenRef.current === targetKey) return;
+    targetSeenRef.current = targetKey;
+    analyzedRef.current = null;
+    immediateRef.current = true;
+    setRecheck((n) => n + 1);
+  }, [targetKey]);
 
   const checkAgain = () => {
     analyzedRef.current = null;
@@ -249,7 +264,9 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
     : [];
 
   let message = null;
-  if (!hasText) message = 'Write a sentence or two and the AI will suggest three polished versions to choose from.';
+  if (!hasText) message = tailored
+    ? 'Write a sentence or two and the AI will suggest three versions tailored to this job.'
+    : 'Write a sentence or two and the AI will suggest three polished versions to choose from.';
   else if (applied) message = 'Version applied. Edit the text any time and new versions will appear.';
   else if (state.status === 'ready' && rewrites.length === 0) message = 'Nicely written. No changes needed.';
   if (locked) message = null; // the upgrade note below takes its place
@@ -266,6 +283,11 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
       >
         <Sparkle />
         <span className="truncate text-xs font-semibold text-slate-700 uppercase tracking-wide">Writing assistant</span>
+        {tailored && !locked && (
+          <span className="hidden sm:inline-flex shrink-0 items-center rounded-full bg-[#d9856b]/15 px-2 py-0.5 text-[11px] font-semibold text-[#8f4631]">
+            Tailored to job
+          </span>
+        )}
         {/* Phones get icons only (a count badge, a spinner, a chevron); the words come back from the sm
             breakpoint up and stay in the page for screen readers. */}
         <span aria-live="polite" className="shrink-0">
@@ -355,6 +377,11 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '' }) => 
                     </button>
                   </div>
                   <p className="text-sm leading-snug text-slate-700 whitespace-pre-wrap break-words">{r.text}</p>
+                  {Array.isArray(r.adds) && r.adds.length > 0 && (
+                    <p className="text-xs text-slate-500">
+                      Adds from the job: <span className="font-medium text-[#8f4631]">{r.adds.join(', ')}</span>
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

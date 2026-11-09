@@ -42,6 +42,12 @@ import {
  * person can edit the text; once they do, nothing replaces it without asking.
  * The preview is the real layout of the PDF (utils/coverLetterPdf.js), so the download matches it exactly.
  *
+ * Look and layout (2026 refresh): a flat glass top bar (back arrow, logo, Download), a soft aurora background, the
+ * form as a stack of dropdown step cards (each one shows a one-line summary while closed), the preview on a dotted
+ * "stage" with a paper-style page, and on small screens a floating Edit / Preview switcher at the bottom. The two
+ * main containers (form and preview) run edge to edge with square corners. Only the presentation changed; the
+ * behaviour is the same.
+ *
  * Props
  *  - resumeData:   the resume being built (same object the builder holds)
  *  - accentColor:  the resume's colour (#rrggbb); the letter's header line and bullets use it
@@ -67,7 +73,8 @@ const Svg = ({ className = 'h-4 w-4', children }) => (
 
 const IconBack = ({ className }) => (
   <Svg className={className}>
-    <path d="M15 18l-6-6 6-6" />
+    <path d="M19 12H5" />
+    <path d="m12 19-7-7 7-7" />
   </Svg>
 );
 
@@ -120,61 +127,170 @@ const IconSpinner = ({ className }) => (
   </Svg>
 );
 
+const IconLink = ({ className }) => (
+  <Svg className={className}>
+    <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.33 1.33" />
+    <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.33-1.33" />
+  </Svg>
+);
+
+const IconEdit = ({ className }) => (
+  <Svg className={className}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+  </Svg>
+);
+
+const IconEye = ({ className }) => (
+  <Svg className={className}>
+    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </Svg>
+);
+
+const IconChevron = ({ className }) => (
+  <Svg className={className}>
+    <path d="m6 9 6 6 6-6" />
+  </Svg>
+);
+
+/* ------------------------------------------------------------------ shared styles */
+
+// Phones get compact sizes (40px fields, 14px text, small buttons); from sm up everything is a little roomier.
+const inputClass =
+  'h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50/70 px-3 text-[14px] text-slate-900 placeholder:text-slate-400 transition-all hover:border-slate-300 focus:border-[#d9856b] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#d9856b]/15 sm:h-11 sm:rounded-xl sm:px-3.5';
+
+const textareaClass =
+  'w-full resize-y rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-[14px] leading-relaxed text-slate-900 placeholder:text-slate-400 transition-all hover:border-slate-300 focus:border-[#d9856b] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#d9856b]/15 sm:rounded-xl sm:px-3.5 sm:py-3';
+
+// Navy, for the job-advert button and the small in-notice actions.
+const navyButtonClass =
+  'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-[#2a4bb0] to-[#1e3a8a] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,0_6px_16px_-6px_rgba(30,58,138,0.55)] transition-all hover:-translate-y-px hover:shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,0_10px_22px_-8px_rgba(30,58,138,0.6)] active:translate-y-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none sm:h-11 sm:rounded-xl sm:px-4 sm:text-[13px]';
+
+const navyPillClass =
+  'shrink-0 rounded-full bg-[#1e3a8a] px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-blue-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25 sm:px-3.5';
+
+// The same coral pill as the resume builder's main buttons (Next, Download).
+const downloadButtonClass =
+  'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#e0906f] to-[#d9856b] px-3.5 text-[12px] font-bold text-white shadow-md shadow-[#d9856b]/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#d9856b]/40 active:translate-y-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#d9856b]/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none motion-reduce:transition-none sm:h-10 sm:gap-2 sm:px-5 sm:text-[13px] sm:shadow-lg';
+
+// "Write with AI": the one gradient on the page, so the AI action is easy to find.
+const aiButtonClass =
+  'inline-flex h-8 items-center gap-1.5 rounded-full bg-gradient-to-r from-[#e8957a] via-[#d9856b] to-[#c9607a] px-3 text-[12px] font-semibold text-white shadow-[0_6px_16px_-6px_rgba(201,96,122,0.6)] transition-all hover:-translate-y-px hover:shadow-[0_10px_20px_-8px_rgba(201,96,122,0.7)] active:translate-y-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#d9856b]/30 disabled:translate-y-0 disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none sm:h-9 sm:px-3.5';
+
+const ghostPillClass =
+  'inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 disabled:opacity-50 sm:h-9 sm:px-3';
+
 /* ------------------------------------------------------------------ form pieces */
 
-const inputClass =
-  'h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-[13.5px] text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#d9856b] focus:outline-none focus:ring-4 focus:ring-[#d9856b]/15';
-
 const Field = ({ id, label, optional = false, note = '', children }) => (
-  <div>
-    <label htmlFor={id} className="mb-1.5 flex items-baseline justify-between text-[12.5px] font-medium text-slate-700">
+  <div className="min-w-0">
+    <label htmlFor={id} className="mb-1 flex items-baseline justify-between gap-2 text-[11.5px] font-medium text-slate-600 sm:mb-1.5 sm:text-[12px]">
       <span>{label}</span>
-      {optional && <span className="text-[11px] font-normal text-slate-400">Optional</span>}
-      {!optional && note && <span className="text-[11px] font-normal text-amber-700">{note}</span>}
+      {optional && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 sm:px-2 sm:text-[10.5px]">Optional</span>}
+      {!optional && note && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 sm:px-2 sm:text-[10.5px]">{note}</span>}
     </label>
     {children}
   </div>
 );
 
-const SectionTitle = ({ children }) => (
-  <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{children}</h2>
+// One dropdown step of the form. The header always shows the step number, the title and a one-line summary, so a
+// closed step still says where it stands. The body stays in the page when closed (it is only hidden), so nothing
+// the person typed is lost.
+const Accordion = ({ id, step, title, summary, open, onToggle, busy = false, alert = false, children }) => (
+  <section className="overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:rounded-2xl">
+    <h2 className="m-0">
+      <button
+        type="button"
+        id={`${id}-trigger`}
+        aria-expanded={open}
+        aria-controls={`${id}-panel`}
+        onClick={onToggle}
+        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9856b]/60 sm:gap-3 sm:px-5 sm:py-4"
+      >
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-900 text-[11px] font-semibold text-white sm:h-8 sm:w-8 sm:text-[12px]">
+          {busy ? <IconSpinner className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : step}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14px] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[15px]">{title}</span>
+          {summary ? <span className="mt-0.5 block truncate text-[11.5px] leading-snug text-slate-500 sm:text-[12px]">{summary}</span> : null}
+        </span>
+        {alert && <span role="img" aria-label="Needs attention" className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 ring-2 ring-amber-100 sm:h-2 sm:w-2 sm:ring-4" />}
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500 sm:h-8 sm:w-8">
+          <IconChevron className={`h-3.5 w-3.5 transition-transform duration-300 motion-reduce:transition-none sm:h-4 sm:w-4 ${open ? 'rotate-180' : ''}`} />
+        </span>
+      </button>
+    </h2>
+    <div
+      id={`${id}-panel`}
+      role="region"
+      aria-labelledby={`${id}-trigger`}
+      className={`grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none ${open ? 'visible grid-rows-[1fr]' : 'invisible grid-rows-[0fr]'}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div className="px-3 pb-3 sm:px-5 sm:pb-5">{children}</div>
+      </div>
+    </div>
+  </section>
 );
+
+const NOTICE_TONES = {
+  info: { box: 'border-slate-200/80 bg-slate-50 text-slate-600', icon: 'bg-white text-slate-400 ring-1 ring-slate-200' },
+  warn: { box: 'border-amber-200/80 bg-amber-50/80 text-amber-900', icon: 'bg-amber-100 text-amber-700' },
+  ok: { box: 'border-emerald-200/80 bg-emerald-50/80 text-emerald-900', icon: 'bg-emerald-100 text-emerald-700' },
+  busy: { box: 'border-[#d9856b]/25 bg-[#fff7f3] text-slate-700', icon: 'bg-white text-[#d9856b] ring-1 ring-[#d9856b]/20' },
+};
+
+// Status messages: a tinted card with a round icon, text, and an optional action on the right.
+const Notice = ({ tone = 'info', icon, action, className = '', children, ...rest }) => {
+  const t = NOTICE_TONES[tone] || NOTICE_TONES.info;
+  return (
+    <div {...rest} className={`flex flex-wrap items-start gap-x-2.5 gap-y-1.5 rounded-xl border px-2.5 py-2 text-[12px] leading-snug sm:gap-x-3 sm:rounded-2xl sm:px-3 sm:py-2.5 sm:text-[12.5px] ${t.box} ${className}`}>
+      <span className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full sm:h-6 sm:w-6 [&_svg]:h-3 [&_svg]:w-3 sm:[&_svg]:h-3.5 sm:[&_svg]:w-3.5 ${t.icon}`}>{icon}</span>
+      <span className="min-w-0 flex-1 break-words py-0.5">{children}</span>
+      {action}
+    </div>
+  );
+};
 
 /* ------------------------------------------------------------------ preview */
 
 const colorOf = (rgb) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 
 // One A4 page, drawn from the layout lines and scaled to the width of the screen.
-const PreviewPage = ({ page, scale }) => (
-  <div
-    className="relative mx-auto mb-5 border border-slate-200 bg-white last:mb-0"
-    style={{ width: PAGE_W * scale, height: PAGE_H * scale }}
-  >
-    <div style={{ position: 'absolute', left: 0, top: 0, width: PAGE_W, height: PAGE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-      {page.items.map((item, i) =>
-        item.type === 'rect' ? (
-          <div key={i} style={{ position: 'absolute', left: item.x, top: item.top, width: item.width, height: item.height, background: colorOf(item.color) }} />
-        ) : (
-          <span
-            key={i}
-            style={{
-              position: 'absolute',
-              left: item.x,
-              top: item.baseline - item.size * ASCENT,
-              fontSize: item.size,
-              lineHeight: 1,
-              whiteSpace: 'pre',
-              fontWeight: item.bold ? 700 : 400,
-              color: colorOf(item.color),
-              fontFamily: PREVIEW_FONT,
-            }}
-          >
-            {item.text}
-          </span>
-        ),
-      )}
+const PreviewPage = ({ page, scale, index, total }) => (
+  <figure className="mx-auto mb-7 last:mb-0" style={{ width: PAGE_W * scale }}>
+    <div
+      className="relative overflow-hidden rounded-[3px] bg-white shadow-[0_1px_1px_rgba(15,23,42,0.06),0_8px_24px_-6px_rgba(15,23,42,0.14),0_28px_56px_-16px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/5"
+      style={{ width: PAGE_W * scale, height: PAGE_H * scale }}
+    >
+      <div style={{ position: 'absolute', left: 0, top: 0, width: PAGE_W, height: PAGE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+        {page.items.map((item, i) =>
+          item.type === 'rect' ? (
+            <div key={i} style={{ position: 'absolute', left: item.x, top: item.top, width: item.width, height: item.height, background: colorOf(item.color) }} />
+          ) : (
+            <span
+              key={i}
+              style={{
+                position: 'absolute',
+                left: item.x,
+                top: item.baseline - item.size * ASCENT,
+                fontSize: item.size,
+                lineHeight: 1,
+                whiteSpace: 'pre',
+                fontWeight: item.bold ? 700 : 400,
+                color: colorOf(item.color),
+                fontFamily: PREVIEW_FONT,
+              }}
+            >
+              {item.text}
+            </span>
+          ),
+        )}
+      </div>
     </div>
-  </div>
+    {total > 1 && <figcaption className="mt-2.5 text-center text-[11px] font-medium tracking-wide text-slate-400">{`Page ${index + 1} of ${total}`}</figcaption>}
+  </figure>
 );
 
 /* ------------------------------------------------------------------ the page */
@@ -182,6 +298,7 @@ const PreviewPage = ({ page, scale }) => (
 export default function CoverLetterBuilder({ resumeData, accentColor, storageKey, checkPremium, onClose }) {
   const [letter, setLetter] = useState(() => loadLetter(storageKey));
   const [view, setView] = useState('edit'); // small screens show one side at a time
+  const [open, setOpen] = useState({ job: true, who: false, tone: false, letter: true }); // which dropdown steps are open
   const [fonts, setFonts] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
@@ -281,6 +398,10 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
 
   const fullName = fullNameOf(resumeData?.personal);
   const hasText = model.blocks.length > 0;
+  const wordCount = useMemo(() => {
+    const text = String(body || '').trim();
+    return text ? text.split(/\s+/).length : 0;
+  }, [body]);
 
   const writing = ai.state === 'loading';
   const stale = !writing && !letter.bodyEdited && Boolean(letter.aiBody) && letter.aiFor !== signature;
@@ -295,6 +416,9 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
     setPosting({ state: 'idle', code: '', message: '', found: null, ...next });
   };
 
+  const toggleSection = (key) => setOpen((prev) => ({ ...prev, [key]: !prev[key] }));
+  const openSection = (key) => setOpen((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+
   // Asks the AI for the letter. The reply replaces whatever is shown (callers ask first when the person has edits).
   // details: position, company and requirements to use instead of the saved ones (an advert was just read, and the
   // page has not drawn the new values yet).
@@ -307,7 +431,9 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
     // description often has no title), ask for it instead of writing "the role you are offering".
     if ((target.requirements || []).length > 0 && !String(target.jobTitle || '').trim()) {
       setAiStatus('error', 'position');
-      if (typeof document !== 'undefined') document.getElementById('cl-job')?.focus();
+      // The position field lives in a dropdown step: open it first, then focus the field once it is showing.
+      openSection('who');
+      if (typeof window !== 'undefined') window.setTimeout(() => document.getElementById('cl-job')?.focus(), 80);
       return;
     }
     const wroteFor = aiSignature(resumeData, target);
@@ -390,6 +516,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
         state: 'done',
         found: { title: Boolean(found.jobTitle), company: Boolean(found.company), address: Boolean(found.address), count: found.requirements.length, source: found.source },
       });
+      openSection('who'); // the details that were just filled in are in the next step: show them
       if (!current.bodyEdited) generate({ fresh: true, details });
     } catch (err) {
       if (!alive.current) return;
@@ -431,7 +558,7 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
     setLetter((prev) => ({ ...prev, jobUrl: value }));
   };
 
-  const padding = previewWidth >= 640 ? 64 : 32;
+  const padding = previewWidth >= 640 ? 64 : 24;
   const scale = Math.max(0.3, Math.min(1.15, (previewWidth - padding) / PAGE_W));
 
   const setField = (name) => (e) => {
@@ -477,14 +604,32 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
     }
   };
 
-  const readButtonClass =
-    'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-[#1e3a8a] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-blue-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25 disabled:cursor-not-allowed disabled:opacity-60';
-
   const postingBusy = posting.state === 'loading';
+  const pageCount = layout ? layout.pages.length : 0;
+  const positionNeeded = letter.requirements.length > 0 && !letter.jobTitle.trim();
 
-  // The same pill as the resume builder's main buttons (Next, Download).
-  const downloadButtonClass =
-    'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-[#d9856b] px-5 text-xs font-bold text-white shadow-lg shadow-[#d9856b]/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#d9856b]/35 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#d9856b]/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none';
+  // The one-line summaries shown on the dropdown headers while a step is closed (and open).
+  const reqCount = letter.requirements.length;
+  const jobSummary = postingBusy
+    ? 'Reading the advert…'
+    : reqCount > 0
+      ? `${reqCount} ${reqCount === 1 ? 'requirement' : 'requirements'} found`
+      : letter.jobUrl.trim()
+        ? 'Link added'
+        : 'Paste a link to the advert';
+  const whoSummary = [letter.jobTitle.trim(), letter.company.trim()].filter(Boolean).join(' · ') || 'Position, company, address';
+  const toneSummary = (TONES.find((t) => t.id === letter.tone) || {}).label || '';
+  const letterStatus = writing ? 'Writing…' : letter.bodyEdited ? 'Your own wording' : letter.aiBody ? 'Written by AI' : 'Starter draft';
+  const letterSummary = `${letterStatus} · ${wordCount} ${wordCount === 1 ? 'word' : 'words'}`;
+
+  const aiErrorText =
+    {
+      busy: 'You asked for several letters in a short time. Please try again in a minute.',
+      timeout: 'The AI took too long to answer. A starter draft is shown below.',
+      offline: 'Could not reach the AI service. Check your connection. A starter draft is shown below.',
+      empty: 'Add your experience, skills or education to the resume and the AI can write the letter from them.',
+      position: 'Type the position you are applying for under “Who is it for” (for example CRM Lead). The letter names it in its first sentence.',
+    }[ai.code] || 'The AI writer is unavailable right now. A starter draft is shown below.';
 
   return (
     <div
@@ -493,140 +638,135 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
       aria-modal="true"
       aria-labelledby="cover-letter-title"
       tabIndex={-1}
-      className="fixed inset-0 z-[60] flex flex-col bg-slate-50 text-slate-900 focus:outline-none"
+      className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-[#f7f6f4] text-slate-900 antialiased [-webkit-tap-highlight-color:transparent] focus:outline-none"
       style={{ fontFamily: "'Outfit', ui-sans-serif, system-ui, sans-serif" }}
     >
-      {/* Top bar: the resume builder's header (white, thin border, the RemoPDF logo), with this page's own controls */}
-      <header className="relative z-20 flex shrink-0 items-center gap-3 border-b border-slate-200/70 bg-white px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:gap-4 sm:px-6 lg:px-12 lg:py-3 lg:pt-3">
-        <img src={logo} alt="RemoPDF" draggable={false} className="h-8 w-auto max-w-[40vw] shrink-0 select-none object-contain object-left sm:h-9" />
-        <span aria-hidden="true" className="h-6 w-px shrink-0 bg-slate-200" />
+      {/* Soft aurora behind everything */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            'radial-gradient(52rem 28rem at 88% -8%, rgba(217,133,107,0.20), transparent 62%), radial-gradient(46rem 26rem at -6% 108%, rgba(30,58,138,0.11), transparent 62%), radial-gradient(30rem 20rem at 50% 50%, rgba(255,255,255,0.7), transparent 70%)',
+        }}
+      />
 
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={downloading}
-          className="group -ml-1 inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full pl-2 pr-3.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 disabled:opacity-40"
-        >
-          <IconBack className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5 motion-reduce:transform-none" />
-          <span className="hidden sm:inline">Back to resume</span>
-          <span className="sm:hidden">Back</span>
-        </button>
+      {/* Top bar: a back arrow, the RemoPDF logo, and Download */}
+      <header className="relative z-20 shrink-0 border-b border-slate-200/70 bg-white/80 px-2.5 pb-1.5 pt-[max(0.375rem,env(safe-area-inset-top))] backdrop-blur-xl sm:px-5 sm:pb-2.5 sm:pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={downloading}
+            aria-label="Back to resume"
+            title="Back to resume"
+            className="group grid h-9 w-9 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-all duration-200 hover:border-[#d9856b]/40 hover:bg-[#d9856b] hover:text-white active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#d9856b]/25 disabled:pointer-events-none disabled:opacity-40 motion-reduce:transition-none motion-reduce:active:scale-100 sm:h-10 sm:w-10"
+          >
+            <IconBack className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5 motion-reduce:transform-none sm:h-5 sm:w-5" />
+          </button>
 
-        <div className="hidden min-w-0 items-center gap-2.5 sm:flex">
-          <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: accentColor || '#1e3a8a' }} />
-          <h1 id="cover-letter-title" className="truncate text-[15px] font-semibold tracking-tight text-slate-900">
+          <img src={logo} alt="RemoPDF" draggable={false} className="h-6 w-auto max-w-[34vw] shrink-0 select-none object-contain object-left sm:h-9 sm:max-w-[40vw]" />
+          <h1 id="cover-letter-title" className="sr-only">
             Cover letter
           </h1>
-        </div>
 
-        <button type="button" onClick={download} disabled={!hasText || downloading || writing} className={`${downloadButtonClass} ml-auto`}>
-          <IconDownload className="h-4 w-4" />
-          {downloading ? 'Preparing PDF…' : 'Download PDF'}
-        </button>
+          <div className="flex-1" />
+
+          <span className="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[12px] font-medium text-emerald-700 ring-1 ring-emerald-200/70 lg:inline-flex">
+            <IconCheck className="h-3.5 w-3.5" />
+            Saved on this device
+          </span>
+
+          <button type="button" onClick={download} disabled={!hasText || downloading || writing} className={downloadButtonClass}>
+            {downloading ? <IconSpinner className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <IconDownload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+            <span className="sm:hidden">{downloading ? 'Preparing…' : 'Download'}</span>
+            <span className="hidden sm:inline">{downloading ? 'Preparing PDF…' : 'Download PDF'}</span>
+          </button>
+        </div>
       </header>
 
-      {/* Small screens: switch between the form and the preview */}
-      <div className="flex shrink-0 gap-1 border-b border-slate-200 bg-white px-4 py-2 lg:hidden" role="tablist" aria-label="Cover letter views">
-        {[
-          ['edit', 'Edit'],
-          ['preview', 'Preview'],
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={view === id}
-            onClick={() => setView(id)}
-            className={`h-8 flex-1 rounded-full text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 ${
-              view === id ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* Form */}
-        <div className={`${view === 'edit' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col bg-white lg:flex lg:w-[27rem] lg:flex-none lg:border-r lg:border-slate-200`}>
-          <div className="pro-scroll flex-1 space-y-8 overflow-y-auto px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6">
+      {/* The two main containers run edge to edge with square corners. */}
+      <main className="relative z-10 flex min-h-0 flex-1 flex-col lg:flex-row">
+        {/* Form panel */}
+        <aside
+          aria-label="Cover letter details"
+          className={`${view === 'edit' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col bg-white/70 backdrop-blur-xl lg:flex lg:w-[28rem] lg:flex-none lg:border-r lg:border-slate-200/80 xl:w-[30rem]`}
+        >
+          <div className="pro-scroll flex-1 space-y-2 overflow-y-auto overscroll-contain p-2.5 pb-20 sm:space-y-3 sm:p-4 sm:pb-24 lg:pb-6">
             {!fullName && (
-              <div role="status" className="flex items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12.5px] leading-snug text-amber-800">
-                <IconInfo className="mt-px h-4 w-4 shrink-0" />
-                <span>Add your name in the Heading step of your resume. It appears at the top of the letter and in the signature.</span>
-              </div>
+              <Notice role="status" tone="warn" icon={<IconInfo className="h-3.5 w-3.5" />}>
+                Add your name in the Heading step of your resume. It appears at the top of the letter and in the signature.
+              </Notice>
             )}
 
-            <section>
-              <SectionTitle>Job advert</SectionTitle>
+            {/* 1 · Job advert */}
+            <Accordion id="cl-sec-job" step="1" title="Job advert" summary={jobSummary} open={open.job} onToggle={() => toggleSection('job')} busy={postingBusy}>
               <div className="space-y-3">
                 <Field id="cl-link" label="Link to the job you are applying for" optional>
-                  <div className="flex gap-2">
-                    <input
-                      id="cl-link"
-                      type="text"
-                      inputMode="url"
-                      value={letter.jobUrl}
-                      onChange={setJobUrl}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          readPosting();
-                        }
-                      }}
-                      placeholder="Paste the link to the advert"
-                      className={`${inputClass} min-w-0 flex-1`}
-                      autoComplete="off"
-                      autoCapitalize="none"
-                      spellCheck={false}
-                    />
-                    <button type="button" onClick={readPosting} disabled={postingBusy} className={readButtonClass}>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="relative min-w-0 flex-1">
+                      <IconLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 sm:left-3.5 sm:h-4 sm:w-4" />
+                      <input
+                        id="cl-link"
+                        type="text"
+                        inputMode="url"
+                        value={letter.jobUrl}
+                        onChange={setJobUrl}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            readPosting();
+                          }
+                        }}
+                        placeholder="Paste the link to the advert"
+                        className={`${inputClass} pl-9 sm:pl-10`}
+                        autoComplete="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                      />
+                    </div>
+                    <button type="button" onClick={readPosting} disabled={postingBusy} className={`${navyButtonClass} w-full sm:w-auto`}>
                       {postingBusy ? <IconSpinner className="h-4 w-4" /> : null}
                       {postingBusy ? 'Reading…' : 'Read advert'}
                     </button>
                   </div>
                 </Field>
-                <p className="text-[12px] leading-relaxed text-slate-400">
+                <p className="text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
                   We read the position, company, address and what the job asks for, then write the letter to answer those requirements with what is on your resume.
                 </p>
 
                 <div role="status" aria-live="polite">
                   {postingBusy && (
-                    <div className="flex items-start gap-2.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
-                      <IconSpinner className="mt-px h-4 w-4 shrink-0 text-[#d9856b]" />
-                      <span>Reading the advert. The first one can take up to a minute while the server wakes up.</span>
-                    </div>
+                    <Notice tone="busy" icon={<IconSpinner className="h-3.5 w-3.5" />}>
+                      Reading the advert. The first one can take up to a minute while the server wakes up.
+                    </Notice>
                   )}
 
                   {!postingBusy && posting.state === 'error' && (
-                    <div className="flex items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12.5px] leading-snug text-amber-800">
-                      <IconInfo className="mt-px h-4 w-4 shrink-0" />
-                      <span>{posting.message}</span>
-                    </div>
+                    <Notice tone="warn" icon={<IconInfo className="h-3.5 w-3.5" />}>
+                      {posting.message}
+                    </Notice>
                   )}
 
                   {!postingBusy && posting.state === 'done' && posting.found && (
-                    <div className="flex items-start gap-2.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-[12.5px] leading-snug text-emerald-900">
-                      <IconCheck className="mt-px h-4 w-4 shrink-0" />
-                      <span>
-                        {`Found ${posting.found.count} ${posting.found.count === 1 ? 'requirement' : 'requirements'}${posting.found.source === 'text' ? ' in the text you pasted' : ''}`}
-                        {(() => {
-                          const filled = [posting.found.title && 'position', posting.found.company && 'company', posting.found.address && 'address'].filter(Boolean);
-                          return filled.length > 0 ? `, and filled in the ${joinList(filled)} below. Check them before you send the letter.` : '. Check the details below.';
-                        })()}
-                        {!posting.found.title && ' The advert does not state the position, so type it under “Position you are applying for”: the letter names it in its first sentence.'}
-                        {!posting.found.address && ' The advert gives no address, so add one under Company address if you want it on the letter.'}
-                      </span>
-                    </div>
+                    <Notice tone="ok" icon={<IconCheck className="h-3.5 w-3.5" />}>
+                      {`Found ${posting.found.count} ${posting.found.count === 1 ? 'requirement' : 'requirements'}${posting.found.source === 'text' ? ' in the text you pasted' : ''}`}
+                      {(() => {
+                        const filled = [posting.found.title && 'position', posting.found.company && 'company', posting.found.address && 'address'].filter(Boolean);
+                        return filled.length > 0 ? `, and filled in the ${joinList(filled)} below. Check them before you send the letter.` : '. Check the details below.';
+                      })()}
+                      {!posting.found.title && ' The advert does not state the position, so type it under “Position you are applying for”: the letter names it in its first sentence.'}
+                      {!posting.found.address && ' The advert gives no address, so add one under Company address if you want it on the letter.'}
+                    </Notice>
                   )}
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setPasteOpen((open) => !open)}
+                  onClick={() => setPasteOpen((o) => !o)}
                   aria-expanded={pasteOpen}
                   aria-controls="cl-paste-box"
-                  className="rounded text-[12.5px] font-medium text-[#a64a30] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                  className="-mx-1 rounded-md px-1 py-1 text-left text-[12px] font-medium text-[#a64a30] sm:py-1.5 sm:text-[12.5px] underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
                 >
                   {pasteOpen ? 'Hide the paste box' : 'Link not working? Paste the job description instead'}
                 </button>
@@ -642,51 +782,53 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                       onChange={(e) => setPasteText(e.target.value.slice(0, 20000))}
                       rows={6}
                       placeholder="Paste the whole advert here, including the requirements."
-                      className="w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2.5 text-[13.5px] leading-relaxed text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#d9856b] focus:outline-none focus:ring-4 focus:ring-[#d9856b]/15"
+                      className={textareaClass}
                     />
-                    <p className="mt-2 text-[12px] leading-relaxed text-slate-400">“Read advert” uses this text instead of the link while the box is open.</p>
+                    <p className="mt-2 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">“Read advert” uses this text instead of the link while the box is open.</p>
                   </div>
                 )}
 
                 {letter.requirements.length > 0 && (
-                  <div>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <h3 className="text-[12.5px] font-medium text-slate-700">The letter will answer these</h3>
-                      <button
-                        type="button"
-                        onClick={clearPosting}
-                        className="rounded-full px-2.5 py-1 text-[12px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
-                      >
+                  <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-2.5 sm:p-3">
+                    <div className="mb-2.5 flex items-center justify-between gap-3">
+                      <h3 className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 sm:text-[12.5px]">
+                        The letter will answer these
+                        <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10.5px] font-semibold text-white">{letter.requirements.length}</span>
+                      </h3>
+                      <button type="button" onClick={clearPosting} className={ghostPillClass}>
                         Clear
                       </button>
                     </div>
                     <ul className="space-y-1.5">
                       {letter.requirements.map((item, i) => (
-                        <li key={`${i}-${item}`} className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50 py-1.5 pl-2.5 pr-1 text-[12.5px] leading-snug text-slate-700">
-                          <span className="min-w-0 flex-1 py-0.5">{item}</span>
+                        <li key={`${i}-${item}`} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white py-0.5 pl-2 pr-1 text-[12px] leading-snug text-slate-700 shadow-[0_1px_1px_rgba(15,23,42,0.03)] sm:rounded-xl sm:py-1.5 sm:text-[12.5px]">
+                          <span aria-hidden="true" className="mt-1.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700 sm:mt-1 sm:h-5 sm:w-5">
+                            <IconCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          </span>
+                          <span className="min-w-0 flex-1 break-words py-1 sm:py-1.5">{item}</span>
                           <button
                             type="button"
                             onClick={() => removeRequirement(i)}
                             aria-label={`Remove: ${item}`}
-                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
                           >
                             <IconClose className="h-3.5 w-3.5" />
                           </button>
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
+                    <p className="mt-2.5 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
                       Remove any that don’t apply to you. The letter only claims what your resume supports: a requirement your resume doesn’t cover is left out, never made up.
                     </p>
                   </div>
                 )}
               </div>
-            </section>
+            </Accordion>
 
-            <section>
-              <SectionTitle>Who is it for</SectionTitle>
-              <div className="space-y-4">
-                <Field id="cl-job" label="Position you are applying for" note={letter.requirements.length > 0 && !letter.jobTitle.trim() ? 'Needed for the letter' : ''}>
+            {/* 2 · Who is it for */}
+            <Accordion id="cl-sec-who" step="2" title="Who is it for" summary={whoSummary} open={open.who} onToggle={() => toggleSection('who')} alert={positionNeeded}>
+              <div className="space-y-3 sm:space-y-4">
+                <Field id="cl-job" label="Position you are applying for" note={positionNeeded ? 'Needed for the letter' : ''}>
                   <input id="cl-job" type="text" value={letter.jobTitle} onChange={setField('jobTitle')} placeholder="e.g. Front-End Developer" className={inputClass} autoComplete="off" />
                 </Field>
                 <Field id="cl-company" label="Company">
@@ -704,11 +846,11 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                   <input id="cl-address" type="text" value={letter.companyAddress} onChange={setField('companyAddress')} placeholder="e.g. 12 Rivonia Road, Sandton" className={inputClass} autoComplete="off" />
                 </Field>
               </div>
-            </section>
+            </Accordion>
 
-            <section>
-              <SectionTitle>Tone</SectionTitle>
-              <div className="grid grid-cols-3 gap-1 rounded-full border border-slate-200 bg-slate-50 p-1" role="radiogroup" aria-label="Tone of the letter">
+            {/* 3 · Tone */}
+            <Accordion id="cl-sec-tone" step="3" title="Tone" summary={toneSummary} open={open.tone} onToggle={() => toggleSection('tone')}>
+              <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 sm:rounded-2xl" role="radiogroup" aria-label="Tone of the letter">
                 {TONES.map((tone) => (
                   <button
                     key={tone.id}
@@ -716,142 +858,129 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                     role="radio"
                     aria-checked={letter.tone === tone.id}
                     onClick={() => setLetter((prev) => ({ ...prev, tone: tone.id }))}
-                    className={`h-8 rounded-full text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 ${
-                      letter.tone === tone.id ? 'bg-white text-slate-900 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800'
+                    className={`h-8 rounded-lg text-[12.5px] font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none sm:h-9 sm:rounded-xl sm:text-[13px] ${
+                      letter.tone === tone.id ? 'bg-white text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.1),0_0_0_1px_rgba(15,23,42,0.04)]' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
                     {tone.label}
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
+              <p className="mt-2.5 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
                 {letter.bodyEdited
                   ? 'You are using your own wording, so changing the tone no longer rewrites the letter. Use “Reset to draft” to start from a new draft.'
                   : letter.aiBody
                     ? 'The AI uses the tone the next time it writes the letter. Choose “Rewrite with AI” after changing it.'
                     : 'Changes the wording of the starter draft below.'}
               </p>
-            </section>
+            </Accordion>
 
-            <section>
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Letter</h2>
-                {confirm ? (
-                  <span className="flex items-center gap-1.5 text-[12px]">
-                    <span className="text-slate-500">{confirm === 'regen' ? 'Replace your edits?' : 'Discard your edits?'}</span>
-                    <button
-                      type="button"
-                      onClick={confirm === 'regen' ? () => generate({ fresh: true }) : resetToDraft}
-                      className="rounded-full px-2.5 py-1 font-semibold text-[#a64a30] hover:bg-[#d9856b]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
-                    >
-                      {confirm === 'regen' ? 'Yes, rewrite' : 'Yes, reset'}
-                    </button>
-                    <button type="button" onClick={() => setConfirm('')} className="rounded-full px-2.5 py-1 font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60">
-                      Cancel
-                    </button>
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1">
-                    {letter.bodyEdited && (
+            {/* 4 · The letter */}
+            <Accordion id="cl-sec-letter" step="4" title="Letter" summary={letterSummary} open={open.letter} onToggle={() => toggleSection('letter')} busy={writing}>
+              {(confirm || letter.bodyEdited || ai.state !== 'blocked') && (
+                <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+                  {confirm ? (
+                    <>
+                      <span className="mr-auto text-[12px] text-slate-600 sm:text-[12.5px]">{confirm === 'regen' ? 'Replace your edits?' : 'Discard your edits?'}</span>
                       <button
                         type="button"
-                        onClick={() => setConfirm('reset')}
-                        disabled={writing}
-                        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 disabled:opacity-50"
+                        onClick={confirm === 'regen' ? () => generate({ fresh: true }) : resetToDraft}
+                        className="inline-flex h-8 items-center rounded-full bg-[#d9856b]/10 px-3 text-[12px] font-semibold text-[#a64a30] hover:bg-[#d9856b]/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 sm:h-9"
                       >
-                        <IconRefresh className="h-3.5 w-3.5" />
-                        Reset to draft
+                        {confirm === 'regen' ? 'Yes, rewrite' : 'Yes, reset'}
                       </button>
-                    )}
-                    {ai.state !== 'blocked' && (
                       <button
                         type="button"
-                        onClick={rewrite}
-                        disabled={writing}
-                        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold text-[#a64a30] transition-colors hover:bg-[#d9856b]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 disabled:opacity-60"
+                        onClick={() => setConfirm('')}
+                        className="inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 sm:h-9"
                       >
-                        <IconSparkle className={`h-3.5 w-3.5 ${writing ? 'animate-pulse' : ''}`} />
-                        {writing ? 'Writing…' : letter.aiBody ? 'Rewrite with AI' : 'Write with AI'}
+                        Cancel
                       </button>
-                    )}
-                  </span>
-                )}
-              </div>
+                    </>
+                  ) : (
+                    <>
+                      {letter.bodyEdited && (
+                        <button type="button" onClick={() => setConfirm('reset')} disabled={writing} className={ghostPillClass}>
+                          <IconRefresh className="h-3.5 w-3.5" />
+                          Reset to draft
+                        </button>
+                      )}
+                      {ai.state !== 'blocked' && (
+                        <button type="button" onClick={rewrite} disabled={writing} className={aiButtonClass}>
+                          <IconSparkle className={`h-3.5 w-3.5 ${writing ? 'animate-pulse' : ''}`} />
+                          {writing ? 'Writing…' : letter.aiBody ? 'Rewrite with AI' : 'Write with AI'}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* What the AI is doing, or why it is not */}
               <div role="status" aria-live="polite">
                 {writing && (
-                  <div className="mb-3 flex items-start gap-2.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
-                    <IconSpinner className="mt-px h-4 w-4 shrink-0 text-[#d9856b]" />
-                    <span>
-                      {letter.requirements.length > 0 ? 'Writing your letter from your resume and what the job asks for.' : 'Writing your letter from your resume.'} The first one can take up to a minute while the server wakes up.
-                    </span>
-                  </div>
+                  <Notice tone="busy" icon={<IconSpinner className="h-3.5 w-3.5" />} className="mb-3">
+                    {letter.requirements.length > 0 ? 'Writing your letter from your resume and what the job asks for.' : 'Writing your letter from your resume.'} The first one can take up to a minute while the server wakes up.
+                  </Notice>
                 )}
 
                 {!writing && ai.state === 'blocked' && (
-                  <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
-                    <IconInfo className="h-4 w-4 shrink-0 text-slate-400" />
-                    <span className="min-w-0 flex-1">
-                      {ai.code === 'signin'
-                        ? 'Sign in to have AI write this letter from your resume. Until then, here is a starter draft you can edit.'
-                        : 'AI-written letters are a Premium feature. Here is a starter draft you can edit.'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={ai.code === 'signin' ? requestSignIn : requestUpgrade}
-                      className="shrink-0 rounded-full bg-[#1e3a8a] px-3 py-1 text-[12px] font-semibold text-white transition-colors hover:bg-blue-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25"
-                    >
-                      {ai.code === 'signin' ? 'Sign in' : 'Upgrade'}
-                    </button>
-                  </div>
+                  <Notice
+                    tone="info"
+                    icon={<IconSparkle className="h-3.5 w-3.5" />}
+                    className="mb-3"
+                    action={
+                      <button type="button" onClick={ai.code === 'signin' ? requestSignIn : requestUpgrade} className={navyPillClass}>
+                        {ai.code === 'signin' ? 'Sign in' : 'Upgrade'}
+                      </button>
+                    }
+                  >
+                    {ai.code === 'signin'
+                      ? 'Sign in to have AI write this letter from your resume. Until then, here is a starter draft you can edit.'
+                      : 'AI-written letters are a Premium feature. Here is a starter draft you can edit.'}
+                  </Notice>
                 )}
 
                 {!writing && ai.state === 'error' && (
-                  <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12.5px] leading-snug text-amber-800">
-                    <IconInfo className="h-4 w-4 shrink-0" />
-                    <span className="min-w-0 flex-1">
-                      {{
-                        busy: 'You asked for several letters in a short time. Please try again in a minute.',
-                        timeout: 'The AI took too long to answer. A starter draft is shown below.',
-                        offline: 'Could not reach the AI service. Check your connection. A starter draft is shown below.',
-                        empty: 'Add your experience, skills or education to the resume and the AI can write the letter from them.',
-                        position: 'Type the position you are applying for under “Who is it for” (for example CRM Lead). The letter names it in its first sentence.',
-                      }[ai.code] || 'The AI writer is unavailable right now. A starter draft is shown below.'}
-                    </span>
-                    {ai.code !== 'empty' && (
-                      <button
-                        type="button"
-                        onClick={() => generate({ fresh: true })}
-                        className="shrink-0 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-amber-900 ring-1 ring-amber-300 transition-colors hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-                      >
-                        {ai.code === 'position' ? 'Write letter' : 'Try again'}
-                      </button>
-                    )}
-                  </div>
+                  <Notice
+                    tone="warn"
+                    icon={<IconInfo className="h-3.5 w-3.5" />}
+                    className="mb-3"
+                    action={
+                      ai.code !== 'empty' ? (
+                        <button
+                          type="button"
+                          onClick={() => generate({ fresh: true })}
+                          className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-amber-900 ring-1 ring-amber-300 transition-colors hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 sm:px-3.5 sm:py-1.5"
+                        >
+                          {ai.code === 'position' ? 'Write letter' : 'Try again'}
+                        </button>
+                      ) : null
+                    }
+                  >
+                    {aiErrorText}
+                  </Notice>
                 )}
 
                 {!writing && !postingBusy && ai.state === 'idle' && !letter.aiBody && !letter.bodyEdited && (
-                  <div className="mb-3 flex items-start gap-2.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
-                    <IconInfo className="mt-px h-4 w-4 shrink-0 text-slate-400" />
-                    <span>
-                      Paste the link to the job advert above for a letter that answers what the job asks for. Or choose “Write with AI” for a general letter from your resume. Until then, this is a starter draft.
-                    </span>
-                  </div>
+                  <Notice tone="info" icon={<IconInfo className="h-3.5 w-3.5" />} className="mb-3">
+                    Paste the link to the job advert above for a letter that answers what the job asks for. Or choose “Write with AI” for a general letter from your resume. Until then, this is a starter draft.
+                  </Notice>
                 )}
 
                 {stale && ai.state !== 'blocked' && (
-                  <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
-                    <IconInfo className="h-4 w-4 shrink-0 text-slate-400" />
-                    <span className="min-w-0 flex-1">The position, company, tone, job requirements or resume changed since this letter was written.</span>
-                    <button
-                      type="button"
-                      onClick={() => generate({ fresh: true })}
-                      className="shrink-0 rounded-full bg-[#1e3a8a] px-3 py-1 text-[12px] font-semibold text-white transition-colors hover:bg-blue-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25"
-                    >
-                      Rewrite with AI
-                    </button>
-                  </div>
+                  <Notice
+                    tone="info"
+                    icon={<IconRefresh className="h-3.5 w-3.5" />}
+                    className="mb-3"
+                    action={
+                      <button type="button" onClick={() => generate({ fresh: true })} className={navyPillClass}>
+                        Rewrite with AI
+                      </button>
+                    }
+                  >
+                    The position, company, tone, job requirements or resume changed since this letter was written.
+                  </Notice>
                 )}
               </div>
 
@@ -864,57 +993,100 @@ export default function CoverLetterBuilder({ resumeData, accentColor, storageKey
                 onChange={setBody}
                 readOnly={writing}
                 aria-busy={writing}
-                rows={16}
+                rows={10}
                 spellCheck
-                className={`w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2.5 text-[13.5px] leading-relaxed text-slate-900 transition-colors focus:border-[#d9856b] focus:outline-none focus:ring-4 focus:ring-[#d9856b]/15 ${writing ? 'opacity-60' : ''}`}
+                className={`${textareaClass} min-h-[11rem] sm:min-h-[16rem] ${writing ? 'opacity-60' : ''}`}
               />
-              <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
+              <div className="mt-2 flex items-center justify-between gap-3 text-[11.5px] font-medium text-slate-400">
+                <span className="inline-flex items-center gap-1.5">
+                  <IconEdit className="h-3.5 w-3.5" />
+                  {`${wordCount} ${wordCount === 1 ? 'word' : 'words'}`}
+                </span>
+                {pageCount > 0 && <span>{`${pageCount} ${pageCount === 1 ? 'page' : 'pages'}`}</span>}
+              </div>
+              <p className="mt-2 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
                 {letter.bodyEdited
                   ? 'Leave a blank line between paragraphs. Start a line with “- ” for a bullet.'
                   : letter.aiBody
                     ? 'Written by AI from your resume. Read it through and change anything that isn’t right before you send it. Leave a blank line between paragraphs and start a line with “- ” for a bullet.'
                     : 'This starter draft is written from your resume and follows the details above until you edit it. Leave a blank line between paragraphs and start a line with “- ” for a bullet.'}
               </p>
-            </section>
+            </Accordion>
 
             {prepared?.lost && (
-              <div role="status" className="flex items-start gap-2.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] leading-snug text-slate-600">
-                <IconInfo className="mt-px h-4 w-4 shrink-0 text-slate-400" />
-                <span>Some characters, such as emoji, can’t be used in a PDF letter and are left out.</span>
-              </div>
+              <Notice role="status" tone="info" icon={<IconInfo className="h-3.5 w-3.5" />}>
+                Some characters, such as emoji, can’t be used in a PDF letter and are left out.
+              </Notice>
             )}
 
             {premium !== true && (
-              <p className="text-[12px] leading-relaxed text-slate-400">
+              <p className="px-1 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
                 Free downloads carry a small “Created with RemoPDF” line at the bottom of each page. Premium removes it.
               </p>
             )}
           </div>
-        </div>
+        </aside>
 
-        {/* Preview */}
-        <div
-          ref={previewRef}
-          className={`${view === 'preview' ? 'block' : 'hidden'} pro-scroll min-h-0 flex-1 overflow-y-auto bg-slate-100 px-4 py-6 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-8 lg:block`}
+        {/* Preview stage */}
+        <section
           aria-label="Cover letter preview"
+          className={`${view === 'preview' ? 'block' : 'hidden'} relative min-h-0 flex-1 overflow-hidden lg:block`}
+          style={{
+            backgroundColor: '#efede9',
+            backgroundImage: 'radial-gradient(rgba(15,23,42,0.09) 1px, transparent 1px)',
+            backgroundSize: '18px 18px',
+          }}
         >
-          {layout ? (
-            layout.pages.map((page, i) => <PreviewPage key={i} page={page} scale={scale} />)
-          ) : (
-            <p className="py-20 text-center text-[13px] text-slate-400">{error || 'Preparing preview…'}</p>
-          )}
+          <div ref={previewRef} className="pro-scroll absolute inset-0 overflow-y-auto overscroll-contain px-3 pb-20 pt-3 sm:px-8 sm:pb-24 sm:pt-8 lg:pb-10">
+            {layout ? (
+              layout.pages.map((page, i) => <PreviewPage key={i} page={page} scale={scale} index={i} total={layout.pages.length} />)
+            ) : (
+              <p className="py-20 text-center text-[13px] text-slate-400">{error || 'Preparing preview…'}</p>
+            )}
+          </div>
+        </section>
+      </main>
+
+      {/* Small screens: a floating switch between the form and the preview */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex justify-center lg:hidden">
+        <div
+          className="pointer-events-auto flex gap-0.5 rounded-full bg-slate-900/90 p-0.5 shadow-[0_16px_40px_-12px_rgba(15,23,42,0.55)] ring-1 ring-white/10 backdrop-blur-xl"
+          role="tablist"
+          aria-label="Cover letter views"
+        >
+          {[
+            ['edit', 'Edit', IconEdit],
+            ['preview', 'Preview', IconEye],
+          ].map(([id, label, Icon]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={view === id}
+              onClick={() => setView(id)}
+              className={`inline-flex h-8 min-w-[5.25rem] items-center justify-center gap-1.5 rounded-full px-4 text-[12px] font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/80 motion-reduce:transition-none ${
+                view === id ? 'bg-white text-slate-900 shadow-sm' : 'text-white/70 hover:text-white'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* A failed download shows as a small message at the bottom of the page. */}
       {error && layout && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-10 flex justify-center px-4">
-          <div role="alert" className="pointer-events-auto flex max-w-md items-center gap-3 rounded-xl border border-red-200 bg-white py-2.5 pl-3.5 pr-2.5 text-[13px] text-slate-800">
+        <div className="pointer-events-none absolute inset-x-0 bottom-16 z-40 flex justify-center px-4 lg:bottom-6">
+          <div role="alert" className="pointer-events-auto flex max-w-md items-center gap-3 rounded-2xl border border-red-200 bg-white py-2.5 pl-3.5 pr-2.5 text-[13px] text-slate-800 shadow-[0_16px_40px_-16px_rgba(185,28,28,0.35)]">
+            <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-red-100 text-red-600">
+              <IconInfo className="h-3.5 w-3.5" />
+            </span>
             <p className="min-w-0 flex-1 leading-snug">{error}</p>
             <button
               type="button"
               onClick={() => setError('')}
-              className="rounded-full px-3 py-1 text-[12px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+              className="rounded-full px-3 py-2 text-[12px] font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
             >
               Dismiss
             </button>

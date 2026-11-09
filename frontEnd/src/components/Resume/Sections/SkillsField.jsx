@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { suggestSkills } from './onetSuggestions';
 import useSuggestions from './useSuggestions';
+import JobSkillMatch from './JobSkillMatch';
+import { hasJobTarget } from './atsScore';
 
 // Skill levels. The chosen `value` is stored on each skill as `rating` (1-5);
 // 0 / missing means "not chosen yet" (older saved skills). New skills start at Novice.
@@ -382,10 +384,13 @@ const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
   const selectedSkills = data.skills;
   const selectedTexts = selectedSkills.map((skill) => skill.text);
 
-  // Job titles from the Work History step, most recent first. They drive the suggestions.
-  const jobTitles = (Array.isArray(data.experiences) ? data.experiences : [])
-    .map((job) => ((job && job.title) || '').trim())
-    .filter(Boolean);
+  // Job titles from the Work History step, most recent first. They drive the suggestions. When the person has said
+  // which job they are applying for, that job's title comes first, so the O*NET suggestions follow the advertised role.
+  const targetTitle = hasJobTarget(data.jobTarget) ? String(data.jobTarget.title || '').trim() : '';
+  const jobTitles = [
+    ...(targetTitle ? [targetTitle] : []),
+    ...(Array.isArray(data.experiences) ? data.experiences : []).map((job) => ((job && job.title) || '').trim()),
+  ].filter(Boolean);
 
   const hasLevel = (skill) => Number(skill.rating) >= 1;
   const isMissingLevel = (skill) => !!(skill.text && skill.text.trim()) && !hasLevel(skill);
@@ -408,6 +413,14 @@ const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
         setFreshId(id);
       },
     });
+  };
+
+  // A skill picked from the job-matched list: added straight away, and its row flashes like a suggestion that landed.
+  const handleAddJobSkill = (text) => {
+    if (skillsRef.current.some((skill) => (skill.text || '').trim().toLowerCase() === text.trim().toLowerCase())) return;
+    const id = Date.now();
+    updateSkillsRef.current([...skillsRef.current, { id, text, rating: DEFAULT_SKILL_RATING }]);
+    setFreshId(id);
   };
 
   const handleAddEmptySkill = () => {
@@ -438,6 +451,8 @@ const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
       <p className="text-sm text-slate-600 mb-6">
         Pick from the suggestions or start typing your own, then choose your level for each one.
       </p>
+
+      <JobSkillMatch data={data} onAdd={handleAddJobSkill} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
         {/* Left Column: Suggested skills from the dataset */}

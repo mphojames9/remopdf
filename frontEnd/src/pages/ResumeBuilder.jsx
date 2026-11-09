@@ -20,6 +20,9 @@ import useResumeProfile, { getSessionUser } from '../hooks/useResumeProfile';
 import ResumeSyncDialog, { ResumeLoadingOverlay } from '../components/Auth/ResumeSyncDialog';
 import ResumePickerDialog from '../components/Auth/ResumePickerDialog';
 import CoverLetterBuilder from '../components/CoverLetter/CoverLetterBuilder';
+import JobTargetStudio from '../components/Resume/Sections/JobTargetStudio';
+import JobTargetBar from '../components/Resume/Sections/JobTargetBar';
+import { sanitizeJobTarget, hasJobTarget } from '../components/Resume/Sections/jobMatchAI';
 import { buildResumePdf } from '../utils/resumePdf';
 import { 
   TEMPLATE_COMPONENTS,
@@ -1438,6 +1441,8 @@ const normalizeResumeData = (saved) => {
     projects: { ...emptyResumeData.projects, ...parsed.projects },
     references: { ...emptyResumeData.references, ...parsed.references },
     certificates: { ...emptyResumeData.certificates, ...parsed.certificates },
+    // The job the person is applying for (Premium). Cleaned on the way in; see components/Resume/Sections/jobMatchAI.js.
+    jobTarget: sanitizeJobTarget(parsed.jobTarget),
   };
 };
 
@@ -1508,7 +1513,7 @@ const clearDevicePayload = () => {
 };
 
 // True when the person has actually typed something (the blank starter entries do not count).
-const IGNORED_KEYS = new Set(['id', 'photoStyle', 'locationBeforeRemote']);
+const IGNORED_KEYS = new Set(['id', 'photoStyle', 'locationBeforeRemote', 'jobTarget']);
 const hasTypedValue = (value) => {
   if (typeof value === 'string') return value.trim() !== '';
   if (Array.isArray(value)) return value.some(hasTypedValue);
@@ -1603,6 +1608,26 @@ const SparkIcon = ({ className = 'h-3.5 w-3.5' }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
     <path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2Z" />
   </svg>
+);
+
+// Premium: opens the "What are you applying for?" screen. Shows the job once one is set.
+const JobTargetButton = ({ title = '', onClick, dark = false, compact = false }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={title ? `Applying for: ${title}` : 'Tailor this resume to a job'}
+    aria-label={title ? `Applying for ${title}. Change the job.` : 'Tailor this resume to a job'}
+    className={`inline-flex h-9 max-w-[11rem] items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 ${
+      dark ? 'text-slate-200 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'
+    }`}
+  >
+    <svg className="h-4 w-4 shrink-0 text-[#d9856b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+    </svg>
+    {!compact && <span className="truncate">{title || 'Target a job'}</span>}
+  </button>
 );
 
 const PremiumButton = ({ premium, daysLeft = 0, expiresAt = null, onClick, dark = false, compact = false }) => {
@@ -2112,6 +2137,41 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   // Decided once, at the moment the library opens, so the heading never changes while it is on screen. When it
   // closes the account is marked as greeted, so every later visit says "Welcome back".
   const pickerShown = pickerOpen && showResumeSwitcher && !profile.conflict;
+
+  // Job target (Premium). Before a Premium person starts writing a new resume, ask what they are applying for
+  // (a link, the advert pasted, or just a job title). The answer lives in resumeData.jobTarget, so it is saved
+  // with the resume and used by the Skills step, the writing assistant and the ATS score.
+  const [jobStudioOpen, setJobStudioOpen] = useState(false);
+  const jobTarget = resumeData.jobTarget;
+  const resumeIsBlank = !hasResumeContent(payload);
+  const jobStudioOfferedRef = useRef(null); // the resume it was already offered for: once per resume
+  useEffect(() => {
+    if (!premium || !profile.user?.id || profile.mode !== 'account') return; // wait until the account's resume has loaded
+    if (pickerShown || paymentOpen || authMode !== null || previewOpen || jobStudioOpen) return;
+    if (jobTarget || !resumeIsBlank) return; // already answered (or skipped), or the person has started writing
+    const key = String(profile.activeId || 'account');
+    if (jobStudioOfferedRef.current === key) return;
+    jobStudioOfferedRef.current = key;
+    setJobStudioOpen(true);
+  }, [premium, profile.user?.id, profile.mode, profile.activeId, pickerShown, paymentOpen, authMode, previewOpen, jobStudioOpen, jobTarget, resumeIsBlank]);
+  // Premium ended or the account changed: nothing from the Premium screen stays open.
+  useEffect(() => {
+    if (!premium) setJobStudioOpen(false);
+  }, [premium, profile.user?.id]);
+
+  const saveJobTarget = (target) => {
+    setResumeData((prev) => ({ ...prev, jobTarget: target }));
+    setJobStudioOpen(false);
+  };
+  // Skipping and removing both keep a { skipped: true } marker, so the question is not asked again for this resume.
+  const skipJobTarget = () => {
+    setResumeData((prev) => (prev.jobTarget ? prev : { ...prev, jobTarget: { skipped: true } }));
+    setJobStudioOpen(false);
+  };
+  const removeJobTarget = () => {
+    setResumeData((prev) => ({ ...prev, jobTarget: { skipped: true } }));
+    setJobStudioOpen(false);
+  };
   const pickerUserId = profile.user?.id;
   const pickerFirstVisit = useMemo(
     () => (pickerShown ? isFirstVisit(profile.user) : false),
@@ -2492,6 +2552,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           <HeaderStatus status={profile.statusText} name={profile.user?.firstName} signedIn={Boolean(profile.user)} compact className="max-w-full text-slate-200" />
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {premium && <JobTargetButton title={hasJobTarget(jobTarget) ? jobTarget.title : ''} onClick={() => setJobStudioOpen(true)} dark compact />}
           {profile.user && <PremiumButton premium={premium} daysLeft={premiumInfo.daysLeft} expiresAt={premiumInfo.expiresAt} onClick={openUpgrade} dark compact />}
           {profile.user ? (
             <AccountMenu user={profile.user} onSignOut={() => setSignOutOpen(true)} dark />
@@ -2541,6 +2602,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           <HeaderStatus status={profile.statusText} name={profile.user?.firstName} signedIn={Boolean(profile.user)} className="text-slate-800" />
           <div className="ml-auto flex items-center gap-3">
             {showResumeSwitcher && <ResumeTitleButton title={activeResume?.title} onClick={() => setPickerOpen(true)} />}
+            {premium && <JobTargetButton title={hasJobTarget(jobTarget) ? jobTarget.title : ''} onClick={() => setJobStudioOpen(true)} />}
             {profile.user && <PremiumButton premium={premium} daysLeft={premiumInfo.daysLeft} expiresAt={premiumInfo.expiresAt} onClick={openUpgrade} />}
             {profile.user ? (
               <>
@@ -2554,6 +2616,9 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         </header>
 
         <div className="pro-scroll flex-1 overflow-y-auto p-5 sm:p-8 lg:p-12 lg:pt-6 pb-36 sm:pb-32">
+          {premium && hasJobTarget(jobTarget) && ActiveComponent !== PersonalInfo && (
+            <JobTargetBar target={jobTarget} data={resumeData} onEdit={() => setJobStudioOpen(true)} />
+          )}
           <ActiveComponent data={resumeData} updateData={updateData} updateSummary={updateSummary} updateSkills={updateSkills} updateExperiences={updateExperiences} updateEducation={updateEducation} updateItems={updateItems} showSkillErrors={showSkillErrors} showLanguageErrors={showLanguageErrors} />
         </div>
 
@@ -2619,6 +2684,15 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           onClose={() => setCoverLetterOpen(false)}
         />
       )}
+
+      <JobTargetStudio
+        open={jobStudioOpen}
+        initial={jobTarget}
+        onSave={saveJobTarget}
+        onSkip={skipJobTarget}
+        onClose={() => setJobStudioOpen(false)}
+        onRemove={removeJobTarget}
+      />
 
       <PaymentModal
         open={paymentOpen}

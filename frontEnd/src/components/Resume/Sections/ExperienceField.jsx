@@ -789,7 +789,7 @@ const AchievementSuggestions = ({ job, skills, onAdd, pending = [] }) => {
 /* A rich-text field with the live spelling and grammar panel underneath it.
    The panel stays mounted but hidden while the field is empty, so it keeps its state and does not
    flash a "loading" notice when the first character is typed. */
-const CheckedField = ({ value, onChange, fieldRef, jobTitle, ...fieldProps }) => {
+const CheckedField = ({ value, onChange, fieldRef, jobTitle, jobTarget, ...fieldProps }) => {
   const text = typeof value === 'string' ? value : '';
   return (
     <div className="flex flex-col gap-3">
@@ -797,7 +797,7 @@ const CheckedField = ({ value, onChange, fieldRef, jobTitle, ...fieldProps }) =>
         <AchievementsField {...fieldProps} value={text} onChange={onChange} />
       </div>
       <div className={text.trim() ? '[&>div]:rounded-sm' : 'hidden'}>
-        <SpellCheckPanel text={text} onChange={onChange} field="experience" jobTitle={jobTitle} />
+        <SpellCheckPanel text={text} onChange={onChange} field="experience" jobTitle={jobTitle} jobTarget={jobTarget} />
       </div>
     </div>
   );
@@ -807,7 +807,7 @@ const CheckedField = ({ value, onChange, fieldRef, jobTitle, ...fieldProps }) =>
 /*                                  One job                                   */
 /* -------------------------------------------------------------------------- */
 
-const JobFields = ({ job, onChange, skills, previousTitles }) => {
+const JobFields = ({ job, onChange, skills, previousTitles, jobTarget }) => {
   const [pending, setPending] = useState([]); // ideas currently sliding into the field
   const fieldRef = useRef(null);
   // Refs keep the landing step on the latest values, since it runs ~half a second after the click.
@@ -913,6 +913,7 @@ const JobFields = ({ job, onChange, skills, previousTitles }) => {
         id={`achievements-${job.id}`}
         fieldRef={fieldRef}
         jobTitle={job.title}
+        jobTarget={jobTarget}
         value={job.achievements}
         onChange={(v) => onChange('achievements', v)}
       />
@@ -1034,6 +1035,7 @@ const WorkHistory = ({ data, updateExperiences }) => {
                       job={job}
                       skills={skills}
                       previousTitles={jobs.filter((j) => j.id !== job.id).map((j) => j.title).filter(Boolean)}
+                      jobTarget={data && data.jobTarget}
                       onChange={(field, value) => updateJob(job.id, field, value)}
                     />
                   </div>

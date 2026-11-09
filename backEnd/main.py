@@ -15,6 +15,7 @@ from routers.editor import router as editor_router
 from routers.tools import router as tools_router
 from routers.onet import router as onet_router
 from routers.writing_ai import router as writing_router
+from routers.job_match import router as job_match_router
 from routers import resume
 from routers import resume_parser
 
@@ -134,6 +135,7 @@ app.include_router(editor_router)
 app.include_router(tools_router)
 app.include_router(onet_router)
 app.include_router(writing_router)  # POST /api/writing/analyze (Groq, GROQ_API_KEY)
+app.include_router(job_match_router)  # POST /api/jobmatch/target | skills | rewrite (Premium: Groq + O*NET)
 app.include_router(resume.router) 
 # POST /api/resume-parser (the other routers carry their own prefixes, this one gets /api here)
 app.include_router(resume_parser.router, prefix="/api")
