@@ -1958,8 +1958,26 @@ const markGreeted = (userId) => {
   }
 };
 
+// True from the lg breakpoint up (1024px). Phones and tablets get false, and the answer follows a rotation or resize.
+const useIsDesktop = () => {
+  const query = '(min-width: 1024px)';
+  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && Boolean(window.matchMedia) && window.matchMedia(query).matches);
+  useEffect(() => {
+    if (!window.matchMedia) return undefined;
+    const media = window.matchMedia(query);
+    const onChange = (event) => setMatches(event.matches);
+    setMatches(media.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+  return matches;
+};
+
 export default function ResumeBuilder({ onBuildCoverLetter }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const isDesktop = useIsDesktop();
+  // Phones: the job match is not in the page. "Finish Resume" opens it once, so the score is only counted then.
+  const [scoreSheetOpen, setScoreSheetOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [coverLetterOpen, setCoverLetterOpen] = useState(false);
   // null = closed; anything else = the Sign in with Google dialog is open (the value is not used any more).
@@ -2557,6 +2575,8 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     }
     if (currentStepIndex < stepsConfig.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
+    } else if (!isDesktop && premium && hasJobTarget(jobTarget)) {
+      setScoreSheetOpen(true);
     }
   };
 
@@ -2683,7 +2703,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         </header>
 
         <div className="pro-scroll flex-1 overflow-y-auto p-5 sm:p-8 lg:p-12 lg:pt-6 pb-36 sm:pb-32">
-          {premium && hasJobTarget(jobTarget) && ActiveComponent !== PersonalInfo && (
+          {isDesktop && premium && hasJobTarget(jobTarget) && ActiveComponent !== PersonalInfo && (
             <JobTargetBar target={jobTarget} data={resumeData} onEdit={() => setJobStudioOpen(true)} />
           )}
           <ActiveComponent data={resumeData} updateData={updateData} updateSummary={updateSummary} updateSkills={updateSkills} updateExperiences={updateExperiences} updateEducation={updateEducation} updateItems={updateItems} showSkillErrors={showSkillErrors} showLanguageErrors={showLanguageErrors} />
@@ -2739,6 +2759,10 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           checkPremium={checkPremium}
           onClose={() => setPreviewOpen(false)} 
         />
+      )}
+
+      {scoreSheetOpen && !isDesktop && premium && hasJobTarget(jobTarget) && (
+        <JobTargetBar sheet target={jobTarget} data={resumeData} onEdit={() => setJobStudioOpen(true)} onSheetClose={() => setScoreSheetOpen(false)} />
       )}
 
       {coverLetterOpen && (

@@ -266,6 +266,28 @@ const Notice = ({ tone = 'info', icon, action, className = '', children, ...rest
 const colorOf = (rgb) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 
 // One A4 page, drawn from the layout lines and scaled to the width of the screen.
+// Motion for the small-screen Edit / Preview switch: the dock rises in, the pane that opens slides in from its side,
+// and the icon of the chosen tab plays one short move (pen writes, eye blinks). All of it stops for reduced motion.
+const VIEW_CSS = `
+@keyframes cl-dock-in{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes cl-pane-left{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes cl-pane-right{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@keyframes cl-pen{0%{transform:rotate(0) translate(0,0)}25%{transform:rotate(-16deg) translate(-1px,1px)}50%{transform:rotate(10deg) translate(1px,-1px)}75%{transform:rotate(-6deg)}100%{transform:none}}
+@keyframes cl-eye{0%,100%{transform:scaleY(1)}40%{transform:scaleY(.08)}65%{transform:scaleY(1.18)}}
+.cl-dock{animation:cl-dock-in .5s cubic-bezier(.2,.9,.25,1.1) both}
+.cl-thumb{transition:transform .38s cubic-bezier(.3,1.25,.4,1)}
+.cl-icon-edit{animation:cl-pen .6s ease-out both}
+.cl-icon-eye{animation:cl-eye .55s ease-in-out both}
+@media (max-width:1023.98px){
+  .cl-pane-left{animation:cl-pane-left .3s cubic-bezier(.2,.8,.2,1) both}
+  .cl-pane-right{animation:cl-pane-right .3s cubic-bezier(.2,.8,.2,1) both}
+}
+@media (prefers-reduced-motion:reduce){
+  .cl-dock,.cl-pane-left,.cl-pane-right,.cl-icon-edit,.cl-icon-eye{animation:none}
+  .cl-thumb{transition:none}
+}
+`;
+
 const PreviewPage = ({ page, scale, index, total }) => (
   <figure className="mx-auto mb-7 last:mb-0" style={{ width: PAGE_W * scale }}>
     <div
@@ -673,6 +695,8 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
       className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-[#f7f6f4] text-slate-900 antialiased [-webkit-tap-highlight-color:transparent] focus:outline-none"
       style={{ fontFamily: "'Outfit', ui-sans-serif, system-ui, sans-serif" }}
     >
+      <style>{VIEW_CSS}</style>
+
       {/* Soft aurora behind everything */}
       <div
         aria-hidden="true"
@@ -722,17 +746,12 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
         {/* Form panel */}
         <aside
           aria-label="Cover letter details"
-          className={`${view === 'edit' ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col bg-white/70 backdrop-blur-xl lg:flex lg:w-[28rem] lg:flex-none lg:border-r lg:border-slate-200/80 xl:w-[30rem]`}
+          className={`${view === 'edit' ? 'cl-pane-left flex' : 'hidden'} min-h-0 flex-1 flex-col bg-white/70 backdrop-blur-xl lg:flex lg:w-[28rem] lg:flex-none lg:border-r lg:border-slate-200/80 xl:w-[30rem]`}
         >
           <div className="pro-scroll flex-1 space-y-2 overflow-y-auto overscroll-contain p-2.5 pb-20 sm:space-y-3 sm:p-4 sm:pb-24 lg:pb-6">
-            {!fullName && (
-              <Notice role="status" tone="warn" icon={<IconInfo className="h-3.5 w-3.5" />}>
-                Add your name in the Heading step of your resume. It appears at the top of the letter and in the signature.
-              </Notice>
-            )}
             {fullName && usingAccountName && (
               <Notice role="status" tone="info" icon={<IconInfo className="h-3.5 w-3.5" />}>
-                {`The letter uses the name on your account, ${fullName}. Add your name in the Heading step of your resume to change it. It appears at the top of the letter and in the signature.`}
+                {`The letter uses the name on your account, ${fullName}.`}
               </Notice>
             )}
 
@@ -786,9 +805,6 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
                     </button>
                   </div>
                 </Field>
-                <p className="text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
-                  We read the position, company, address and what the job asks for, then write the letter to answer those requirements with what is on your resume.
-                </p>
 
                 <div role="status" aria-live="polite">
                   {postingBusy && (
@@ -872,9 +888,6 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-2.5 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
-                      Remove any that don’t apply to you. The letter only claims what your resume supports: a requirement your resume doesn’t cover is left out, never made up.
-                    </p>
                   </div>
                 )}
               </div>
@@ -1059,13 +1072,6 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
                 </span>
                 {pageCount > 0 && <span>{`${pageCount} ${pageCount === 1 ? 'page' : 'pages'}`}</span>}
               </div>
-              <p className="mt-2 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
-                {letter.bodyEdited
-                  ? 'Leave a blank line between paragraphs. Start a line with “- ” for a bullet.'
-                  : letter.aiBody
-                    ? 'Written by AI from your resume. Read it through and change anything that isn’t right before you send it. Leave a blank line between paragraphs and start a line with “- ” for a bullet.'
-                    : 'This starter draft is written from your resume and follows the details above until you edit it. Leave a blank line between paragraphs and start a line with “- ” for a bullet.'}
-              </p>
             </Accordion>
 
             {prepared?.lost && (
@@ -1085,7 +1091,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
         {/* Preview stage */}
         <section
           aria-label="Cover letter preview"
-          className={`${view === 'preview' ? 'block' : 'hidden'} relative min-h-0 flex-1 overflow-hidden lg:block`}
+          className={`${view === 'preview' ? 'cl-pane-right block' : 'hidden'} relative min-h-0 flex-1 overflow-hidden lg:block`}
           style={{
             backgroundColor: '#efede9',
             backgroundImage: 'radial-gradient(rgba(15,23,42,0.09) 1px, transparent 1px)',
@@ -1105,25 +1111,31 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
       {/* Small screens: a floating switch between the form and the preview */}
       <div className="pointer-events-none absolute inset-x-0 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex justify-center lg:hidden">
         <div
-          className="pointer-events-auto flex gap-0.5 rounded-full bg-slate-900/90 p-0.5 shadow-[0_16px_40px_-12px_rgba(15,23,42,0.55)] ring-1 ring-white/10 backdrop-blur-xl"
+          className="cl-dock pointer-events-auto relative grid grid-cols-2 gap-0.5 rounded-full bg-slate-900/90 p-0.5 shadow-[0_16px_40px_-12px_rgba(15,23,42,0.55)] ring-1 ring-white/10 backdrop-blur-xl"
           role="tablist"
           aria-label="Cover letter views"
         >
+          {/* The white pill slides to the chosen tab */}
+          <span
+            aria-hidden="true"
+            className="cl-thumb pointer-events-none absolute bottom-0.5 left-0.5 top-0.5 w-[calc((100%-0.375rem)/2)] rounded-full bg-white shadow-sm"
+            style={{ transform: view === 'preview' ? 'translateX(calc(100% + 0.125rem))' : 'translateX(0)' }}
+          />
           {[
-            ['edit', 'Edit', IconEdit],
-            ['preview', 'Preview', IconEye],
-          ].map(([id, label, Icon]) => (
+            ['edit', 'Edit', IconEdit, 'cl-icon-edit'],
+            ['preview', 'Preview', IconEye, 'cl-icon-eye'],
+          ].map(([id, label, Icon, motion]) => (
             <button
               key={id}
               type="button"
               role="tab"
               aria-selected={view === id}
               onClick={() => setView(id)}
-              className={`inline-flex h-8 min-w-[5.25rem] items-center justify-center gap-1.5 rounded-full px-4 text-[12px] font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/80 motion-reduce:transition-none ${
-                view === id ? 'bg-white text-slate-900 shadow-sm' : 'text-white/70 hover:text-white'
+              className={`relative z-10 inline-flex h-8 min-w-[5.25rem] items-center justify-center gap-1.5 rounded-full px-4 text-[12px] font-semibold transition-[color,transform] duration-300 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/80 motion-reduce:transition-none ${
+                view === id ? 'text-slate-900' : 'text-white/70 hover:text-white'
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className={`h-3.5 w-3.5 ${view === id ? motion : ''}`} />
               {label}
             </button>
           ))}

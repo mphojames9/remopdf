@@ -7,6 +7,10 @@ import { isQualification } from './skillFilter';
   The live ATS match for the job the person is applying to.
 
     <JobTargetBar target={resumeData.jobTarget} data={resumeData} onEdit={() => ...} />
+    <JobTargetBar sheet target={...} data={...} onEdit={...} onSheetClose={() => ...} />   // only the panel, opened by the parent
+
+  With `sheet` there is no card and no dock: the panel opens straight away and the score is counted only then, so
+  the parent can keep the score out of the page until the person asks for it (the phone's "Finish Resume").
 
   It never sits on top of the form. On a desktop it is a small dock at the edge of the screen that shows the score
   and opens a slide-over panel; on a phone it is a card in the flow of the page (it scrolls away with the form)
@@ -428,12 +432,15 @@ const Panel = ({ result, target, onClose, onEdit }) => {
 /*                                    the bar                                 */
 /* -------------------------------------------------------------------------- */
 
-const JobTargetBar = ({ target, data, onEdit }) => {
+const JobTargetBar = ({ target, data, onEdit, sheet = false, onSheetClose }) => {
   const [open, setOpen] = useState(false);
   const result = useMemo(() => scoreResume(target, data), [target, data]);
   const close = useCallback(() => setOpen(false), []);
   const show = useCallback(() => setOpen(true), []);
   if (!result) return null;
+
+  // Sheet only: the parent decides when to open it (it mounts this when it wants the score).
+  if (sheet) return <Panel result={result} target={target} onClose={onSheetClose || close} onEdit={onEdit} />;
 
   return (
     <>
