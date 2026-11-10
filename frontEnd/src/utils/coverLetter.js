@@ -10,6 +10,11 @@
   The starter draft only repeats what is in the resume (names, job titles, employers, skills, qualification). It never
   invents achievements or claims. Everything in it can be edited by the person.
 
+  Qualifications: a letter may name a degree, diploma or certificate only if the resume's Education or Certificates
+  list it (utils/letterClaims.js, and routers/letter_quality.py on the server). The Summary and Skills are free text and
+  can be filled from a job advert, so they never count, and the page removes any sentence of an app-written letter
+  that claims an unlisted one.
+
   The AI (Groq, through utils/coverLetterAI.js) writes the letter body from buildResumeBrief(). When the person has
   pasted the link to the job advert, the server reads it (readJobPosting) and the position, company, address and what
   the job asks for are kept in the letter (jobUrl, requirements, duties); the AI then answers those requirements with
@@ -21,6 +26,8 @@
   is remembered in letter.imported. Change the target on the resume and the imported details follow; remove it and
   they are taken out of the letter too, unless the person has edited them in the letter since.
 */
+
+import { isQualification } from '../components/Resume/Sections/skillFilter';
 
 export const TONES = [
   { id: 'formal', label: 'Formal' },
@@ -99,8 +106,12 @@ const namedJobs = (resumeData) =>
 const namedEducation = (resumeData) =>
   (Array.isArray(resumeData?.education) ? resumeData.education : []).filter((e) => clean(e.institution) || clean(e.degree));
 
+// A qualification typed or imported into Skills ("Diploma Operations Management", "Bachelor's degree") is not a skill and
+// is never proof of one: only Education and Certificates say what the person holds (see letterClaims.js).
 const namedSkills = (resumeData) =>
-  (Array.isArray(resumeData?.skills) ? resumeData.skills : []).map((s) => clean(s?.text)).filter(Boolean);
+  (Array.isArray(resumeData?.skills) ? resumeData.skills : [])
+    .map((s) => clean(s?.text))
+    .filter((text) => text && !isQualification(text));
 
 export const fullNameOf = (personal) => clean(`${personal?.firstName || ''} ${personal?.lastName || ''}`);
 
