@@ -462,7 +462,7 @@ export default function About() {
 
   return (
     <div
-      className="relative flex min-h-screen w-full min-w-[330px] flex-col overflow-x-hidden bg-[#FAFAFA] antialiased selection:bg-[#d9856b]/30"
+      className="relative flex min-h-screen w-full min-w-[330px] flex-col overflow-x-clip bg-[#FAFAFA] antialiased selection:bg-[#d9856b]/30"
       style={{ fontFamily: "'Outfit', 'Metropolis', sans-serif" }}
     >
       <style>{`

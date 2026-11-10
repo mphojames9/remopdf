@@ -4,7 +4,8 @@
     buildJobTarget({ url, text, title, signal })              -> { target, notice }
     suggestJobSkills({ target, resumeData, signal })          -> { supported: [{ skill, jobItem, evidence }], toConfirm: [{ skill, jobItem, reason }] }
                                                                  skills only: qualifications never come back (see skillFilter.js)
-    writeSummary({ target, resumeData, variant, signal })     -> { summary }   a professional summary written from the work history
+    writeSummary({ target, resumeData, variant, signal })     -> { summary, checked: [{ strength, evidence }], uses: [] }
+                                                                 a professional summary written from the work history, each strength traced to the resume
     rewriteForJob({ text, field, jobTitle, target, signal })  -> { rewrites: [{ id, label, text, adds }] }
 
   Plus the small helpers the rest of the app needs: sanitizeJobTarget (anything read back from a saved resume is
@@ -32,7 +33,7 @@ const URLS = {
   summary: `${API_ORIGIN}/api/jobmatch/summary`,
 };
 
-// Reading a page, asking Groq and asking O*NET happen one after the other, and Render's free tier can need
+// Reading a page, asking Groq and looking up the role happen one after the other, and Render's free tier can need
 // 30-50 s to wake up, so the first target of a session gets a long timeout.
 const TIMEOUT_MS = { target: 75000, skills: 45000, rewrite: 45000, summary: 45000 };
 const CACHE_MAX = 40;
@@ -113,7 +114,7 @@ const targetPayload = (t) => ({
   company: t.company || '',
   requirements: t.requirements || [],
   duties: t.duties || [],
-  keywords: (t.keywords || []).slice(0, 40).map((k) => ({ term: k.term, must: Boolean(k.must), kind: KINDS.has(k.kind) ? k.kind : 'skill' })),
+  keywords: (t.keywords || []).slice(0, 40).map((k) => ({ term: k.term, must: Boolean(k.must), kind: KINDS.has(k.kind) ? k.kind : 'skill', source: k.source === 'onet' ? 'onet' : 'ad' })),
   onet_skills: t.onet?.skills || [],
   onet_technology: t.onet?.technology || [],
 });
@@ -249,6 +250,12 @@ const resumePayload = (d, { withSummary = true } = {}) => ({
     title: str(j && j.title, 120),
     employer: str(j && j.employer, 120),
     achievements: stripMarkup(j && j.achievements).slice(0, 4000),
+    // The dates are how the server works out how long each job lasted, so a summary can state it correctly.
+    start_month: str(j && j.startMonth, 12),
+    start_year: str(j && j.startYear, 12),
+    end_month: str(j && j.endMonth, 12),
+    end_year: str(j && j.endYear, 12),
+    current: Boolean(j && j.current),
   })),
   education: collectStrings(d.education).map((t) => t.slice(0, 120)).slice(0, 6),
 });
@@ -279,7 +286,13 @@ export async function writeSummary({ target, resumeData, variant = 0, signal } =
   const data = await post('summary', body, signal);
   const summary = data && typeof data.summary === 'string' ? data.summary.trim() : '';
   if (!summary) throw new JobMatchError('unavailable', 'Job matching is unavailable right now.');
-  return { summary };
+  // checked: the strengths the summary rests on, each with the words from the resume that prove it.
+  // uses: the job's own keywords the summary honestly covers.
+  const checked = (Array.isArray(data.checked) ? data.checked : [])
+    .map((c) => ({ strength: str(c && c.strength, 60), evidence: str(c && c.evidence, 200) }))
+    .filter((c) => c.evidence)
+    .slice(0, 5);
+  return { summary, checked, uses: strList(data.uses, 6, 60) };
 }
 
 export async function rewriteForJob({ text, field = 'experience', jobTitle = '', target, signal } = {}) {

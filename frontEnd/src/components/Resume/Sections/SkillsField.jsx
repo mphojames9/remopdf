@@ -287,7 +287,7 @@ const SuggestedSkills = ({ selectedTexts, jobTitles, onAdd, pending = [] }) => {
   const caption = searching
     ? 'Matching skills'
     : personalised
-      ? `Based on the job titles you added${source === 'onet' ? ' (O*NET)' : ''}`
+      ? 'Suggested for your roles'
       : 'Popular skills';
 
   return (

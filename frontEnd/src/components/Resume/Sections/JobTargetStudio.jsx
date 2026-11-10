@@ -34,7 +34,7 @@ const MODES = [
 const HELP = {
   link: 'Works with most job boards and company sites. If a site blocks us, paste the advert instead.',
   text: 'Paste the whole advert, requirements included.',
-  title: 'No advert? We’ll use the standard skills and tools for that occupation, from O*NET.',
+  title: 'No advert? We’ll use the standard skills and tools for that kind of role.',
 };
 
 const PLACEHOLDER = {
@@ -96,8 +96,8 @@ const looksLikeAdvert = (raw) => raw.trim().length >= 80 && /\s/.test(raw.trim()
 
 const stageText = (mode, seconds) => {
   if (seconds >= 20) return 'Still working. The server may be waking up, which can take up to a minute the first time.';
-  if (mode === 'title') return seconds >= 4 ? 'Matching the O*NET occupation…' : 'Looking up the occupation…';
-  if (seconds >= 11) return 'Matching the O*NET occupation…';
+  if (mode === 'title') return seconds >= 4 ? 'Matching the standard skills for this role…' : 'Looking up the role…';
+  if (seconds >= 11) return 'Matching the standard skills for this role…';
   if (seconds >= 4) return 'Finding the keywords an ATS looks for…';
   return 'Reading the advert…';
 };
@@ -416,7 +416,7 @@ const JobTargetStudio = ({ open, initial = null, onSave, onSkip, onClose, onRemo
             <h2 className="mt-9 text-base font-semibold text-slate-900">What this job looks for</h2>
             <p className="mt-1 max-w-[52ch] text-sm leading-relaxed text-slate-500">
               {fromOnet
-                ? 'These are the tools and skills most used in this occupation. Remove what doesn’t apply and add your own.'
+                ? 'These are the tools and skills most used in this kind of role. Remove what doesn’t apply and add your own.'
                 : 'These are the words an applicant tracking system scans for. Remove what doesn’t matter and add your own.'}
             </p>
 

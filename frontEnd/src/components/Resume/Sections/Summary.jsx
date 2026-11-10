@@ -11,8 +11,18 @@ import { usePremiumAccess, useSignedIn, requestUpgrade, requestSignIn, setPremiu
   "Write my summary" (Premium) asks the AI to write the professional summary from the person's own work history
   and skills, shaped for the job target when there is one (routers/job_match.py, POST /api/jobmatch/summary).
   Nothing is put in the box until the person chooses "Use this summary", so a summary they already wrote is never
-  replaced by surprise. The server drops any answer that holds a figure or a qualification the resume does not.
+  replaced by surprise. The server checks every answer against the resume and throws away one that holds a figure,
+  a name, a rank or a qualification the resume does not, and it sends back the words of the resume that each
+  strength rests on, shown under the summary so the person can see for themselves that it is true.
 */
+
+const STYLE = `
+@keyframes sm-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.sm-line{display:inline;animation:sm-rise .5s cubic-bezier(.2,.8,.2,1) both}
+@media (prefers-reduced-motion:reduce){.sm-line{animation:none}}
+`;
+
+const sentencesOf = (text) => String(text || '').split(/(?<=[.!?])\s+/).filter(Boolean);
 
 const FOCUS = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60';
 
@@ -35,7 +45,7 @@ const Sparkle = () => (
 const SummarySection = ({ data, updateSummary }) => {
   const premium = usePremiumAccess();
   const signedOut = useSignedIn() === false;
-  const [state, setState] = useState({ status: 'idle', text: '', error: null });
+  const [state, setState] = useState({ status: 'idle', text: '', checked: [], uses: [], error: null });
   const abortRef = useRef(null);
   const variantRef = useRef(0);
 
@@ -66,9 +76,9 @@ const SummarySection = ({ data, updateSummary }) => {
     variantRef.current = again ? variantRef.current + 1 : 0;
     setState((s) => ({ ...s, status: 'loading', error: null }));
     try {
-      const { summary } = await writeSummary({ target: data.jobTarget, resumeData: data, variant: variantRef.current, signal: controller.signal });
+      const { summary, checked, uses } = await writeSummary({ target: data.jobTarget, resumeData: data, variant: variantRef.current, signal: controller.signal });
       if (controller.signal.aborted) return;
-      setState({ status: 'ready', text: summary, error: null });
+      setState({ status: 'ready', text: summary, checked, uses, error: null });
     } catch (err) {
       if (err && err.name === 'AbortError') return;
       if (err && err.code === 'premium') setPremiumAccess(false); // the server says no Premium
@@ -78,10 +88,10 @@ const SummarySection = ({ data, updateSummary }) => {
 
   const useIt = () => {
     updateSummary(state.text);
-    setState({ status: 'idle', text: '', error: null });
+    setState({ status: 'idle', text: '', checked: [], uses: [], error: null });
   };
 
-  const dismiss = () => setState({ status: 'idle', text: '', error: null });
+  const dismiss = () => setState({ status: 'idle', text: '', checked: [], uses: [], error: null });
 
   return (
     <div className="max-w-[1000px] mx-auto pb-32">
@@ -96,9 +106,9 @@ const SummarySection = ({ data, updateSummary }) => {
             <h2 className="text-sm font-semibold text-slate-900">Let us write it for you</h2>
             <p className="mt-0.5 text-xs leading-snug text-slate-600">
               {tailored
-                ? `Written from your work history and skills, shaped for ${data.jobTarget.title || 'your target job'}.`
+                ? `Written from your work history and skills, and angled at ${data.jobTarget.title || 'your target job'}.`
                 : 'Written from your work history and skills.'}{' '}
-              It only uses what your resume already says.
+              Every line is checked against your resume, so nothing is added that isn’t there.
             </p>
           </div>
           <button
@@ -126,9 +136,45 @@ const SummarySection = ({ data, updateSummary }) => {
         )}
 
         {ready && !loading && (
-          <div className="mt-3 rounded-md border border-slate-200 bg-white px-4 py-3">
-            <p className="whitespace-pre-line text-sm leading-relaxed text-slate-800">{state.text}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-3 overflow-hidden rounded-md border border-slate-200 bg-white">
+            <style>{STYLE}</style>
+            <p className="px-4 pb-3 pt-3.5 text-sm leading-relaxed text-slate-800">
+              {sentencesOf(state.text).map((line, i) => (
+                <span key={`${i}-${line.slice(0, 12)}`} className="sm-line" style={{ animationDelay: `${i * 140}ms` }}>
+                  {line}{' '}
+                </span>
+              ))}
+            </p>
+
+            {(state.checked.length > 0 || state.uses.length > 0) && (
+              <details className="group border-t border-slate-100 bg-slate-50/70 px-4 py-2.5">
+                <summary className={`flex cursor-pointer list-none items-center gap-2 rounded text-xs font-semibold text-slate-700 ${FOCUS}`}>
+                  <svg className="h-3.5 w-3.5 shrink-0 text-[#b8573b]" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4.5 10.5l3.5 3.5 7.5-8" />
+                  </svg>
+                  Checked against your resume
+                  <svg className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform group-open:rotate-180 motion-reduce:transition-none" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 8l5 5 5-5" />
+                  </svg>
+                </summary>
+                <ul className="mt-2.5 space-y-2">
+                  {state.checked.map((c) => (
+                    <li key={c.evidence} className="text-xs leading-snug text-slate-600">
+                      {c.strength && <span className="font-semibold text-slate-800">{c.strength}</span>}
+                      {c.strength && <span className="text-slate-400"> · </span>}
+                      <span className="italic">“{c.evidence}”</span>
+                    </li>
+                  ))}
+                </ul>
+                {state.uses.length > 0 && (
+                  <p className="mt-3 text-xs leading-snug text-slate-500">
+                    Uses the job’s own words where your resume backs them: {state.uses.join(', ')}.
+                  </p>
+                )}
+              </details>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3">
               <button
                 type="button"
                 onClick={useIt}
