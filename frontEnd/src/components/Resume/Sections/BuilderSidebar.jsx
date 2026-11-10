@@ -7,7 +7,12 @@ import React, { useEffect, useRef, useState } from 'react';
 /*  Props                                                                     */
 /*    steps              stepsConfig (id, label, description)                 */
 /*    currentIndex       index of the active step                             */
-/*    completedSteps     array of completed step indexes                      */
+/*    completedSteps     array of step indexes the person has moved past      */
+/*    filledSteps        optional. Step indexes that actually hold            */
+/*                       information. A step only gets its tick when it is    */
+/*                       both moved past and filled; a step that was skipped  */
+/*                       with nothing entered keeps its number. Without this  */
+/*                       prop every completed step is ticked, as before       */
 /*    progress           0-100                                                */
 /*    onSelect(index)    optional. When given, finished steps and earlier     */
 /*                       steps can be clicked to jump back to them            */
@@ -225,6 +230,7 @@ const CompletenessCard = ({ progress }) => {
 };
 
 const StepRow = ({ step, index, active, completed, canVisit, onSelect }) => {
+  // `completed` is the ticked state: moved past AND holding information.
   const badge = active
     ? 'bg-[#d9856b] text-white'
     : completed
@@ -264,7 +270,7 @@ const StepRow = ({ step, index, active, completed, canVisit, onSelect }) => {
   );
 };
 
-const BuilderSidebar = ({ steps, currentIndex, completedSteps, progress, onSelect, onBack, onBuildCoverLetter, importSlot, mobileSlot, open, onClose }) => {
+const BuilderSidebar = ({ steps, currentIndex, completedSteps, filledSteps, progress, onSelect, onBack, onBuildCoverLetter, importSlot, mobileSlot, open, onClose }) => {
   return (
     <aside
       aria-label="Resume builder"
@@ -290,7 +296,7 @@ const BuilderSidebar = ({ steps, currentIndex, completedSteps, progress, onSelec
                   step={step}
                   index={index}
                   active={currentIndex === index}
-                  completed={completedSteps.includes(index)}
+                  completed={completedSteps.includes(index) && (!filledSteps || filledSteps.includes(index))}
                   canVisit={index <= currentIndex || completedSteps.includes(index)}
                   onSelect={onSelect}
                 />

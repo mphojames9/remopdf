@@ -1524,6 +1524,37 @@ const hasTypedValue = (value) => {
 };
 const hasResumeContent = (payload) => hasTypedValue(payload?.resumeData);
 
+// True when a step of the builder (by index in stepsConfig) holds information the person entered.
+// The sidebar only ticks a step that has been moved past AND passes this check, so a step that was
+// skipped with nothing in it keeps its number. The blank starter rows do not count.
+const stepHasInfo = (index, data) => {
+  const d = data || {};
+  switch (index) {
+    case 0: // Heading
+      return hasTypedValue(d.personal);
+    case 1: // Work history
+      return hasTypedValue(d.experiences);
+    case 2: // Education
+      return hasTypedValue(d.education);
+    case 3: // Skills
+      return (d.skills || []).some((skill) => String(skill?.text || '').trim() !== '');
+    case 4: // Summary
+      return String(d.summary || '').trim() !== '';
+    case 5: { // Finalize: any of the extra sections that is switched on and filled in
+      const { hobbies, languages, projects, references, certificates } = d;
+      return Boolean(
+        (hobbies?.enabled && String(hobbies.text || '').trim() !== '') ||
+        (languages?.enabled && (languages.items || []).some((l) => String(l?.name || '').trim() !== '')) ||
+        (projects?.enabled && hasTypedValue(projects.items)) ||
+        (references?.enabled && (references.availableUponRequest || hasTypedValue(references.items))) ||
+        (certificates?.enabled && hasTypedValue(certificates.items))
+      );
+    }
+    default:
+      return false;
+  }
+};
+
 // ---------------------------------------------------------------------------------------------
 // Thumbnails for the "Choose a resume" dialog: a saved payload drawn with its own template. This turns a
 // payload into template props the same way ResumePreviewModal does, so the thumbnail matches the preview.
@@ -2015,6 +2046,12 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   const payload = useMemo(
     () => ({ resumeData, selectedTemplate, sectionOrder, hiddenSections, pageNumbers, completedSteps }),
     [resumeData, selectedTemplate, sectionOrder, hiddenSections, pageNumbers, completedSteps],
+  );
+
+  // Steps that hold information (see stepHasInfo). The sidebar ticks a step only when it is moved past and in this list.
+  const filledSteps = useMemo(
+    () => stepsConfig.map((_, index) => index).filter((index) => stepHasInfo(index, resumeData)),
+    [resumeData],
   );
 
   // Ids of the languages already on screen, used by the "new languages start on Fluent" effect below.
@@ -2594,7 +2631,9 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     else setCoverLetterOpen(true);
   };
 
-  const progressPercentage = Math.round((completedSteps.length / stepsConfig.length) * 100);
+  // Resume completeness counts the same steps the sidebar ticks: moved past and holding information.
+  const tickedCount = completedSteps.filter((index) => filledSteps.includes(index)).length;
+  const progressPercentage = Math.round((tickedCount / stepsConfig.length) * 100);
   const ActiveComponent = stepsConfig[currentStepIndex].component;
   const nextStepLabel = stepsConfig[currentStepIndex + 1]?.label || 'Finish';
 
@@ -2636,6 +2675,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         steps={stepsConfig}
         currentIndex={currentStepIndex}
         completedSteps={completedSteps}
+        filledSteps={filledSteps}
         progress={progressPercentage}
         onSelect={(index) => {
           setCurrentStepIndex(index);
