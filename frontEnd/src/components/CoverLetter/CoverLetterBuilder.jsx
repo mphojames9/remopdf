@@ -41,8 +41,7 @@ import {
  * goes into the letter's address block. When a site cannot be read by a server, a box to paste the job description
  * takes its place. Without a link, "Write with AI" writes a general letter from the resume alone
  * (AUTO_WRITE_WITHOUT_JOB below writes it as soon as the page opens, as this page used to).
- * The position, company, tone and requirements are used the next time the AI writes ("Rewrite with AI"); the page
- * says when they have changed since. People who are signed out or not on Premium, or when the AI cannot be reached,
+ * The position, company, tone and requirements are used the next time the AI writes ("Rewrite with AI"). People who are signed out or not on Premium, or when the AI cannot be reached,
  * start from a plain draft built from the resume (name, job titles, skills, qualification) instead. Either way the
  * person can edit the text; once they do, nothing replaces it without asking.
  * The preview is the real layout of the PDF (utils/coverLetterPdf.js), so the download matches it exactly.
@@ -428,25 +427,15 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   // A degree, diploma or certificate is checked by the employer with the school, so a letter may name only those the
   // resume lists under Education or Certificates (utils/letterClaims.js). The position and company are not claims.
   // A letter the APP wrote (the AI's, one saved before this check existed, or the draft) never shows or prints a
-  // sentence that claims an unlisted one. The person's own wording is left as they wrote it, with a warning.
+  // sentence that claims an unlisted one, silently. The person's own wording is left as they wrote it, with a warning.
   const claimIgnore = useMemo(() => [letter.jobTitle, letter.company], [letter.jobTitle, letter.company]);
   const body = useMemo(
     () => (letter.bodyEdited ? storedBody : dropUnlistedQualificationSentences(storedBody, resume, claimIgnore)),
     [letter.bodyEdited, storedBody, resume, claimIgnore],
   );
-  const removedClaims = useMemo(
-    () => (letter.bodyEdited ? [] : unlistedQualifications(storedBody, resume, claimIgnore)),
-    [letter.bodyEdited, storedBody, resume, claimIgnore],
-  );
   const ownUnlistedClaims = useMemo(
     () => (letter.bodyEdited ? unlistedQualifications(body, resume, claimIgnore) : []),
     [letter.bodyEdited, body, resume, claimIgnore],
-  );
-
-  // What the AI letter is written from. When it stops matching, the page offers to write it again.
-  const signature = useMemo(
-    () => aiSignature(resume, { tone: letter.tone, jobTitle: letter.jobTitle, company: letter.company }),
-    [resume, letter.tone, letter.jobTitle, letter.company],
   );
 
   const model = useMemo(() => buildLetterModel(resume, letter, body), [resume, letter, body]);
@@ -464,7 +453,6 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   }, [body]);
 
   const writing = ai.state === 'loading';
-  const stale = !writing && !letter.bodyEdited && Boolean(letter.aiBody) && letter.aiFor !== signature;
 
   const setAiStatus = (state, code = '') => {
     aiStateRef.current = state;
@@ -1052,38 +1040,6 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
                 {!writing && !postingBusy && ai.state === 'idle' && !letter.aiBody && !letter.bodyEdited && (
                   <Notice tone="info" icon={<IconInfo className="h-3.5 w-3.5" />} className="mb-3">
                     Paste the link to the job advert above for a letter that answers what the job asks for. Or choose “Write with AI” for a general letter from your resume. Until then, this is a starter draft.
-                  </Notice>
-                )}
-
-                {stale && ai.state !== 'blocked' && (
-                  <Notice
-                    tone="info"
-                    icon={<IconRefresh className="h-3.5 w-3.5" />}
-                    className="mb-3"
-                    action={
-                      <button type="button" onClick={() => generate({ fresh: true })} className={navyPillClass}>
-                        Rewrite with AI
-                      </button>
-                    }
-                  >
-                    The position, company, tone, job requirements or resume changed since this letter was written.
-                  </Notice>
-                )}
-
-                {!writing && removedClaims.length > 0 && (
-                  <Notice
-                    tone="warn"
-                    icon={<IconInfo className="h-3.5 w-3.5" />}
-                    className="mb-3"
-                    action={
-                      ai.state !== 'blocked' ? (
-                        <button type="button" onClick={() => generate({ fresh: true })} className={navyPillClass}>
-                          Rewrite with AI
-                        </button>
-                      ) : null
-                    }
-                  >
-                    We took out a sentence that named a qualification your resume does not list ({joinList(removedClaims.map((q) => `“${q}”`))}). Employers check qualifications with the school, so a letter may only name what is under Education or Certificates. If you do hold it, add it there first.
                   </Notice>
                 )}
 
