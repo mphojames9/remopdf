@@ -1719,11 +1719,50 @@ const ResumeTitleButton = ({ title, onClick, block = false }) => (
   </button>
 );
 
+// Small screens: a row in the dark menu drawer. With onClick it is a button, without it it only shows a status.
+const MenuRow = ({ icon, label, value, onClick }) => {
+  const body = (
+    <>
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/[0.06] text-[#eba995]">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[11px] leading-tight text-slate-400">{label}</span>
+        <span className="block truncate text-[13px] font-medium text-slate-100">{value}</span>
+      </span>
+      {onClick && (
+        <svg className="h-4 w-4 shrink-0 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="m9 6 6 6-6 6" />
+        </svg>
+      )}
+    </>
+  );
+  const row = 'flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left';
+  if (!onClick) return <div className={row}>{body}</div>;
+  return (
+    <button type="button" onClick={onClick} className={`${row} transition-colors hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/70`}>
+      {body}
+    </button>
+  );
+};
+
+const MenuDocIcon = () => (
+  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5" />
+  </svg>
+);
+const MenuTargetIcon = () => (
+  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="8" />
+    <circle cx="12" cy="12" r="3.2" />
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+  </svg>
+);
+
 const initialsOf = (user) =>
   `${String(user?.firstName || '').trim().charAt(0)}${String(user?.lastName || '').trim().charAt(0)}`.toUpperCase() || '?';
 
 // The signed-in person: one avatar (the name is in the greeting and in the menu, so it is not repeated here).
-const AccountMenu = ({ user, onSignOut, dark = false }) => {
+const AccountMenu = ({ user, onSignOut, dark = false, compact = false }) => {
   const [open, setOpen] = useState(false);
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || 'Account';
 
@@ -1745,7 +1784,7 @@ const AccountMenu = ({ user, onSignOut, dark = false }) => {
         aria-expanded={open}
         aria-label={`Account menu for ${fullName}`}
         title={fullName}
-        className={`flex h-10 items-center gap-1 rounded-full pl-1 pr-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 ${
+        className={`flex h-10 items-center gap-1 rounded-full ${compact ? 'px-1' : 'pl-1 pr-2'} transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 ${
           dark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
         }`}
       >
@@ -1758,7 +1797,7 @@ const AccountMenu = ({ user, onSignOut, dark = false }) => {
           {initialsOf(user)}
         </span>
         <svg
-          className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''} ${dark ? 'text-slate-300' : 'text-slate-400'}`}
+          className={`h-3.5 w-3.5 transition-transform ${compact ? 'hidden' : ''} ${open ? 'rotate-180' : ''} ${dark ? 'text-slate-300' : 'text-slate-400'}`}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -2546,16 +2585,15 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     >
       <style>{SCROLLBAR_CSS}</style>
 
-      {/* Mobile bar */}
-      <div className="z-30 flex shrink-0 items-center justify-between gap-3 bg-slate-900 px-4 py-3 text-white lg:hidden">
+      {/* Mobile bar: greeting, account and menu only. The open resume, the target job and the Premium status live in the menu. */}
+      <div className="z-30 flex shrink-0 items-center justify-between gap-2 bg-slate-900 px-4 py-2 text-white lg:hidden">
         <div className="min-w-0 flex-1">
           <HeaderStatus status={profile.statusText} name={profile.user?.firstName} signedIn={Boolean(profile.user)} compact className="max-w-full text-slate-200" />
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {premium && <JobTargetButton title={hasJobTarget(jobTarget) ? jobTarget.title : ''} onClick={() => setJobStudioOpen(true)} dark compact />}
-          {profile.user && <PremiumButton premium={premium} daysLeft={premiumInfo.daysLeft} expiresAt={premiumInfo.expiresAt} onClick={openUpgrade} dark compact />}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {profile.user && !premium && <PremiumButton premium={premium} onClick={openUpgrade} dark compact />}
           {profile.user ? (
-            <AccountMenu user={profile.user} onSignOut={() => setSignOutOpen(true)} dark />
+            <AccountMenu user={profile.user} onSignOut={() => setSignOutOpen(true)} dark compact />
           ) : (
             <AuthButtons onOpen={setAuthMode} variant="dark" />
           )}
@@ -2568,12 +2606,6 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           </button>
         </div>
       </div>
-
-      {showResumeSwitcher && (
-        <div className="lg:hidden shrink-0 border-b border-slate-200/80 bg-white px-5 py-2">
-          <ResumeTitleButton title={activeResume?.title} onClick={() => setPickerOpen(true)} block />
-        </div>
-      )}
 
       {menuOpen && (
         <div className="fixed inset-0 bg-slate-950/60 z-40 lg:hidden" onClick={() => setMenuOpen(false)} />
@@ -2591,6 +2623,41 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         }}
         onBuildCoverLetter={handleBuildCoverLetter}
         importSlot={<ResumeUpload onImport={handleImport} />}
+        mobileSlot={
+          showResumeSwitcher || premium ? (
+            <>
+              {showResumeSwitcher && (
+                <MenuRow
+                  icon={<MenuDocIcon />}
+                  label="My resume"
+                  value={activeResume?.title || 'My resumes'}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setPickerOpen(true);
+                  }}
+                />
+              )}
+              {premium && (
+                <MenuRow
+                  icon={<MenuTargetIcon />}
+                  label="Target job"
+                  value={hasJobTarget(jobTarget) ? jobTarget.title : 'Target a job'}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setJobStudioOpen(true);
+                  }}
+                />
+              )}
+              {premium && (
+                <MenuRow
+                  icon={<SparkIcon className="h-4 w-4" />}
+                  label="Premium"
+                  value={premiumInfo.daysLeft > 0 ? `${premiumInfo.daysLeft} ${premiumInfo.daysLeft === 1 ? 'day' : 'days'} left` : 'Active'}
+                />
+              )}
+            </>
+          ) : null
+        }
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
       />

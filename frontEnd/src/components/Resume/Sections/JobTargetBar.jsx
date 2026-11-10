@@ -73,10 +73,17 @@ const isQual = (kw) => kw.kind === 'credential' || isQualification(kw.term);
 
 const byImportance = (a, b) => Number(Boolean(b.must)) - Number(Boolean(a.must));
 
-const insight = (result) => {
+const insight = (result, short = false) => {
   const { score, keywords, parts } = result;
   const skills = keywords.missing.filter((k) => !isQual(k)).sort(byImportance);
   const complete = parts.find((p) => p.id === 'complete');
+  if (short) {
+    if (score >= 85) return 'Strong match. Check every line is true.';
+    if (skills.length && skills[0].must) return `Biggest gap: “${skills[0].term}”.`;
+    if (skills.length) return `${skills.length} skill${skills.length === 1 ? '' : 's'} still missing.`;
+    if (complete && complete.value < 1) return 'Finish the missing sections.';
+    return 'Keywords covered. Add real figures to lift it.';
+  }
   if (score >= 85) return 'Your resume speaks this job’s language. Read it through once more to be sure every line is true.';
   if (skills.length && skills[0].must) return `Biggest gap: “${skills[0].term}”. Add it where it’s true for you, in your work history or summary.`;
   if (skills.length) return `${skills.length} of the job’s skills ${skills.length === 1 ? 'is' : 'are'} not on your resume yet. Add only what you really do.`;
@@ -227,14 +234,15 @@ const Chip = ({ children, tone, delay = 0 }) => {
   );
 };
 
-const Group = ({ title, note, count = 0, children }) => (
-  <div className="mt-6 first:mt-0">
+const Group = ({ title, note, shortNote, count = 0, children }) => (
+  <div className="mt-4 first:mt-0 sm:mt-6 sm:first:mt-0">
     <div className="flex items-baseline justify-between gap-3">
       <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
       {count > 0 && <span className="text-xs tabular-nums text-slate-400">{count}</span>}
     </div>
-    {note && <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{note}</p>}
-    <div className="mt-3 flex flex-wrap gap-1.5">{children}</div>
+    {shortNote && <p className="mt-0.5 text-xs leading-snug text-slate-500 sm:hidden">{shortNote}</p>}
+    {note && <p className="mt-0.5 hidden text-xs leading-relaxed text-slate-500 sm:block">{note}</p>}
+    <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-3">{children}</div>
   </div>
 );
 
@@ -288,46 +296,49 @@ const Panel = ({ result, target, onClose, onEdit }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="jm-panel absolute inset-x-0 bottom-0 flex max-h-[90vh] flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[430px] lg:rounded-none"
+        className="jm-panel absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col overflow-hidden rounded-none bg-white shadow-2xl lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[430px]"
       >
         {/* Header: the dark half, with the score as the hero */}
-        <div className="relative shrink-0 overflow-hidden px-5 pb-6 pt-5 text-white" style={{ background: 'linear-gradient(165deg,#0b1220 0%,#16213a 58%,#222f4d 100%)' }}>
+        <div className="relative shrink-0 overflow-hidden px-4 pb-4 pt-4 text-white sm:px-5 sm:pb-6 sm:pt-5" style={{ background: 'linear-gradient(165deg,#0b1220 0%,#16213a 58%,#222f4d 100%)' }}>
           <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full opacity-30 blur-3xl" style={{ background: ACCENT }} aria-hidden="true" />
           <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/50">Job match</p>
-              <h2 id={titleId} className="mt-1 truncate text-lg font-semibold leading-snug">{target.title || 'Your target job'}</h2>
-              {target.company && <p className="truncate text-sm text-white/60">{target.company}</p>}
+              <p className="hidden text-[11px] font-semibold uppercase tracking-[0.16em] text-white/50 sm:block">Job match</p>
+              <h2 id={titleId} className="truncate text-base font-semibold leading-snug sm:mt-1 sm:text-lg">{target.title || 'Your target job'}</h2>
+              {target.company && <p className="truncate text-xs text-white/60 sm:text-sm">{target.company}</p>}
             </div>
             <button
               ref={closeRef}
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className={`-mr-1.5 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white ${FOCUS}`}
+              className={`-mr-1.5 -mt-1 flex h-8 w-8 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white ${FOCUS}`}
             >
               <Icon d={ICON.close} className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="relative mt-6 flex items-center gap-5">
-            <Ring pct={shown / 100} size={116} stroke={8} animate={false}>
-              <span className="flex flex-col items-center leading-none">
-                <span className="text-4xl font-semibold tabular-nums tracking-tight">{shown}</span>
-                <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-white/45">of 100</span>
-              </span>
-            </Ring>
+          <div className="relative mt-3 flex items-center gap-3 sm:mt-6 sm:gap-5">
+            <div className="h-[68px] w-[68px] shrink-0 sm:h-[116px] sm:w-[116px]">
+              <Ring pct={shown / 100} size="100%" stroke={8} animate={false}>
+                <span className="flex flex-col items-center leading-none">
+                  <span className="text-xl font-semibold tabular-nums tracking-tight sm:text-4xl">{shown}</span>
+                  <span className="mt-0.5 text-[8px] font-medium uppercase tracking-[0.1em] text-white/45 sm:mt-1 sm:text-[10px] sm:tracking-[0.14em]">of 100</span>
+                </span>
+              </Ring>
+            </div>
             <div className="min-w-0">
-              <p className="text-base font-semibold">{scoreLabel(result.score)}</p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-white/70">{insight(result)}</p>
+              <p className="text-sm font-semibold sm:text-base">{scoreLabel(result.score)}</p>
+              <p className="mt-0.5 text-xs leading-snug text-white/70 sm:hidden">{insight(result, true)}</p>
+              <p className="mt-1.5 hidden text-[13px] leading-relaxed text-white/70 sm:block">{insight(result)}</p>
             </div>
           </div>
         </div>
 
         {/* Body */}
-        <div className="pro-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-6">
+        <div className="pro-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-5 sm:pb-6 sm:pt-6">
           <Group title="Where your points come from">
-            <ul className="w-full space-y-4">
+            <ul className="w-full space-y-3 sm:space-y-4">
               {result.parts.map((part) => {
                 const pct = Math.round(part.value * 100);
                 return (
@@ -344,15 +355,15 @@ const Panel = ({ result, target, onClose, onEdit }) => {
                         style={{ width: `${pct}%`, background: `linear-gradient(90deg,#f0b6a3,${ACCENT})` }}
                       />
                     </div>
-                    <p className="mt-1.5 text-xs leading-snug text-slate-500">{part.hint}</p>
-                    {TIPS[part.id] && part.value < 1 && <p className="mt-0.5 text-xs leading-snug text-slate-400">{TIPS[part.id]}</p>}
+                    <p className="mt-1.5 hidden text-xs leading-snug text-slate-500 sm:block">{part.hint}</p>
+                    {TIPS[part.id] && part.value < 1 && <p className="mt-0.5 hidden text-xs leading-snug text-slate-400 sm:block">{TIPS[part.id]}</p>}
                   </li>
                 );
               })}
             </ul>
           </Group>
 
-          <div className="mt-8 border-t border-slate-100 pt-7">
+          <div className="mt-5 border-t border-slate-100 pt-5 sm:mt-8 sm:pt-7">
             {covered.length > 0 && (
               <Group title="Already on your resume" count={covered.length}>
                 {covered.slice(0, MAX_CHIPS).map((kw, i) => (
@@ -363,7 +374,7 @@ const Panel = ({ result, target, onClose, onEdit }) => {
             )}
 
             {missingSkills.length > 0 && (
-              <Group title="Still missing" count={missingSkills.length} note="Work them in only where they’re true for you. Chips with a dot are must-haves for this job.">
+              <Group title="Still missing" count={missingSkills.length} note="Work them in only where they’re true for you. Chips with a dot are must-haves for this job." shortNote="Dotted chips are must-haves.">
                 {missingSkills.slice(0, MAX_CHIPS).map((kw, i) => (
                   <Chip key={kw.term} tone={kw.must ? 'must' : 'missing'} delay={i}>{kw.term}</Chip>
                 ))}
@@ -372,7 +383,7 @@ const Panel = ({ result, target, onClose, onEdit }) => {
             )}
 
             {missingQuals.length > 0 && (
-              <Group title="Qualifications the job lists" count={missingQuals.length} note="These count only if you hold them. If you do, add them under Education.">
+              <Group title="Qualifications the job lists" count={missingQuals.length} note="These count only if you hold them. If you do, add them under Education." shortNote="Add under Education only if you hold them.">
                 {missingQuals.map((kw, i) => (
                   <Chip key={kw.term} tone="qual" delay={i}>{kw.term}</Chip>
                 ))}
@@ -382,11 +393,11 @@ const Panel = ({ result, target, onClose, onEdit }) => {
             {missing.length === 0 && <p className="text-sm text-slate-700">Every keyword from the job is on your resume.</p>}
           </div>
 
-          <p className="mt-8 text-xs leading-relaxed text-slate-400">Scored on your device as you type. Keywords are worth 70 points, the other three checks 10 each.</p>
+          <p className="mt-8 hidden text-xs leading-relaxed text-slate-400 sm:block">Scored on your device as you type. Keywords are worth 70 points, the other three checks 10 each.</p>
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 items-center gap-2.5 border-t border-slate-100 bg-white px-5 py-3.5" style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex shrink-0 items-center gap-2.5 border-t border-slate-100 bg-white px-4 py-3 sm:px-5 sm:py-3.5" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <button
             type="button"
             onClick={() => {

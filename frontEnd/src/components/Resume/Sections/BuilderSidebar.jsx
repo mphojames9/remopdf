@@ -15,6 +15,8 @@ import React, { useEffect, useRef, useState } from 'react';
 /*                       button. Without it the browser goes back one page    */
 /*    onBuildCoverLetter click handler for the cover letter button            */
 /*    importSlot         the existing <ResumeUpload onImport={...} />         */
+/*    mobileSlot         optional rows shown at the top of the drawer on      */
+/*                       small screens only (hidden from lg up)              */
 /*    open / onClose     mobile drawer state                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -262,7 +264,7 @@ const StepRow = ({ step, index, active, completed, canVisit, onSelect }) => {
   );
 };
 
-const BuilderSidebar = ({ steps, currentIndex, completedSteps, progress, onSelect, onBack, onBuildCoverLetter, importSlot, open, onClose }) => {
+const BuilderSidebar = ({ steps, currentIndex, completedSteps, progress, onSelect, onBack, onBuildCoverLetter, importSlot, mobileSlot, open, onClose }) => {
   return (
     <aside
       aria-label="Resume builder"
@@ -277,6 +279,8 @@ const BuilderSidebar = ({ steps, currentIndex, completedSteps, progress, onSelec
             <CloseIcon />
           </button>
         </div>
+
+        {mobileSlot && <div className="mb-4 space-y-0.5 border-b border-white/10 pb-4 lg:hidden">{mobileSlot}</div>}
 
         <nav aria-label="Resume steps">
           <ol className="space-y-0.5">
