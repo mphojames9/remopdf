@@ -13,9 +13,19 @@ What they are for
   - ensure_position() is the last guarantee: whatever the model did, the first paragraph names the position.
   - normalize_dashes() turns the Unicode hyphens a model likes to use into a plain "-". The PDF fonts have no glyph
     for them, so "high-gloss" used to print as "highgloss".
+  - Qualifications. A degree, diploma or certificate is checked by the employer with the school, so a letter may name
+    one ONLY if the resume's Education or Certificates sections list it. The Summary and Skills do not count: they
+    are free text and can be filled from the job advert ("Bachelor's degree or Diploma Operations Management"),
+    which is what once put two qualifications in a letter for a person who held one.
+        held_qualification_text()                    Education + Certificates as one line of text
+        unsupported_qualifications()                 what a text claims that the resume does not list
+        drop_unsupported_qualification_sentences()   the last guarantee: removes every sentence that claims one
+        drop_unlisted_qualification_terms()          keeps an unlisted qualification out of the ATS keywords
+        looks_like_qualification()                   a Skills entry that is really a qualification
+    Mirrors src/utils/letterClaims.js (the same check on the device). Keep _QUALIFICATION_KINDS in step with KINDS there.
 """
 import re
-from typing import List, Tuple
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 # --------------------------------------------------------------------------- #
 #                      boilerplate lines in job adverts                       #
@@ -109,6 +119,270 @@ def matching_terms(posting_items: List[str], corpus: str, limit: int = 12) -> Li
 
 
 # --------------------------------------------------------------------------- #
+#                  qualifications: only what the resume lists                 #
+# --------------------------------------------------------------------------- #
+
+_I = re.I
+
+# Each kind is looked for in this order, and the words a kind matches are blanked before the next kind looks, so
+# "National Senior Certificate" is one matric claim (not also a certificate) and "Master's degree" is one master claim.
+_QUALIFICATION_KINDS = [
+    ("matric", [re.compile(r"\b(?:national\s+senior\s+certificate|senior\s+certificate|matric(?:ulation)?|grade\s*1[0-2])\b", _I)]),
+    ("nqf", [re.compile(r"\bnqf\b", _I), re.compile(r"\bN[1-6]\b")]),
+    (
+        "bachelor",
+        [
+            re.compile(r"\bbachelor['’]?s?\b", _I),
+            re.compile(r"\bB\.?\s?(?:Sc|Com|Comm|Tech|Eng|Ed|Admin|Phil|Compt)\b"),
+            re.compile(r"\bB\.?A\b\.?"),
+            re.compile(r"\bBBA\b"),
+            re.compile(r"\bLLB\b"),
+        ],
+    ),
+    (
+        "master",
+        [
+            re.compile(r"\b(?:master['’]?s|master\s+(?:degree|of|in)|mba)\b", _I),
+            re.compile(r"\bM\.?\s?(?:Sc|Com|Tech|Eng|Ed|Phil|Admin)\b"),
+            re.compile(r"\bM\.?A\b\.?"),
+        ],
+    ),
+    ("honours", [re.compile(r"\b(?:honou?rs|hons)\b", _I)]),
+    ("doctorate", [re.compile(r"\b(?:ph\.?\s?d|doctorate|doctoral)\b", _I)]),
+    ("degree", [re.compile(r"\bdegrees?\b", _I)]),
+    ("diploma", [re.compile(r"\bdiplomas?\b", _I)]),
+    (
+        "certificate",
+        [
+            re.compile(r"\b(?:certificates?|certifications?)\b", _I),
+            re.compile(r"\b(?:am|was|being|become|became)\s+(?:an?\s+)?(?:fully\s+)?certified\b", _I),
+        ],
+    ),
+]
+
+# "a high degree of accuracy" is not a qualification
+_DEGREE_BEFORE_RE = re.compile(
+    r"\b(?:high|higher|large|great|greater|certain|some|any|same|significant|considerable|fair|good|varying|lesser)\s+$", _I
+)
+_DEGREE_AFTER_RE = re.compile(r"^\s+of\b", _I)
+
+# What the RESUME must hold for a kind in the letter to be backed. Any degree backs the word "degree"; nothing else is
+# interchangeable (a diploma does not back a bachelor's degree).
+_BACKED_BY = {
+    "matric": ("matric",),
+    "nqf": ("nqf",),
+    "bachelor": ("bachelor",),
+    "master": ("master",),
+    "honours": ("honours",),
+    "doctorate": ("doctorate",),
+    "degree": ("degree", "bachelor", "master", "honours", "doctorate"),
+    "diploma": ("diploma",),
+    "certificate": ("certificate",),
+}
+
+# "Diploma in Operations Management": the qualification word, then the subject. The subject must be listed too.
+_QUALIFICATION_WORD_RE = re.compile(
+    r"\b(?:diplomas?|degrees?|certificates?|certification|bachelor['’]?s?(?:\s+degree)?|master['’]?s?(?:\s+degree)?"
+    r"|honou?rs(?:\s+degree)?|doctorate)\b",
+    _I,
+)
+_SUBJECT_RE = re.compile(
+    r"^(?:\s+(?:in|of))?\s+([A-Z][A-Za-z&'’-]*(?:\s+(?:(?:and|of|in|for|&)\s+)?[A-Z][A-Za-z&'’-]*){0,4})"
+)
+_SUBJECT_CONNECTORS = frozenset({"and", "of", "in", "for", "the"})
+
+# A qualification is not a skill: degrees, diplomas, certificates, licences, registrations, school grades and
+# "N years of experience". Same words as _QUALIFICATION_RE in routers/job_match.py and skillFilter.js on the device.
+_LOOKS_LIKE_QUALIFICATION_RE = re.compile(
+    r"\b("
+    r"bachelor['’]?s?|b\.?\s?sc|b\.?\s?com|b\.?\s?tech|btech|honou?rs|master['’]s|masters|mba|ph\.?d|doctorate|"
+    r"degree|diploma|higher certificate|national certificate|senior certificate|n[1-6]|nqf(?:\s*level)?(?:\s*\d+)?|"
+    r"matric|grade\s*1[0-2]|"
+    r"certificate|certification|certified|accredited|accreditation|"
+    r"licen[cs]e|licen[cs]ed|qualification|qualified|registration|registered|"
+    r"\d+\+?\s*(?:years?|yrs?)|years?['’]?\s+(?:of\s+)?experience"
+    r")\b",
+    _I,
+)
+
+
+def _squash(value) -> str:
+    return re.sub(r"\s+", " ", value).strip() if isinstance(value, str) else ""
+
+
+def _kinds_in(text: str) -> List[Tuple[int, str, str]]:
+    """[(position, kind, phrase)] for every qualification named in `text`, in reading order."""
+    work = text or ""
+    found: List[Tuple[int, str, str]] = []
+    for kind, patterns in _QUALIFICATION_KINDS:
+        for pattern in patterns:
+            source = work
+            for m in pattern.finditer(source):
+                if kind == "degree" and (
+                    _DEGREE_BEFORE_RE.search(source[: m.start()]) or _DEGREE_AFTER_RE.match(source[m.end():])
+                ):
+                    continue
+                found.append((m.start(), kind, m.group(0)))
+                work = work[: m.start()] + " " * (m.end() - m.start()) + work[m.end():]
+    return sorted(found, key=lambda item: item[0])
+
+
+def _prefixes(text: str) -> set:
+    return {w[:5] for w in re.findall(r"[a-z]+", (text or "").lower())}
+
+
+def _unlisted_subjects(text: str, held_text: str) -> List[str]:
+    """'Diploma in Operations Management' when the resume lists a diploma, but not in that subject."""
+    held = _prefixes(held_text)
+    out: List[str] = []
+    for m in _QUALIFICATION_WORD_RE.finditer(text or ""):
+        subject = _SUBJECT_RE.match(text[m.end():])
+        if not subject:
+            continue
+        words = [w for w in re.findall(r"[A-Za-z]+", subject.group(1)) if w.lower() not in _SUBJECT_CONNECTORS and len(w) >= 3]
+        if words and any(w.lower()[:5] not in held for w in words):
+            out.append(_squash(m.group(0) + subject.group(0)))
+    return out
+
+
+def _mask_phrases(text: str, ignore: Iterable[str]) -> str:
+    out = text or ""
+    for phrase in ignore or ():
+        words = _squash(phrase).split(" ")
+        words = [w for w in words if w]
+        if not words:
+            continue
+        pattern = re.compile(r"\s+".join(re.escape(w) for w in words), _I)
+        out = pattern.sub(lambda hit: " " * len(hit.group(0)), out)
+    return out
+
+
+def _education_parts(entry) -> Tuple[str, str, str]:
+    """(degree, field, institution) from a tuple or from an object with those attributes."""
+    if isinstance(entry, (tuple, list)):
+        degree, field, institution = (list(entry) + ["", "", ""])[:3]
+    else:
+        degree, field, institution = (getattr(entry, name, "") for name in ("degree", "field", "institution"))
+    return _squash(degree), _squash(field), _squash(institution)
+
+
+def held_qualification_text(education: Sequence = (), certificates: Optional[Sequence[str]] = None) -> str:
+    """The Education entries and the Certificates, as one line of text. '' when the resume lists none.
+
+    education: (degree, field, institution) tuples, or objects with those three attributes.
+    certificates: the names exactly as the Certificates section lists them.
+    """
+    rows: List[str] = []
+    for entry in education or ():
+        degree, field, institution = _education_parts(entry)
+        name = f"{degree} {field}" if degree and field and field.lower() not in degree.lower() else (degree or field)
+        row = ", ".join(part for part in (name, institution) if part)
+        if row:
+            rows.append(row)
+    for certificate in certificates or ():
+        name = _squash(certificate)
+        if name:
+            rows.append(f"Certificate: {name}")
+    return "; ".join(rows)
+
+
+def unsupported_qualifications(text: str, held_text: str, history: str = "", ignore: Iterable[str] = ()) -> List[str]:
+    """The degrees, diplomas and certificates named in `text` that the resume does not list, as `text` words them.
+
+    held_text: held_qualification_text(...). '' means the resume lists nothing, so every claim is unsupported.
+    history: the applicant's own work-history wording. It can back the word "certificate" ("issued certificates to
+             trainees" describes work), but never a degree, diploma or any other qualification: those must be listed
+             under Education, whatever the duties say.
+    ignore: phrases that are not claims (the position title and company name from the advert, the applicant's own job
+            titles and employers).
+    """
+    clear = _mask_phrases(text, ignore)
+    if not _squash(clear):
+        return []
+    held = {kind for _, kind, _ in _kinds_in(held_text)}
+    own_words = _squash(history).lower()
+
+    bad: List[str] = []
+    for _, kind, phrase in _kinds_in(clear):
+        if any(k in held for k in _BACKED_BY[kind]):
+            continue
+        if kind == "certificate" and own_words and phrase.lower() in own_words:
+            continue
+        bad.append(phrase)
+    bad.extend(_unlisted_subjects(clear, held_text))
+    return list(dict.fromkeys(bad))
+
+
+def looks_like_qualification(text: str) -> bool:
+    """True when a Skills entry is really a qualification (degree, diploma, certificate, licence, years of experience)."""
+    return bool(_LOOKS_LIKE_QUALIFICATION_RE.search(text or ""))
+
+
+def drop_unlisted_qualification_terms(terms: Iterable[str], held_text: str) -> List[str]:
+    """The shared keywords, minus any qualification word the resume's Education and Certificates do not list."""
+    held = {kind for _, kind, _ in _kinds_in(held_text)}
+    kept: List[str] = []
+    for term in terms:
+        if all(any(k in held for k in _BACKED_BY[kind]) for _, kind, _ in _kinds_in(term)):
+            kept.append(term)
+    return kept
+
+
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+_BULLET_RE = re.compile(r"^\s*[-•]\s+")
+
+
+def drop_unsupported_qualification_sentences(body: str, held_text: str, history: str = "", ignore: Iterable[str] = ()) -> str:
+    """The letter with every sentence (or bullet) that claims an unlisted qualification taken out.
+
+    Paragraph breaks and bullets are kept; a paragraph left empty goes too. The result is checked again as a whole and
+    anything still unsupported is removed, so unsupported_qualifications() on the result is always []. A letter that
+    claims nothing unlisted comes back unchanged.
+    """
+    ignore = tuple(ignore or ())
+
+    def claims(piece: str) -> bool:
+        return bool(unsupported_qualifications(piece, held_text, history, ignore))
+
+    def clean_once(text: str) -> str:
+        paragraphs: List[str] = []
+        for paragraph in re.split(r"\n\s*\n", text):
+            lines: List[str] = []
+            for line in paragraph.split("\n"):
+                if not line.strip():
+                    continue
+                if _BULLET_RE.match(line):
+                    if not claims(line):
+                        lines.append(line)
+                    continue
+                if not claims(line):
+                    lines.append(line)
+                    continue
+                kept = [s for s in _SENTENCE_SPLIT_RE.split(line.strip()) if s and not claims(s)]
+                if kept:
+                    lines.append(" ".join(kept))
+            if lines:
+                paragraphs.append("\n".join(lines))
+        return "\n\n".join(paragraphs)
+
+    if not unsupported_qualifications(body, held_text, history, ignore):
+        return body
+
+    result = clean_once(body)
+    # A claim can straddle a line break ("...a degree" / "Operations Management"). Remove whatever the whole-text check
+    # still finds, sentence by sentence; if that does not clear it, nothing safe is left to return.
+    for _ in range(3):
+        left = unsupported_qualifications(result, held_text, history, ignore)
+        if not left:
+            return result.strip()
+        pieces = [p for p in re.split(r"(?<=[.!?])\s+|\n+", result) if p.strip()]
+        offending = {w.lower() for w in left}
+        survivors = [p for p in pieces if not any(w in p.lower() for w in offending)]
+        result = "\n\n".join(survivors) if survivors != pieces else ""
+    return result.strip() if not unsupported_qualifications(result, held_text, history, ignore) else ""
+
+
+# --------------------------------------------------------------------------- #
 #                               the finished letter                           #
 # --------------------------------------------------------------------------- #
 
@@ -148,10 +422,44 @@ def _first_paragraph(body: str) -> str:
     return body.split("\n\n", 1)[0] if body else ""
 
 
-def letter_problems(body: str, job_title: str, items: List[str]) -> List[str]:
-    """What is wrong with a finished letter, as instructions the model can follow. Empty when it is fine."""
+def qualification_problem(claimed: List[str], held_text: str) -> str:
+    """The instruction that tells the model which qualifications it may not name, and which ones the applicant holds."""
+    named = ", ".join(f'"{c}"' for c in claimed[:4])
+    if _squash(held_text):
+        return (
+            f"The letter names a qualification the resume does not list: {named}. "
+            f"The ONLY qualifications this applicant holds are: {_squash(held_text)}. "
+            "Remove every other degree, diploma or certificate, even when the job posting asks for it: the posting says "
+            "what the employer wants, not what the applicant has. When the posting offers a choice (\"X or Y\"), name only "
+            "the one that is listed."
+        )
+    return (
+        f"The letter names a qualification the resume does not list: {named}. "
+        "The resume lists no degree, diploma or certificate at all. Remove every one from the letter, even when the job "
+        "posting asks for it."
+    )
+
+
+def letter_problems(
+    body: str,
+    job_title: str,
+    items: List[str],
+    held_text: Optional[str] = None,
+    history: str = "",
+    ignore: Iterable[str] = (),
+) -> List[str]:
+    """What is wrong with a finished letter, as instructions the model can follow. Empty when it is fine.
+
+    held_text: held_qualification_text(...). None skips the qualification check; '' means the resume lists none.
+    The qualification problem always comes first, so the cut at four problems can never drop it.
+    """
     problems: List[str] = []
     title = job_title.strip()
+
+    if held_text is not None:
+        claimed = unsupported_qualifications(body, held_text, history, ignore)
+        if claimed:
+            problems.append(qualification_problem(claimed, held_text))
 
     if title and not mentions(_first_paragraph(body), title):
         problems.append(f'The first sentence must name the position exactly as written: "{title}".')

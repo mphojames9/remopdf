@@ -21,6 +21,7 @@ import {
   targetKeyOf,
 } from '../../utils/coverLetter';
 import { generateCoverLetterBody, readJobPosting } from '../../utils/coverLetterAI';
+import { dropUnlistedQualificationSentences, unlistedQualifications } from '../../utils/letterClaims';
 import {
   PAGE_W,
   PAGE_H,
@@ -422,7 +423,25 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
     [resume, letter.tone, letter.jobTitle, letter.company],
   );
   // The person's own text, else the AI's letter, else the plain draft.
-  const body = letter.bodyEdited ? letter.body : letter.aiBody || draft;
+  const storedBody = letter.bodyEdited ? letter.body : letter.aiBody || draft;
+
+  // A degree, diploma or certificate is checked by the employer with the school, so a letter may name only those the
+  // resume lists under Education or Certificates (utils/letterClaims.js). The position and company are not claims.
+  // A letter the APP wrote (the AI's, one saved before this check existed, or the draft) never shows or prints a
+  // sentence that claims an unlisted one. The person's own wording is left as they wrote it, with a warning.
+  const claimIgnore = useMemo(() => [letter.jobTitle, letter.company], [letter.jobTitle, letter.company]);
+  const body = useMemo(
+    () => (letter.bodyEdited ? storedBody : dropUnlistedQualificationSentences(storedBody, resume, claimIgnore)),
+    [letter.bodyEdited, storedBody, resume, claimIgnore],
+  );
+  const removedClaims = useMemo(
+    () => (letter.bodyEdited ? [] : unlistedQualifications(storedBody, resume, claimIgnore)),
+    [letter.bodyEdited, storedBody, resume, claimIgnore],
+  );
+  const ownUnlistedClaims = useMemo(
+    () => (letter.bodyEdited ? unlistedQualifications(body, resume, claimIgnore) : []),
+    [letter.bodyEdited, body, resume, claimIgnore],
+  );
 
   // What the AI letter is written from. When it stops matching, the page offers to write it again.
   const signature = useMemo(
@@ -1048,6 +1067,29 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
                     }
                   >
                     The position, company, tone, job requirements or resume changed since this letter was written.
+                  </Notice>
+                )}
+
+                {!writing && removedClaims.length > 0 && (
+                  <Notice
+                    tone="warn"
+                    icon={<IconInfo className="h-3.5 w-3.5" />}
+                    className="mb-3"
+                    action={
+                      ai.state !== 'blocked' ? (
+                        <button type="button" onClick={() => generate({ fresh: true })} className={navyPillClass}>
+                          Rewrite with AI
+                        </button>
+                      ) : null
+                    }
+                  >
+                    We took out a sentence that named a qualification your resume does not list ({joinList(removedClaims.map((q) => `“${q}”`))}). Employers check qualifications with the school, so a letter may only name what is under Education or Certificates. If you do hold it, add it there first.
+                  </Notice>
+                )}
+
+                {!writing && ownUnlistedClaims.length > 0 && (
+                  <Notice tone="warn" icon={<IconInfo className="h-3.5 w-3.5" />} className="mb-3">
+                    Your letter names a qualification your resume does not list ({joinList(ownUnlistedClaims.map((q) => `“${q}”`))}). Employers check these with the school, so remove it from the letter, or add it under Education or Certificates first if you hold it.
                   </Notice>
                 )}
               </div>
