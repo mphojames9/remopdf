@@ -4,6 +4,7 @@ import logo from '../../assets/logo1.webp'; // the logo for light bars (logo.web
 import { usePremiumAccess, useSignedIn, requestUpgrade, requestSignIn } from '../../hooks/premiumAccess';
 import {
   TONES,
+  TEMPLATES,
   MAX_BODY_CHARS,
   MAX_FIELD_CHARS,
   MAX_URL_CHARS,
@@ -58,7 +59,8 @@ import {
  *                  twice; removing the job target on the resume takes the imported details out of the letter too.
  *  - accountFirstName, accountLastName: the signed-in account's name. Used for the letter's heading and signature
  *                  when the resume's Heading step has no name yet.
- *  - accentColor:  the resume's colour (#rrggbb); the letter's header line and bullets use it
+ *  - accentColor:  the resume's colour (#rrggbb); the letter's banner tint, divider, bullets and signature use it
+ *                  (the Classic design uses it for its header line and bullets)
  *  - storageKey:   one letter is kept per resume under this key (localStorage, on this device)
  *  - checkPremium: async () => boolean, asked at download time. Premium gets a clean page; others get a small label.
  *  - onClose:      () => void
@@ -70,6 +72,8 @@ const AUTO_WRITE_WITHOUT_JOB = false;
 
 const PREVIEW_FONT = "Helvetica, Arial, 'Liberation Sans', sans-serif";
 const ASCENT = 0.8465; // where Arial/Helvetica put the baseline inside a line box of height = font size
+const PREVIEW_SERIF = "'Times New Roman', Times, 'Liberation Serif', serif"; // the Banner design's name and signature (Times in the PDF)
+const ASCENT_SERIF = 0.8375; // the same, for Times
 
 /* ------------------------------------------------------------------ icons */
 
@@ -261,6 +265,42 @@ const Notice = ({ tone = 'info', icon, action, className = '', children, ...rest
   );
 };
 
+/* ------------------------------------------------------------------ design picker */
+
+// A tiny drawing of each design for the picker (the real thing is drawn by utils/coverLetterPdf.js).
+const DesignThumb = ({ id, accent }) => {
+  const color = /^#[0-9a-f]{6}$/i.test(accent || '') ? accent : '#1e3a8a';
+  const deep = `color-mix(in srgb, ${color} 45%, #000)`;
+  const tint = `color-mix(in srgb, ${color} 8%, #f5eedc)`;
+  // Lines of the letter underneath the header: a number is a line of that width in %, 0 is a gap.
+  const lines = id === 'banner' ? [30, 22, 0, 100, 96, 100, 64, 0, 100, 90, 54] : [100, 94, 100, 58, 0, 100, 96, 100, 70, 0, 100, 88];
+  return (
+    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[3px] bg-white ring-1 ring-slate-900/10" aria-hidden="true">
+      {id === 'banner' ? (
+        <div className="absolute inset-x-[8%] top-[7%] h-[27%]" style={{ background: tint }}>
+          <span className="absolute left-[9%] top-[24%] h-[15%] w-[40%] rounded-[1px]" style={{ background: deep }} />
+          <span className="absolute left-[9%] top-[44%] h-[15%] w-[30%] rounded-[1px]" style={{ background: deep }} />
+          <span className="absolute left-[9%] top-[70%] h-[5%] w-[34%] rounded-full opacity-60" style={{ background: deep }} />
+          <span className="absolute bottom-0 left-[60%] top-0 w-px" style={{ background: deep }} />
+          {[30, 46, 62].map((top) => (
+            <span key={top} className="absolute left-[67%] h-[5%] w-[24%] rounded-full bg-slate-500/50" style={{ top: `${top}%` }} />
+          ))}
+        </div>
+      ) : (
+        <>
+          <span className="absolute left-[8%] top-[7%] h-[4.5%] w-[38%] rounded-[1px] bg-slate-800" />
+          <span className="absolute left-[8%] top-[13.5%] h-[2.5%] w-[26%] rounded-full" style={{ background: color }} />
+          <span className="absolute left-[8%] top-[18%] h-[2%] w-[56%] rounded-full bg-slate-300" />
+          <span className="absolute inset-x-[8%] top-[23%] h-[1.5px]" style={{ background: color }} />
+        </>
+      )}
+      <div className={`absolute inset-x-[8%] flex flex-col gap-[3.2%] ${id === 'banner' ? 'top-[40%]' : 'top-[30%]'}`}>
+        {lines.map((w, i) => (w === 0 ? <span key={i} className="h-[2%]" /> : <span key={i} className="h-[1.5px] rounded-full bg-slate-300" style={{ width: `${w}%` }} />))}
+      </div>
+    </div>
+  );
+};
+
 /* ------------------------------------------------------------------ preview */
 
 const colorOf = (rgb) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
@@ -304,13 +344,13 @@ const PreviewPage = ({ page, scale, index, total }) => (
               style={{
                 position: 'absolute',
                 left: item.x,
-                top: item.baseline - item.size * ASCENT,
+                top: item.baseline - item.size * (item.serif ? ASCENT_SERIF : ASCENT),
                 fontSize: item.size,
                 lineHeight: 1,
                 whiteSpace: 'pre',
                 fontWeight: item.bold ? 700 : 400,
                 color: colorOf(item.color),
-                fontFamily: PREVIEW_FONT,
+                fontFamily: item.serif ? PREVIEW_SERIF : PREVIEW_FONT,
               }}
             >
               {item.text}
@@ -330,7 +370,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   // already know the position, company and requirements.
   const [letter, setLetter] = useState(() => syncWithTarget(loadLetter(storageKey), resumeData?.jobTarget));
   const [view, setView] = useState('edit'); // small screens show one side at a time
-  const [open, setOpen] = useState({ job: true, who: false, tone: false, letter: true }); // which dropdown steps are open
+  const [open, setOpen] = useState({ job: true, who: false, tone: false, design: false, letter: true }); // which dropdown steps are open
   const [fonts, setFonts] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
@@ -441,8 +481,8 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   const model = useMemo(() => buildLetterModel(resume, letter, body), [resume, letter, body]);
   const prepared = useMemo(() => (fonts ? sanitizeModel(model, fonts) : null), [fonts, model]);
   const layout = useMemo(
-    () => (prepared ? layoutLetter(prepared.model, fonts, { accent: accentColor, watermark }) : null),
-    [prepared, fonts, accentColor, watermark],
+    () => (prepared ? layoutLetter(prepared.model, fonts, { accent: accentColor, watermark, template: letter.template }) : null),
+    [prepared, fonts, accentColor, watermark, letter.template],
   );
 
   const fullName = fullNameOf(resume?.personal);
@@ -655,6 +695,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
         accent: accentColor,
         watermark: isPremium ? null : COVER_LETTER_WATERMARK,
         title: baseName,
+        template: letter.template,
       });
       downloadBlob(new Blob([bytes], { type: 'application/pdf' }), `${baseName}.pdf`);
     } catch (err) {
@@ -680,6 +721,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
         : 'Paste a link to the advert';
   const whoSummary = [letter.jobTitle.trim(), letter.company.trim()].filter(Boolean).join(' · ') || 'Position, company, address';
   const toneSummary = (TONES.find((t) => t.id === letter.tone) || {}).label || '';
+  const designSummary = (TEMPLATES.find((t) => t.id === letter.template) || TEMPLATES[0]).label;
   const letterStatus = writing ? 'Writing…' : letter.bodyEdited ? 'Your own wording' : letter.aiBody ? 'Written by AI' : 'Starter draft';
   const letterSummary = `${letterStatus} · ${wordCount} ${wordCount === 1 ? 'word' : 'words'}`;
 
@@ -950,8 +992,32 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
               </p>
             </Accordion>
 
-            {/* 4 · The letter */}
-            <Accordion id="cl-sec-letter" step="4" title="Letter" summary={letterSummary} open={open.letter} onToggle={() => toggleSection('letter')} busy={writing}>
+            {/* 4 · Design */}
+            <Accordion id="cl-sec-design" step="4" title="Design" summary={designSummary} open={open.design} onToggle={() => toggleSection('design')}>
+              <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Design of the letter">
+                {TEMPLATES.map((design) => {
+                  const selected = letter.template === design.id;
+                  return (
+                    <button
+                      key={design.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setLetter((prev) => ({ ...prev, template: design.id }))}
+                      className={`group rounded-xl p-2 text-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none ${
+                        selected ? 'bg-[#d9856b]/10 ring-2 ring-[#d9856b]' : 'bg-slate-50 ring-1 ring-slate-200 hover:bg-slate-100 hover:ring-slate-300'
+                      }`}
+                    >
+                      <DesignThumb id={design.id} accent={accentColor} />
+                      <span className={`mt-2 block text-[12.5px] font-medium sm:text-[13px] ${selected ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{design.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Accordion>
+
+            {/* 5 · The letter */}
+            <Accordion id="cl-sec-letter" step="5" title="Letter" summary={letterSummary} open={open.letter} onToggle={() => toggleSection('letter')} busy={writing}>
               {(confirm || letter.bodyEdited || ai.state !== 'blocked') && (
                 <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
                   {confirm ? (

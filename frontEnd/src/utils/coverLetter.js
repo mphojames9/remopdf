@@ -36,6 +36,13 @@ export const TONES = [
 ];
 const TONE_IDS = TONES.map((t) => t.id);
 
+// The letter's designs (drawn by utils/coverLetterPdf.js). The first one is what a letter starts with.
+export const TEMPLATES = [
+  { id: 'banner', label: 'Banner' },
+  { id: 'classic', label: 'Classic' },
+];
+const TEMPLATE_IDS = TEMPLATES.map((t) => t.id);
+
 const MAX_FIELD = 200;
 const MAX_URL = 2000;
 const MAX_REQUIREMENTS = 15;
@@ -492,6 +499,7 @@ export const defaultLetter = () => ({
   hiringManager: '',
   dateOverride: '', // '' = today
   tone: 'formal',
+  template: TEMPLATES[0].id, // the design of the page: 'banner' | 'classic'
   body: '',
   bodyEdited: false, // false: the text is the AI letter (or the starter draft); true: the person has written their own
   aiBody: '', // the letter the AI wrote from the resume ('' = none yet)
@@ -528,6 +536,7 @@ export const normalizeLetter = (saved) => {
     hiringManager: text(saved.hiringManager, MAX_FIELD),
     dateOverride: /^\d{4}-\d{2}-\d{2}$/.test(saved.dateOverride || '') ? saved.dateOverride : '',
     tone: TONE_IDS.includes(saved.tone) ? saved.tone : base.tone,
+    template: TEMPLATE_IDS.includes(saved.template) ? saved.template : base.template,
     body: edited ? text(saved.body, MAX_BODY) : '',
     bodyEdited: edited,
     aiBody: typeof saved.aiBody === 'string' ? text(saved.aiBody, MAX_BODY) : '',

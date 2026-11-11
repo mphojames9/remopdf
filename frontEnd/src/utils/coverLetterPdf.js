@@ -5,8 +5,13 @@
   pages. The on-screen preview draws those lines as text and buildCoverLetterPdf() draws the very same lines with
   pdf-lib, so what the person sees is what they download (same line breaks, same page breaks).
 
-  The PDF holds real text (Helvetica, selectable and readable by applicant-tracking systems), not a picture.
+  The PDF holds real text (Helvetica, plus Times for the name and signature in the Banner design, selectable and
+  readable by applicant-tracking systems), not a picture.
   All units are PDF points, measured from the top-left corner of the page.
+
+  Two designs (options.template): 'banner' (the default: a tinted banner with the name set large in a serif, a thin
+  divider and the contact details beside it, then an airy letter) and 'classic' (the plain letterhead with a thin
+  line). The tint, divider and signature take their colour from the resume's colour.
 */
 
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
@@ -30,6 +35,20 @@ const MUTED = [71, 85, 105];
 const FAINT = [148, 163, 184];
 const DEFAULT_ACCENT = [30, 58, 138];
 
+// The designs. `marginX` is the left and right margin of the whole letter; `ink` is the colour of the letter's text.
+export const DEFAULT_TEMPLATE = 'banner';
+const STYLES = {
+  classic: { marginX: MARGIN_X, size: BODY_SIZE, leading: BODY_LEADING, paraGap: PARA_GAP, ink: INK },
+  banner: { marginX: 54, size: BODY_SIZE, leading: 16.5, paraGap: 11, ink: [46, 44, 40] },
+};
+
+// Banner design measurements.
+const BANNER_TOP = 38;
+const BANNER_PAD_X = 30;
+const BANNER_PAD_Y = 28;
+const BANNER_MIN_H = 126;
+const BANNER_BASE = [245, 238, 220]; // the warm ivory the resume's colour is stirred into
+
 /* ------------------------------------------------------------------ fonts */
 
 // pdf-lib's built-in Helvetica fonts. Their measurements are available without any download, so the browser can
@@ -42,6 +61,7 @@ export function loadFontMetrics() {
       return {
         regular: await doc.embedFont(StandardFonts.Helvetica),
         bold: await doc.embedFont(StandardFonts.HelveticaBold),
+        serif: await doc.embedFont(StandardFonts.TimesRoman),
       };
     })().catch((err) => {
       metricsPromise = null; // a failed start is tried again next time
@@ -190,6 +210,16 @@ function wrapContacts(parts, font, size, maxWidth) {
 
 /* ------------------------------------------------------------------ layout */
 
+// `amount` (0 to 1) of colour b stirred into colour a.
+const mix = (a, b, amount) => a.map((v, i) => Math.round(v * (1 - amount) + b[i] * amount));
+
+// "Mpho James Matli" -> ["Mpho James", "Matli"]: the surname goes on its own line, as large names are set.
+const splitName = (name) => {
+  const words = String(name || '').split(' ').filter(Boolean);
+  if (words.length < 2) return words;
+  return [words.slice(0, -1).join(' '), words[words.length - 1]];
+};
+
 export const hexToRgb = (hex) => {
   const match = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
   if (!match) return DEFAULT_ACCENT;
@@ -199,15 +229,23 @@ export const hexToRgb = (hex) => {
 
 /**
  * Lays the model out on A4 pages.
- *   fonts:   { regular, bold } from loadFontMetrics() (or the fonts of the document being written)
- *   options: { accent: '#rrggbb', watermark: string | null }
+ *   fonts:   { regular, bold, serif } from loadFontMetrics() (or the fonts of the document being written)
+ *   options: { accent: '#rrggbb', watermark: string | null, template: 'banner' | 'classic' }
  * Returns { pages: [{ items }] }. An item is
- *   { type: 'text', x, baseline, text, size, bold, color: [r,g,b] }   baseline = distance from the top of the page
+ *   { type: 'text', x, baseline, text, size, bold, serif?, color: [r,g,b] }   baseline = distance from the top of the page
  *   { type: 'rect', x, top, width, height, color: [r,g,b] }
  */
-export function layoutLetter(model, fonts, { accent, watermark = null } = {}) {
+export function layoutLetter(model, fonts, { accent, watermark = null, template = DEFAULT_TEMPLATE } = {}) {
+  const design = STYLES[template] ? template : DEFAULT_TEMPLATE;
+  const style = STYLES[design];
+  const MX = style.marginX;
+  const BODY = style.size;
+  const LEADING = style.leading;
+  const GAP = style.paraGap;
+  const INK_COLOR = style.ink;
+
   const accentRgb = hexToRgb(accent);
-  const contentW = PAGE_W - MARGIN_X * 2;
+  const contentW = PAGE_W - MX * 2;
   const bottomLimit = PAGE_H - MARGIN_BOTTOM;
 
   const pages = [];
@@ -227,8 +265,8 @@ export function layoutLetter(model, fonts, { accent, watermark = null } = {}) {
   const baselineFor = (top, size, leading) => top + (leading - size) / 2 + size * 0.82;
 
   // One line of text that takes `leading` points of height.
-  const line = (text, { size = BODY_SIZE, leading = BODY_LEADING, bold = false, color = INK, x = MARGIN_X } = {}) => {
-    page.items.push({ type: 'text', x, baseline: baselineFor(y, size, leading), text, size, bold, color });
+  const line = (text, { size = BODY, leading = LEADING, bold = false, serif = false, color = INK_COLOR, x = MX } = {}) => {
+    page.items.push({ type: 'text', x, baseline: baselineFor(y, size, leading), text, size, bold, ...(serif ? { serif: true } : {}), color });
     y += leading;
   };
 
@@ -238,7 +276,7 @@ export function layoutLetter(model, fonts, { accent, watermark = null } = {}) {
     let index = 0;
     while (index < lines.length) {
       const left = lines.length - index;
-      let fit = Math.floor((bottomLimit - y) / BODY_LEADING);
+      let fit = Math.floor((bottomLimit - y) / LEADING);
       if (fit >= left) fit = left;
       else {
         if (left - fit < 2) fit = left - 2;
@@ -255,69 +293,147 @@ export function layoutLetter(model, fonts, { accent, watermark = null } = {}) {
 
   newPage();
 
-  /* Letterhead: name, profession, contact details, a thin line in the resume's colour. */
-  let hasHeader = false;
-  if (model.name) {
-    wrapText(model.name, fonts.bold, 22, contentW).forEach((t) => line(t, { size: 22, leading: 27, bold: true }));
-    hasHeader = true;
-  }
-  if (model.profession) {
-    wrapText(model.profession, fonts.regular, 11.5, contentW).forEach((t) => line(t, { size: 11.5, leading: 17, color: accentRgb }));
-    hasHeader = true;
-  }
-  if (model.contacts.length > 0) {
-    y += model.name || model.profession ? 3 : 0;
-    wrapContacts(model.contacts, fonts.regular, 9.5, contentW).forEach((t) => line(t, { size: 9.5, leading: 14, color: MUTED }));
-    hasHeader = true;
-  }
-  if (hasHeader) {
-    y += 9;
-    page.items.push({ type: 'rect', x: MARGIN_X, top: y, width: contentW, height: 1.4, color: accentRgb });
-    y += 1.4 + 28;
+  /* Letterhead. */
+  const hasName = Boolean(model.name);
+  const hasProfession = Boolean(model.profession);
+  const hasContacts = model.contacts.length > 0;
+  const hasHeader = hasName || hasProfession || hasContacts;
+
+  if (design === 'classic') {
+    /* Name, profession, contact details, a thin line in the resume's colour. */
+    if (hasName) wrapText(model.name, fonts.bold, 22, contentW).forEach((t) => line(t, { size: 22, leading: 27, bold: true }));
+    if (hasProfession) wrapText(model.profession, fonts.regular, 11.5, contentW).forEach((t) => line(t, { size: 11.5, leading: 17, color: accentRgb }));
+    if (hasContacts) {
+      y += hasName || hasProfession ? 3 : 0;
+      wrapContacts(model.contacts, fonts.regular, 9.5, contentW).forEach((t) => line(t, { size: 9.5, leading: 14, color: MUTED }));
+    }
+    if (hasHeader) {
+      y += 9;
+      page.items.push({ type: 'rect', x: MX, top: y, width: contentW, height: 1.4, color: accentRgb });
+      y += 1.4 + 28;
+    }
+  } else if (hasHeader) {
+    /* Banner: a tinted block. The name is set large in a serif on the left (surname on its own line, the
+       profession under it), a thin divider, and the contact details one per line on the right. */
+    const deep = mix(accentRgb, [0, 0, 0], 0.55); // name, divider and signature
+    const tint = mix(BANNER_BASE, accentRgb, 0.07); // the banner's colour
+    const soft = mix(deep, tint, 0.1); // the profession
+    const WARM = [58, 55, 50]; // contact details
+
+    const leftExists = hasName || hasProfession;
+    const sideBySide = leftExists && hasContacts;
+    const innerW = contentW - BANNER_PAD_X * 2;
+    const leftW = sideBySide ? contentW * 0.6 - BANNER_PAD_X - 16 : innerW;
+    const dividerX = MX + contentW * 0.6;
+    const rightX = dividerX + 22;
+    const rightW = MX + contentW - 18 - rightX;
+
+    // Left block: the name as large as fits, then the profession.
+    let nameLines = splitName(model.name);
+    let nameSize = 40;
+    const widest = (size) => Math.max(0, ...nameLines.map((t) => fonts.serif.widthOfTextAtSize(t, size)));
+    while (nameSize > 22 && widest(nameSize) > leftW) nameSize -= 1;
+    nameLines = nameLines.flatMap((t) => wrapText(t, fonts.serif, nameSize, leftW));
+    const nameLead = nameSize * 1.07;
+    const professionLines = hasProfession ? wrapText(model.profession, fonts.regular, 10.5, leftW) : [];
+    const professionLead = 15;
+    const leftH = nameLines.length * nameLead + (professionLines.length > 0 ? (nameLines.length > 0 ? 11 : 0) + professionLines.length * professionLead : 0);
+
+    // Right block: each contact detail on its own line (long ones wrap inside the column).
+    const contactWidth = sideBySide ? rightW : innerW;
+    const contactGroups = model.contacts.map((c) => wrapText(c, fonts.regular, 9.5, contactWidth));
+    const CONTACT_LEAD = 14.5;
+    const CONTACT_GAP = 4;
+    const rightH = contactGroups.reduce((sum, g) => sum + g.length * CONTACT_LEAD, 0) + Math.max(0, contactGroups.length - 1) * CONTACT_GAP;
+
+    // Without a name or profession the contact details take the left side on their own.
+    const blockH = sideBySide ? Math.max(leftH, rightH) : leftExists ? leftH : rightH;
+    const bannerH = Math.max(BANNER_MIN_H, blockH + BANNER_PAD_Y * 2);
+    const bannerTop = BANNER_TOP;
+
+    page.items.push({ type: 'rect', x: MX, top: bannerTop, width: contentW, height: bannerH, color: tint });
+    if (sideBySide) page.items.push({ type: 'rect', x: dividerX, top: bannerTop, width: 1.4, height: bannerH, color: deep });
+
+    if (leftExists) {
+      let top = bannerTop + (bannerH - leftH) / 2;
+      nameLines.forEach((t) => {
+        page.items.push({ type: 'text', x: MX + BANNER_PAD_X, baseline: baselineFor(top, nameSize, nameLead), text: t, size: nameSize, bold: false, serif: true, color: deep });
+        top += nameLead;
+      });
+      if (professionLines.length > 0) {
+        top += nameLines.length > 0 ? 11 : 0;
+        professionLines.forEach((t) => {
+          page.items.push({ type: 'text', x: MX + BANNER_PAD_X, baseline: baselineFor(top, 10.5, professionLead), text: t, size: 10.5, bold: false, color: soft });
+          top += professionLead;
+        });
+      }
+    }
+    if (hasContacts) {
+      let top = bannerTop + (bannerH - rightH) / 2;
+      const x = sideBySide ? rightX : MX + BANNER_PAD_X;
+      contactGroups.forEach((group) => {
+        group.forEach((t) => {
+          page.items.push({ type: 'text', x, baseline: baselineFor(top, 9.5, CONTACT_LEAD), text: t, size: 9.5, bold: false, color: WARM });
+          top += CONTACT_LEAD;
+        });
+        top += CONTACT_GAP;
+      });
+    }
+    y = bannerTop + bannerH + 36;
   }
 
   /* Date and recipient. */
+  const airy = design === 'banner';
   if (model.dateText) {
     line(model.dateText);
-    y += 14;
+    y += airy ? 22 : 14;
   }
   if (model.recipient.length > 0) {
-    model.recipient.forEach((t) => wrapText(t, fonts.regular, BODY_SIZE, contentW).forEach((l) => line(l)));
-    y += 14;
+    let first = true;
+    model.recipient.forEach((t) => {
+      wrapText(t, fonts.regular, BODY, contentW).forEach((l) => line(l, { bold: airy && first }));
+      first = false;
+    });
+    y += airy ? 22 : 14;
   }
 
   /* Salutation. */
-  line(model.salutation, { bold: false });
-  y += PARA_GAP;
+  line(model.salutation, { bold: airy });
+  y += airy ? 12 : GAP;
 
   /* Body. */
   model.blocks.forEach((block) => {
     if (block.type === 'p') {
-      flow(wrapText(block.text, fonts.regular, BODY_SIZE, contentW), (t) => line(t));
-      y += PARA_GAP;
+      flow(wrapText(block.text, fonts.regular, BODY, contentW), (t) => line(t));
+      y += GAP;
       return;
     }
     block.items.forEach((item) => {
-      flow(wrapText(item, fonts.regular, BODY_SIZE, contentW - BULLET_INDENT), (t, i) => {
+      flow(wrapText(item, fonts.regular, BODY, contentW - BULLET_INDENT), (t, i) => {
         if (i === 0) {
-          page.items.push({ type: 'text', x: MARGIN_X + 3, baseline: baselineFor(y, BODY_SIZE, BODY_LEADING), text: '\u2022', size: BODY_SIZE, bold: false, color: accentRgb });
+          page.items.push({ type: 'text', x: MX + 3, baseline: baselineFor(y, BODY, LEADING), text: '\u2022', size: BODY, bold: false, color: airy ? mix(accentRgb, [0, 0, 0], 0.55) : accentRgb });
         }
-        line(t, { x: MARGIN_X + BULLET_INDENT });
+        line(t, { x: MX + BULLET_INDENT });
       });
       y += 3;
     });
-    y += PARA_GAP - 3;
+    y += GAP - 3;
   });
 
-  /* Closing and signature stay together. */
+  /* Closing and signature stay together. The banner design signs in the serif of its heading. */
   if (model.closing || model.signName) {
-    const signatureHeight = (model.closing ? BODY_LEADING + 30 : 0) + (model.signName ? BODY_LEADING : 0);
+    const signSize = airy ? 16 : BODY;
+    const signLead = airy ? 22 : LEADING;
+    const signatureHeight = (model.closing ? LEADING + 30 : 0) + (model.signName ? signLead : 0);
     need(signatureHeight);
     if (model.closing) {
       line(model.closing);
       y += 30;
     }
-    if (model.signName) line(model.signName, { bold: true });
+    if (model.signName) {
+      if (airy) line(model.signName, { size: signSize, leading: signLead, serif: true, color: mix(accentRgb, [0, 0, 0], 0.55) });
+      else line(model.signName, { bold: true });
+    }
   }
 
   /* Footer on every page: the free-version label, and page numbers when there is more than one page. */
@@ -330,7 +446,7 @@ export function layoutLetter(model, fonts, { accent, watermark = null } = {}) {
     if (pages.length > 1) {
       const label = `${index + 1} / ${pages.length}`;
       const w = fonts.regular.widthOfTextAtSize(label, 8);
-      p.items.push({ type: 'text', x: PAGE_W - MARGIN_X - w, baseline, text: label, size: 8, bold: false, color: FAINT });
+      p.items.push({ type: 'text', x: PAGE_W - MX - w, baseline, text: label, size: 8, bold: false, color: FAINT });
     }
   });
 
@@ -344,17 +460,18 @@ const toColor = ([r, g, b]) => rgb(r / 255, g / 255, b / 255);
 /**
  * The letter as PDF bytes.
  *   model:   from buildLetterModel()
- *   options: { accent: '#rrggbb', watermark: string | null, title: string }
+ *   options: { accent: '#rrggbb', watermark: string | null, title: string, template: 'banner' | 'classic' }
  */
-export async function buildCoverLetterPdf(model, { accent, watermark = null, title = 'Cover letter' } = {}) {
+export async function buildCoverLetterPdf(model, { accent, watermark = null, title = 'Cover letter', template = DEFAULT_TEMPLATE } = {}) {
   const doc = await PDFDocument.create();
   const fonts = {
     regular: await doc.embedFont(StandardFonts.Helvetica),
     bold: await doc.embedFont(StandardFonts.HelveticaBold),
+    serif: await doc.embedFont(StandardFonts.TimesRoman),
   };
 
   const { model: safe } = sanitizeModel(model, fonts);
-  const { pages } = layoutLetter(safe, fonts, { accent, watermark });
+  const { pages } = layoutLetter(safe, fonts, { accent, watermark, template });
 
   doc.setTitle(title);
   if (safe.name) doc.setAuthor(safe.name);
@@ -379,7 +496,7 @@ export async function buildCoverLetterPdf(model, { accent, watermark = null, tit
         x: item.x,
         y: PAGE_H - item.baseline,
         size: item.size,
-        font: item.bold ? fonts.bold : fonts.regular,
+        font: item.serif ? fonts.serif : item.bold ? fonts.bold : fonts.regular,
         color: toColor(item.color),
       });
     });
