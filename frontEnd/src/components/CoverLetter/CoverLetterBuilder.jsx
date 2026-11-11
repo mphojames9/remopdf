@@ -5,6 +5,8 @@ import { usePremiumAccess, useSignedIn, requestUpgrade, requestSignIn } from '..
 import {
   TONES,
   TEMPLATES,
+  LETTER_COLORS,
+  resolveLetterColor,
   MAX_BODY_CHARS,
   MAX_FIELD_CHARS,
   MAX_URL_CHARS,
@@ -29,6 +31,9 @@ import {
   PAGE_W,
   PAGE_H,
   COVER_LETTER_WATERMARK,
+  pastelTint,
+  creamTint,
+  deepShade,
   loadFontMetrics,
   layoutLetter,
   sanitizeModel,
@@ -64,7 +69,8 @@ import {
  *                  twice; removing the job target on the resume takes the imported details out of the letter too.
  *  - accountFirstName, accountLastName: the signed-in account's name. Used for the letter's heading and signature
  *                  when the resume's Heading step has no name yet.
- *  - accentColor:  the resume's colour (#rrggbb); the letter's banner tint, divider, bullets and signature use it
+ *  - accentColor:  the resume's colour (#rrggbb); the letter's banner tint, divider, bullets and signature use it, unless
+ *                  the person picks a colour of their own for the letter in the Design step (letter.color)
  *                  (the Classic design uses it for its header line and bullets)
  *  - storageKey:   one letter is kept per resume under this key (localStorage, on this device)
  *  - checkPremium: async () => boolean, asked at download time. Premium gets a clean page; others get a small label.
@@ -303,11 +309,15 @@ const Notice = ({ tone = 'info', icon, action, className = '', children, ...rest
 
 /* ------------------------------------------------------------------ design picker */
 
+const HEX_RE = /^#[0-9a-f]{6}$/i;
+const rgbCss = ([r, g, b]) => `rgb(${r}, ${g}, ${b})`;
+const CUSTOM_START = '#4a90b8'; // what the colour picker opens on before the person has picked their own
+
 // A tiny drawing of each design for the picker (the real thing is drawn by utils/coverLetterPdf.js).
-const DesignThumb = ({ id, accent }) => {
-  const color = /^#[0-9a-f]{6}$/i.test(accent || '') ? accent : '#1e3a8a';
-  const deep = `color-mix(in srgb, ${color} 45%, #000)`;
-  const tint = `color-mix(in srgb, ${color} 8%, #f5eedc)`;
+const DesignThumb = ({ id, accent, pastel = false }) => {
+  const color = HEX_RE.test(accent || '') ? accent : '#1e3a8a';
+  const deep = rgbCss(deepShade(color));
+  const tint = rgbCss(pastel ? pastelTint(color) : creamTint(color));
   // Lines of the letter underneath the header: a number is a line of that width in %, 0 is a gap.
   const lines = id === 'banner' ? [30, 22, 0, 100, 96, 100, 64, 0, 100, 90, 54] : [100, 94, 100, 58, 0, 100, 96, 100, 70, 0, 100, 88];
   return (
@@ -525,9 +535,11 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
 
   const model = useMemo(() => buildLetterModel(resume, letter, body), [resume, letter, body]);
   const prepared = useMemo(() => (fonts ? sanitizeModel(model, fonts) : null), [fonts, model]);
+  // The colour the page is drawn with: the resume's colour, or the light colour the person picked for the letter.
+  const letterColor = useMemo(() => resolveLetterColor(letter.color, accentColor), [letter.color, accentColor]);
   const layout = useMemo(
-    () => (prepared ? layoutLetter(prepared.model, fonts, { accent: accentColor, watermark, template: letter.template }) : null),
-    [prepared, fonts, accentColor, watermark, letter.template],
+    () => (prepared ? layoutLetter(prepared.model, fonts, { accent: letterColor.accent, pastel: letterColor.pastel, watermark, template: letter.template }) : null),
+    [prepared, fonts, letterColor, watermark, letter.template],
   );
 
   const fullName = fullNameOf(resume?.personal);
@@ -765,7 +777,8 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
       const isPremium = typeof checkPremium === 'function' ? await checkPremium() : false;
       const baseName = (fullName ? `${fullName} - Cover Letter` : 'Cover Letter').replace(/[\\/:*?"<>|]/g, '').trim() || 'Cover Letter';
       const bytes = await buildCoverLetterPdf(model, {
-        accent: accentColor,
+        accent: letterColor.accent,
+        pastel: letterColor.pastel,
         watermark: isPremium ? null : COVER_LETTER_WATERMARK,
         title: baseName,
         template: letter.template,
@@ -794,7 +807,8 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
         : 'Paste a link to the advert';
   const whoSummary = [letter.jobTitle.trim(), letter.company.trim()].filter(Boolean).join(' · ') || 'Position, company, address';
   const toneSummary = (TONES.find((t) => t.id === letter.tone) || {}).label || '';
-  const designSummary = (TEMPLATES.find((t) => t.id === letter.template) || TEMPLATES[0]).label;
+  const colorLabel = (LETTER_COLORS.find((c) => c.id === letter.color) || {}).label || 'Custom colour';
+  const designSummary = `${(TEMPLATES.find((t) => t.id === letter.template) || TEMPLATES[0]).label} · ${colorLabel}`;
   const letterStatus = writing ? 'Writing…' : letter.bodyEdited ? 'Your own wording' : letter.aiBody ? 'Written by AI' : 'Starter draft';
   const letterSummary = `${letterStatus} · ${wordCount} ${wordCount === 1 ? 'word' : 'words'}`;
   const signatureSummary = letter.signature ? (letter.signature.source === 'uploaded' ? 'Uploaded signature added' : 'Your signature is added') : 'Optional · draw or upload';
@@ -1132,11 +1146,82 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
                         selected ? 'bg-[#d9856b]/10 ring-2 ring-[#d9856b]' : 'bg-slate-50 ring-1 ring-slate-200 hover:bg-slate-100 hover:ring-slate-300'
                       }`}
                     >
-                      <DesignThumb id={design.id} accent={accentColor} />
+                      <DesignThumb id={design.id} accent={letterColor.accent} pastel={letterColor.pastel} />
                       <span className={`mt-2 block text-[12.5px] font-medium sm:text-[13px] ${selected ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{design.label}</span>
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Colour: the resume's cream by default, modern light colours, or any colour of their own */}
+              <div className="mt-5">
+                <p className="mb-2 text-[12px] font-semibold text-slate-700 sm:text-[12.5px]">Colour</p>
+                <div className="grid grid-cols-4 gap-2" role="group" aria-label="Colour of the letter">
+                  {LETTER_COLORS.map((c) => {
+                    const look = resolveLetterColor(c.id, accentColor);
+                    const base = HEX_RE.test(look.accent || '') ? look.accent : '#1e3a8a';
+                    const selected = letter.color === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        aria-pressed={selected}
+                        aria-label={`${c.label} colour`}
+                        onClick={() => setLetter((prev) => ({ ...prev, color: c.id }))}
+                        className={`group flex flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none ${
+                          selected ? 'bg-[#d9856b]/10 ring-2 ring-[#d9856b]' : 'bg-slate-50 ring-1 ring-slate-200 hover:bg-slate-100 hover:ring-slate-300'
+                        }`}
+                      >
+                        <span
+                          className="grid h-8 w-8 place-items-center rounded-full"
+                          style={{
+                            background: rgbCss(look.pastel ? pastelTint(base) : creamTint(base)),
+                            boxShadow: `inset 0 0 0 2px ${look.pastel ? base : 'rgba(120,105,80,0.45)'}`,
+                            color: rgbCss(deepShade(base)),
+                          }}
+                        >
+                          {selected && <IconCheck className="h-3.5 w-3.5" />}
+                        </span>
+                        <span className={`text-[11.5px] font-medium ${selected ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{c.label}</span>
+                      </button>
+                    );
+                  })}
+
+                  {/* Any colour: the native colour picker sits invisibly over the round swatch. */}
+                  {(() => {
+                    const custom = HEX_RE.test(letter.color || '');
+                    const base = custom ? letter.color : CUSTOM_START;
+                    return (
+                      <label
+                        className={`group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 transition-all focus-within:ring-2 focus-within:ring-[#d9856b]/60 motion-reduce:transition-none ${
+                          custom ? 'bg-[#d9856b]/10 ring-2 ring-[#d9856b]' : 'bg-slate-50 ring-1 ring-slate-200 hover:bg-slate-100 hover:ring-slate-300'
+                        }`}
+                      >
+                        <span
+                          className="grid h-8 w-8 place-items-center rounded-full"
+                          style={
+                            custom
+                              ? { background: rgbCss(pastelTint(base)), boxShadow: `inset 0 0 0 2px ${base}`, color: rgbCss(deepShade(base)) }
+                              : { background: 'conic-gradient(from 0deg, #f9a8a8, #fcd9a0, #bfe8b0, #a5dcf0, #c4b8f5, #f5b8dc, #f9a8a8)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.9)' }
+                          }
+                        >
+                          {custom ? <IconCheck className="h-3.5 w-3.5" /> : null}
+                        </span>
+                        <span className={`text-[11.5px] font-medium ${custom ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>Custom</span>
+                        <input
+                          type="color"
+                          value={base}
+                          onChange={(e) => {
+                            const value = e.target.value.toLowerCase();
+                            setLetter((prev) => ({ ...prev, color: value }));
+                          }}
+                          aria-label="Pick your own colour"
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                        />
+                      </label>
+                    );
+                  })()}
+                </div>
               </div>
             </Accordion>
 

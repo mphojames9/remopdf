@@ -44,6 +44,29 @@ export const TEMPLATES = [
 ];
 const TEMPLATE_IDS = TEMPLATES.map((t) => t.id);
 
+// The colours a letter can take. The first one ('cream') keeps the page as it always was: a cream banner tinted with the
+// resume's colour. Every other one is a modern light colour: the banner becomes a soft tint of `accent`, and the name,
+// divider and signature a deep shade of it. A letter can also hold any '#rrggbb' the person picks themselves.
+export const LETTER_COLORS = [
+  { id: 'cream', label: 'Cream', accent: null },
+  { id: 'sky', label: 'Sky', accent: '#4a90b8' },
+  { id: 'mint', label: 'Mint', accent: '#3fa58a' },
+  { id: 'blush', label: 'Blush', accent: '#d9889b' },
+  { id: 'peach', label: 'Peach', accent: '#e39a6e' },
+  { id: 'lavender', label: 'Lavender', accent: '#8b7fd0' },
+  { id: 'mist', label: 'Mist', accent: '#64748b' },
+];
+const LETTER_COLOR_IDS = LETTER_COLORS.map((c) => c.id);
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+// Which accent the page is drawn with, and whether the banner is a light tint of it (a picked colour) or the cream default.
+export const resolveLetterColor = (color, resumeAccent) => {
+  const swatch = LETTER_COLORS.find((c) => c.id === color);
+  if (swatch && swatch.accent) return { accent: swatch.accent, pastel: true };
+  if (HEX_COLOR.test(color || '')) return { accent: String(color).toLowerCase(), pastel: true };
+  return { accent: resumeAccent, pastel: false };
+};
+
 const MAX_FIELD = 200;
 const MAX_URL = 2000;
 const MAX_REQUIREMENTS = 15;
@@ -502,6 +525,7 @@ export const defaultLetter = () => ({
   dateOverride: '', // '' = today
   tone: 'formal',
   template: TEMPLATES[0].id, // the design of the page: 'banner' | 'classic'
+  color: LETTER_COLORS[0].id, // the colour of the page: a LETTER_COLORS id, or '#rrggbb' the person picked
   body: '',
   bodyEdited: false, // false: the text is the AI letter (or the starter draft); true: the person has written their own
   aiBody: '', // the letter the AI wrote from the resume ('' = none yet)
@@ -540,6 +564,7 @@ export const normalizeLetter = (saved) => {
     dateOverride: /^\d{4}-\d{2}-\d{2}$/.test(saved.dateOverride || '') ? saved.dateOverride : '',
     tone: TONE_IDS.includes(saved.tone) ? saved.tone : base.tone,
     template: TEMPLATE_IDS.includes(saved.template) ? saved.template : base.template,
+    color: LETTER_COLOR_IDS.includes(saved.color) ? saved.color : HEX_COLOR.test(saved.color || '') ? String(saved.color).toLowerCase() : base.color,
     body: edited ? text(saved.body, MAX_BODY) : '',
     bodyEdited: edited,
     aiBody: typeof saved.aiBody === 'string' ? text(saved.aiBody, MAX_BODY) : '',

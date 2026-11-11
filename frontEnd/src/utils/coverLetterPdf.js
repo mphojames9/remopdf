@@ -11,7 +11,9 @@
 
   Two designs (options.template): 'banner' (the default: a tinted banner that touches the page edges, with the name
   set large in a serif, a thin divider and the contact details beside it, then an airy letter) and 'classic' (the plain letterhead with a thin
-  line). The tint, divider and signature take their colour from the resume's colour.
+  line). By default the tint, divider and signature take their colour from the resume's colour. The person can also pick a
+  light colour for the letter (options.pastel): the banner becomes a soft tint of that colour and the name, divider
+  and signature a deep shade of it.
 
   A drawn or uploaded signature (model.signature, see utils/letterSignature.js) is placed in the gap between the
   closing ("Yours sincerely,") and the typed name, which then closes up to sit just under it. Without one the gap
@@ -52,6 +54,8 @@ const STYLES = {
 const BANNER_PAD_Y = 44;
 const BANNER_MIN_H = 156;
 const BANNER_BASE = [245, 238, 220]; // the warm ivory the resume's colour is stirred into
+const PASTEL_BASE = [252, 251, 249]; // a picked colour is stirred into this near-white to make the banner's light tint
+const PASTEL_AMOUNT = 0.17;
 
 /* ------------------------------------------------------------------ fonts */
 
@@ -232,16 +236,22 @@ export const hexToRgb = (hex) => {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
 
+// The colours a picked letter colour gives, so the colour picker can show exactly what the page will use.
+//   tint: the banner's light background   deep: the name, divider and signature
+export const pastelTint = (hex) => mix(PASTEL_BASE, hexToRgb(hex), PASTEL_AMOUNT);
+export const deepShade = (hex) => mix(hexToRgb(hex), [0, 0, 0], 0.55);
+export const creamTint = (hex) => mix(BANNER_BASE, hexToRgb(hex), 0.07);
+
 /**
  * Lays the model out on A4 pages.
  *   fonts:   { regular, bold, serif } from loadFontMetrics() (or the fonts of the document being written)
- *   options: { accent: '#rrggbb', watermark: string | null, template: 'banner' | 'classic' }
+ *   options: { accent: '#rrggbb', pastel: boolean (the banner is a light tint of the accent), watermark: string | null, template: 'banner' | 'classic' }
  * Returns { pages: [{ items }] }. An item is
  *   { type: 'text', x, baseline, text, size, bold, serif?, color: [r,g,b] }   baseline = distance from the top of the page
  *   { type: 'rect', x, top, width, height, color: [r,g,b] }
  *   { type: 'image', x, top, width, height, dataUrl }   the signature (a transparent PNG)
  */
-export function layoutLetter(model, fonts, { accent, watermark = null, template = DEFAULT_TEMPLATE } = {}) {
+export function layoutLetter(model, fonts, { accent, pastel = false, watermark = null, template = DEFAULT_TEMPLATE } = {}) {
   const design = STYLES[template] ? template : DEFAULT_TEMPLATE;
   const style = STYLES[design];
   const MX = style.marginX;
@@ -308,7 +318,8 @@ export function layoutLetter(model, fonts, { accent, watermark = null, template 
   if (design === 'classic') {
     /* Name, profession, contact details, a thin line in the resume's colour. */
     if (hasName) wrapText(model.name, fonts.bold, 22, contentW).forEach((t) => line(t, { size: 22, leading: 27, bold: true }));
-    if (hasProfession) wrapText(model.profession, fonts.regular, 11.5, contentW).forEach((t) => line(t, { size: 11.5, leading: 17, color: accentRgb }));
+    const professionColor = pastel ? mix(accentRgb, [0, 0, 0], 0.3) : accentRgb; // a picked light colour is deepened for reading
+    if (hasProfession) wrapText(model.profession, fonts.regular, 11.5, contentW).forEach((t) => line(t, { size: 11.5, leading: 17, color: professionColor }));
     if (hasContacts) {
       y += hasName || hasProfession ? 3 : 0;
       wrapContacts(model.contacts, fonts.regular, 9.5, contentW).forEach((t) => line(t, { size: 9.5, leading: 14, color: MUTED }));
@@ -322,7 +333,7 @@ export function layoutLetter(model, fonts, { accent, watermark = null, template 
     /* Banner: a tinted block that touches the page edges. The name is set large in a serif on the left (surname on
        its own line, the profession under it), a thin divider, and the contact details one per line on the right. */
     const deep = mix(accentRgb, [0, 0, 0], 0.55); // name, divider and signature
-    const tint = mix(BANNER_BASE, accentRgb, 0.07); // the banner's colour
+    const tint = pastel ? pastelTint(accent) : creamTint(accent); // the banner's colour
     const soft = mix(deep, tint, 0.1); // the profession
     const WARM = [58, 55, 50]; // contact details
 
@@ -472,9 +483,9 @@ const toColor = ([r, g, b]) => rgb(r / 255, g / 255, b / 255);
 /**
  * The letter as PDF bytes.
  *   model:   from buildLetterModel()
- *   options: { accent: '#rrggbb', watermark: string | null, title: string, template: 'banner' | 'classic' }
+ *   options: { accent: '#rrggbb', pastel: boolean, watermark: string | null, title: string, template: 'banner' | 'classic' }
  */
-export async function buildCoverLetterPdf(model, { accent, watermark = null, title = 'Cover letter', template = DEFAULT_TEMPLATE } = {}) {
+export async function buildCoverLetterPdf(model, { accent, pastel = false, watermark = null, title = 'Cover letter', template = DEFAULT_TEMPLATE } = {}) {
   const doc = await PDFDocument.create();
   const fonts = {
     regular: await doc.embedFont(StandardFonts.Helvetica),
@@ -483,7 +494,7 @@ export async function buildCoverLetterPdf(model, { accent, watermark = null, tit
   };
 
   const { model: safe } = sanitizeModel(model, fonts);
-  const { pages } = layoutLetter(safe, fonts, { accent, watermark, template });
+  const { pages } = layoutLetter(safe, fonts, { accent, pastel, watermark, template });
 
   doc.setTitle(title);
   if (safe.name) doc.setAuthor(safe.name);
