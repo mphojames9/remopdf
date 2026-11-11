@@ -9,8 +9,8 @@
   readable by applicant-tracking systems), not a picture.
   All units are PDF points, measured from the top-left corner of the page.
 
-  Two designs (options.template): 'banner' (the default: a tinted banner with the name set large in a serif, a thin
-  divider and the contact details beside it, then an airy letter) and 'classic' (the plain letterhead with a thin
+  Two designs (options.template): 'banner' (the default: a tinted banner that touches the page edges, with the name
+  set large in a serif, a thin divider and the contact details beside it, then an airy letter) and 'classic' (the plain letterhead with a thin
   line). The tint, divider and signature take their colour from the resume's colour.
 */
 
@@ -42,11 +42,10 @@ const STYLES = {
   banner: { marginX: 54, size: BODY_SIZE, leading: 16.5, paraGap: 11, ink: [46, 44, 40] },
 };
 
-// Banner design measurements.
-const BANNER_TOP = 38;
-const BANNER_PAD_X = 30;
-const BANNER_PAD_Y = 28;
-const BANNER_MIN_H = 126;
+// Banner design measurements. The banner's background runs to the left, right and top edges of the page; its text
+// stays inside the letter's margins, so the name lines up with the body of the letter.
+const BANNER_PAD_Y = 44;
+const BANNER_MIN_H = 156;
 const BANNER_BASE = [245, 238, 220]; // the warm ivory the resume's colour is stirred into
 
 /* ------------------------------------------------------------------ fonts */
@@ -313,8 +312,8 @@ export function layoutLetter(model, fonts, { accent, watermark = null, template 
       y += 1.4 + 28;
     }
   } else if (hasHeader) {
-    /* Banner: a tinted block. The name is set large in a serif on the left (surname on its own line, the
-       profession under it), a thin divider, and the contact details one per line on the right. */
+    /* Banner: a tinted block that touches the page edges. The name is set large in a serif on the left (surname on
+       its own line, the profession under it), a thin divider, and the contact details one per line on the right. */
     const deep = mix(accentRgb, [0, 0, 0], 0.55); // name, divider and signature
     const tint = mix(BANNER_BASE, accentRgb, 0.07); // the banner's colour
     const soft = mix(deep, tint, 0.1); // the profession
@@ -322,9 +321,8 @@ export function layoutLetter(model, fonts, { accent, watermark = null, template 
 
     const leftExists = hasName || hasProfession;
     const sideBySide = leftExists && hasContacts;
-    const innerW = contentW - BANNER_PAD_X * 2;
-    const leftW = sideBySide ? contentW * 0.6 - BANNER_PAD_X - 16 : innerW;
     const dividerX = MX + contentW * 0.6;
+    const leftW = sideBySide ? dividerX - MX - 28 : contentW;
     const rightX = dividerX + 22;
     const rightW = MX + contentW - 18 - rightX;
 
@@ -340,7 +338,7 @@ export function layoutLetter(model, fonts, { accent, watermark = null, template 
     const leftH = nameLines.length * nameLead + (professionLines.length > 0 ? (nameLines.length > 0 ? 11 : 0) + professionLines.length * professionLead : 0);
 
     // Right block: each contact detail on its own line (long ones wrap inside the column).
-    const contactWidth = sideBySide ? rightW : innerW;
+    const contactWidth = sideBySide ? rightW : contentW;
     const contactGroups = model.contacts.map((c) => wrapText(c, fonts.regular, 9.5, contactWidth));
     const CONTACT_LEAD = 14.5;
     const CONTACT_GAP = 4;
@@ -349,28 +347,28 @@ export function layoutLetter(model, fonts, { accent, watermark = null, template 
     // Without a name or profession the contact details take the left side on their own.
     const blockH = sideBySide ? Math.max(leftH, rightH) : leftExists ? leftH : rightH;
     const bannerH = Math.max(BANNER_MIN_H, blockH + BANNER_PAD_Y * 2);
-    const bannerTop = BANNER_TOP;
+    const bannerTop = 0;
 
-    page.items.push({ type: 'rect', x: MX, top: bannerTop, width: contentW, height: bannerH, color: tint });
+    page.items.push({ type: 'rect', x: 0, top: bannerTop, width: PAGE_W, height: bannerH, color: tint });
     if (sideBySide) page.items.push({ type: 'rect', x: dividerX, top: bannerTop, width: 1.4, height: bannerH, color: deep });
 
     if (leftExists) {
       let top = bannerTop + (bannerH - leftH) / 2;
       nameLines.forEach((t) => {
-        page.items.push({ type: 'text', x: MX + BANNER_PAD_X, baseline: baselineFor(top, nameSize, nameLead), text: t, size: nameSize, bold: false, serif: true, color: deep });
+        page.items.push({ type: 'text', x: MX, baseline: baselineFor(top, nameSize, nameLead), text: t, size: nameSize, bold: false, serif: true, color: deep });
         top += nameLead;
       });
       if (professionLines.length > 0) {
         top += nameLines.length > 0 ? 11 : 0;
         professionLines.forEach((t) => {
-          page.items.push({ type: 'text', x: MX + BANNER_PAD_X, baseline: baselineFor(top, 10.5, professionLead), text: t, size: 10.5, bold: false, color: soft });
+          page.items.push({ type: 'text', x: MX, baseline: baselineFor(top, 10.5, professionLead), text: t, size: 10.5, bold: false, color: soft });
           top += professionLead;
         });
       }
     }
     if (hasContacts) {
       let top = bannerTop + (bannerH - rightH) / 2;
-      const x = sideBySide ? rightX : MX + BANNER_PAD_X;
+      const x = sideBySide ? rightX : MX;
       contactGroups.forEach((group) => {
         group.forEach((t) => {
           page.items.push({ type: 'text', x, baseline: baselineFor(top, 9.5, CONTACT_LEAD), text: t, size: 9.5, bold: false, color: WARM });
@@ -379,7 +377,7 @@ export function layoutLetter(model, fonts, { accent, watermark = null, template 
         top += CONTACT_GAP;
       });
     }
-    y = bannerTop + bannerH + 36;
+    y = bannerTop + bannerH + 40;
   }
 
   /* Date and recipient. */

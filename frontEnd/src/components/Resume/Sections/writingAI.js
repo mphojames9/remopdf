@@ -11,16 +11,20 @@
     403 -> WritingAIError('premium')    signed in, but no active Premium payment
     401 -> WritingAIError('signin')     not signed in, or the session ran out
 
-    analyzeWriting({ text, field, jobTitle, jobTarget, signal })   -> { rewrites }
+    analyzeWriting({ text, field, jobTitle, jobTarget, signal })   -> { rewrites, needs }
       jobTarget (optional): when the person has told the builder which job they are applying for, a summary or
       a job's achievements are rewritten for that job instead (POST /api/jobmatch/rewrite, see jobMatchAI.js).
       The result has the same shape and the errors use the same codes, so the panel needs nothing else.
-      rewrites = up to 3 whole-text versions to choose from: { id, label, text }
+      rewrites = up to 3 whole-text versions to choose from: { id, label, text, why }
+                 (why: one sentence on what that version does better; may be empty)
+      needs    = up to 3 questions that make the text stronger with facts only the writer knows:
+                 { line, ask }, e.g. { line: 'Handled customer complaints', ask: 'Roughly how many a week?' }
+                 They are questions, never claims: nothing is added to the resume until the writer types it.
 */
 
 import { getToken } from '../../../api/auth';
 import { getAiPass, forgetAiPass, PaymentApiError } from '../../../api/payments';
-import { rewriteForJob } from './jobMatchAI';
+import { rewriteForJob, cleanNeeds, cleanWhy } from './jobMatchAI';
 import { hasJobTarget } from './atsScore';
 
 // Same address onetSuggestions.js uses. Set VITE_API_URL to override it.
@@ -63,6 +67,7 @@ const logFailure = async (res) => {
 };
 
 const cacheKey = (text, field, jobTitle) => `${field}\u0000${jobTitle}\u0000${text}`;
+
 
 // The Premium pass from the accounts server (see getAiPass). What goes wrong becomes the panel's error codes.
 async function passOrThrow() {
@@ -162,12 +167,13 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', job
         id: r.id || `rw${i + 1}`,
         label: typeof r.label === 'string' && r.label.trim() ? r.label.trim() : `Option ${i + 1}`,
         text: r.text,
+        why: cleanWhy(r.why),
       }));
     // A server that still answers with one "improved" text counts as a single option.
     if (rewrites.length === 0 && typeof data.improved === 'string' && data.improved.trim()) {
-      rewrites.push({ id: 'rw1', label: 'Polished version', text: data.improved });
+      rewrites.push({ id: 'rw1', label: 'Polished version', text: data.improved, why: '' });
     }
-    const result = { rewrites };
+    const result = { rewrites, needs: cleanNeeds(data.needs) };
     if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);
     cache.set(key, result);
     return result;

@@ -17,6 +17,9 @@ import { usePremiumAccess, requestUpgrade, setPremiumAccess, useSignedIn, reques
 // the FastAPI backend, see writingAI.js). The AI answers with 3 whole-text versions from different
 // angles (achievement-led, concise & ATS-friendly, leadership-focused...). Every version already has
 // the spelling and grammar fixed, and one tap on "Use this version" puts it in the text box.
+// Each version also says in one line what it does better ("why"), and for a summary or a job's achievements the
+// panel can ask "Make it stronger" questions about lines that state no scale or result ("How many staff did you
+// supervise?"). They are only questions: nothing is added to the text until the writer types the answer.
 //
 // AI suggestions are a Premium feature. Without Premium the panel shows an upgrade note and sends nothing
 // (the server refuses and never uses its AI key either way). Premium status comes from the builder through
@@ -263,6 +266,9 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
     ? (result.rewrites || []).filter((r) => r.text.trim() !== value.trim())
     : [];
 
+  // Questions about lines with no scale or result. Like the versions, they describe the text as it was reviewed.
+  const needs = !locked && result && result.forText === value && Array.isArray(result.needs) ? result.needs : [];
+
   let message = null;
   if (!hasText) message = tailored
     ? 'Write a sentence or two and the AI will suggest three versions tailored to this job.'
@@ -377,6 +383,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
                     </button>
                   </div>
                   <p className="text-sm leading-snug text-slate-700 whitespace-pre-wrap break-words">{r.text}</p>
+                  {r.why && <p className="text-xs leading-snug text-slate-500">{r.why}</p>}
                   {Array.isArray(r.adds) && r.adds.length > 0 && (
                     <p className="text-xs text-slate-500">
                       Adds from the job: <span className="font-medium text-[#8f4631]">{r.adds.join(', ')}</span>
@@ -384,6 +391,23 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {needs.length > 0 && (
+            <div className={`px-3 py-3 border-t border-slate-100 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+              <p className="text-xs font-semibold text-slate-700">Make it stronger</p>
+              <p className="mt-0.5 text-xs leading-snug text-slate-500">
+                Employers notice real numbers. If you know the answer to one of these, add it to that line yourself.
+              </p>
+              <ul className="mt-2 flex flex-col gap-2">
+                {needs.map((n) => (
+                  <li key={n.line} className="rounded-md border border-slate-100 bg-slate-50 px-3 py-2">
+                    <p className="text-xs italic leading-snug text-slate-500 break-words">“{n.line}”</p>
+                    <p className="mt-0.5 text-sm leading-snug text-slate-700">{n.ask}</p>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

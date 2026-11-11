@@ -6,7 +6,7 @@
                                                                  skills only: qualifications never come back (see skillFilter.js)
     writeSummary({ target, resumeData, variant, signal })     -> { summary, checked: [{ strength, evidence }], uses: [] }
                                                                  a professional summary written from the work history, each strength traced to the resume
-    rewriteForJob({ text, field, jobTitle, target, signal })  -> { rewrites: [{ id, label, text, adds }] }
+    rewriteForJob({ text, field, jobTitle, target, signal })  -> { rewrites: [{ id, label, text, why, adds }], needs: [{ line, ask }] }
 
   Plus the small helpers the rest of the app needs: sanitizeJobTarget (anything read back from a saved resume is
   cleaned before it is used) and hasJobTarget.
@@ -55,6 +55,17 @@ const KINDS = new Set(['skill', 'tool', 'credential', 'soft', 'domain']);
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const strList = (v, count, chars) =>
   (Array.isArray(v) ? v : []).map((x) => str(x, chars)).filter(Boolean).slice(0, count);
+
+// What the server says about a rewrite besides its text (both optional; an older server sends neither).
+//   why    one sentence: what this version does better
+//   needs  questions that make the text stronger with facts only the writer knows: [{ line, ask }]
+//          They are questions, never claims: nothing is added to the resume until the writer types it.
+export const cleanWhy = (v) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, 160) : '');
+export const cleanNeeds = (v) =>
+  (Array.isArray(v) ? v : [])
+    .map((n) => ({ line: str(n && n.line, 160), ask: str(n && n.ask, 180) }))
+    .filter((n) => n.line && n.ask)
+    .slice(0, 3);
 
 /**
  * Anything saved in resumeData.jobTarget goes through this on the way in, so a damaged or hand-edited save can
@@ -314,9 +325,10 @@ export async function rewriteForJob({ text, field = 'experience', jobTitle = '',
       id: r.id || `rw${i + 1}`,
       label: str(r.label, 32) || `Option ${i + 1}`,
       text: r.text,
+      why: cleanWhy(r.why),
       adds: strList(r.adds, 5, 40),
     }));
-  return remember(cache, key, { rewrites });
+  return remember(cache, key, { rewrites, needs: cleanNeeds(data.needs) });
 }
 
 // Cleared when Premium ends or the account changes, so nothing from before is shown to the next person.
