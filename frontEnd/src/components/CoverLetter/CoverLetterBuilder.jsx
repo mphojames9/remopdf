@@ -75,6 +75,8 @@ import {
 // chooses "Write with AI"). true: the AI writes a general letter the moment the page opens, link or no link.
 const AUTO_WRITE_WITHOUT_JOB = false;
 
+const REQ_PREVIEW = 4; // how many requirements the list shows before "Show more"
+
 const PREVIEW_FONT = "Helvetica, Arial, 'Liberation Sans', sans-serif";
 const ASCENT = 0.8465; // where Arial/Helvetica put the baseline inside a line box of height = font size
 const PREVIEW_SERIF = "'Times New Roman', Times, 'Liberation Serif', serif"; // the Banner design's name and signature (Times in the PDF)
@@ -199,6 +201,10 @@ const textareaClass =
 const navyButtonClass =
   'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-[#2a4bb0] to-[#1e3a8a] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,0_6px_16px_-6px_rgba(30,58,138,0.55)] transition-all hover:-translate-y-px hover:shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,0_10px_22px_-8px_rgba(30,58,138,0.6)] active:translate-y-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none sm:h-11 sm:rounded-xl sm:px-4 sm:text-[13px]';
 
+// The quieter partner of the navy button, for a second action next to it.
+const outlineButtonClass =
+  'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-[12.5px] font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/20 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none sm:h-11 sm:rounded-xl sm:px-4 sm:text-[13px]';
+
 const navyPillClass =
   'shrink-0 rounded-full bg-[#1e3a8a] px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-blue-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1e3a8a]/25 sm:px-3.5';
 
@@ -230,7 +236,7 @@ const Field = ({ id, label, optional = false, note = '', children }) => (
 // closed step still says where it stands. The body stays in the page when closed (it is only hidden), so nothing
 // the person typed is lost.
 const Accordion = ({ id, step, title, summary, open, onToggle, busy = false, alert = false, children }) => (
-  <section className="overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:rounded-2xl">
+  <section className="bg-white">
     <h2 className="m-0">
       <button
         type="button"
@@ -238,19 +244,21 @@ const Accordion = ({ id, step, title, summary, open, onToggle, busy = false, ale
         aria-expanded={open}
         aria-controls={`${id}-panel`}
         onClick={onToggle}
-        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9856b]/60 sm:gap-3 sm:px-5 sm:py-4"
+        className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9856b]/60 sm:px-5 sm:py-3.5"
       >
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-900 text-[11px] font-semibold text-white sm:h-8 sm:w-8 sm:text-[12px]">
-          {busy ? <IconSpinner className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : step}
+        <span
+          className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold transition-colors motion-reduce:transition-none sm:h-7 sm:w-7 sm:text-[12px] ${
+            open ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          {busy ? <IconSpinner className="h-3.5 w-3.5" /> : step}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[15px]">{title}</span>
           {summary ? <span className="mt-0.5 block truncate text-[11.5px] leading-snug text-slate-500 sm:text-[12px]">{summary}</span> : null}
         </span>
-        {alert && <span role="img" aria-label="Needs attention" className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 ring-2 ring-amber-100 sm:h-2 sm:w-2 sm:ring-4" />}
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500 sm:h-8 sm:w-8">
-          <IconChevron className={`h-3.5 w-3.5 transition-transform duration-300 motion-reduce:transition-none sm:h-4 sm:w-4 ${open ? 'rotate-180' : ''}`} />
-        </span>
+        {alert && <span role="img" aria-label="Needs attention" className="h-2 w-2 shrink-0 rounded-full bg-amber-500 ring-4 ring-amber-100" />}
+        <IconChevron className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-300 motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} />
       </button>
     </h2>
     <div
@@ -260,10 +268,18 @@ const Accordion = ({ id, step, title, summary, open, onToggle, busy = false, ale
       className={`grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none ${open ? 'visible grid-rows-[1fr]' : 'invisible grid-rows-[0fr]'}`}
     >
       <div className="min-h-0 overflow-hidden">
-        <div className="px-3 pb-3 sm:px-5 sm:pb-5">{children}</div>
+        <div className="px-3.5 pb-4 pt-1 sm:px-5 sm:pb-5">{children}</div>
       </div>
     </div>
   </section>
+);
+
+// A labelled card that holds a few related steps, so the six steps read as three groups instead of six loose boxes.
+const Group = ({ label, children }) => (
+  <div>
+    <p className="mb-1.5 px-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400 sm:mb-2 sm:text-[11px]">{label}</p>
+    <div className="divide-y divide-slate-200/70 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:rounded-2xl">{children}</div>
+  </div>
 );
 
 const NOTICE_TONES = {
@@ -410,6 +426,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   const postingStateRef = useRef('idle');
   const [pasteOpen, setPasteOpen] = useState(false); // the "paste the job description" box
   const [pasteText, setPasteText] = useState('');
+  const [reqExpanded, setReqExpanded] = useState(false); // the requirements list shows the first few until opened
   const letterRef = useRef(letter); // the latest letter, readable after an await
   letterRef.current = letter;
 
@@ -854,174 +871,224 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
           aria-label="Cover letter details"
           className={`${view === 'edit' ? 'cl-pane-left flex' : 'hidden'} min-h-0 flex-1 flex-col bg-white/70 backdrop-blur-xl lg:flex lg:w-[28rem] lg:flex-none lg:border-r lg:border-slate-200/80 xl:w-[30rem]`}
         >
-          <div className="pro-scroll flex-1 space-y-2 overflow-y-auto overscroll-contain p-2.5 pb-20 sm:space-y-3 sm:p-4 sm:pb-24 lg:pb-6">
+          <div className="pro-scroll flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 pb-20 sm:space-y-5 sm:p-4 sm:pb-24 lg:pb-6">
             {fullName && usingAccountName && (
               <Notice role="status" tone="info" icon={<IconInfo className="h-3.5 w-3.5" />}>
                 {`The letter uses the name on your account, ${fullName}.`}
               </Notice>
             )}
 
-            {/* 1 · Job advert */}
-            <Accordion id="cl-sec-job" step="1" title="Job advert" summary={jobSummary} open={open.job} onToggle={() => toggleSection('job')} busy={postingBusy}>
-              <div className="space-y-3">
-                {letter.imported && (
-                  <Notice tone="ok" icon={<IconCheck className="h-3.5 w-3.5" />}>
-                    {`Imported from the job target on your resume: ${[letter.imported.jobTitle, letter.imported.company].filter(Boolean).join(' · ') || 'your target job'}. Change or remove that job target and this letter follows.`}
-                  </Notice>
-                )}
-                {offerTarget && (
-                  <Notice
-                    tone="info"
-                    icon={<IconInfo className="h-3.5 w-3.5" />}
-                    action={
-                      <button type="button" onClick={importTargetJob} className={navyPillClass}>
-                        Use it
-                      </button>
-                    }
-                  >
-                    {`Your resume has a job target: ${[targetJob.jobTitle, targetJob.company].filter(Boolean).join(' · ') || 'a target job'}. Use it for this letter?`}
-                  </Notice>
-                )}
-                <Field id="cl-link" label="Link to the job you are applying for" optional>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <div className="relative min-w-0 flex-1">
-                      <IconLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 sm:left-3.5 sm:h-4 sm:w-4" />
-                      <input
-                        id="cl-link"
-                        type="text"
-                        inputMode="url"
-                        value={letter.jobUrl}
-                        onChange={setJobUrl}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            readPosting();
-                          }
-                        }}
-                        placeholder="Paste the link to the advert"
-                        className={`${inputClass} pl-9 sm:pl-10`}
-                        autoComplete="off"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                      />
+            {/* The job: where it comes from, and who the letter goes to */}
+            <Group label="The job">
+              {/* 1 · Job advert */}
+              <Accordion id="cl-sec-job" step="1" title="Job advert" summary={jobSummary} open={open.job} onToggle={() => toggleSection('job')} busy={postingBusy}>
+                <div className="space-y-4">
+                  {letter.imported && (
+                    <div className="flex items-start gap-3 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3">
+                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+                        <IconCheck className="h-3.5 w-3.5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-emerald-700">Imported from your resume</p>
+                        <p className="mt-0.5 break-words text-[13px] font-semibold leading-snug text-slate-900">{letter.imported.jobTitle || 'Your target job'}</p>
+                        {letter.imported.company ? <p className="break-words text-[12px] leading-snug text-slate-600">{letter.imported.company}</p> : null}
+                        <p className="mt-1 text-[11.5px] leading-snug text-slate-500">Change the job target on your resume and the letter follows.</p>
+                      </div>
                     </div>
-                    <button type="button" onClick={readPosting} disabled={postingBusy} className={`${navyButtonClass} w-full sm:w-auto`}>
-                      {postingBusy ? <IconSpinner className="h-4 w-4" /> : null}
-                      {postingBusy ? 'Reading…' : 'Read advert'}
-                    </button>
-                  </div>
-                </Field>
-
-                <div role="status" aria-live="polite">
-                  {postingBusy && (
-                    <Notice tone="busy" icon={<IconSpinner className="h-3.5 w-3.5" />}>
-                      Reading the advert. The first one can take up to a minute while the server wakes up.
+                  )}
+                  {offerTarget && (
+                    <Notice
+                      tone="info"
+                      icon={<IconInfo className="h-3.5 w-3.5" />}
+                      action={
+                        <button type="button" onClick={importTargetJob} className={navyPillClass}>
+                          Use it
+                        </button>
+                      }
+                    >
+                      {`Use the job target on your resume: ${[targetJob.jobTitle, targetJob.company].filter(Boolean).join(' · ') || 'a target job'}?`}
                     </Notice>
                   )}
 
-                  {!postingBusy && posting.state === 'error' && (
-                    <Notice tone="warn" icon={<IconInfo className="h-3.5 w-3.5" />}>
-                      {posting.message}
-                    </Notice>
-                  )}
-
-                  {!postingBusy && posting.state === 'done' && posting.found && (
-                    <Notice tone="ok" icon={<IconCheck className="h-3.5 w-3.5" />}>
-                      {`Found ${posting.found.count} ${posting.found.count === 1 ? 'requirement' : 'requirements'}${posting.found.source === 'text' ? ' in the text you pasted' : ''}`}
-                      {(() => {
-                        const filled = [posting.found.title && 'position', posting.found.company && 'company', posting.found.address && 'address'].filter(Boolean);
-                        return filled.length > 0 ? `, and filled in the ${joinList(filled)} below. Check them before you send the letter.` : '. Check the details below.';
-                      })()}
-                      {!posting.found.title && ' The advert does not state the position, so type it under “Position you are applying for”: the letter names it in its first sentence.'}
-                      {!posting.found.address && ' The advert gives no address, so add one under Company address if you want it on the letter.'}
-                    </Notice>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setPasteOpen((o) => !o)}
-                  aria-expanded={pasteOpen}
-                  aria-controls="cl-paste-box"
-                  className="-mx-1 rounded-md px-1 py-1 text-left text-[12px] font-medium text-[#a64a30] sm:py-1.5 sm:text-[12.5px] underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
-                >
-                  {pasteOpen ? 'Hide the paste box' : 'Link not working? Paste the job description instead'}
-                </button>
-
-                {pasteOpen && (
-                  <div id="cl-paste-box">
-                    <label htmlFor="cl-paste" className="sr-only">
-                      Job description
-                    </label>
-                    <textarea
-                      id="cl-paste"
-                      value={pasteText}
-                      onChange={(e) => setPasteText(e.target.value.slice(0, 20000))}
-                      rows={6}
-                      placeholder="Paste the whole advert here, including the requirements."
-                      className={textareaClass}
-                    />
-                    <p className="mt-2 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">“Read advert” uses this text instead of the link while the box is open.</p>
-                  </div>
-                )}
-
-                {letter.requirements.length > 0 && (
-                  <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-2.5 sm:p-3">
-                    <div className="mb-2.5 flex items-center justify-between gap-3">
-                      <h3 className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 sm:text-[12.5px]">
-                        The letter will answer these
-                        <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10.5px] font-semibold text-white">{letter.requirements.length}</span>
-                      </h3>
-                      <button type="button" onClick={clearPosting} className={ghostPillClass}>
-                        Clear
-                      </button>
+                  {/* Read another advert: by link, or by pasting its text */}
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-[12px] font-semibold text-slate-700 sm:text-[12.5px]">{letter.imported ? 'Use a different advert' : 'Read the advert'}</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-400">Optional</span>
                     </div>
-                    <ul className="space-y-1.5">
-                      {letter.requirements.map((item, i) => (
-                        <li key={`${i}-${item}`} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white py-0.5 pl-2 pr-1 text-[12px] leading-snug text-slate-700 shadow-[0_1px_1px_rgba(15,23,42,0.03)] sm:rounded-xl sm:py-1.5 sm:text-[12.5px]">
-                          <span aria-hidden="true" className="mt-1.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700 sm:mt-1 sm:h-5 sm:w-5">
-                            <IconCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          </span>
-                          <span className="min-w-0 flex-1 break-words py-1 sm:py-1.5">{item}</span>
+                    <div className="mb-2.5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1" role="radiogroup" aria-label="How to give the advert">
+                      {[
+                        { id: 'link', label: 'Link', on: !pasteOpen },
+                        { id: 'text', label: 'Paste text', on: pasteOpen },
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={m.on}
+                          onClick={() => setPasteOpen(m.id === 'text')}
+                          className={`h-8 rounded-lg text-[12.5px] font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none ${
+                            m.on ? 'bg-white text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.1),0_0_0_1px_rgba(15,23,42,0.04)]' : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {!pasteOpen ? (
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <div className="relative min-w-0 flex-1">
+                          <label htmlFor="cl-link" className="sr-only">
+                            Link to the job you are applying for
+                          </label>
+                          <IconLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 sm:left-3.5 sm:h-4 sm:w-4" />
+                          <input
+                            id="cl-link"
+                            type="text"
+                            inputMode="url"
+                            value={letter.jobUrl}
+                            onChange={setJobUrl}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                readPosting();
+                              }
+                            }}
+                            placeholder="Paste the link to the advert"
+                            className={`${inputClass} pl-9 sm:pl-10`}
+                            autoComplete="off"
+                            autoCapitalize="none"
+                            spellCheck={false}
+                          />
+                        </div>
+                        <button type="button" onClick={readPosting} disabled={postingBusy} className={`${navyButtonClass} w-full sm:w-auto`}>
+                          {postingBusy ? <IconSpinner className="h-4 w-4" /> : null}
+                          {postingBusy ? 'Reading…' : 'Read advert'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div id="cl-paste-box" className="space-y-2">
+                        <label htmlFor="cl-paste" className="sr-only">
+                          Job description
+                        </label>
+                        <textarea
+                          id="cl-paste"
+                          value={pasteText}
+                          onChange={(e) => setPasteText(e.target.value.slice(0, 20000))}
+                          rows={5}
+                          placeholder="Paste the whole advert here, including the requirements."
+                          className={textareaClass}
+                        />
+                        <button type="button" onClick={readPosting} disabled={postingBusy} className={`${navyButtonClass} w-full`}>
+                          {postingBusy ? <IconSpinner className="h-4 w-4" /> : null}
+                          {postingBusy ? 'Reading…' : 'Read advert'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div role="status" aria-live="polite" className="space-y-2 empty:hidden">
+                    {postingBusy && (
+                      <Notice tone="busy" icon={<IconSpinner className="h-3.5 w-3.5" />}>
+                        Reading the advert. The first one can take up to a minute while the server wakes up.
+                      </Notice>
+                    )}
+
+                    {!postingBusy && posting.state === 'error' && (
+                      <Notice tone="warn" icon={<IconInfo className="h-3.5 w-3.5" />}>
+                        {posting.message}
+                      </Notice>
+                    )}
+
+                    {!postingBusy && posting.state === 'done' && posting.found && (
+                      <Notice tone="ok" icon={<IconCheck className="h-3.5 w-3.5" />}>
+                        {`Found ${posting.found.count} ${posting.found.count === 1 ? 'requirement' : 'requirements'}${posting.found.source === 'text' ? ' in the text you pasted' : ''}`}
+                        {(() => {
+                          const filled = [posting.found.title && 'position', posting.found.company && 'company', posting.found.address && 'address'].filter(Boolean);
+                          return filled.length > 0 ? `, and filled in the ${joinList(filled)} in the next step. Check them before you send the letter.` : '. Check the details in the next step.';
+                        })()}
+                        {!posting.found.title && ' The advert does not state the position, so type it in the next step: the letter names it in its first sentence.'}
+                        {!posting.found.address && ' The advert gives no address, so add one there if you want it on the letter.'}
+                      </Notice>
+                    )}
+                  </div>
+
+                  {letter.requirements.length > 0 && (
+                    <div>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <h3 className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 sm:text-[12.5px]">
+                          The letter will answer these
+                          <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10.5px] font-semibold text-white">{letter.requirements.length}</span>
+                        </h3>
+                        <button type="button" onClick={clearPosting} className={ghostPillClass}>
+                          Clear
+                        </button>
+                      </div>
+                      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white">
+                        <ul className="divide-y divide-slate-100">
+                          {(reqExpanded ? letter.requirements : letter.requirements.slice(0, REQ_PREVIEW)).map((item, i) => (
+                            <li key={`${i}-${item}`} className="flex items-start gap-2.5 py-2 pl-3 pr-1.5 text-[12.5px] leading-snug text-slate-700">
+                              <IconCheck className="mt-[3px] h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                              <span className="min-w-0 flex-1 break-words">{item}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeRequirement(i)}
+                                aria-label={`Remove: ${item}`}
+                                className="-my-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                              >
+                                <IconClose className="h-3.5 w-3.5" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                        {letter.requirements.length > REQ_PREVIEW && (
                           <button
                             type="button"
-                            onClick={() => removeRequirement(i)}
-                            aria-label={`Remove: ${item}`}
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                            onClick={() => setReqExpanded((v) => !v)}
+                            aria-expanded={reqExpanded}
+                            className="flex w-full items-center justify-center gap-1.5 border-t border-slate-100 bg-slate-50/70 py-2 text-[12px] font-semibold text-[#a64a30] transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9856b]/60"
                           >
-                            <IconClose className="h-3.5 w-3.5" />
+                            {reqExpanded ? 'Show fewer' : `Show ${letter.requirements.length - REQ_PREVIEW} more`}
+                            <IconChevron className={`h-3.5 w-3.5 transition-transform motion-reduce:transition-none ${reqExpanded ? 'rotate-180' : ''}`} />
                           </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </Accordion>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Accordion>
 
-            {/* 2 · Who is it for */}
-            <Accordion id="cl-sec-who" step="2" title="Who is it for" summary={whoSummary} open={open.who} onToggle={() => toggleSection('who')} alert={positionNeeded}>
-              <div className="space-y-3 sm:space-y-4">
-                <Field id="cl-job" label="Position you are applying for" note={positionNeeded ? 'Needed for the letter' : ''}>
-                  <input id="cl-job" type="text" value={letter.jobTitle} onChange={setField('jobTitle')} placeholder="e.g. Front-End Developer" className={inputClass} autoComplete="off" />
-                </Field>
-                <Field id="cl-company" label="Company">
-                  <input id="cl-company" type="text" value={letter.company} onChange={setField('company')} placeholder="e.g. Takealot" className={inputClass} autoComplete="off" />
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+              {/* 2 · Who is it for */}
+              <Accordion id="cl-sec-who" step="2" title="Who is it for" summary={whoSummary} open={open.who} onToggle={() => toggleSection('who')} alert={positionNeeded}>
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-x-3 lg:grid-cols-1 xl:grid-cols-2">
+                  <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+                    <Field id="cl-job" label="Position you are applying for" note={positionNeeded ? 'Needed for the letter' : ''}>
+                      <input id="cl-job" type="text" value={letter.jobTitle} onChange={setField('jobTitle')} placeholder="e.g. Front-End Developer" className={inputClass} autoComplete="off" />
+                    </Field>
+                  </div>
+                  <Field id="cl-company" label="Company">
+                    <input id="cl-company" type="text" value={letter.company} onChange={setField('company')} placeholder="e.g. Takealot" className={inputClass} autoComplete="off" />
+                  </Field>
                   <Field id="cl-manager" label="Hiring manager" optional>
                     <input id="cl-manager" type="text" value={letter.hiringManager} onChange={setField('hiringManager')} placeholder="e.g. Ms Dlamini" className={inputClass} autoComplete="off" />
                   </Field>
-                  <Field id="cl-date" label="Date">
-                    <input id="cl-date" type="date" value={letter.dateOverride || todayIso()} onChange={setDate} className={inputClass} />
-                  </Field>
+                  <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+                    <Field id="cl-address" label="Company address" optional>
+                      <input id="cl-address" type="text" value={letter.companyAddress} onChange={setField('companyAddress')} placeholder="e.g. 12 Rivonia Road, Sandton" className={inputClass} autoComplete="off" />
+                    </Field>
+                  </div>
+                  <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+                    <Field id="cl-date" label="Date">
+                      <input id="cl-date" type="date" value={letter.dateOverride || todayIso()} onChange={setDate} className={inputClass} />
+                    </Field>
+                  </div>
                 </div>
-                <Field id="cl-address" label="Company address" optional>
-                  <input id="cl-address" type="text" value={letter.companyAddress} onChange={setField('companyAddress')} placeholder="e.g. 12 Rivonia Road, Sandton" className={inputClass} autoComplete="off" />
-                </Field>
-              </div>
-            </Accordion>
+              </Accordion>
+            </Group>
 
+            {/* The letter: how it sounds, how it looks, what it says */}
+            <Group label="The letter">
             {/* 3 · Tone */}
             <Accordion id="cl-sec-tone" step="3" title="Tone" summary={toneSummary} open={open.tone} onToggle={() => toggleSection('tone')}>
               <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 sm:rounded-2xl" role="radiogroup" aria-label="Tone of the letter">
@@ -1115,7 +1182,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
               )}
 
               {/* What the AI is doing, or why it is not */}
-              <div role="status" aria-live="polite">
+              <div role="status" aria-live="polite" className="empty:hidden">
                 {writing && (
                   <Notice tone="busy" icon={<IconSpinner className="h-3.5 w-3.5" />} className="mb-3">
                     {letter.requirements.length > 0 ? 'Writing your letter from your resume and what the job asks for.' : 'Writing your letter from your resume.'} The first one can take up to a minute while the server wakes up.
@@ -1162,7 +1229,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
 
                 {!writing && !postingBusy && ai.state === 'idle' && !letter.aiBody && !letter.bodyEdited && (
                   <Notice tone="info" icon={<IconInfo className="h-3.5 w-3.5" />} className="mb-3">
-                    Paste the link to the job advert above for a letter that answers what the job asks for. Or choose “Write with AI” for a general letter from your resume. Until then, this is a starter draft.
+                    Add a job advert in step 1 for a letter that answers what the job asks for, or choose “Write with AI” for a general one. Until then, this is a starter draft.
                   </Notice>
                 )}
 
@@ -1195,6 +1262,9 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
               </div>
             </Accordion>
 
+            </Group>
+
+            <Group label="Finish">
             {/* 6 · Signature */}
             <Accordion id="cl-sec-sign" step="6" title="Signature" summary={signatureSummary} open={open.sign} onToggle={() => toggleSection('sign')} busy={signatureBusy}>
               {letter.signature ? (
@@ -1206,28 +1276,27 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
                   </button>
                 </div>
               ) : (
-                <p className="text-[12px] leading-snug text-slate-500 sm:text-[12.5px]">
-                  Sign the letter so it is ready to send. Your signature goes above your typed name. It stays on this device and is only used in the PDF you download.
-                </p>
+                <p className="text-[12px] leading-snug text-slate-500 sm:text-[12.5px]">Your signature goes above your typed name. It stays on this device and is only used in the PDF you download.</p>
               )}
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 <button type="button" onClick={() => setSigning(true)} className={navyButtonClass}>
                   <IconPen className="h-4 w-4" />
                   {letter.signature ? 'Draw again' : 'Draw signature'}
                 </button>
-                <button type="button" onClick={() => signatureFileRef.current?.click()} disabled={signatureBusy} className={navyButtonClass}>
+                <button type="button" onClick={() => signatureFileRef.current?.click()} disabled={signatureBusy} className={outlineButtonClass}>
                   {signatureBusy ? <IconSpinner className="h-4 w-4" /> : <IconUpload className="h-4 w-4" />}
                   Upload a picture
                 </button>
                 <input ref={signatureFileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={onSignatureFile} className="sr-only" tabIndex={-1} aria-label="Upload a picture of your signature" />
               </div>
-              <p className="mt-2 text-[11.5px] leading-snug text-slate-400">For a picture, sign on plain white paper and take the photo in good light. The paper is removed for you.</p>
+              <p className="mt-2 text-[11.5px] leading-snug text-slate-400">For a picture, sign on plain white paper in good light. The paper is removed for you.</p>
               {signatureError && (
                 <p role="alert" className="mt-2 text-[12px] leading-snug text-red-600">
                   {signatureError}
                 </p>
               )}
             </Accordion>
+            </Group>
 
             {prepared?.lost && (
               <Notice role="status" tone="info" icon={<IconInfo className="h-3.5 w-3.5" />}>
