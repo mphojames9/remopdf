@@ -22,6 +22,8 @@ import {
   targetKeyOf,
 } from '../../utils/coverLetter';
 import { generateCoverLetterBody, readJobPosting } from '../../utils/coverLetterAI';
+import { SignatureError, SIGNATURE_ERRORS, signatureFromFile } from '../../utils/letterSignature';
+import SignatureDialog from './SignatureDialog';
 import { dropUnlistedQualificationSentences, unlistedQualifications } from '../../utils/letterClaims';
 import {
   PAGE_W,
@@ -46,6 +48,9 @@ import {
  * start from a plain draft built from the resume (name, job titles, skills, qualification) instead. Either way the
  * person can edit the text; once they do, nothing replaces it without asking.
  * The preview is the real layout of the PDF (utils/coverLetterPdf.js), so the download matches it exactly.
+ * The last step, Signature, lets the person sign the letter: draw it on a pad (SignatureDialog) or upload a photo or
+ * scan of it (utils/letterSignature.js). It is kept with the letter on this device and drawn above the typed name,
+ * in the preview and in the PDF. Without one the letter shows the typed name, as before.
  *
  * Look and layout (2026 refresh): a flat glass top bar (back arrow, logo, Download), a soft aurora background, the
  * form as a stack of dropdown step cards (each one shows a one-line summary while closed), the preview on a dotted
@@ -157,6 +162,21 @@ const IconEye = ({ className }) => (
   <Svg className={className}>
     <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" />
     <circle cx="12" cy="12" r="3" />
+  </Svg>
+);
+
+const IconPen = ({ className }) => (
+  <Svg className={className}>
+    <path d="M3 17c2.5-5 4.5-8 6-8 2 0 .5 5 2.5 5 1.2 0 2-2 3-2 .8 0 .8 1.5 1.5 1.5S18 12 21 12" />
+    <path d="M3 21h18" />
+  </Svg>
+);
+
+const IconUpload = ({ className }) => (
+  <Svg className={className}>
+    <path d="M12 16V4" />
+    <path d="m7 9 5-5 5 5" />
+    <path d="M5 20h14" />
   </Svg>
 );
 
@@ -338,6 +358,8 @@ const PreviewPage = ({ page, scale, index, total }) => (
         {page.items.map((item, i) =>
           item.type === 'rect' ? (
             <div key={i} style={{ position: 'absolute', left: item.x, top: item.top, width: item.width, height: item.height, background: colorOf(item.color) }} />
+          ) : item.type === 'image' ? (
+            <img key={i} src={item.dataUrl} alt="" draggable={false} style={{ position: 'absolute', left: item.x, top: item.top, width: item.width, height: item.height }} />
           ) : (
             <span
               key={i}
@@ -370,7 +392,13 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   // already know the position, company and requirements.
   const [letter, setLetter] = useState(() => syncWithTarget(loadLetter(storageKey), resumeData?.jobTarget));
   const [view, setView] = useState('edit'); // small screens show one side at a time
-  const [open, setOpen] = useState({ job: true, who: false, tone: false, design: false, letter: true }); // which dropdown steps are open
+  const [open, setOpen] = useState({ job: true, who: false, tone: false, design: false, letter: true, sign: false }); // which dropdown steps are open
+  const [signing, setSigning] = useState(false); // the "Draw your signature" pad is open
+  const signingRef = useRef(false); // the same, readable inside the Escape listener
+  signingRef.current = signing;
+  const [signatureError, setSignatureError] = useState('');
+  const [signatureBusy, setSignatureBusy] = useState(false); // an uploaded picture is being prepared
+  const signatureFileRef = useRef(null);
   const [fonts, setFonts] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
@@ -426,7 +454,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   onCloseRef.current = onClose;
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape' && !downloading) onCloseRef.current?.();
+      if (e.key === 'Escape' && !downloading && !signingRef.current) onCloseRef.current?.();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -683,6 +711,34 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
     setConfirm('');
   };
 
+  // The signature: drawn on the pad, or a picture the person uploads. Either way it is kept with the letter.
+  const saveSignature = (signature) => {
+    setLetter((prev) => ({ ...prev, signature }));
+    setSignatureError('');
+    setSigning(false);
+  };
+
+  const removeSignature = () => {
+    setLetter((prev) => ({ ...prev, signature: null }));
+    setSignatureError('');
+  };
+
+  const onSignatureFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // so choosing the same picture again still counts
+    if (!file) return;
+    setSignatureBusy(true);
+    setSignatureError('');
+    try {
+      const signature = await signatureFromFile(file);
+      if (alive.current) setLetter((prev) => ({ ...prev, signature }));
+    } catch (err) {
+      if (alive.current) setSignatureError(err instanceof SignatureError ? SIGNATURE_ERRORS[err.code] : SIGNATURE_ERRORS.unreadable);
+    } finally {
+      if (alive.current) setSignatureBusy(false);
+    }
+  };
+
   const download = async () => {
     if (downloading || !hasText) return;
     setDownloading(true);
@@ -724,6 +780,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   const designSummary = (TEMPLATES.find((t) => t.id === letter.template) || TEMPLATES[0]).label;
   const letterStatus = writing ? 'Writing…' : letter.bodyEdited ? 'Your own wording' : letter.aiBody ? 'Written by AI' : 'Starter draft';
   const letterSummary = `${letterStatus} · ${wordCount} ${wordCount === 1 ? 'word' : 'words'}`;
+  const signatureSummary = letter.signature ? (letter.signature.source === 'uploaded' ? 'Uploaded signature added' : 'Your signature is added') : 'Optional · draw or upload';
 
   const aiErrorText =
     {
@@ -1138,6 +1195,40 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
               </div>
             </Accordion>
 
+            {/* 6 · Signature */}
+            <Accordion id="cl-sec-sign" step="6" title="Signature" summary={signatureSummary} open={open.sign} onToggle={() => toggleSection('sign')} busy={signatureBusy}>
+              {letter.signature ? (
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                  <img src={letter.signature.dataUrl} alt="Your signature" className="h-12 min-w-0 max-w-[55%] object-contain object-left" draggable={false} />
+                  <span className="flex-1" />
+                  <button type="button" onClick={removeSignature} className={ghostPillClass}>
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <p className="text-[12px] leading-snug text-slate-500 sm:text-[12.5px]">
+                  Sign the letter so it is ready to send. Your signature goes above your typed name. It stays on this device and is only used in the PDF you download.
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => setSigning(true)} className={navyButtonClass}>
+                  <IconPen className="h-4 w-4" />
+                  {letter.signature ? 'Draw again' : 'Draw signature'}
+                </button>
+                <button type="button" onClick={() => signatureFileRef.current?.click()} disabled={signatureBusy} className={navyButtonClass}>
+                  {signatureBusy ? <IconSpinner className="h-4 w-4" /> : <IconUpload className="h-4 w-4" />}
+                  Upload a picture
+                </button>
+                <input ref={signatureFileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={onSignatureFile} className="sr-only" tabIndex={-1} aria-label="Upload a picture of your signature" />
+              </div>
+              <p className="mt-2 text-[11.5px] leading-snug text-slate-400">For a picture, sign on plain white paper and take the photo in good light. The paper is removed for you.</p>
+              {signatureError && (
+                <p role="alert" className="mt-2 text-[12px] leading-snug text-red-600">
+                  {signatureError}
+                </p>
+              )}
+            </Accordion>
+
             {prepared?.lost && (
               <Notice role="status" tone="info" icon={<IconInfo className="h-3.5 w-3.5" />}>
                 Some characters, such as emoji, can’t be used in a PDF letter and are left out.
@@ -1224,6 +1315,8 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
           </div>
         </div>
       )}
+
+      {signing && <SignatureDialog onSave={saveSignature} onClose={() => setSigning(false)} />}
     </div>
   );
 }

@@ -28,6 +28,7 @@
 */
 
 import { isQualification } from '../components/Resume/Sections/skillFilter';
+import { normalizeSignature } from './letterSignature';
 
 export const TONES = [
   { id: 'formal', label: 'Formal' },
@@ -314,7 +315,7 @@ const managerName = (value) => clean(value).replace(/^dear\s+/i, '').replace(/[,
 /**
  * Everything the letter shows, as plain strings and blocks. The preview and the PDF both draw from this, so
  * they can never disagree.
- *   { name, profession, contacts[], dateText, recipient[], salutation, blocks[], closing, signName }
+ *   { name, profession, contacts[], dateText, recipient[], salutation, blocks[], closing, signName, signature }
  */
 export function buildLetterModel(resumeData, letter, body) {
   const personal = resumeData?.personal || {};
@@ -337,6 +338,7 @@ export function buildLetterModel(resumeData, letter, body) {
     blocks: parseBody(body),
     closing: 'Yours sincerely,',
     signName: name,
+    signature: normalizeSignature(letter?.signature), // the drawn or uploaded signature, drawn above the typed name (or null)
   };
 }
 
@@ -505,6 +507,7 @@ export const defaultLetter = () => ({
   aiBody: '', // the letter the AI wrote from the resume ('' = none yet)
   aiFor: '', // aiSignature() of what aiBody was written from
   imported: null, // { key, jobTitle, company, companyAddress, requirements, duties }: what was taken from the resume's job target
+  signature: null, // { dataUrl, aspect, source }: the person's drawn or uploaded signature (utils/letterSignature.js), or null
 });
 
 const text = (value, max) => String(value ?? '').slice(0, max);
@@ -542,6 +545,7 @@ export const normalizeLetter = (saved) => {
     aiBody: typeof saved.aiBody === 'string' ? text(saved.aiBody, MAX_BODY) : '',
     aiFor: typeof saved.aiBody === 'string' && saved.aiBody ? text(saved.aiFor, 600) : '',
     imported: normalizeImported(saved.imported),
+    signature: normalizeSignature(saved.signature),
   };
 };
 

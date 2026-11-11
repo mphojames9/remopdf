@@ -12,9 +12,14 @@
   Two designs (options.template): 'banner' (the default: a tinted banner that touches the page edges, with the name
   set large in a serif, a thin divider and the contact details beside it, then an airy letter) and 'classic' (the plain letterhead with a thin
   line). The tint, divider and signature take their colour from the resume's colour.
+
+  A drawn or uploaded signature (model.signature, see utils/letterSignature.js) is placed in the gap between the
+  closing ("Yours sincerely,") and the typed name, which then closes up to sit just under it. Without one the gap
+  stays at its usual 30 points. Closing, signature and name always stay together on one page.
 */
 
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { normalizeSignature, signatureSize } from './letterSignature';
 
 export const PAGE_W = 595.28;
 export const PAGE_H = 841.89;
@@ -141,6 +146,7 @@ export function sanitizeModel(model, fonts) {
       .filter((block) => (block.type === 'bullets' ? block.items.length > 0 : block.text)),
     closing: fix(model.closing),
     signName: fix(model.signName),
+    signature: normalizeSignature(model.signature),
   };
   return { model: safe, lost };
 }
@@ -233,6 +239,7 @@ export const hexToRgb = (hex) => {
  * Returns { pages: [{ items }] }. An item is
  *   { type: 'text', x, baseline, text, size, bold, serif?, color: [r,g,b] }   baseline = distance from the top of the page
  *   { type: 'rect', x, top, width, height, color: [r,g,b] }
+ *   { type: 'image', x, top, width, height, dataUrl }   the signature (a transparent PNG)
  */
 export function layoutLetter(model, fonts, { accent, watermark = null, template = DEFAULT_TEMPLATE } = {}) {
   const design = STYLES[template] ? template : DEFAULT_TEMPLATE;
@@ -422,11 +429,18 @@ export function layoutLetter(model, fonts, { accent, watermark = null, template 
   if (model.closing || model.signName) {
     const signSize = airy ? 16 : BODY;
     const signLead = airy ? 22 : LEADING;
-    const signatureHeight = (model.closing ? LEADING + 30 : 0) + (model.signName ? signLead : 0);
+    // The gap under the closing: 30 points, or just the room the signature needs (never less than 24, so a small
+    // signature does not crowd the line above it).
+    const sign = model.closing && model.signature ? signatureSize(model.signature.aspect) : null;
+    const closingGap = sign ? Math.max(24, sign.height + 2) : 30;
+    const signatureHeight = (model.closing ? LEADING + closingGap : 0) + (model.signName ? signLead : 0);
     need(signatureHeight);
     if (model.closing) {
       line(model.closing);
-      y += 30;
+      if (sign) {
+        page.items.push({ type: 'image', x: MX, top: y + (closingGap - sign.height) / 2 - 1, width: sign.width, height: sign.height, dataUrl: model.signature.dataUrl });
+      }
+      y += closingGap;
     }
     if (model.signName) {
       if (airy) line(model.signName, { size: signSize, leading: signLead, serif: true, color: mix(accentRgb, [0, 0, 0], 0.55) });
@@ -476,9 +490,24 @@ export async function buildCoverLetterPdf(model, { accent, watermark = null, tit
   doc.setCreator('RemoPDF');
   doc.setProducer('RemoPDF');
 
-  pages.forEach((p) => {
+  // The signature is embedded once however many times it is drawn. A picture that cannot be read is left out:
+  // the letter must still download.
+  const pictures = new Map();
+  const picture = async (dataUrl) => {
+    if (!pictures.has(dataUrl)) {
+      try {
+        pictures.set(dataUrl, await doc.embedPng(dataUrl));
+      } catch (err) {
+        console.error('The signature could not be added to the PDF', err);
+        pictures.set(dataUrl, null);
+      }
+    }
+    return pictures.get(dataUrl);
+  };
+
+  for (const p of pages) {
     const pdfPage = doc.addPage([PAGE_W, PAGE_H]);
-    p.items.forEach((item) => {
+    for (const item of p.items) {
       if (item.type === 'rect') {
         pdfPage.drawRectangle({
           x: item.x,
@@ -487,9 +516,14 @@ export async function buildCoverLetterPdf(model, { accent, watermark = null, tit
           height: item.height,
           color: toColor(item.color),
         });
-        return;
+        continue;
       }
-      if (!item.text) return;
+      if (item.type === 'image') {
+        const png = await picture(item.dataUrl);
+        if (png) pdfPage.drawImage(png, { x: item.x, y: PAGE_H - item.top - item.height, width: item.width, height: item.height });
+        continue;
+      }
+      if (!item.text) continue;
       pdfPage.drawText(item.text, {
         x: item.x,
         y: PAGE_H - item.baseline,
@@ -497,8 +531,8 @@ export async function buildCoverLetterPdf(model, { accent, watermark = null, tit
         font: item.serif ? fonts.serif : item.bold ? fonts.bold : fonts.regular,
         color: toColor(item.color),
       });
-    });
-  });
+    }
+  }
 
   return doc.save();
 }
