@@ -1,443 +1,345 @@
 import React from 'react';
 import { renderAchievements } from '../Sections/richText';
 import ResumePhoto from '../Sections/ResumePhoto';
-import { languageLevelInfo } from '../Sections/LanguageLevelSelect';
-import { getSkillLevelLabel } from '../Sections/SkillsField';
+import renderCertificates from '../Sections/renderCertificates';
 import {
+  PAGE_WIDTH_PX,
+  PAGE_HEIGHT_PX,
   tint,
   jobDates,
   skillRating,
+  skillDots,
+  DEFAULT_ACCENT,
   usePaginatedBlocks,
   A4Page,
-  padLast,
   endGroup,
+  editAttrs,
   markSection,
   renderExtraSections,
-  DEFAULT_ACCENT,
 } from './templateShared';
-import renderCertificates from '../Sections/renderCertificates';
-import { formatRange, withFormattedDates } from '../Sections/dateFormat';
 
 /**
- * Boutique (id: orchid-boutique).
+ * Horizon (id: horizon). A deep tonal hero band with the name set large and light,
+ * then a soft rounded sidebar panel beside a clean white main column.
  *
- * Same layout as the Blue Sidebar template: a full-width header band on page 1 (photo, name, profession,
- * contact column) over a tinted left sidebar (Skills, Languages, Certificates, Hobbies) and a main column
- * on the right (Summary, Experience, Education, Projects, References). The accent colour tints the sidebar,
- * the icons, the surname and the rating bars; it comes from the colour picker, or from DEFAULT_ACCENT.
+ * Everything dark is derived from the accent colour (shade of it), so changing the
+ * accent re-themes the band, the panel tint, the pills and the headings together.
+ * The accent should be a #rrggbb hex; anything else falls back to a neutral ink.
  *
- * Wired into the app like every other template: paginates per column, edit mode (click a section to edit /
- * remove it), section order, page numbers and the PDF export all work, and every date is printed the app's
- * way ("Jan 2023", "Jan 2023 – Present") through ../Sections/dateFormat.
+ *   band     photo (or initials) | name, profession, contact grid with icons
+ *   sidebar  Skills (with levels), Education, Certificates, Languages
+ *   main     Summary, Experience, Projects, Hobbies, References
  *
- * The name uses Cormorant Garamond when the page loads it (same as the Timeline template) and falls back to
- * Playfair Display / Georgia otherwise; the header band is a fixed height, so the fallback never moves content.
+ * Both columns are paginated on their own with usePaginatedBlocks, and the page
+ * count is whichever needs more. Gaps are padding (never margin) and all body
+ * margins are inline px, so the hidden measuring boxes match the real columns.
+ *
+ * To register: add 'horizon' to DEFAULT_ACCENT (suggested #4F5BFF) and to your
+ * template list. A missing key falls back to FALLBACK_ACCENT.
  */
 
-/* ------------------------------ Design tokens ------------------------------ */
-const INK = '#1F2D3A';      // headings, names, main text
-const MUTED = '#5B6672';    // secondary text
-const PAPER = '#FCFAF6';    // page background
-const HEADER_H = 216;       // full-width header band (page 1 only), px
-const SIDEBAR_W = 250;      // px  -> content width 198 (28px left / 24px right padding)
-const MAIN_W = 492;         // px  -> 794 - 250 - 24 - 28
-const SIDE_CONTENT_W = 198;
-// The header is drawn over the top of page 1, so page 1 of both columns starts with a spacer
-// that pushes the real content below it. The spacer is an ordinary flat block, so the
-// pagination maths (column height, block measuring) stays exactly as it was.
-const HEADER_SPACER_H = HEADER_H - 32 + 24;
-const SERIF = '"Cormorant Garamond", "Playfair Display", Georgia, "Times New Roman", serif';
-// Sections that live in the left sidebar. Every other section goes in the main column on the right.
-const SIDEBAR_KEYS = ['skills', 'languages', 'certificates', 'hobbies'];
-const DEFAULT_ORDER = ['summary', 'experience', 'education', 'certificates', 'skills', 'projects', 'languages', 'hobbies', 'references'];
+const FONT = `'Outfit', 'Inter', 'Segoe UI', system-ui, sans-serif`;
+const FALLBACK_ACCENT = '#4F5BFF';
+const INK = '#161B26';
+const BODY = '#3A4252';
 
-/* --------------------------------- Icons ---------------------------------- */
-const Svg = ({ size = 16, children }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {children}
-  </svg>
-);
-const BriefcaseIcon = (p) => <Svg {...p}><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></Svg>;
-const CodeIcon = (p) => <Svg {...p}><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></Svg>;
-const CapIcon = (p) => <Svg {...p}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></Svg>;
-const TargetIcon = (p) => <Svg {...p}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></Svg>;
-const UserIcon = (p) => <Svg {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Svg>;
-const AwardIcon = (p) => <Svg {...p}><circle cx="12" cy="8" r="6" /><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11" /></Svg>;
-const GearIcon = (p) => (
-  <Svg {...p}>
-    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-    <circle cx="12" cy="12" r="3" />
-  </Svg>
-);
-const GlobeIcon = (p) => <Svg {...p}><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></Svg>;
-const MailIcon = (p) => <Svg {...p}><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></Svg>;
-const PhoneIcon = (p) => <Svg {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></Svg>;
-const PinIcon = (p) => <Svg {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></Svg>;
-const LinkedinIcon = (p) => <Svg {...p}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" /><rect width="4" height="12" x="2" y="9" /><circle cx="4" cy="4" r="2" /></Svg>;
-const DotIcon = (p) => <Svg {...p}><circle cx="12" cy="12" r="3" /></Svg>;
-const GithubIcon = (p) => <Svg {...p}><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></Svg>;
-const CalendarIcon = (p) => <Svg {...p}><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></Svg>;
-const FlagIcon = (p) => <Svg {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><path d="M4 22v-7" /></Svg>;
-const CarIcon = (p) => <Svg {...p}><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" /></Svg>;
+const SIDEBAR_KEYS = new Set(['skills', 'education', 'certificates', 'languages']);
 
-const HeartIcon = (p) => <Svg {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></Svg>;
-// An email typed without its "@" (e.g. "name9gmail.com") still gets the mail icon.
-const MAIL_HOST = /^(?!www\.)[^\s@/]+(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|proton|protonmail)\.(com|me|co\.za|co\.uk)$/;
+// Geometry (px).
+const HEADER_H = 206;
+const SIDEBAR_W = 240;
+const ROW_PAD_X = 12; // gap left of the sidebar panel
+const ROW_PAD_TOP_FIRST = 14; // under the band
+const ROW_PAD_TOP_NEXT = 12;
+const ROW_PAD_BOTTOM = 12;
+const BODY_TOP = 22;
+const BODY_BOTTOM = 22;
+const SIDE_PAD_X = 20;
+const MAIN_PAD_L = 26;
+const MAIN_PAD_R = 32;
 
-// The contact list is plain text, so the icon is picked from what the line looks like.
-// Order matters: the specific kinds are checked first, and the pin is only used for lines that really
-// look like an address. Anything unrecognised gets a neutral dot instead of a (wrong) location pin.
-const contactIcon = (c) => {
-  if (typeof c !== 'string') return DotIcon;
-  const s = c.trim().toLowerCase();
-  // Split off a leading "Label:" (but not the "https:" of a URL) so "Tel: +27 ..." is still recognised.
-  const m = s.match(/^([a-z][a-z .\/&-]{1,28}):(?!\/\/)\s*/);
-  const label = m ? m[1] : '';
-  const value = m ? s.slice(m[0].length) : s;
+const SIDE_CONTENT_W = SIDEBAR_W - SIDE_PAD_X * 2; // the hidden sidebar measuring box must match
+const MAIN_CONTENT_W = PAGE_WIDTH_PX - ROW_PAD_X - SIDEBAR_W - MAIN_PAD_L - MAIN_PAD_R; // the hidden main measuring box must match
+const NEXT_PAGE_MAX_HEIGHT = PAGE_HEIGHT_PX - ROW_PAD_TOP_NEXT - ROW_PAD_BOTTOM - BODY_TOP - BODY_BOTTOM; // pages 2+, both columns
 
-  if (s.includes('linkedin')) return LinkedinIcon;
-  if (s.includes('github')) return GithubIcon;
-  if (value.includes('@') || /e-?mail/.test(label) || MAIL_HOST.test(value)) return MailIcon;
-  if (/birth|\bdob\b|\bborn\b|\bage\b/.test(label) || /^born\b/.test(s)
-    || /^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(value)
-    || /^\d{1,2}(st|nd|rd|th)?\s+[a-z]{3,9},?\s+\d{4}$/.test(value)) return CalendarIcon;
-  if (/^(tel|telephone|phone|mobile|cell|whatsapp|fax)\b/.test(label) || /^[+()\d\s.-]{7,}$/.test(value)) return PhoneIcon;
-  if (/national|citizen/.test(label)) return FlagIcon;
-  if (/gender|\bsex\b/.test(label)) return UserIcon;
-  if (/marital|civil status|relationship/.test(label)) return HeartIcon;
-  if (/licen[cs]e/.test(s)) return CarIcon;
-  if (/web|site|portfolio|url|link/.test(label) || /(https?:\/\/|www\.|\.(com|dev|io|net|org|me|site|co|app)\b)/.test(value)) return GlobeIcon;
-  if (/address|location|city|based|residen/.test(label)
-    || /\d+\s+.*\b(street|st|road|rd|avenue|ave|drive|dr|lane|ln|blvd|boulevard|close|crescent|way)\b/.test(value)
-    || /\bp\.?o\.?\s*box\b/.test(value)
-    || value.includes(',')) return PinIcon;
-  return DotIcon;
+// Colour helpers for the tonal palette.
+const toRgb = (hex) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return [30, 43, 55];
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+const shade = (hex, amount) => {
+  const [r, g, b] = toRgb(hex);
+  const f = 1 - amount;
+  return `rgb(${Math.round(r * f)}, ${Math.round(g * f)}, ${Math.round(b * f)})`;
+};
+const alpha = (hex, a) => {
+  const [r, g, b] = toRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
 };
 
-const OrchidBoutiqueTemplate = (props) => {
-  const {
-    fullName,
-    contactList = [],
-    jobs = [],
-    educations = [],
-    namedSkills = [],
-    personal = {},
-    summary,
-    hobbies,
-    languages,
-    projects,
-    references,
-    certificates,
-    isEmpty,
-    sectionOrder = DEFAULT_ORDER,
-    edit,
-  } = props;
-  const accentColor = props.accentColor || DEFAULT_ACCENT['orchid-boutique'];
+// Section heading: a filled dot, the title, then a rule that fades out.
+// The accent and the rule gradient come in through custom properties in headingStyle.
+const HEADING_BASE =
+  `flex items-center gap-2.5 mb-3 font-medium tracking-tight before:h-2 before:w-2 before:shrink-0 before:rounded-full before:bg-[var(--accent)] before:content-[''] after:h-px after:flex-1 after:[background-image:var(--rule)] after:content-['']`;
+const MAIN_HEADING = `${HEADING_BASE} text-[15px]`;
+const SIDE_HEADING = `${HEADING_BASE} text-[13px]`;
 
-  const lineColor = tint(accentColor, 0.5);      // hairlines
-  const sidebarBg = tint(accentColor, 0.86);     // soft tint of the accent behind the sidebar
-  const barOff = tint(accentColor, 0.7);         // unfilled rating segments
-  const spacer = () => <div key="header-spacer" aria-hidden="true" style={{ height: HEADER_SPACER_H }} />;
+// Contact icons (stroke, 24px grid), chosen from what the entry looks like.
+const ICON_PATHS = {
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>,
+  phone: <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />,
+  pin: <><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></>,
+  globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>,
+  linkedin: <><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 11v6M8 7.5v.01M12 17v-6M12 13.5a2.5 2.5 0 0 1 5 0V17" /></>,
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
+  flag: <path d="M5 21V4M5 4h11l-2 4 2 4H5" />,
+  user: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
+  heart: <path d="M12 20.5C5 15.5 3 12 3 9a4.5 4.5 0 0 1 9-1.5A4.5 4.5 0 0 1 21 9c0 3-2 6.5-9 11.5z" />,
+  car: <><path d="M4 16v-4l2-5h12l2 5v4z" /><path d="M4 12h16" /><circle cx="8" cy="18.5" r="1.5" /><circle cx="16" cy="18.5" r="1.5" /></>,
+};
 
-  // Formatted (bold / italic / bullet) lines for the sidebar: same atoms, recoloured for the light background.
-  const sideRichText = (text, keyPrefix) =>
-    renderAchievements(text, keyPrefix).map((node) => React.cloneElement(node, { style: { color: MUTED, fontSize: '10.5px' } }));
+// Personal-detail lines ("Born: …", "Nationality: …") are matched by their label first.
+const LABEL_ICONS = [
+  [/^(born|birth|dob|date of birth)\b/, 'calendar'],
+  [/^(nationality|citizen)/, 'flag'],
+  [/^(gender|sex)\b|^(male|female|non-binary)$/, 'user'],
+  [/^(marital|civil status|single\b|married\b|divorced\b|widowed\b)/, 'heart'],
+  [/^(driver|driving|licen[cs]e)/, 'car'],
+];
 
-  /* ------------------------------ MAIN column ------------------------------ */
-  // Every entry is a FLAT list of elements: no <section>, no wrapper divs.
-  const headingClass = 'flex items-center gap-3 text-[11.5px] font-bold uppercase tracking-[0.22em] mb-3 pb-1.5 border-b';
-  const headingStyle = { color: INK, borderColor: lineColor };
-  const headingIcon = (Icon) => (
-    <span key="icon" className="shrink-0" style={{ color: accentColor }}><Icon size={18} /></span>
-  );
-  const heading = (key, text, Icon) => (
-    
-    <h3 key={`${key}-h`} className={headingClass} style={headingStyle}>
-      {headingIcon(Icon)}
-      <span>{text}</span>
-    </h3>
-    
-  );
-  // Sections built by renderExtraSections draw their own heading; add the icon to it when we can recognise it.
-  const withHeadingIcon = (blocks, Icon) => {
-    const [first, ...rest] = blocks;
-    if (!React.isValidElement(first) || first.props.className !== headingClass) return blocks;
-    return [React.cloneElement(first, undefined, headingIcon(Icon), <span key="text">{first.props.children}</span>), ...rest];
+const contactIcon = (value) => {
+  const t = String(value).trim().toLowerCase();
+  for (const [re, name] of LABEL_ICONS) if (re.test(t)) return name;
+  if (t.includes('linkedin')) return 'linkedin';
+  const v = t.replace(/^[a-z' ]{2,24}:(?!\/\/)\s*/, ''); // drop a "Phone:" / "Website:" style label
+  if (v.includes('@')) return 'mail';
+  if (/^\+?[\d\s().-]{7,}$/.test(v)) return 'phone';
+  // Any bare domain counts as a website (johndoe.co.za, portfolio.xyz, github.com/john).
+  if (/^(https?:\/\/|www\.)/.test(v) || /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(\/\S*)?$/.test(v)) return 'globe';
+  return 'pin';
+};
+const ContactIcon = ({ name, color }) => (
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-[1.5px] shrink-0" aria-hidden="true">
+    {ICON_PATHS[name] || ICON_PATHS.pin}
+  </svg>
+);
+
+const HorizonTemplate = (props) => {
+  const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, sectionOrder, edit } = props;
+  const accentColor = props.accentColor || DEFAULT_ACCENT.horizon || FALLBACK_ACCENT;
+
+  const headingStyle = {
+    color: INK,
+    '--accent': accentColor,
+    '--rule': `linear-gradient(90deg, ${alpha(accentColor, 0.38)}, transparent)`,
   };
-  const extraIcons = { projects: CodeIcon, references: UserIcon };
+  const heading = (key, text, cls) => <h3 key={`${key}-h`} className={cls} style={headingStyle}>{text}</h3>;
 
-  const mainMap = {
-    summary: summary ? endGroup([
-      heading('summary', 'Professional Summary', BriefcaseIcon),
-      ...renderAchievements(summary, 'summary'),
-    ]) : [],
-    experience: jobs.length > 0 ? endGroup([
-      heading('experience', 'Work Experience', BriefcaseIcon),
-      ...jobs.flatMap((job) => {
-        const place = [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(' · ');
-        const hasMeta = Boolean(job.employer || place);
-        const dates = formatRange(jobDates(job) || job.date || '');
-        return padLast([
-          <div key={`job-${job.id}-title`} className={`flex justify-between items-baseline gap-3 ${hasMeta ? 'mb-0.5' : 'mb-2'}`}>
-            <p className="font-bold text-[13px] leading-snug" style={{ color: INK }}>{job.title}</p>
-            {dates && <p className="text-[11px] whitespace-nowrap" style={{ color: INK }}>{dates}</p>}
-          </div>,
-          hasMeta && (
-            <div key={`job-${job.id}-meta`} className="flex justify-between items-baseline gap-3 mb-2">
-              <p className="text-xs" style={{ color: MUTED }}>{job.employer}</p>
-              {place && <p className="text-[11px] italic whitespace-nowrap" style={{ color: MUTED }}>{place}</p>}
-            </div>
-          ),
-          ...renderAchievements(job.achievements, `job-${job.id}-ach`),
-        ], 'mb-4');
-      }),
-    ]) : [],
-    education: educations.length > 0 ? endGroup([
-      heading('education', 'Education', CapIcon),
-      ...educations.flatMap((ed) => {
-        const degree = [ed.degree, ed.field].filter(Boolean).join(', ');
-        const title = degree || ed.institution;
-        const school = degree ? ed.institution : '';
-        const hasMeta = Boolean(school || ed.location);
-        const dates = formatRange(ed.date);
-        return padLast([
-          <div key={`education-${ed.id}-title`} className={`flex justify-between items-baseline gap-3 ${hasMeta ? 'mb-0.5' : 'mb-2'}`}>
-            <p className="font-bold text-[13px] leading-snug" style={{ color: INK }}>{title}</p>
-            {dates && <p className="text-[11px] whitespace-nowrap" style={{ color: INK }}>{dates}</p>}
-          </div>,
-          hasMeta && (
-            <div key={`education-${ed.id}-meta`} className="flex justify-between items-baseline gap-3 mb-2">
-              <p className="text-xs" style={{ color: MUTED }}>{school}</p>
-              {ed.location && <p className="text-[11px] italic whitespace-nowrap" style={{ color: MUTED }}>{ed.location}</p>}
-            </div>
-          ),
-          ...renderAchievements(ed.achievements, `education-${ed.id}-ach`),
-        ], 'mb-4');
-      }),
-    ]) : [],
-  };
-
-  // Skills, Languages, Certificates and Hobbies live in the sidebar (sideMap), so they are not passed in here.
-  const extras = {
-    ...renderExtraSections({ projects: withFormattedDates(projects), references, headingClass, headingStyle }),
-  };
-  const mainOrder = sectionOrder.filter((key) => !SIDEBAR_KEYS.includes(key));
-  const sideOrder = sectionOrder.filter((key) => SIDEBAR_KEYS.includes(key));
-  const mainBlocks = [
-    spacer(),
-    ...mainOrder.flatMap((key) => markSection(
-      edit,
-      key,
-      mainMap[key] || (extras[key] ? withHeadingIcon(extras[key], extraIcons[key] || AwardIcon) : []),
-    )),
-  ];
-
-  /* ----------------------------- SIDEBAR column ---------------------------- */
-  const languageItems = (languages?.items || []).filter((l) => l.name);
-  const hasLanguages = Boolean(languages?.enabled && languageItems.length > 0);
-  const hasHobbies = Boolean(hobbies?.enabled && hobbies.text && String(hobbies.text).trim());
-  const sideHeadClass = 'flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.2em] mb-3';
-  const sideHeadStyle = { color: INK, borderColor: lineColor };
-  // Certificates come from the shared renderer, which draws its own heading. It is rendered here with the
-  // sidebar heading style so it matches the other sidebar sections.
-  const rawCertificates = renderCertificates({ certificates, headingClass: sideHeadClass, headingStyle: sideHeadStyle })?.certificates || [];
-  const hasCertificates = rawCertificates.length > 0;
-
-  // The first sidebar section has no divider above it; every later one does.
-  const sideHas = { skills: namedSkills.length > 0, languages: hasLanguages, certificates: hasCertificates, hobbies: hasHobbies };
-  const firstSideKey = sideOrder.find((k) => sideHas[k]);
-  const sideHeadClassFor = (key) => `${sideHeadClass} ${key === firstSideKey ? '' : 'pt-4 border-t'}`;
-
-  const sideHeading = (key, text, Icon) => (
-    <h3 key={`${key}-h`} className={sideHeadClassFor(key)} style={sideHeadStyle}>
-      <span className="shrink-0" style={{ color: accentColor }}><Icon size={16} /></span>
-      <span>{text}</span>
-    </h3>
-  );
-
-  // Add the award icon and the right divider to the heading the renderer drew (recognised by its class).
-  const certificateBlocks = (() => {
-    const [first, ...rest] = rawCertificates;
-    if (!React.isValidElement(first) || first.props.className !== sideHeadClass) return rawCertificates;
-    return [
-      React.cloneElement(
-        first,
-        { className: sideHeadClassFor('certificates') },
-        <span key="icon" className="shrink-0" style={{ color: accentColor }}><AwardIcon size={16} /></span>,
-        <span key="text">{first.props.children}</span>,
-      ),
-      ...rest,
-    ];
-  })();
-
-  const ratingBars = (rating) => (
-    <div className="flex gap-1 mt-1 pl-3">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className="h-[3px] flex-1 rounded-full" style={{ backgroundColor: i <= rating ? accentColor : barOff }} />
-      ))}
-    </div>
-  );
-
-  // One layout for every rated item in the sidebar (skills and languages): dot, name, level word, then the bars.
-  const levelItem = (key, name, label, rating) => (
-    <div key={key} className="mb-1.5">
-      <div className="flex items-start gap-2 text-[11px]">
-        <span className="w-1 h-1 rounded-full shrink-0 mt-[6px]" style={{ backgroundColor: accentColor }} />
-        <span className="break-words flex-1">{name}</span>
-        {label && <span className="text-[10px] italic shrink-0" style={{ color: MUTED }}>{label}</span>}
+  // One entry = a list of atoms; the last atom carries the gap to the next entry as padding.
+  const entry = (id, head, bodyNodes, isLastEntry, gap = 18) => {
+    const list = [head, ...bodyNodes].filter(Boolean);
+    return list.map((node, i) => (
+      <div key={`${id}-${i}`} style={{ paddingBottom: i === list.length - 1 ? (isLastEntry ? 0 : gap) : 3 }}>
+        {node}
       </div>
-      {rating > 0 && ratingBars(rating)}
-    </div>
-  );
-
-  const languageBlocks = hasLanguages ? endGroup([
-    sideHeading('languages', 'Languages', GlobeIcon),
-    ...languageItems.map((l) => {
-      const { label, rating } = languageLevelInfo(l);
-      return levelItem(`language-${l.id}`, l.name, label, rating);
-    }),
-  ]) : [];
-
-  const sideMap = {
-    skills: namedSkills.length > 0 ? endGroup([
-      sideHeading('skills', 'Skills', GearIcon),
-      ...namedSkills.map((s) => {
-        const rating = skillRating(s);
-        return levelItem(`skill-${s.id}`, s.text, rating > 0 ? getSkillLevelLabel(rating) : '', rating);
-      }),
-    ]) : [],
-    languages: languageBlocks,
-    certificates: certificateBlocks,
-    hobbies: hasHobbies ? endGroup([
-      sideHeading('hobbies', 'Hobbies & Interests', TargetIcon),
-      ...sideRichText(hobbies.text, 'hobbies'),
-    ]) : [],
+    ));
   };
 
-  const sideBlocks = [
-    spacer(),
-    ...sideOrder.flatMap((key) => markSection(edit, key, sideMap[key] || [])),
-  ];
+  const richLines = (text, prefix) => (
+    text ? renderAchievements(text, prefix).map((el, i) => <div key={`${prefix}-w${i}`}>{el}</div>) : []
+  );
 
-/* ------------------------------- Page header ------------------------------ */
-  // Name, profession, and contact details live in a full-width band drawn on page 1.
-  const nameParts = (fullName || 'Your Name').trim().split(/\s+/);
-  const lastName = nameParts.length > 1 ? nameParts.pop() : '';
-  const firstName = nameParts.join(' ');
-  const longest = Math.max(firstName.length, lastName.length);
-  const nameSize = longest <= 7 ? 42 : longest <= 9 ? 36 : longest <= 11 ? 30 : longest <= 13 ? 26 : 22;
-  const professionParts = (personal.profession || '').split('|').map((p) => p.trim()).filter(Boolean);
-
-  // Automatically switch to a 2-column grid when contact/meta list is long (> 5 items)
-  const isMultiColumn = contactList.length > 5;
-
-  // A resume has one location, so only the first address-like line gets the pin; any later one gets a dot.
-  const contactIcons = (() => {
-    let pinUsed = false;
-    return contactList.map((c) => {
-      const Icon = contactIcon(c);
-      if (Icon !== PinIcon) return Icon;
-      if (pinUsed) return DotIcon;
-      pinUsed = true;
-      return PinIcon;
-    });
-  })();
-
-  const headerBlocks = markSection(edit, 'personal', [
-    <div key="page-header" className="flex items-center w-full h-full" style={{ padding: '0 28px', gap: 20 }}>
-      {personal.photo && (
-        <div className="shrink-0" style={{ width: 140 }}>
-          <ResumePhoto src={personal.photo} style={personal.photoStyle} borderColor={accentColor} />
-        </div>
-      )}
-
-      <div className="flex-1 min-w-0 pr-2">
-        <h1 className="font-medium uppercase break-words" style={{ fontFamily: SERIF, fontSize: nameSize, lineHeight: 1.02, letterSpacing: '0.02em' }}>
-          <span className="block" style={{ color: INK }}>{firstName}</span>
-          {lastName && <span className="block" style={{ color: accentColor }}>{lastName}</span>}
-        </h1>
-        {professionParts.length > 0 && (
-          <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] leading-relaxed" style={{ color: INK }}>
-            {professionParts.map((part, i) => (
-              <React.Fragment key={i}>
-                {i > 0 && <span className="mx-2" style={{ color: accentColor }}>|</span>}
-                {part}
-              </React.Fragment>
-            ))}
-          </p>
+  // Main column: title with the dates on the same line, employer / location underneath.
+  const mainHead = (title, date, primary, secondary) => (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[14.5px] font-medium leading-snug" style={{ color: INK }}>{title}</p>
+        {date && (
+          <span
+            className="shrink-0 whitespace-nowrap text-[10.5px] font-medium tabular-nums"
+            style={{ color: shade(accentColor, 0.35) }}
+          >
+            {date}
+          </span>
         )}
       </div>
-
-      {contactList.length > 0 && (
-        <div
-          className="shrink-0 self-stretch flex flex-col justify-center"
-          style={{
-            width: isMultiColumn ? 320 : 214,
-            margin: '20px 0',
-            paddingLeft: 18,
-            borderLeft: `1px solid ${lineColor}`,
-          }}
-        >
-          <div className={isMultiColumn ? "grid grid-cols-2 gap-x-3 gap-y-2" : "flex flex-col gap-2.5"}>
-            {contactList.map((c, i) => {
-              const Icon = contactIcons[i];
-              return (
-                <div key={`contact-${i}`} className="flex items-center gap-2 text-[10px] leading-tight" style={{ color: INK }}>
-                  <span className="shrink-0" style={{ color: accentColor }}><Icon size={13} /></span>
-                  <span className="min-w-0 break-words line-clamp-2" title={c}>{c}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {(primary || secondary) && (
+        <p className="mt-0.5 text-[12.5px] leading-snug">
+          {primary && <span className="font-medium" style={{ color: shade(accentColor, 0.25) }}>{primary}</span>}
+          {secondary && <span className="text-slate-500">{primary ? ', ' : ''}{secondary}</span>}
+        </p>
       )}
-    </div>,
-  ], false);
+    </div>
+  );
 
-  /* ------------------------------ Pagination ------------------------------- */
-  // Each column is measured and split on its own; the page count is the larger of the two.
-  const main = usePaginatedBlocks(mainBlocks, 1020);
-  const side = usePaginatedBlocks(sideBlocks, 1020);
-  const pageCount = Math.max(main.pages.length, side.pages.length);
+  const sectionMap = {
+    summary: summary ? endGroup([
+      heading('summary', 'Summary', MAIN_HEADING),
+      ...renderAchievements(summary, 'summary'),
+    ]) : [],
+
+    experience: jobs.length > 0 ? endGroup([
+      heading('experience', 'Experience', MAIN_HEADING),
+      ...jobs.flatMap((job, i) => entry(
+        `job-${job.id ?? i}`,
+        mainHead(job.title, jobDates(job), job.employer, [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(', ')),
+        richLines(job.achievements, `job-${job.id ?? i}-ach`),
+        i === jobs.length - 1,
+      )),
+    ]) : [],
+
+    education: educations.length > 0 ? endGroup([
+      heading('education', 'Education', SIDE_HEADING),
+      ...educations.flatMap((ed, i) => {
+        const title = [ed.degree, ed.field].filter(Boolean).join(', ') || ed.institution;
+        const school = title === ed.institution ? '' : ed.institution;
+        const meta = [ed.date, ed.location].filter(Boolean).join(', ');
+        return entry(
+          `education-${ed.id ?? i}`,
+          (
+            <div>
+              <p className="text-[12.5px] font-medium leading-snug" style={{ color: INK }}>{title}</p>
+              {school && <p className="text-[11.5px] leading-snug text-slate-600">{school}</p>}
+              {meta && <p className="mt-0.5 text-[10.5px] leading-snug text-slate-500">{meta}</p>}
+            </div>
+          ),
+          richLines(ed.achievements, `education-${ed.id ?? i}-ach`),
+          i === educations.length - 1,
+          14,
+        );
+      }),
+    ]) : [],
+
+    skills: namedSkills.length > 0 ? endGroup([
+      heading('skills', 'Skills', SIDE_HEADING),
+      ...namedSkills.map((s, i) => (
+        <div key={`skill-${s.id ?? i}`} className="flex items-center justify-between gap-3 py-[3px] text-[12px] leading-snug" style={{ color: INK }}>
+          <span className="min-w-0 [overflow-wrap:anywhere]">{s.text}</span>
+          <span className="shrink-0">{skillDots(skillRating(s), accentColor, tint(accentColor, 0.72))}</span>
+        </div>
+      )),
+    ]) : [],
+  };
+
+  // Extras come from the shared helpers, called once per column so each gets that column's heading size.
+  const mainExtras = renderExtraSections({ projects, languages, hobbies, references, headingClass: MAIN_HEADING, headingStyle, accentColor });
+  const sideExtras = renderExtraSections({ projects, languages, hobbies, references, headingClass: SIDE_HEADING, headingStyle, accentColor });
+  const sideCerts = renderCertificates({ certificates, headingClass: SIDE_HEADING, headingStyle });
+
+  const mainKeys = sectionOrder.filter((key) => !SIDEBAR_KEYS.has(key));
+  const sideKeys = sectionOrder.filter((key) => SIDEBAR_KEYS.has(key));
+  const mainBlocks = mainKeys.flatMap((key) => markSection(edit, key, sectionMap[key] || mainExtras[key] || []));
+  const sideBlocks = sideKeys.flatMap((key) => markSection(edit, key, sectionMap[key] || sideExtras[key] || sideCerts[key] || []));
+
+  const main = usePaginatedBlocks(mainBlocks, NEXT_PAGE_MAX_HEIGHT);
+  const side = usePaginatedBlocks(sideBlocks, NEXT_PAGE_MAX_HEIGHT);
+  const pageCount = Math.max(1, main.pages.length, side.pages.length);
+
+  // Band pieces.
+  const name = (fullName || 'Your Name').trim();
+  const nameSize = name.length > 26 ? 34 : name.length > 18 ? 40 : 46;
+  const initials = name.split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+  const professionParts = (personal.profession || '').split('|').map((s) => s.trim()).filter(Boolean);
+  const contacts = (contactList || []).filter((c) => typeof c === 'string' && c.trim());
+
+  const bandBg = `radial-gradient(120% 150% at 100% 0%, ${alpha(accentColor, 0.5)} 0%, transparent 55%), linear-gradient(115deg, ${shade(accentColor, 0.8)} 0%, ${shade(accentColor, 0.66)} 100%)`;
+  const panelBg = tint(accentColor, 0.93);
+  const printExact = { WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' };
 
   return (
     <>
-      <div ref={main.measureContainerRef} className="absolute top-[-9999px] left-[-9999px] pointer-events-none" style={{ width: MAIN_W }}>
+      {/* Hidden copies of every atom, one box per column, as wide as the real column body. */}
+      <div
+        ref={main.measureContainerRef}
+        className="absolute pointer-events-none"
+        style={{ top: -9999, left: -9999, width: MAIN_CONTENT_W, fontFamily: FONT }}
+      >
         {main.measureContent}
       </div>
-      <div ref={side.measureContainerRef} className="absolute top-[-9999px] left-[-9999px] pointer-events-none" style={{ width: SIDE_CONTENT_W }}>
+      <div
+        ref={side.measureContainerRef}
+        className="absolute pointer-events-none"
+        style={{ top: -9999, left: -9999 - SIDEBAR_W, width: SIDE_CONTENT_W, fontFamily: FONT }}
+      >
         {side.measureContent}
       </div>
 
       {Array.from({ length: pageCount }, (_, index) => (
         <A4Page key={index} pageNum={index + 1} totalPages={pageCount}>
-          <div className="relative flex w-full h-full text-left" style={{ color: INK, backgroundColor: PAPER }}>
+          <div className="relative flex h-full w-full flex-col bg-white text-left" style={{ fontFamily: FONT, color: BODY, ...printExact }}>
             {index === 0 && (
               <div
-                className="absolute top-0 left-0 right-0 z-10 overflow-hidden"
-                style={{ height: HEADER_H, background: 'linear-gradient(135deg, #FFFCF5 0%, #FAF7F0 100%)' }}
+                {...editAttrs(edit, 'personal')}
+                className="flex shrink-0 items-center gap-7 overflow-hidden px-9 text-white"
+                style={{ height: HEADER_H, background: bandBg, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }}
               >
-                {headerBlocks}
+                <div className="shrink-0">
+                  {personal.photo ? (
+                    <ResumePhoto src={personal.photo} style={personal.photoStyle} borderColor="rgba(255,255,255,0.35)" />
+                  ) : (
+                    <div
+                      className="flex h-[88px] w-[88px] items-center justify-center rounded-[26px] text-[30px] font-light"
+                      style={{ background: 'rgba(255,255,255,0.1)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.22)' }}
+                    >
+                      {initials}
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h1 className="break-words font-light leading-[1.05] tracking-[-0.02em]" style={{ fontSize: nameSize }}>{name}</h1>
+                  {professionParts.length > 0 && (
+                    <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px]" style={{ color: tint(accentColor, 0.55) }}>
+                      {professionParts.map((part, i) => (
+                        <React.Fragment key={i}>
+                          {i > 0 && <span aria-hidden="true" className="h-3.5 w-px bg-white/40" />}
+                          <span>{part}</span>
+                        </React.Fragment>
+                      ))}
+                    </p>
+                  )}
+                  {contacts.length > 0 && (
+                    <div className={`grid grid-cols-2 gap-x-6 leading-snug text-white/80 ${contacts.length > 8 ? 'mt-3 gap-y-1 text-[10.5px]' : 'mt-4 gap-y-1.5 text-[11px]'}`}>
+                      {contacts.slice(0, 10).map((c, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <ContactIcon name={contactIcon(c)} color={tint(accentColor, 0.5)} />
+                          <span className="min-w-0 [overflow-wrap:anywhere]">{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             <div
-              ref={index === 0 ? side.firstBodyRef : undefined}
-              className="shrink-0 h-full overflow-hidden"
-              style={{ width: SIDEBAR_W, padding: '32px 24px 32px 28px', backgroundColor: sidebarBg }}
+              className="flex min-h-0 flex-1"
+              style={{ paddingTop: index === 0 ? ROW_PAD_TOP_FIRST : ROW_PAD_TOP_NEXT, paddingBottom: ROW_PAD_BOTTOM, paddingLeft: ROW_PAD_X }}
             >
-              {side.pages[index]}
-            </div>
+              <div className="flex shrink-0 flex-col" style={{ width: SIDEBAR_W, background: panelBg, borderRadius: 22 }}>
+                <div
+                  ref={index === 0 ? side.firstBodyRef : undefined}
+                  className="min-h-0 flex-1 overflow-hidden"
+                  style={{ marginLeft: SIDE_PAD_X, marginRight: SIDE_PAD_X, marginTop: BODY_TOP, marginBottom: BODY_BOTTOM }}
+                >
+                  {side.pages[index] || null}
+                </div>
+              </div>
 
-            <div
-              ref={index === 0 ? main.firstBodyRef : undefined}
-              className="flex-1 min-w-0 h-full overflow-hidden"
-              style={{ padding: '32px 28px 32px 24px' }}
-            >
-              {main.pages[index]}
-              {isEmpty && index === 0 && (
-                <p className="text-xs text-slate-400 italic mt-10">Nothing entered yet — fill in a few steps to see them appear here.</p>
-              )}
+              <div className="flex min-w-0 flex-1 flex-col">
+                <div
+                  ref={index === 0 ? main.firstBodyRef : undefined}
+                  className="min-h-0 flex-1 overflow-hidden"
+                  style={{ marginLeft: MAIN_PAD_L, marginRight: MAIN_PAD_R, marginTop: BODY_TOP, marginBottom: BODY_BOTTOM }}
+                >
+                  {main.pages[index] || null}
+                  {isEmpty && index === 0 && (
+                    <p className="text-xs italic text-slate-400">Nothing entered yet — fill in a few steps to see them appear here.</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </A4Page>
@@ -446,4 +348,4 @@ const OrchidBoutiqueTemplate = (props) => {
   );
 };
 
-export default OrchidBoutiqueTemplate;
+export default HorizonTemplate;
