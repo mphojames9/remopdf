@@ -144,7 +144,7 @@ const JobSkillMatch = ({ data, onAdd }) => {
         <span className="mt-0.5"><Sparkle /></span>
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-slate-900">Matched to {target.title || 'your target job'}</h2>
-          <p className="mt-0.5 text-xs leading-snug text-slate-600">What the job asks for, compared with your work history. Skills only: degrees and certificates go under Education.</p>
+          <p className="mt-0.5 text-xs leading-snug text-slate-600">What the job asks for, compared with your work history.</p>
         </div>
         <button
           type="button"

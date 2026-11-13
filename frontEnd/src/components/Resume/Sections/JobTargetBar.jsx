@@ -172,13 +172,13 @@ const TIPS = {
 /* -------------------------------------------------------------------------- */
 
 // pct is 0..1. A soft salmon arc on a faint track, drawn in a 100 x 100 box so it scales to any size.
-const Ring = ({ pct, size, stroke = 9, animate = true, children }) => {
+const Ring = ({ pct, size, stroke = 9, animate = true, className = '', children }) => {
   const id = `jm${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const radius = 50 - stroke / 2 - 1;
   const circumference = 2 * Math.PI * radius;
   const clamped = Math.max(0, Math.min(1, pct));
   return (
-    <span className="relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
+    <span className={`relative inline-flex shrink-0 items-center justify-center ${className}`} style={size ? { width: size, height: size } : undefined}>
       <svg className="absolute inset-0" viewBox="0 0 100 100" aria-hidden="true" style={{ filter: 'drop-shadow(0 0 6px rgba(217,133,107,.45))' }}>
         <defs>
           <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
@@ -250,11 +250,11 @@ const Dock = ({ result, onOpen, className = 'bottom-24' }) => {
         onClick={onOpen}
         aria-haspopup="dialog"
         aria-label={`Job match ${result.score} out of 100. Open details`}
-        className={`group flex items-center rounded-full p-1.5 text-white ring-1 ring-white/10 backdrop-blur transition-[padding,transform] duration-300 hover:-translate-y-0.5 hover:pr-5 focus-visible:pr-5 motion-reduce:transition-none ${FOCUS}`}
+        className={`group flex items-center rounded-full p-1 text-white ring-1 ring-white/10 backdrop-blur transition-[padding,transform] duration-300 hover:-translate-y-0.5 hover:pr-5 focus-visible:pr-5 motion-reduce:transition-none sm:p-1.5 ${FOCUS}`}
         style={{ background: 'linear-gradient(160deg,rgba(11,18,32,.96),rgba(28,39,66,.96))', boxShadow: '0 16px 36px -10px rgba(11,18,32,.55), inset 0 1px 0 rgba(255,255,255,.08)' }}
       >
-        <Ring pct={result.score / 100} size={50} stroke={10}>
-          <span className="text-[15px] font-semibold tabular-nums">{shown}</span>
+        <Ring pct={result.score / 100} stroke={10} className="h-10 w-10 sm:h-[50px] sm:w-[50px]">
+          <span className="text-[13px] font-semibold tabular-nums sm:text-[15px]">{shown}</span>
         </Ring>
         <span className="max-w-0 overflow-hidden whitespace-nowrap text-left opacity-0 transition-all duration-300 group-hover:ml-3 group-hover:max-w-[150px] group-hover:opacity-100 group-focus-visible:ml-3 group-focus-visible:max-w-[150px] group-focus-visible:opacity-100 motion-reduce:transition-none">
           <span className="block text-[14px] font-semibold leading-tight">Job match</span>
