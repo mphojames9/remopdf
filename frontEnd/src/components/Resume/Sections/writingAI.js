@@ -4,12 +4,15 @@
   The Groq key lives on the server (routers/writing_ai.py, env GROQ_API_KEY). Nothing secret is in
   this file, and the key must never be put in the React app: anything in the bundle is public.
 
-  The AI is a Premium feature. Before a review the app gets a short-lived "AI pass" from the accounts server
-  (getAiPass in api/payments.js): a signed note that this account has Premium right now. The AI service checks
-  the pass itself before it uses the key, so it never has to reach the accounts server. This file only reports
-  what was said:
-    403 -> WritingAIError('premium')    signed in, but no active Premium payment
+  Every signed-in account can use the writing assistant: the free plan on a small, cheap AI model with a small daily
+  allowance, the paid plans (Plus, Pro, Max) on larger models that think harder, with a bigger allowance. Before a
+  review the app gets a short-lived "AI pass" from the accounts server (getAiPass in api/payments.js): a signed note
+  saying which plan this account has right now. The AI service checks the pass itself before it uses the key, so it
+  never has to reach the accounts server, and it picks the model from the plan. This file only reports what was said:
+    403 -> WritingAIError('premium')    signed in, but this plan cannot use that feature
     401 -> WritingAIError('signin')     not signed in, or the session ran out
+    429 -> WritingAIError('quota')      today's AI allowance for this plan is used up (renews at midnight, South Africa)
+    429 -> WritingAIError('busy')       too many reviews in a minute
 
     analyzeWriting({ text, field, jobTitle, jobTarget, signal })   -> { rewrites, needs }
       jobTarget (optional): when the person has told the builder which job they are applying for, a summary or
@@ -23,7 +26,7 @@
 */
 
 import { getToken } from '../../../api/auth';
-import { getAiPass, forgetAiPass, PaymentApiError } from '../../../api/payments';
+import { getAiPass, forgetAiPass, readQuota, PaymentApiError } from '../../../api/payments';
 import { rewriteForJob, cleanNeeds, cleanWhy } from './jobMatchAI';
 import { hasJobTarget } from './atsScore';
 
@@ -41,7 +44,7 @@ export const MAX_CHARS = 4000; // the server rejects more than this
 const cache = new Map();
 
 export class WritingAIError extends Error {
-  // code: 'busy' | 'timeout' | 'offline' | 'unavailable' | 'signin' | 'premium'
+  // code: 'busy' | 'timeout' | 'offline' | 'unavailable' | 'signin' | 'premium' | 'quota'
   constructor(code, message) {
     super(message);
     this.name = 'WritingAIError';
@@ -147,7 +150,11 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', job
       cache.clear(); // Premium is over (or was never there): nothing kept from before is shown again
       throw new WritingAIError('premium', 'AI suggestions are a Premium feature.');
     }
-    if (res.status === 429) throw new WritingAIError('busy', 'Too many reviews in a short time.');
+    if (res.status === 429) {
+      const quota = await readQuota(res);
+      if (quota) throw new WritingAIError('quota', quota.message || 'You have used today’s AI suggestions.');
+      throw new WritingAIError('busy', 'Too many reviews in a short time.');
+    }
     if (!res.ok) {
       await logFailure(res);
       throw new WritingAIError('unavailable', 'AI review is unavailable right now.');

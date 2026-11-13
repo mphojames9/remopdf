@@ -18,7 +18,7 @@ def fake_model(reply_for):
     """Replace the model call. reply_for(task, messages) -> dict. Also checks the task name is a real one."""
     calls = []
 
-    def complete(get_client, messages, *, task, model=None, temperature=None, log=print):
+    def complete(get_client, messages, *, task, model=None, temperature=None, log=print, plan=None):
         assert task in ai_models.TASKS, f"unknown task {task!r}"
         calls.append({"task": task, "messages": messages, "temperature": temperature})
         return json.dumps(reply_for(task, messages))
@@ -31,7 +31,7 @@ def fake_model(reply_for):
 class AnalyzeRoute(unittest.TestCase):
     def setUp(self):
         w._cache.clear()
-        for name, value in (("_bearer_pass", "pass"), ("_rate_limited", False), ("require_premium", None)):
+        for name, value in (("_bearer_pass", "pass"), ("_rate_limited", False), ("require_access", None)):
             patcher = mock.patch.object(w, name, return_value=value)
             patcher.start()
             self.addCleanup(patcher.stop)

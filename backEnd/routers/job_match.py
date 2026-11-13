@@ -41,8 +41,9 @@ Honesty is built in, because the output ends up on a real resume that a real emp
 The ATS match score itself is NOT computed here: the app counts keywords on the device (atsScore.js), so it
 updates as the person types and costs nothing.
 
-Premium only, with the same "AI pass" as routers/writing_ai.py (the Node accounts server signs it, this service
-only checks the signature with AI_PASS_SECRET). Same Groq key (GROQ_API_KEY; the model, thinking level and fallback are chosen in routers/ai_models.py) and the same
+Paid plans only (Plus, Pro, Max; the free plan gets 403), with the same "AI pass" as routers/writing_ai.py (the Node
+accounts server signs it, this service only checks the signature with AI_PASS_SECRET). The plan in the pass decides the
+model, the thinking level and the daily allowance (all in routers/ai_models.py). Same Groq key (GROQ_API_KEY) and the same
 O*NET key (ONET_API_KEY) as the routers it reuses. Nothing to install.
 """
 import datetime
@@ -59,7 +60,7 @@ from routers import ai_models, coaching, summary_guard
 from routers.job_posting import PostingError, clean_posting_fields, read_posting_text, read_posting_url
 from routers.onet import OnetError, _cached as _onet_cached, _fetch_detail, _normalize_occupations, _onet_get
 from routers.ai_models import extract_json
-from routers.writing_ai import _bearer_pass, _groq_client, _rate_limited, require_premium
+from routers.writing_ai import _bearer_pass, _groq_client, _plan, _rate_limited, _spend, require_access
 
 router = APIRouter(prefix="/api/jobmatch", tags=["Job match"])
 
@@ -212,18 +213,21 @@ def _seniority(title: str) -> str:
     return ""
 
 
-def _gate(request: Request, bucket: str, limit: int) -> None:
-    # Same order as routers/writing_ai.py: nothing below this (the cache, Groq, O*NET) is reachable without Premium.
+def _gate(request: Request, bucket: str, limit: int, task: str):
+    # Same order as routers/writing_ai.py: nothing below this (the cache, Groq, O*NET) is reachable without a paid plan.
+    # Returns who is asking and which plan they have; the routes pass it on so the right model answers.
     token = _bearer_pass(request)
     if _rate_limited(request, bucket, limit):
         raise HTTPException(status_code=429, detail="Too many requests. Try again in a minute.")
-    require_premium(token)
+    return require_access(token, task)
 
 
-def _ask_groq(messages, *, task: str, label: str, temperature: Optional[float] = None) -> dict:
-    """One model call through routers/ai_models.py (model choice, thinking level, token budget and fallback live there)."""
+def _ask_groq(messages, *, task: str, label: str, temperature: Optional[float] = None, access=None) -> dict:
+    """One model call through routers/ai_models.py (model choice, thinking level, token budget and fallback live there).
+    `access` is the plan of the person asking: it picks the model, and the call is counted against their daily allowance."""
+    _spend(access, task)  # callers check their cache first, so a stored answer never gets here
     try:
-        raw = ai_models.complete(_groq_client, messages, task=task, temperature=temperature)
+        raw = ai_models.complete(_groq_client, messages, task=task, temperature=temperature, plan=_plan(access))
     except HTTPException:
         raise
     except Exception as err:  # network failure, Groq 4xx/5xx, timeout (after the fallback model was tried too)
@@ -368,13 +372,13 @@ def _clean_keywords(raw, advert_norm: str) -> List[dict]:
 
 @router.post("/target")
 def build_target(body: TargetRequest, request: Request):
-    _gate(request, "jm-target", TARGET_RATE_MAX)
+    access = _gate(request, "jm-target", TARGET_RATE_MAX, "target")
 
     url, text, typed_title = body.url.strip(), body.text.strip(), _one_line(body.title, 120)
     if not url and not text and not typed_title:
         raise _fail(400, "badlink", "Paste the link to the job advert, paste the advert, or type the job title.")
 
-    model = ai_models.primary_model()
+    model = _plan(access).cache_id  # the cache is filed per plan: a Max answer is never served to Plus, nor the reverse
     use_text = len(text) >= 80
     key = "jm-target-v2:" + _hash(model, text if use_text else "", "" if use_text else url, typed_title)
     cached = _cache_get(key)
@@ -395,7 +399,7 @@ def build_target(body: TargetRequest, request: Request):
     fields = {"job_title": "", "company": "", "address": "", "requirements": [], "duties": []}
     keywords: List[dict] = []
     if posting is not None:
-        data = _ask_groq(_posting_messages(posting), task="target", label="target")
+        data = _ask_groq(_posting_messages(posting), task="target", label="target", access=access)
         fields = clean_posting_fields(data, posting)  # title, company, address, requirements and duties the page really supports
         keywords = _clean_keywords(data.get("keywords"), _norm(posting.haystack))
         if not keywords and not fields["requirements"] and not fields["duties"]:
@@ -578,7 +582,7 @@ def _same_skill(a: str, b: str) -> bool:
 
 @router.post("/skills")
 def match_skills(body: SkillsRequest, request: Request):
-    _gate(request, "jm-skills", SKILLS_RATE_MAX)
+    access = _gate(request, "jm-skills", SKILLS_RATE_MAX, "skills")
 
     target = body.target
     job_norm = _job_norm(target)
@@ -588,7 +592,7 @@ def match_skills(body: SkillsRequest, request: Request):
     have = {_norm(s) for s in _lines(body.resume.skills, 60, 60)}
     have.discard("")
 
-    model = ai_models.primary_model()
+    model = _plan(access).cache_id  # the cache is filed per plan: a Max answer is never served to Plus, nor the reverse
     job_text = _job_block(target, skills_only=True)
     key = "jm-skills-v3:" + _hash(model, job_text, candidate, "|".join(sorted(have)))
     cached = _cache_get(key)
@@ -604,6 +608,7 @@ def match_skills(body: SkillsRequest, request: Request):
         [{"role": "system", "content": SKILLS_SYSTEM_PROMPT}, {"role": "user", "content": user}],
         task="skills",
         label="skills",
+        access=access,
     )
 
     candidate_norm = _norm(candidate)
@@ -720,7 +725,7 @@ SUMMARY_ATTEMPTS = 3
 
 @router.post("/summary")
 def write_summary(body: SummaryRequest, request: Request):
-    _gate(request, "jm-summary", SUMMARY_RATE_MAX)
+    access = _gate(request, "jm-summary", SUMMARY_RATE_MAX, "summary")
 
     resume = body.resume
     # The summary is written from the history, never from the summary that is already there.
@@ -758,7 +763,7 @@ def write_summary(body: SummaryRequest, request: Request):
         forbidden = [n for n in (_one_line(target.title, 120), _one_line(target.company, 120)) if n]
     ad_terms = [k.term.strip() for k in (target.keywords[:40] if has_job else []) if k.term.strip() and k.source != "onet"]
 
-    model = ai_models.primary_model()
+    model = _plan(access).cache_id  # the cache is filed per plan: a Max answer is never served to Plus, nor the reverse
     variant = int(body.variant or 0)
     key = "jm-summary-v3:" + _hash(model, job_text, facts, str(variant))
     cached = _cache_get(key)
@@ -781,6 +786,7 @@ def write_summary(body: SummaryRequest, request: Request):
             task="summary",
             temperature=0.3 if not variant else 0.5,
             label="summary",
+            access=access,
         )
         text = _one_line(_strip_markup(str(data.get("summary", ""))), 900)
         claims = data.get("claims") if isinstance(data.get("claims"), list) else []
@@ -872,7 +878,7 @@ class RewriteRequest(BaseModel):
 
 @router.post("/rewrite")
 def rewrite(body: RewriteRequest, request: Request):
-    _gate(request, "jm-rewrite", REWRITE_RATE_MAX)
+    access = _gate(request, "jm-rewrite", REWRITE_RATE_MAX, "rewrite")
 
     text = body.text.strip()
     if len(text) < 3:
@@ -881,7 +887,7 @@ def rewrite(body: RewriteRequest, request: Request):
     if not _job_norm(target).strip():
         raise HTTPException(status_code=400, detail="There is no job to tailor this to.")
 
-    model = ai_models.primary_model()
+    model = _plan(access).cache_id  # the cache is filed per plan: a Max answer is never served to Plus, nor the reverse
     entry_title = _one_line(body.job_title, 120)
     key = "jm-rewrite-v3:" + _hash(model, body.field, entry_title, _job_block(target, reference=False), text)
     cached = _cache_get(key)
@@ -894,6 +900,7 @@ def rewrite(body: RewriteRequest, request: Request):
         [{"role": "system", "content": REWRITE_SYSTEM_PROMPT}, {"role": "user", "content": user}],
         task="rewrite",
         label="rewrite",
+        access=access,
     )
 
     original_norm = _norm(text)

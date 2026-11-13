@@ -37,12 +37,19 @@ async function request(method, path, body) {
   return data;
 }
 
-/** { premium, expiresAt, testMode, plan: { name, amount, currency, days } }. amount is in the smallest unit (4900 = 49.00). */
+/**
+ * { premium, tier, expiresAt, daysLeft, testMode, channels, plans: [{ id, name, amount, currency, days }] }
+ *   premium  true for any paid plan
+ *   tier     'free' | 'plus' | 'pro' | 'max': the plan the account has right now
+ *   plans    the three plans that can be bought; amount is in the smallest unit (5900 = R59.00)
+ */
 export const getPaymentStatus = () => request('GET', '/status');
 
 /**
- * Starts a payment. `details` is { name, phone } from the billing form (the email always comes from the account).
- * Resolves to { accessCode, reference }, or { premium: true } when access is already paid for.
+ * Starts a payment. `details` is { plan, name, phone }: `plan` is 'plus' | 'pro' | 'max' (the server looks up the
+ * price, so the browser only says which plan), name and phone come from the billing form (the email always comes
+ * from the account). Resolves to { accessCode, reference }, or { premium: true } when the account already has that
+ * plan or a better one.
  */
 export const startPayment = (details = {}) => request('POST', '/initialize', details);
 
@@ -50,10 +57,11 @@ export const startPayment = (details = {}) => request('POST', '/initialize', det
 export const verifyPayment = (reference) => request('GET', `/verify/${encodeURIComponent(reference)}`);
 
 /*
- * The AI pass: a short signed note from the accounts server saying this account has Premium right now. The AI
- * service checks the signature itself, so it never has to reach the accounts server (which may only run on this
- * computer). Kept in memory until half a minute before it runs out; the accounts server answers 403 to an account
- * without Premium, which reaches the caller as a PaymentApiError with status 403.
+ * The AI pass: a short signed note from the accounts server saying which plan this account has right now (free, plus,
+ * pro or max). The AI service checks the signature itself, so it never has to reach the accounts server (which may
+ * only run on this computer), and it picks the AI model for that plan. Kept in memory until half a minute before it
+ * runs out. Call forgetAiPass() when the plan changes (a payment just went through) so the next request carries the
+ * new plan instead of the old one.
  */
 let aiPass = null; // { value, until, forToken }
 let aiPassRequest = null; // one request at a time, however many panels ask together
@@ -77,4 +85,21 @@ export function getAiPass() {
       });
   }
   return aiPassRequest;
+}
+
+/**
+ * The AI service answers 429 both for "too many requests this minute" and for "today's AI allowance is used up".
+ * Only the second carries detail.code === 'quota'. Resolves to { message, tier, limit } for that one, or null.
+ * Reads a copy of the response, so the caller can still read the body afterwards.
+ */
+export async function readQuota(res) {
+  try {
+    const detail = (await res.clone().json())?.detail;
+    if (detail && typeof detail === 'object' && detail.code === 'quota') {
+      return { message: String(detail.message || ''), tier: String(detail.tier || ''), limit: Number(detail.limit) || 0 };
+    }
+  } catch {
+    /* not JSON: an ordinary rate limit */
+  }
+  return null;
 }

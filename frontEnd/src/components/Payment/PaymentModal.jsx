@@ -1,15 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getPaymentStatus, startPayment, verifyPayment } from '../../api/payments';
+import { PLAN_COPY } from './planCopy';
 
 /* -------------------------------------------------------------------------- */
 /*  Checkout screen (Paystack): full screen, light, white background.         */
 /*                                                                            */
-/*  Step 1  Details   the person confirms who is paying (name, email, phone). */
-/*  Step 2  Payment   Paystack's secure window opens on the card form; the    */
+/*  Step 1  Plan      the person picks Plus, Pro or Max. Only the plan's name   */
+/*                    is sent to the server; it looks up the price itself.    */
+/*  Step 2  Details   the person confirms who is paying (name, email, phone). */
+/*  Step 3  Payment   Paystack's secure window opens on the card form; the    */
 /*                    card number, expiry and CVV are typed THERE, never into */
 /*                    this app, so card numbers never touch our code or our   */
 /*                    server.                                                 */
-/*  Step 3  Done      the server confirms the payment with Paystack.          */
+/*  Step 4  Done      the server confirms the payment with Paystack.          */
 /*                                                                            */
 /*  While the Paystack window is open the server is asked every few seconds   */
 /*  whether the payment went through. Only the server's answer unlocks        */
@@ -52,9 +55,10 @@ const loadPaystack = () => {
   return scriptPromise;
 };
 
-// The amount arrives in the smallest unit (4900 = 49.00).
+// The amount arrives in the smallest unit (5900 = R59.00). Rands are written the South African way: R59, R159.
 const formatPrice = (amount, currency) => {
   const value = Number(amount) / 100;
+  if (currency === 'ZAR') return `R${Number.isInteger(value) ? value : value.toFixed(2)}`;
   try {
     return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value);
   } catch {
@@ -62,7 +66,12 @@ const formatPrice = (amount, currency) => {
   }
 };
 
-const describeAccess = (days) => (days > 0 ? `${days} days of PDF downloads` : 'Unlimited PDF downloads, no expiry');
+const describeAccess = (days) => (days > 0 ? `${days} days of access` : 'No expiry');
+
+const formatDate = (value) => {
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString(undefined, { day: 'numeric', month: 'long' }) : '';
+};
 
 /* ------------------------------ small pieces ------------------------------ */
 
@@ -102,9 +111,9 @@ const Spinner = ({ className = 'h-4 w-4', tone = 'dark' }) => (
   />
 );
 
-const STEPS = ['Details', 'Payment', 'Done'];
+const STEPS = ['Plan', 'Details', 'Payment', 'Done'];
 
-// `current` is the active step (0-2); 3 means every step is finished.
+// `current` is the active step (0-3); 4 means every step is finished.
 const Stepper = ({ current }) => (
   <ol className="flex items-center gap-2.5 text-[12px] font-medium" aria-label="Checkout progress">
     {STEPS.map((label, index) => {
@@ -160,12 +169,85 @@ const primaryButton =
 const secondaryButton =
   'flex h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/10 disabled:opacity-50';
 
+/* ------------------------------- plan picker ------------------------------ */
+
+// Three cards, one per paid plan. `current` is the plan the person already has ('free' for none): plans at or below it
+// cannot be bought again, a higher one can (it applies straight away; the lower plan carries on underneath).
+const PlanPicker = ({ plans, current, currentEnds, onChoose }) => {
+  const order = ['free', 'plus', 'pro', 'max'];
+  const rank = (id) => order.indexOf(id);
+  const endsOn = formatDate(currentEnds);
+  return (
+    <div>
+      <Stepper current={0} />
+      <h3 className="mt-6 text-lg font-semibold tracking-tight sm:text-xl">Choose your plan</h3>
+      <p className="mt-1 text-[13px] text-slate-500">
+        {current !== 'free'
+          ? `You are on ${PLAN_COPY[current]?.name || 'a paid plan'}${endsOn ? ` until ${endsOn}` : ''}. A higher plan starts straight away.`
+          : 'Every plan lasts 30 days and is paid once. There is nothing to cancel.'}
+      </p>
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        {plans.map((plan) => {
+          const copy = PLAN_COPY[plan.id] || { name: plan.name, quality: '', features: [] };
+          const owned = rank(current) >= rank(plan.id);
+          return (
+            <div
+              key={plan.id}
+              className={`relative flex flex-col rounded-2xl border bg-white p-5 shadow-sm ${
+                copy.popular && !owned ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
+              }`}
+            >
+              {copy.popular && !owned && (
+                <span className="absolute -top-2.5 left-5 rounded-full bg-slate-900 px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
+                  Most popular
+                </span>
+              )}
+              <div className="flex items-baseline justify-between gap-2">
+                <h4 className="text-[15px] font-semibold tracking-tight">{copy.name}</h4>
+                <span className="rounded-full bg-[#d9856b]/10 px-2 py-0.5 text-[11px] font-semibold text-[#a64a30]">{copy.quality}</span>
+              </div>
+              <p className="mt-3 text-[30px] font-semibold leading-none tracking-tight tabular-nums">{formatPrice(plan.amount, plan.currency)}</p>
+              <p className="mt-1.5 text-[12px] text-slate-500">{describeAccess(plan.days)}</p>
+
+              <ul className="mt-4 flex-1 space-y-2.5 text-[12.5px] leading-snug text-slate-600">
+                {copy.features.map((feature) => (
+                  <li key={feature} className="flex gap-2">
+                    <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" /> {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                type="button"
+                onClick={() => onChoose(plan.id)}
+                disabled={owned}
+                className={`mt-5 ${(copy.popular && !owned ? primaryButton : secondaryButton).replace('h-10', 'h-11')}`}
+              >
+                {owned ? (plan.id === current ? 'Your plan' : 'Included in your plan') : `Choose ${copy.name}`}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="mt-5 text-[12px] leading-relaxed text-slate-500">
+        Staying on Free? Just close this window: you keep the basic AI assistant ({PLAN_COPY.free.aiPerDay} AI actions a day) and can
+        still download your PDF with a small RemoPDF label.
+      </p>
+    </div>
+  );
+};
+
 /* --------------------------------- dialog --------------------------------- */
 
 export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, doneLabel = 'Continue to download' }) {
   // 'loading' | 'ready' | 'starting' | 'awaiting' | 'success' | 'error'
   const [phase, setPhase] = useState('loading');
-  const [plan, setPlan] = useState(null);
+  const [plans, setPlans] = useState([]); // the plans that can be bought, with their prices, from the server
+  const [chosenId, setChosenId] = useState(null); // 'plus' | 'pro' | 'max' once picked
+  const [current, setCurrent] = useState({ tier: 'free', expiresAt: null }); // what the account has right now
+  const [channels, setChannels] = useState([]);
   const [testMode, setTestMode] = useState(false);
   const [message, setMessage] = useState('');
   const [checking, setChecking] = useState(false);
@@ -192,7 +274,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
 
   const signedIn = Boolean(user);
   const busy = phase === 'starting' || phase === 'awaiting';
-  const step = phase === 'success' ? 3 : busy ? 1 : 0;
+  const step = phase === 'success' ? 4 : busy ? 2 : 1;
 
   // Finds out the price, and whether access is already paid for.
   const loadStatus = useCallback(() => {
@@ -202,11 +284,13 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
     getPaymentStatus()
       .then((status) => {
         if (cancelled) return;
-        if (status.premium) {
-          onPaidRef.current?.();
+        if (status.premium && status.tier === 'max') {
+          onPaidRef.current?.(); // nothing higher to buy
           return;
         }
-        setPlan(status.plan);
+        setPlans(Array.isArray(status.plans) ? status.plans : []);
+        setChannels(Array.isArray(status.channels) ? status.channels : []);
+        setCurrent({ tier: status.tier || 'free', expiresAt: status.expiresAt || null });
         setTestMode(Boolean(status.testMode));
         setPhase('ready');
       })
@@ -227,6 +311,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
     setMessage('');
     setErrors({});
     setChecking(false);
+    setChosenId(null);
     if (!signedIn) {
       setPhase('ready');
       return undefined;
@@ -292,9 +377,9 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
   useEffect(() => {
     if (!open) return;
     if (phase === 'success') primaryRef.current?.focus();
-    else if (phase === 'ready' && signedIn) nameRef.current?.focus();
+    else if (phase === 'ready' && signedIn && chosenId) nameRef.current?.focus();
     else if (phase === 'ready') primaryRef.current?.focus();
-  }, [open, phase, signedIn]);
+  }, [open, phase, signedIn, chosenId]);
 
   // The checkout covers the whole screen, so the page behind it should not scroll.
   useEffect(() => {
@@ -319,7 +404,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
   const handlePay = async () => {
     if (busy) return;
     setMessage('');
-    if (!validate()) return;
+    if (!chosenId || !validate()) return;
     setPhase('starting');
     try {
       if (lastReferenceRef.current) {
@@ -335,7 +420,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
           /* could not check: carry on and start a new payment */
         }
       }
-      const started = await startPayment({ name: name.trim().replace(/\s+/g, ' '), phone: phone.trim() });
+      const started = await startPayment({ plan: chosenId, name: name.trim().replace(/\s+/g, ' '), phone: phone.trim() });
       if (started.premium) {
         onPaidRef.current?.();
         return;
@@ -380,10 +465,12 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
 
   if (!open) return null;
 
+  const plan = plans.find((p) => p.id === chosenId) || null;
   const price = plan ? formatPrice(plan.amount, plan.currency) : '';
   // Paystack's window is limited to the card form when card is the only way to pay (see PAYMENT_CHANNELS on the server).
-  const cardOnly = Array.isArray(plan?.channels) && plan.channels.length === 1 && plan.channels[0] === 'card';
-  const showForm = signedIn && (phase === 'ready' || phase === 'starting');
+  const cardOnly = channels.length === 1 && channels[0] === 'card';
+  const showPicker = signedIn && phase === 'ready' && !chosenId;
+  const showForm = signedIn && Boolean(chosenId) && (phase === 'ready' || phase === 'starting');
   const securityNote = cardOnly
     ? 'Next, you type your card number, expiry date and CVV in Paystack’s secure window. They never reach RemoPDF.'
     : 'Next, you choose how to pay and enter your card or bank details in Paystack’s secure window. They never reach RemoPDF.';
@@ -413,7 +500,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
               <h2 id="payment-title" className="truncate text-[15px] font-semibold leading-tight tracking-tight">
                 Secure checkout
               </h2>
-              <p className="truncate text-[12px] leading-tight text-slate-500">Unlock your PDF downloads</p>
+              <p className="truncate text-[12px] leading-tight text-slate-500">{plan ? `${plan.name}, ${price}` : 'Choose your plan'}</p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
@@ -439,14 +526,15 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
         {phase === 'success' ? (
           /* ------------------------------ step 3: done ------------------------------ */
           <div className="mx-auto max-w-sm">
-            <Stepper current={3} />
+            <Stepper current={4} />
             <div className="mt-8 text-center">
               <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600">
                 <CheckIcon className="h-7 w-7" />
               </span>
               <h3 className="mt-5 text-xl font-semibold tracking-tight sm:text-2xl">Payment received</h3>
               <p className="mt-1.5 text-[14px] leading-relaxed text-slate-500">
-                Thank you{name.trim() ? `, ${name.trim().split(' ')[0]}` : ''}! Your PDF downloads are unlocked.
+                Thank you{name.trim() ? `, ${name.trim().split(' ')[0]}` : ''}!{' '}
+                {plan ? `Your ${PLAN_COPY[plan.id]?.name || plan.name} plan is active.` : 'Your plan is active.'}
               </p>
               {plan && (
                 <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-left">
@@ -496,8 +584,11 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
               Try again
             </button>
           </div>
+        ) : showPicker ? (
+          /* ------------------------------ step 1: plan ------------------------------ */
+          <PlanPicker plans={plans} current={current.tier} currentEnds={current.expiresAt} onChoose={setChosenId} />
         ) : (
-          /* ------------------------ steps 1 and 2: details, payment ------------------------ */
+          /* ------------------------ steps 2 and 3: details, payment ------------------------ */
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-12">
             {/* order summary: first on phones (price and plan on one row), on the right on larger screens */}
             <aside
@@ -516,6 +607,11 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
               </div>
 
               <ul className="mt-6 hidden space-y-3 border-t border-slate-200 pt-5 text-[13px] leading-snug text-slate-600 lg:block">
+                {(PLAN_COPY[plan?.id]?.features || []).map((feature) => (
+                  <li key={feature} className="flex gap-2.5">
+                    <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" /> {feature}
+                  </li>
+                ))}
                 <li className="flex gap-2.5">
                   <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" /> Unlocked as soon as your payment is confirmed
                 </li>
@@ -554,7 +650,15 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
                 /* ---------------------------- step 1: details ---------------------------- */
                 showForm && (
                   <>
-                    <h3 className="mt-6 text-lg font-semibold tracking-tight sm:text-xl">Billing details</h3>
+                    <button
+                      type="button"
+                      onClick={() => setChosenId(null)}
+                      disabled={busy}
+                      className="mt-5 text-[12.5px] font-semibold text-slate-500 transition-colors hover:text-slate-900 focus:outline-none focus-visible:underline disabled:opacity-50"
+                    >
+                      ← Change plan
+                    </button>
+                    <h3 className="mt-3 text-lg font-semibold tracking-tight sm:text-xl">Billing details</h3>
                     <p className="mt-1 text-[13px] text-slate-500">Confirm who is paying.</p>
 
                     <form

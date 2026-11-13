@@ -13,9 +13,10 @@ import { PHOTO_DEFAULTS } from '../components/Resume/Sections/ResumePhoto';
 import demoPhoto from '../assets/profile.webp';
 import { downloadBlob } from '../api/client';
 import { fetchResume } from '../api/resume';
-import { getPaymentStatus } from '../api/payments';
-import { setPremiumAccess, onUpgradeRequest, usePremiumAccess, setSignedIn, onSignInRequest } from '../hooks/premiumAccess';
+import { getPaymentStatus, forgetAiPass } from '../api/payments';
+import { setPremiumAccess, setAccessTier, onUpgradeRequest, usePremiumAccess, setSignedIn, onSignInRequest } from '../hooks/premiumAccess';
 import PaymentModal from '../components/Payment/PaymentModal';
+import { planName } from '../components/Payment/planCopy';
 import useResumeProfile, { getSessionUser } from '../hooks/useResumeProfile';
 import ResumeSyncDialog, { ResumeLoadingOverlay } from '../components/Auth/ResumeSyncDialog';
 import ResumePickerDialog from '../components/Auth/ResumePickerDialog';
@@ -1666,8 +1667,9 @@ const greetingFor = (date) => {
   return 'Good evening';
 };
 
-// "Upgrade to Premium" in the top bar. Once the account has paid it turns into a small "Premium" badge with the
-// days left (read from the server, which works them out from the payment in the database).
+// "Upgrade" in the top bar. Once the account has paid it turns into a small badge with the name of the plan (Plus, Pro
+// or Max) and the days left (read from the server, which works them out from the payment in the database). On Plus and
+// Pro the badge is a button that opens the plans again, so a better plan is one tap away.
 // `dark` is for the dark bar on small screens, `compact` shortens the label so it fits there.
 const SparkIcon = ({ className = 'h-3.5 w-3.5' }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1695,27 +1697,42 @@ const JobTargetButton = ({ title = '', onClick, dark = false, compact = false })
   </button>
 );
 
-const PremiumButton = ({ premium, daysLeft = 0, expiresAt = null, onClick, dark = false, compact = false }) => {
+const PremiumButton = ({ premium, tier = null, daysLeft = 0, expiresAt = null, onClick, dark = false, compact = false }) => {
   if (premium) {
     const endDate = expiresAt ? new Date(expiresAt) : null;
     const endsOn =
       endDate && !Number.isNaN(endDate.getTime())
         ? endDate.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
         : '';
-    return (
-      <span
-        title={endsOn ? `Premium access ends on ${endsOn}` : undefined}
-        className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold ${
-          dark ? 'bg-white/10 text-white ring-1 ring-white/20' : 'bg-[#d9856b]/10 text-[#a64a30] ring-1 ring-[#d9856b]/30'
-        }`}
-      >
+    const canUpgrade = tier !== 'max' && typeof onClick === 'function';
+    const label = tier ? planName(tier) : 'Premium';
+    const badgeClass = `inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold ${
+      dark ? 'bg-white/10 text-white ring-1 ring-white/20' : 'bg-[#d9856b]/10 text-[#a64a30] ring-1 ring-[#d9856b]/30'
+    }`;
+    const content = (
+      <>
         <SparkIcon className="h-3.5 w-3.5 text-[#d9856b]" />
-        Premium
+        {label}
         {daysLeft > 0 && (
           <span className={`border-l pl-2 font-medium ${dark ? 'border-white/20 text-white/80' : 'border-[#d9856b]/30 text-[#a64a30]/80'}`}>
             {compact ? `${daysLeft}d left` : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}
           </span>
         )}
+      </>
+    );
+    const title = `${label} plan${endsOn ? ` ends on ${endsOn}` : ''}${canUpgrade ? '. Tap to see better plans.' : ''}`;
+    return canUpgrade ? (
+      <button
+        type="button"
+        onClick={onClick}
+        title={title}
+        className={`${badgeClass} transition-colors hover:bg-[#d9856b]/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60`}
+      >
+        {content}
+      </button>
+    ) : (
+      <span title={title} className={badgeClass}>
+        {content}
       </span>
     );
   }
@@ -1730,7 +1747,7 @@ const PremiumButton = ({ premium, daysLeft = 0, expiresAt = null, onClick, dark 
       }`}
     >
       <SparkIcon className={`h-3.5 w-3.5 transition-transform group-hover:rotate-12 ${dark ? 'text-white' : 'text-[#f2a98f]'}`} />
-      {compact ? 'Upgrade' : 'Upgrade to Premium'}
+      {compact ? 'Upgrade' : 'Upgrade your plan'}
     </button>
   );
 };
@@ -2129,13 +2146,20 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   const pendingDownloadRef = useRef(null);
   const [paymentFromDownload, setPaymentFromDownload] = useState(false);
   const [premium, setPremium] = useState(false);
+  const [premiumTier, setPremiumTier] = useState('free'); // 'free' | 'plus' | 'pro' | 'max'
   const [premiumInfo, setPremiumInfo] = useState({ daysLeft: 0, expiresAt: null });
+  const tierRef = useRef(null); // the plan the AI pass was made for
 
   // Takes what /api/payments/status says (or null when signed out) and updates the badge from it.
   const applyAccess = useCallback((status) => {
     const active = Boolean(status?.premium);
+    const tier = active ? (['plus', 'pro', 'max'].includes(status?.tier) ? status.tier : 'pro') : 'free';
+    if (tierRef.current !== null && tierRef.current !== tier) forgetAiPass(); // the plan changed: the next AI request carries the new one
+    tierRef.current = tier;
     setPremium(active);
+    setPremiumTier(tier);
     setPremiumAccess(active); // also tells the AI writing assistant (signed out counts as "no Premium")
+    setAccessTier(status ? tier : null); // the plan itself: which AI the account gets
     setPremiumInfo({
       daysLeft: active ? Math.max(0, Number(status.daysLeft) || 0) : 0,
       expiresAt: active ? status.expiresAt || null : null,
@@ -2162,6 +2186,8 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     }
     let cancelled = false;
     setPremiumAccess(null); // a different account: not known until the server has answered for it
+    setAccessTier(null);
+    tierRef.current = null; // and nothing is known about its plan yet
     const refresh = () => {
       getPaymentStatus()
         .then((status) => {
@@ -2226,6 +2252,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     setPaymentOpen(false);
     setPremium(true);
     setPremiumAccess(true);
+    forgetAiPass(); // a new plan: the next AI request must carry it, not the pass that was made for the old one
     getPaymentStatus()
       .then(applyAccess)
       .catch(() => {
@@ -2764,8 +2791,16 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
               {premium && (
                 <MenuRow
                   icon={<SparkIcon className="h-4 w-4" />}
-                  label="Premium"
+                  label={`${planName(premiumTier)} plan`}
                   value={premiumInfo.daysLeft > 0 ? `${premiumInfo.daysLeft} ${premiumInfo.daysLeft === 1 ? 'day' : 'days'} left` : 'Active'}
+                  onClick={
+                    premiumTier !== 'max'
+                      ? () => {
+                          setMenuOpen(false);
+                          openUpgrade();
+                        }
+                      : undefined
+                  }
                 />
               )}
             </>
@@ -2783,7 +2818,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           <div className="ml-auto flex items-center gap-3">
             {showResumeSwitcher && <ResumeTitleButton title={activeResume?.title} onClick={() => setPickerOpen(true)} />}
             {premium && <JobTargetButton title={hasJobTarget(jobTarget) ? jobTarget.title : ''} onClick={() => setJobStudioOpen(true)} />}
-            {profile.user && <PremiumButton premium={premium} daysLeft={premiumInfo.daysLeft} expiresAt={premiumInfo.expiresAt} onClick={openUpgrade} />}
+            {profile.user && <PremiumButton premium={premium} tier={premiumTier} daysLeft={premiumInfo.daysLeft} expiresAt={premiumInfo.expiresAt} onClick={openUpgrade} />}
             {profile.user ? (
               <>
                 <span className="h-6 w-px bg-slate-200" aria-hidden="true" />

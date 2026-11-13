@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
   payment code (the AI writing assistant in every section of the builder).
 
     setPremiumAccess(true | false | null)   called by the builder whenever /api/payments/status answers
-    usePremiumAccess()                      -> true | false | null
+    usePremiumAccess()                      -> true | false | null   (true = any paid plan: Plus, Pro or Max)
+    setAccessTier('free' | 'plus' | 'pro' | 'max' | null)   the plan, called by the builder with the same answer
+    useAccessTier()                         -> 'free' | 'plus' | 'pro' | 'max' | null   (null = not known yet)
     requestUpgrade()                        asks the builder to open the payment dialog
     onUpgradeRequest(handler)               the builder registers here; returns an unsubscribe function
 
@@ -32,6 +34,32 @@ export const setPremiumAccess = (value) => {
 };
 
 export const getPremiumAccess = () => access;
+
+// The plan itself. Premium (above) only says "has paid for something"; this says which of the three paid plans.
+const TIER_NAMES = ['free', 'plus', 'pro', 'max'];
+let tier = null;
+const tierListeners = new Set();
+
+export const setAccessTier = (value) => {
+  const next = TIER_NAMES.includes(value) ? value : null;
+  if (next === tier) return;
+  tier = next;
+  tierListeners.forEach((listener) => listener(next));
+};
+
+export const getAccessTier = () => tier;
+
+export function useAccessTier() {
+  const [value, setValue] = useState(tier);
+  useEffect(() => {
+    setValue(tier); // it may have changed between the first render and this effect
+    tierListeners.add(setValue);
+    return () => {
+      tierListeners.delete(setValue);
+    };
+  }, []);
+  return value;
+}
 
 export function usePremiumAccess() {
   const [value, setValue] = useState(access);

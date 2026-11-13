@@ -673,6 +673,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
       }
       const messages = {
         busy: 'Too many adverts in a short time. Please try again in a minute.',
+        quota: 'You have used today’s AI actions for your plan. They start again at midnight.',
         timeout: 'That took too long. Try again, or paste the job description instead.',
         offline: 'Could not reach the server. Check your connection and try again.',
       };
@@ -816,6 +817,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   const aiErrorText =
     {
       busy: 'You asked for several letters in a short time. Please try again in a minute.',
+      quota: 'You have used today’s AI actions for your plan. They start again at midnight. A starter draft is shown below.',
       timeout: 'The AI took too long to answer. A starter draft is shown below.',
       offline: 'Could not reach the AI service. Check your connection. A starter draft is shown below.',
       empty: 'Add your experience, skills or education to the resume and the AI can write the letter from them.',

@@ -19,7 +19,7 @@
 */
 
 import { getToken } from '../../../api/auth';
-import { getAiPass, forgetAiPass, PaymentApiError } from '../../../api/payments';
+import { getAiPass, forgetAiPass, readQuota, PaymentApiError } from '../../../api/payments';
 import { collectStrings, hasJobTarget, stripMarkup, norm } from './atsScore';
 import { isSkillTerm } from './skillFilter';
 
@@ -39,7 +39,7 @@ const TIMEOUT_MS = { target: 75000, skills: 45000, rewrite: 45000, summary: 4500
 const CACHE_MAX = 40;
 
 export class JobMatchError extends Error {
-  // code: 'busy' | 'timeout' | 'offline' | 'unavailable' | 'signin' | 'premium' | 'badlink' | 'unreadable' | 'nodetails' | 'needhistory'
+  // code: 'busy' | 'quota' | 'timeout' | 'offline' | 'unavailable' | 'signin' | 'premium' | 'badlink' | 'unreadable' | 'nodetails' | 'needhistory'
   constructor(code, message) {
     super(message);
     this.name = 'JobMatchError';
@@ -213,7 +213,11 @@ async function post(kind, body, signal) {
       forgetJobMatchCache();
       throw new JobMatchError('premium', 'Tailoring to a job is a Premium feature.');
     }
-    if (res.status === 429) throw new JobMatchError('busy', 'Too many requests in a short time.');
+    if (res.status === 429) {
+      const quota = await readQuota(res);
+      if (quota) throw new JobMatchError('quota', quota.message || 'You have used today’s AI actions.');
+      throw new JobMatchError('busy', 'Too many requests in a short time.');
+    }
     if (!res.ok) {
       const { code, message } = await readDetail(res);
       if ((res.status === 400 || res.status === 422) && ['badlink', 'unreadable', 'nodetails', 'needhistory'].includes(code)) {

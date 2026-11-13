@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { analyzeWriting, MIN_CHARS } from './writingAI';
 import { hasJobTarget } from './atsScore';
-import { usePremiumAccess, requestUpgrade, setPremiumAccess, useSignedIn, requestSignIn } from '../../../hooks/premiumAccess';
+import { usePremiumAccess, useAccessTier, requestUpgrade, setPremiumAccess, useSignedIn, requestSignIn } from '../../../hooks/premiumAccess';
 
 // AI writing assistant. Same props and the same place in the page as the old offline panel, so
 // Summary.jsx, ExperienceField.jsx, EducationField.jsx and AdditionalSections.jsx keep working.
@@ -21,9 +21,13 @@ import { usePremiumAccess, requestUpgrade, setPremiumAccess, useSignedIn, reques
 // panel can ask "Make it stronger" questions about lines that state no scale or result ("How many staff did you
 // supervise?"). They are only questions: nothing is added to the text until the writer types the answer.
 //
-// AI suggestions are a Premium feature. Without Premium the panel shows an upgrade note and sends nothing
-// (the server refuses and never uses its AI key either way). Premium status comes from the builder through
-// hooks/premiumAccess.js: false = locked, true = on, null = not known yet (the server decides).
+// Every signed-in account can use the assistant. The free plan runs on a small, cheap AI model with a small daily
+// allowance; Plus, Pro and Max run on larger models that think harder, with a bigger allowance (the AI service picks
+// the model from the plan in the AI pass, see routers/ai_models.py). Signed out, the panel shows a sign-in note and
+// sends nothing. When today's allowance is used up the panel says so and offers the plans (nothing is sent until the
+// allowance renews at midnight in South Africa, or the plan changes). Tailoring to a job is a paid feature, so on the
+// free plan the assistant reviews the text without the job target. The plan comes from the builder through
+// hooks/premiumAccess.js.
 //
 // The panel can be hidden: tapping its header collapses it to a single line that still shows how
 // many versions are ready. That choice is remembered and shared by every panel on the page.
@@ -33,6 +37,8 @@ const TYPING_PAUSE_MS = 1400; // review this long after the last keystroke
 
 const ERROR_TEXT = {
   busy: 'That was a lot of reviews in a minute. Give it a moment, then try again.',
+  quota: 'You have used today’s AI suggestions for your plan. They start again at midnight.',
+  premium: 'This part of the writing assistant is included in the paid plans.',
   timeout: 'The AI took too long to answer. The server may be waking up, so try again in a few seconds.',
   offline: 'Couldn’t reach the AI service. Check your connection and try again.',
   unavailable: 'AI review is unavailable right now. You can keep writing and try again later.',
@@ -164,14 +170,20 @@ const Skeleton = () => (
 /*                                   Panel                                    */
 /* -------------------------------------------------------------------------- */
 
-const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTarget = null }) => {
+const QUOTA_PAUSE_MS = 10 * 60 * 1000; // after "allowance used up", do not ask again for this long (unless the plan changes)
+
+const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTarget: askedTarget = null }) => {
   const value = typeof text === 'string' ? text : '';
+  const premium = usePremiumAccess();
+  const tier = useAccessTier();
+  // Tailoring to a job is a paid feature: on the free plan the assistant reviews the text without the job target.
+  const jobTarget = premium === true ? askedTarget : null;
   const tailored = hasJobTarget(jobTarget) && (field === 'summary' || field === 'experience');
   const targetKey = tailored ? `${jobTarget.title}|${jobTarget.keywords.map((k) => k.term).join(',')}` : '';
   const open = useStore(openStore);
-  const premium = usePremiumAccess();
-  const locked = premium === false; // known to be without Premium: nothing is sent to the AI
-  const signedOut = useSignedIn() === false; // signed out: the lock says "Sign in" instead of "Premium"
+  const signedOut = useSignedIn() === false;
+  const locked = signedOut; // known to be signed out: nothing is sent to the AI
+  const quotaHitRef = useRef(0); // when today's allowance was found used up (0 = not)
   const [state, setState] = useState({ status: 'idle', result: null, error: null });
   const [applied, setApplied] = useState(false); // a version was just chosen and nothing has changed since
   const [recheck, setRecheck] = useState(0);
@@ -187,7 +199,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
   // Review the text a moment after the last keystroke. Typing again cancels a review in flight.
   useEffect(() => {
     if (locked) {
-      // No Premium: no review, and nothing from an earlier one stays on screen. Paying flips `locked` and this runs again.
+      // Signed out: no review, and nothing from an earlier one stays on screen. Signing in flips `locked` and this runs again.
       analyzedRef.current = null;
       setApplied(false);
       setState((s) => (s.status === 'idle' && !s.result && !s.error ? s : { status: 'idle', result: null, error: null }));
@@ -199,6 +211,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
       setState((s) => (s.status === 'idle' && !s.result && !s.error ? s : { status: 'idle', result: null, error: null }));
       return undefined;
     }
+    if (Date.now() - quotaHitRef.current < QUOTA_PAUSE_MS) return undefined; // allowance used up: the notice stays, nothing is sent
     if (analyzedRef.current === value) {
       // Nothing new to review (a version was just chosen). Clear a stale "reviewing" state.
       setState((s) => (s.status === 'loading' ? { ...s, status: s.result ? 'ready' : 'idle' } : s));
@@ -219,7 +232,8 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
         })
         .catch((err) => {
           if (err && err.name === 'AbortError') return; // the text changed again: a newer review follows
-          if (err && err.code === 'premium') setPremiumAccess(false); // the server says no Premium: lock every panel
+          if (err && err.code === 'quota') quotaHitRef.current = Date.now();
+          if (err && err.code === 'premium') setPremiumAccess(false); // the server says this plan cannot use that: the builder checks the plan again
           setState((s) => ({ status: 'error', result: s.result, error: err }));
         });
     }, delay);
@@ -231,6 +245,15 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
     // field and jobTitle are read when the review starts; changing them alone does not re-run it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, recheck, locked]);
+
+  // A new plan (a payment just went through) lifts the daily limit: ask again.
+  useEffect(() => {
+    if (!quotaHitRef.current) return;
+    quotaHitRef.current = 0;
+    analyzedRef.current = null;
+    immediateRef.current = true;
+    setRecheck((n) => n + 1);
+  }, [tier]);
 
   // A different job target means the versions already shown are for the old one: review again.
   const targetSeenRef = useRef(targetKey);
@@ -314,7 +337,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
           {locked && (
             <span className="inline-flex items-center gap-1.5 text-xs text-[#8f4631] whitespace-nowrap">
               <Lock />
-              <span className="sr-only sm:not-sr-only">{signedOut ? 'Sign in' : 'Premium'}</span>
+              <span className="sr-only sm:not-sr-only">Sign in</span>
             </span>
           )}
           {!locked && !loading && state.status === 'error' && (
@@ -335,13 +358,11 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
           {locked && (
             <div className="px-3 py-3 flex flex-col gap-2">
               <p className="text-xs leading-relaxed text-slate-600">
-                {signedOut
-                  ? 'Sign in to use AI suggestions and get three polished versions of your text to choose from.'
-                  : 'AI suggestions are a Premium feature. Upgrade to get three polished versions of your text to choose from.'}
+                Sign in to use AI suggestions and get three polished versions of your text to choose from.
               </p>
               <div>
-                <button type="button" onClick={signedOut ? requestSignIn : requestUpgrade} className={PRIMARY_BUTTON}>
-                  {signedOut ? 'Sign in' : 'Upgrade to Premium'}
+                <button type="button" onClick={requestSignIn} className={PRIMARY_BUTTON}>
+                  Sign in
                 </button>
               </div>
             </div>
@@ -354,15 +375,28 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
           {state.status === 'error' && !locked && (
             <div className="px-3 py-3 flex flex-col gap-2 border-b border-slate-100">
               <p className="text-xs leading-relaxed text-amber-700">
-                {ERROR_TEXT[state.error && state.error.code] || ERROR_TEXT.unavailable}
+                {state.error && state.error.code === 'quota'
+                  ? state.error.message || ERROR_TEXT.quota
+                  : ERROR_TEXT[state.error && state.error.code] || ERROR_TEXT.unavailable}
               </p>
-              {/* An expired sign-in cannot be fixed by retrying: the message says to sign in again. */}
-              {!(state.error && state.error.code === 'signin') && (
-                <div>
-                  <button type="button" onClick={checkAgain} className={PRIMARY_BUTTON}>
-                    Try again
-                  </button>
-                </div>
+              {/* A used-up allowance is fixed by a bigger plan (or by waiting until midnight), not by retrying. */}
+              {state.error && state.error.code === 'quota' ? (
+                tier !== 'max' && (
+                  <div>
+                    <button type="button" onClick={requestUpgrade} className={PRIMARY_BUTTON}>
+                      See plans
+                    </button>
+                  </div>
+                )
+              ) : (
+                /* An expired sign-in cannot be fixed by retrying: the message says to sign in again. */
+                !(state.error && state.error.code === 'signin') && (
+                  <div>
+                    <button type="button" onClick={checkAgain} className={PRIMARY_BUTTON}>
+                      Try again
+                    </button>
+                  </div>
+                )
               )}
             </div>
           )}

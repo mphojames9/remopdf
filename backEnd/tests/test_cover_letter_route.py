@@ -75,7 +75,7 @@ def model_says(*bodies):
 class Route(unittest.TestCase):
     def setUp(self):
         w._cache.clear()
-        for name, value in (("_bearer_pass", "pass"), ("_rate_limited", False), ("require_premium", None)):
+        for name, value in (("_bearer_pass", "pass"), ("_rate_limited", False), ("require_access", None)):
             patcher = mock.patch.object(w, name, return_value=value)
             patcher.start()
             self.addCleanup(patcher.stop)

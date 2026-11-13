@@ -28,6 +28,7 @@ const FOCUS = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d985
 
 const ERROR_TEXT = {
   busy: 'That was a lot of requests in a minute. Give it a moment, then try again.',
+  quota: 'You have used today’s AI actions for your plan. They start again at midnight.',
   timeout: 'The AI took too long to answer. The server may be waking up, so try again in a few seconds.',
   offline: 'Couldn’t reach the AI service. Check your connection and try again.',
   signin: 'Your session has expired. Sign in again to use this.',

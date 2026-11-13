@@ -47,6 +47,7 @@ const ERROR_TEXT = {
   signin: 'Your session has expired. Sign in again to continue.',
   premium: 'Tailoring your resume to a job is a Premium feature.',
   busy: 'That was a lot of requests in a minute. Give it a moment, then try again.',
+  quota: 'You have used today’s AI actions for your plan. They start again at midnight.',
   timeout: 'That took too long. The server may be waking up, so try again in a few seconds.',
   offline: 'Couldn’t reach the AI service. Check your connection and try again.',
   unavailable: 'Job analysis is unavailable right now. You can skip this and add a job later.',

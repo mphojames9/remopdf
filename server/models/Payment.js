@@ -10,6 +10,9 @@ const paymentSchema = new mongoose.Schema(
     // webhook and a manual check for the same payment land on the same document.
     reference: { type: String, required: true, unique: true, maxlength: 100 },
     accessCode: { type: String, maxlength: 100 },
+    // Which plan this payment bought: "plus" | "pro" | "max" (see lib/plans.js). Fixed on the server when checkout
+    // opens, like the amount. Payments made before plans existed have none and count as "pro".
+    plan: { type: String, enum: ['plus', 'pro', 'max'] },
     // Smallest currency unit (cents for ZAR/USD, kobo for NGN, ...), exactly as Paystack uses it. Fixed on the
     // server when checkout opens; a payment of any other amount is never accepted.
     amount: { type: Number, required: true },
@@ -37,6 +40,7 @@ paymentSchema.set('toJSON', {
   transform: (doc, ret) => ({
     id: ret._id.toString(),
     reference: ret.reference,
+    plan: ret.plan,
     amount: ret.amount,
     currency: ret.currency,
     status: ret.status,

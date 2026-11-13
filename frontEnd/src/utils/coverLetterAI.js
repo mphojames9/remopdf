@@ -35,7 +35,7 @@
 */
 
 import { getToken } from '../api/auth';
-import { getAiPass, forgetAiPass, PaymentApiError } from '../api/payments';
+import { getAiPass, forgetAiPass, readQuota, PaymentApiError } from '../api/payments';
 import { WritingAIError } from '../components/Resume/Sections/writingAI';
 import { buildResumeBrief, MAX_ITEM_CHARS, MAX_REQUIREMENT_ITEMS, MAX_DUTY_ITEMS } from './coverLetter';
 
@@ -130,7 +130,11 @@ async function postWithPass(url, payload, { what, timeoutMs, signal, explain }) 
 
     if (res.status === 401) throw new WritingAIError('signin', `Sign in to ${what}.`);
     if (res.status === 403) throw new WritingAIError('premium', 'This is a Premium feature.');
-    if (res.status === 429) throw new WritingAIError('busy', 'Too many requests in a short time.');
+    if (res.status === 429) {
+      const quota = await readQuota(res);
+      if (quota) throw new WritingAIError('quota', quota.message || 'You have used today’s AI actions.');
+      throw new WritingAIError('busy', 'Too many requests in a short time.');
+    }
     if (!res.ok) {
       const known = explain ? await explain(res.clone()) : null;
       await logFailure(url, res);
