@@ -10,6 +10,7 @@ import Workspace from './pages/Workspace';
 import axios from 'axios'; // Add this line
 import PremiumFooter from './components/PremiumFooter';
 import WhyChooseUs from './components/WhyChooseUs';
+import logo1 from './assets/logo1.webp';
 const InvoiceBuilder = React.lazy(() => import('./pages/InvoiceBuilder'));
 
 // High-Performance Lazy Loading for Viewports
@@ -34,188 +35,112 @@ const SERVER_URL = 'https://remopdf-backend.onrender.com/';
 const WAKE_RETRY_MS = 4000;
 const WAKE_MAX_TRIES = 12;
 
-// The rows of text on the sheet that writes itself. `mark` is the line the highlighter sweeps over.
-const SHEET_ROWS = [
-  { w: '38%', accent: true },
-  { w: '100%' },
-  { w: '90%', mark: true },
-  { w: '64%' },
-  { w: '30%', accent: true },
-  { w: '100%' },
-  { w: '84%' },
-  { w: '52%' },
-];
-const GHOST_ROWS = ['72%', '100%', '58%', '88%'];
-
 const LOADER_CSS = `
   @keyframes pl-appear { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes pl-stage-in { from { opacity: 0; transform: translateY(18px) scale(.94); } to { opacity: 1; transform: none; } }
   @keyframes pl-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  @keyframes pl-breathe { 0%, 100% { opacity: .6; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.06); } }
-  @keyframes pl-sway { 0%, 100% { transform: rotateY(-9deg) rotateX(3deg) translateY(0); } 50% { transform: rotateY(9deg) rotateX(-2deg) translateY(-8px); } }
-  @keyframes pl-bob-l { 0%, 100% { transform: translate(-50px, 10px) rotate(-9deg); } 50% { transform: translate(-54px, 3px) rotate(-11deg); } }
-  @keyframes pl-bob-r { 0%, 100% { transform: translate(50px, 12px) rotate(8deg); } 50% { transform: translate(54px, 4px) rotate(10deg); } }
-  @keyframes pl-draw {
-    0% { transform: scaleX(0); opacity: 1; }
-    7% { transform: scaleX(1); opacity: 1; }
-    88% { transform: scaleX(1); opacity: 1; }
-    95%, 100% { transform: scaleX(1); opacity: 0; }
+  @keyframes pl-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes pl-reveal {
+    0% { clip-path: inset(0 100% 0 0); opacity: 1; }
+    50% { clip-path: inset(0 0 0 0); opacity: 1; }
+    88% { clip-path: inset(0 0 0 0); opacity: 1; }
+    100% { clip-path: inset(0 0 0 0); opacity: 0; }
   }
-  @keyframes pl-pop {
-    0% { transform: scale(0); opacity: 1; }
-    5% { transform: scale(1.15); opacity: 1; }
-    8%, 88% { transform: scale(1); opacity: 1; }
-    95%, 100% { transform: scale(1); opacity: 0; }
+  @keyframes pl-beam {
+    0% { transform: translateX(0); opacity: 0; }
+    4% { opacity: 1; }
+    50% { transform: translateX(var(--pl-w)); opacity: 1; }
+    55%, 100% { transform: translateX(var(--pl-w)); opacity: 0; }
   }
-  @keyframes pl-mark {
-    0%, 38% { transform: scaleX(0); opacity: 1; }
-    46%, 82% { transform: scaleX(1); opacity: 1; }
-    88%, 100% { transform: scaleX(1); opacity: 0; }
-  }
-  @keyframes pl-scan {
-    0% { transform: translateY(34px); opacity: 0; }
-    3% { opacity: 1; }
-    40% { transform: translateY(212px); opacity: 1; }
-    44%, 100% { transform: translateY(218px); opacity: 0; }
-  }
-  @keyframes pl-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+  @keyframes pl-shine { 0%, 50% { background-position: 120% 0; } 82%, 100% { background-position: -20% 0; } }
+  @keyframes pl-slide { from { transform: translateX(-100%); } to { transform: translateX(270%); } }
   @keyframes pl-shimmer { from { background-position: 100% 0; } to { background-position: 0% 0; } }
-  @keyframes pl-ping { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, .55); } 80%, 100% { box-shadow: 0 0 0 9px rgba(245, 158, 11, 0); } }
+  @keyframes pl-ping { 0% { box-shadow: 0 0 0 0 rgba(224, 20, 20, .5); } 80%, 100% { box-shadow: 0 0 0 8px rgba(224, 20, 20, 0); } }
   @keyframes pl-ok { 0% { transform: scale(.4); } 60% { transform: scale(1.5); } 100% { transform: scale(1); } }
+  @keyframes pl-drift-a { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(70px, 40px) scale(1.18); } }
+  @keyframes pl-drift-b { 0%, 100% { transform: translate(0, 0) scale(1.1); } 50% { transform: translate(-80px, -30px) scale(.92); } }
 
   .pl-root {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 100vh; min-height: 100dvh; padding: 24px 16px; overflow: hidden; text-align: center; background: #f8fafc;
+    --pl-w: min(220px, 62vw);
     animation: pl-appear .5s ease-out .15s backwards; /* a quick page load never flashes the loader */
   }
-  .pl-grid {
-    position: absolute; inset: 0; pointer-events: none;
-    background-image: radial-gradient(rgba(15, 23, 42, .11) 1px, transparent 1.3px); background-size: 22px 22px;
-    -webkit-mask-image: radial-gradient(ellipse 55% 50% at 50% 42%, #000 15%, transparent 72%);
-    mask-image: radial-gradient(ellipse 55% 50% at 50% 42%, #000 15%, transparent 72%);
-  }
-  .pl-topbar { position: fixed; inset: 0 0 auto 0; z-index: 5; height: 3px; overflow: hidden; background: rgba(251, 191, 36, .16); }
+  .pl-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+  .pl-blob { position: absolute; left: 50%; top: 50%; width: 340px; height: 340px; border-radius: 9999px; filter: blur(64px); pointer-events: none; }
+  .pl-blob-a { margin: -250px 0 0 -330px; background: #e01414; opacity: .14; animation: pl-drift-a 9s ease-in-out infinite; }
+  .pl-blob-b { margin: -90px 0 0 -10px; background: #1d3f8f; opacity: .15; animation: pl-drift-b 11s ease-in-out infinite; }
+
+  .pl-topbar { position: fixed; inset: 0 0 auto 0; z-index: 5; height: 3px; overflow: hidden; background: rgba(224, 20, 20, .12); }
   .pl-topbar::before {
     content: ''; position: absolute; inset: 0 auto 0 0; width: 40%;
-    background: linear-gradient(90deg, transparent, #fbbf24 40%, #f59e0b 60%, transparent);
+    background: linear-gradient(90deg, transparent, #e01414 40%, #0a1630 70%, transparent);
     animation: pl-slide 1.5s cubic-bezier(.4, 0, .2, 1) infinite;
   }
 
-  .pl-stage { position: relative; width: 300px; height: 270px; perspective: 900px; animation: pl-stage-in .8s cubic-bezier(.22, 1, .36, 1) .2s backwards; }
-  .pl-glow {
-    position: absolute; left: 50%; top: 46%; width: 300px; height: 300px; margin: -150px 0 0 -150px; border-radius: 9999px;
-    background: radial-gradient(circle, rgba(251, 191, 36, .4) 0%, rgba(251, 191, 36, 0) 64%); filter: blur(18px);
-    animation: pl-breathe 4s ease-in-out infinite;
+  /* The wordmark is scanned in: a faint ghost of it, a red beam that sweeps across and fills it with colour, a glint over the letters. */
+  .pl-logo {
+    position: relative; z-index: 1; width: var(--pl-w); aspect-ratio: 3 / 1; opacity: 0; transition: opacity .35s ease;
+    animation: pl-float 5s ease-in-out infinite;
   }
-
-  .pl-sheet {
-    position: absolute; left: 50%; top: 50%; width: 152px; height: 212px; margin: -106px 0 0 -76px; overflow: hidden;
-    border-radius: 16px; background: #fff;
-    box-shadow: 0 0 0 1px rgba(15, 23, 42, .06), 0 26px 44px -18px rgba(15, 23, 42, .4);
-  }
-  .pl-ghost { box-shadow: 0 0 0 1px rgba(15, 23, 42, .05), 0 16px 28px -16px rgba(15, 23, 42, .28); }
-  .pl-ghost-l { transform: translate(-50px, 10px) rotate(-9deg); animation: pl-bob-l 6s ease-in-out infinite; }
-  .pl-ghost-r { transform: translate(50px, 12px) rotate(8deg); animation: pl-bob-r 6.6s ease-in-out infinite; }
-  .pl-ghost .pl-body { opacity: .55; }
-  .pl-main { position: absolute; inset: 0; animation: pl-sway 7s ease-in-out infinite; }
-
-  .pl-top { display: flex; align-items: center; height: 34px; padding: 0 12px; background: #0f172a; }
-  .pl-badge { display: inline-block; padding: 2px 7px; border-radius: 6px; background: #fbbf24; color: #0f172a; font-size: 9px; font-weight: 800; letter-spacing: .04em; line-height: 1.25; }
-  .pl-body { display: flex; flex-direction: column; gap: 8px; padding: 14px 12px; }
-  .pl-head { display: flex; align-items: center; gap: 10px; height: 30px; }
-  .pl-id { display: flex; flex: 1; flex-direction: column; gap: 6px; }
-  .pl-rule { height: 1px; margin: 2px 0; background: #e2e8f0; }
-  .pl-circ { flex: none; width: 30px; height: 30px; border-radius: 9999px; background: #cbd5e1; }
-  .pl-ln { position: relative; height: 5px; border-radius: 9999px; background: #cbd5e1; transform-origin: left center; }
-  .pl-ln-accent { background: #fbbf24; }
-  .pl-ln-name { height: 6px; background: #94a3b8; }
-
-  /* The sheet writes itself line by line, in step with the scan beam, then the lines fade out and it starts over. */
-  .pl-main .pl-ln, .pl-main .pl-rule { animation: pl-draw 5.6s ease-out infinite backwards; animation-delay: calc(var(--i, 0) * .16s + .6s); }
-  .pl-main .pl-circ { animation: pl-pop 5.6s ease-out infinite backwards; animation-delay: calc(var(--i, 0) * .16s + .6s); }
-  .pl-mark {
-    position: absolute; inset: -2px -3px; border-radius: 3px; background: rgba(251, 191, 36, .55); transform-origin: left center;
-    animation: pl-mark 5.6s ease-in-out infinite backwards; animation-delay: calc(var(--i, 0) * .16s + .6s);
+  .pl-logo.is-ready { opacity: 1; }
+  .pl-logo img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; user-select: none; pointer-events: none; }
+  .pl-logo-ghost { filter: grayscale(1); opacity: .16; }
+  .pl-logo-live { animation: pl-reveal 3.4s cubic-bezier(.65, 0, .35, 1) infinite; }
+  .pl-shine {
+    position: absolute; inset: 0;
+    -webkit-mask: var(--pl-logo) center / 100% 100% no-repeat; mask: var(--pl-logo) center / 100% 100% no-repeat;
+    background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, .95) 50%, transparent 62%) 120% 0 / 260% 100% no-repeat;
+    animation: pl-shine 3.4s ease-in-out infinite;
   }
   .pl-beam {
-    position: absolute; left: 50%; top: 50%; width: 200px; height: 2px; margin: -106px 0 0 -100px; opacity: 0;
-    background: linear-gradient(90deg, transparent, #fbbf24 12%, #f59e0b 50%, #fbbf24 88%, transparent);
-    box-shadow: 0 0 14px 2px rgba(251, 191, 36, .6);
-    animation: pl-scan 5.6s linear infinite .4s;
+    position: absolute; top: -6%; bottom: -6%; left: 0; width: 2px; border-radius: 2px; opacity: 0;
+    background: linear-gradient(to bottom, transparent, #e01414 22%, #e01414 78%, transparent);
+    box-shadow: 0 0 12px 2px rgba(224, 20, 20, .5);
+    animation: pl-beam 3.4s cubic-bezier(.65, 0, .35, 1) infinite;
   }
-  .pl-beam::before { content: ''; position: absolute; left: 14px; right: 14px; bottom: 2px; height: 46px; background: linear-gradient(to top, rgba(251, 191, 36, .32), rgba(251, 191, 36, 0)); }
 
-  .pl-title { margin-top: 30px; font-size: clamp(1.45rem, 3.4vw, 1.85rem); line-height: 1.15; font-weight: 600; letter-spacing: -.025em; color: #0f172a; animation: pl-in .6s cubic-bezier(.22, 1, .36, 1) .45s backwards; }
-  .pl-statusline { display: inline-flex; align-items: center; gap: 10px; height: 24px; margin-top: 12px; font-size: 14.5px; font-weight: 500; animation: pl-in .6s cubic-bezier(.22, 1, .36, 1) .55s backwards; }
-  .pl-dot { flex: none; width: 8px; height: 8px; border-radius: 9999px; background: #f59e0b; animation: pl-ping 1.6s ease-out infinite; }
+  .pl-track { position: relative; z-index: 1; width: var(--pl-w); height: 3px; margin-top: 16px; overflow: hidden; border-radius: 9999px; background: rgba(10, 22, 48, .08); }
+  .pl-track::before {
+    content: ''; position: absolute; inset: 0 auto 0 0; width: 38%; border-radius: inherit;
+    background: linear-gradient(90deg, #0a1630, #e01414);
+    animation: pl-slide 1.4s cubic-bezier(.4, 0, .2, 1) infinite;
+  }
+
+  .pl-statusline { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 9px; height: 22px; margin-top: 14px; font-size: 13.5px; font-weight: 500; animation: pl-in .6s cubic-bezier(.22, 1, .36, 1) .35s backwards; }
+  .pl-dot { flex: none; width: 7px; height: 7px; border-radius: 9999px; background: #e01414; animation: pl-ping 1.6s ease-out infinite; }
   .pl-dot-ok { background: #10b981; animation: pl-ok .5s cubic-bezier(.22, 1, .36, 1); }
   .pl-status {
     display: inline-block; color: #64748b;
-    background: linear-gradient(100deg, #64748b 35%, #d97706 50%, #64748b 65%) 100% 0 / 250% 100% no-repeat;
+    background: linear-gradient(100deg, #64748b 35%, #e01414 50%, #64748b 65%) 100% 0 / 250% 100% no-repeat;
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
     animation: pl-in .45s ease-out, pl-shimmer 2.6s linear infinite;
   }
   .pl-status-ok { background: none; color: #047857; -webkit-text-fill-color: #047857; animation: pl-in .45s ease-out; }
 
-  .pl-notewrap { display: flex; justify-content: center; width: 100%; max-width: 24rem; min-height: 92px; margin-top: 22px; }
+  .pl-notewrap { position: relative; z-index: 1; display: flex; justify-content: center; width: 100%; max-width: 20rem; min-height: 72px; margin-top: 16px; }
   .pl-note {
-    display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 18px; background: #fff; text-align: left;
-    font-size: 13px; line-height: 1.45; color: #475569;
-    box-shadow: 0 0 0 1px rgba(15, 23, 42, .05), 0 14px 30px -16px rgba(15, 23, 42, .22);
+    display: flex; align-items: flex-start; gap: 10px; padding: 11px 13px; border-radius: 14px; background: #fff; text-align: left;
+    font-size: 12.5px; line-height: 1.45; color: #475569;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, .05), 0 12px 26px -16px rgba(15, 23, 42, .22);
     animation: pl-in .5s ease-out;
   }
-  .pl-note-icon { display: grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: #fffbeb; color: #d97706; font-size: 14px; }
+  .pl-note-icon { display: grid; flex: none; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: #fef2f2; color: #dc2626; font-size: 12px; }
 
-  @media (max-width: 380px) { .pl-stage { transform: scale(.9); } }
   @media (prefers-reduced-motion: reduce) {
-    .pl-root, .pl-stage, .pl-glow, .pl-main, .pl-ghost-l, .pl-ghost-r, .pl-topbar::before,
-    .pl-main .pl-ln, .pl-main .pl-rule, .pl-main .pl-circ, .pl-mark, .pl-title, .pl-statusline, .pl-dot, .pl-dot-ok, .pl-status, .pl-note { animation: none; }
-    .pl-beam { display: none; }
-    .pl-topbar::before { width: 100%; transform: none; opacity: .5; }
+    .pl-root, .pl-blob, .pl-logo, .pl-logo-live, .pl-shine, .pl-topbar::before, .pl-track::before,
+    .pl-statusline, .pl-dot, .pl-dot-ok, .pl-status, .pl-note { animation: none; }
+    .pl-logo-ghost, .pl-beam { display: none; }
+    .pl-topbar::before, .pl-track::before { width: 100%; transform: none; opacity: .5; }
     .pl-status { background: none; -webkit-text-fill-color: currentColor; }
   }
 `;
 
-// A page of text: a dark header with the PDF badge, then the person, then the sections. `--i` is each item's place in the writing order.
-const LoaderSheet = () => (
-  <div className="pl-sheet">
-    <div className="pl-top">
-      <span className="pl-badge">PDF</span>
-    </div>
-    <div className="pl-body">
-      <div className="pl-head">
-        <span className="pl-circ" style={{ '--i': 0 }} />
-        <div className="pl-id">
-          <span className="pl-ln pl-ln-name" style={{ width: '72%', '--i': 1 }} />
-          <span className="pl-ln" style={{ width: '46%', '--i': 2 }} />
-        </div>
-      </div>
-      <div className="pl-rule" style={{ '--i': 3 }} />
-      {SHEET_ROWS.map((row, k) => (
-        <span key={k} className={`pl-ln ${row.accent ? 'pl-ln-accent' : ''}`} style={{ width: row.w, '--i': k + 4 }}>
-          {row.mark && <span className="pl-mark" style={{ '--i': k + 4 }} />}
-        </span>
-      ))}
-    </div>
-  </div>
-);
-
-const GhostSheet = ({ className }) => (
-  <div className={`pl-sheet pl-ghost ${className}`}>
-    <div className="pl-top">
-      <span className="pl-badge">PDF</span>
-    </div>
-    <div className="pl-body">
-      {GHOST_ROWS.map((w, k) => (
-        <span key={k} className="pl-ln" style={{ width: w }} />
-      ))}
-    </div>
-  </div>
-);
-
 const PageLoader = () => {
   const [stage, setStage] = useState(0);
   const [serverReady, setServerReady] = useState(false);
+  // The logo fades in once its file is here, so it never pops in half way through the scan.
+  const [logoReady, setLogoReady] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -255,20 +180,19 @@ const PageLoader = () => {
     <div className="pl-root" aria-busy="true">
       <style>{LOADER_CSS}</style>
       <div className="pl-topbar" aria-hidden="true" />
-      <div className="pl-grid" aria-hidden="true" />
+      <span className="pl-blob pl-blob-a" aria-hidden="true" />
+      <span className="pl-blob pl-blob-b" aria-hidden="true" />
+      <h1 className="pl-sr">Getting RemoPDF ready</h1>
 
-      {/* A PDF writes itself while a scanner passes over it. Two more pages wait behind it. */}
-      <div className="pl-stage" aria-hidden="true">
-        <div className="pl-glow" />
-        <GhostSheet className="pl-ghost-l" />
-        <GhostSheet className="pl-ghost-r" />
-        <div className="pl-main">
-          <LoaderSheet />
-          <div className="pl-beam" />
-        </div>
+      {/* The RemoPDF wordmark, scanned in over and over while the page loads. */}
+      <div className={`pl-logo ${logoReady ? 'is-ready' : ''}`} style={{ '--pl-logo': `url("${logo1}")` }} aria-hidden="true">
+        <img className="pl-logo-ghost" src={logo1} alt="" decoding="async" />
+        <img className="pl-logo-live" src={logo1} alt="" decoding="async" onLoad={() => setLogoReady(true)} onError={() => setLogoReady(true)} />
+        <span className="pl-shine" />
+        <span className="pl-beam" />
       </div>
+      <div className="pl-track" aria-hidden="true" />
 
-      <h1 className="pl-title">Getting RemoPDF ready</h1>
       <p role="status" aria-live="polite" className="pl-statusline">
         <span className={`pl-dot ${serverReady ? 'pl-dot-ok' : ''}`} aria-hidden="true" />
         <span key={statusText} className={`pl-status ${serverReady ? 'pl-status-ok' : ''}`}>{statusText}</span>

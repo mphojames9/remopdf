@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 
 /* -------------------------------------------------------------------------- */
 /*  Resume builder sidebar.                                                   */
@@ -13,7 +13,6 @@ import React, { useEffect, useRef, useState } from 'react';
 /*                       both moved past and filled; a step that was skipped  */
 /*                       with nothing entered keeps its number. Without this  */
 /*                       prop every completed step is ticked, as before       */
-/*    progress           0-100                                                */
 /*    onSelect(index)    optional. When given, finished steps and earlier     */
 /*                       steps can be clicked to jump back to them            */
 /*    onBack             click handler for the logo, which is the back        */
@@ -96,139 +95,6 @@ const BrandBackButton = ({ onBack }) => (
   </button>
 );
 
-/* -------------------------------------------------------------------------- */
-/*  Resume completeness: a ring gauge with a count-up and a status line.      */
-/*  The ring and the number are driven by the same value, so they never       */
-/*  drift apart. Reduced-motion users get the final value immediately.        */
-/* -------------------------------------------------------------------------- */
-
-const RING_SIZE = 44;
-const RING_STROKE = 4;
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-
-const usePrefersReducedMotion = () => {
-  const query = '(prefers-reduced-motion: reduce)';
-  const [reduced, setReduced] = useState(() => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(query).matches);
-  useEffect(() => {
-    if (!window.matchMedia) return undefined;
-    const mql = window.matchMedia(query);
-    const onChange = (e) => setReduced(e.matches);
-    mql.addEventListener('change', onChange);
-    return () => mql.removeEventListener('change', onChange);
-  }, []);
-  return reduced;
-};
-
-// Eases from wherever the number currently is to the new target, so an interrupted animation never jumps.
-const useCountUp = (target, duration = 800) => {
-  const reduced = usePrefersReducedMotion();
-  const [display, setDisplay] = useState(reduced ? target : 0);
-  const shown = useRef(reduced ? target : 0);
-
-  useEffect(() => {
-    if (reduced) {
-      shown.current = target;
-      setDisplay(target);
-      return undefined;
-    }
-    const from = shown.current;
-    if (from === target) return undefined;
-    const start = performance.now();
-    let frame;
-    const tick = (now) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      const next = Math.round(from + (target - from) * eased);
-      shown.current = next;
-      setDisplay(next);
-      if (t < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [target, reduced, duration]);
-
-  return display;
-};
-
-const completenessStatus = (value) => {
-  if (value >= 100) return 'Your resume is complete';
-  if (value >= 75) return 'Almost there';
-  if (value >= 40) return 'Taking shape';
-  if (value > 0) return 'Just getting started';
-  return 'Add your details to begin';
-};
-
-const CompletenessCard = ({ progress }) => {
-  const value = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
-  const display = useCountUp(value);
-  const done = value >= 100 && display >= 100;
-
-  return (
-    <div className="flex items-center gap-3 px-2.5 py-1">
-      <span
-        role="progressbar"
-        aria-label="Resume completeness"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={value}
-        aria-valuetext={`${value}% complete`}
-        className="relative grid shrink-0 place-items-center"
-        style={{ width: RING_SIZE, height: RING_SIZE }}
-      >
-        <svg
-          width={RING_SIZE}
-          height={RING_SIZE}
-          viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
-          className={`-rotate-90 transition-[filter] duration-500 motion-reduce:transition-none ${
-            done ? '[filter:drop-shadow(0_0_6px_rgba(52,211,153,0.4))]' : ''
-          }`}
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="remo-completeness-ring" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#f0cec4" />
-              <stop offset="100%" stopColor="#d9856b" />
-            </linearGradient>
-          </defs>
-          <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={RING_STROKE} />
-          <circle
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
-            r={RING_RADIUS}
-            fill="none"
-            stroke={done ? '#34d399' : 'url(#remo-completeness-ring)'}
-            strokeWidth={RING_STROKE}
-            strokeLinecap="round"
-            strokeDasharray={RING_CIRCUMFERENCE}
-            strokeDashoffset={RING_CIRCUMFERENCE * (1 - display / 100)}
-            opacity={display === 0 ? 0 : 1}
-          />
-        </svg>
-        <span className="absolute inset-0 grid place-items-center">
-          {done ? (
-            <Svg className="h-5 w-5 text-emerald-300" strokeWidth={2.5}>
-              <path d="M5 12.5l4.5 4.5L19 7.5" />
-            </Svg>
-          ) : (
-            <span className="text-[12px] font-semibold tabular-nums leading-none text-white">
-              {display}
-              <span className="text-[8px] font-medium text-slate-400">%</span>
-            </span>
-          )}
-        </span>
-      </span>
-
-      <span className="min-w-0">
-        <span className="block truncate text-[13px] font-medium text-slate-100">Resume completeness</span>
-        <span aria-live="polite" className="block truncate text-[11px] text-slate-400 [@media(max-height:700px)]:hidden">
-          {completenessStatus(value)}
-        </span>
-      </span>
-    </div>
-  );
-};
-
 const StepRow = ({ step, index, active, completed, canVisit, onSelect }) => {
   // `completed` is the ticked state: moved past AND holding information.
   const badge = active
@@ -270,7 +136,7 @@ const StepRow = ({ step, index, active, completed, canVisit, onSelect }) => {
   );
 };
 
-const BuilderSidebar = ({ steps, currentIndex, completedSteps, filledSteps, progress, onSelect, onBack, onBuildCoverLetter, importSlot, mobileSlot, open, onClose }) => {
+const BuilderSidebar = ({ steps, currentIndex, completedSteps, filledSteps, onSelect, onBack, onBuildCoverLetter, importSlot, mobileSlot, open, onClose }) => {
   return (
     <aside
       aria-label="Resume builder"
@@ -307,8 +173,6 @@ const BuilderSidebar = ({ steps, currentIndex, completedSteps, filledSteps, prog
       </div>
 
       <div className="space-y-2.5">
-        <CompletenessCard progress={progress} />
-
         <button
           type="button"
           onClick={onBuildCoverLetter}

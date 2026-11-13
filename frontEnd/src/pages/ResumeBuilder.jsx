@@ -2669,9 +2669,6 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     else setCoverLetterOpen(true);
   };
 
-  // Resume completeness counts the same steps the sidebar ticks: moved past and holding information.
-  const tickedCount = completedSteps.filter((index) => filledSteps.includes(index)).length;
-  const progressPercentage = Math.round((tickedCount / stepsConfig.length) * 100);
   const ActiveComponent = stepsConfig[currentStepIndex].component;
   const nextStepLabel = stepsConfig[currentStepIndex + 1]?.label || 'Finish';
 
@@ -2714,7 +2711,6 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         currentIndex={currentStepIndex}
         completedSteps={completedSteps}
         filledSteps={filledSteps}
-        progress={progressPercentage}
         onSelect={(index) => {
           setCurrentStepIndex(index);
           setMenuOpen(false);
