@@ -22,6 +22,7 @@ import ResumePickerDialog from '../components/Auth/ResumePickerDialog';
 import CoverLetterBuilder from '../components/CoverLetter/CoverLetterBuilder';
 import JobTargetStudio from '../components/Resume/Sections/JobTargetStudio';
 import JobTargetBar from '../components/Resume/Sections/JobTargetBar';
+import PreviewLoadingOverlay from '../components/Resume/PreviewLoadingOverlay';
 import { sanitizeJobTarget, hasJobTarget } from '../components/Resume/Sections/jobMatchAI';
 import { buildResumePdf } from '../utils/resumePdf';
 import { 
@@ -347,7 +348,7 @@ const SECTION_EDITORS = {
   certificates: { title: 'Additional sections', Component: AdditionalSections },
 };
 
-const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sectionOrder: savedSectionOrder, setSectionOrder, hiddenSections, setHiddenSections, pageNumbers, setPageNumbers, editorProps, checkPremium, onClose }) => {
+const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sectionOrder: savedSectionOrder, setSectionOrder, hiddenSections, setHiddenSections, pageNumbers, setPageNumbers, editorProps, checkPremium, onReady, onClose }) => {
   const sectionOrder = normalizeSectionOrder(savedSectionOrder);
   // Sections the user removed from the resume. Their information is kept, they
   // are only left out of the template (and can be added back at any time).
@@ -411,6 +412,20 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
     const show = setTimeout(() => { if (!hintDismissedRef.current) setHintOpen(true); }, 500);
     const hide = setTimeout(() => setHintOpen(false), 8000);
     return () => { clearTimeout(show); clearTimeout(hide); };
+  }, []);
+
+  // Tells the parent the preview is on screen (two frames after it mounted), so it can drop its loading screen.
+  useEffect(() => {
+    if (!onReady) return undefined;
+    let inner;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(onReady);
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // When a section editor is finished (Done, removed, edit mode switched off), close the sheet again.
@@ -2010,6 +2025,8 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   // Phones: the job match is not in the page. "Finish Resume" opens it once, so the score is only counted then.
   const [scoreSheetOpen, setScoreSheetOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  // True from the tap on Preview until the preview is on screen: the loading screen is shown meanwhile.
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [coverLetterOpen, setCoverLetterOpen] = useState(false);
   // null = closed; anything else = the Sign in with Google dialog is open (the value is not used any more).
   const [authMode, setAuthMode] = useState(null);
@@ -2201,7 +2218,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   // Paying needs an account. The preview is closed too, so the sign-in dialog is not hidden behind it.
   const handlePaymentSignIn = () => {
     closePayment();
-    setPreviewOpen(false);
+    closePreview();
     setAuthMode('signin');
   };
 
@@ -2617,6 +2634,27 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
     }
   };
 
+  // Rendering the whole resume can take a moment on a slow phone. Show the loading screen first, let the browser
+  // paint it, and only then mount the preview (whose render blocks the page until it is done).
+  const openPreview = async () => {
+    if (previewOpen || previewLoading) return;
+    setPreviewLoading(true);
+    await nextPaint();
+    setPreviewOpen(true);
+  };
+
+  const closePreview = () => {
+    setPreviewOpen(false);
+    setPreviewLoading(false);
+  };
+
+  // Safety net: the loading screen can never stay up for good if the preview fails to report that it is ready.
+  useEffect(() => {
+    if (!previewLoading) return undefined;
+    const timer = setTimeout(() => setPreviewLoading(false), 12000);
+    return () => clearTimeout(timer);
+  }, [previewLoading]);
+
   const handleBack = () => {
     if (currentStepIndex > 0) {
       setCurrentStepIndex(currentStepIndex - 1);
@@ -2743,8 +2781,14 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         </header>
 
         <div className="pro-scroll flex-1 overflow-y-auto p-5 sm:p-8 lg:p-12 lg:pt-6 pb-36 sm:pb-32">
-          {isDesktop && premium && hasJobTarget(jobTarget) && ActiveComponent !== PersonalInfo && (
-            <JobTargetBar target={jobTarget} data={resumeData} onEdit={() => setJobStudioOpen(true)} />
+          {premium && hasJobTarget(jobTarget) && ActiveComponent !== PersonalInfo && (
+            <JobTargetBar
+              target={jobTarget}
+              data={resumeData}
+              onEdit={() => setJobStudioOpen(true)}
+              // Small screens: sit just above the stacked action bar (taller when the Back button is showing).
+              dockClassName={`${currentStepIndex > 0 ? 'bottom-[12.25rem]' : 'bottom-[9.75rem]'} sm:bottom-24`}
+            />
           )}
           <ActiveComponent data={resumeData} updateData={updateData} updateSummary={updateSummary} updateSkills={updateSkills} updateExperiences={updateExperiences} updateEducation={updateEducation} updateItems={updateItems} showSkillErrors={showSkillErrors} showLanguageErrors={showLanguageErrors} />
         </div>
@@ -2767,7 +2811,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
 
           <div className="flex flex-col-reverse sm:flex-row w-full sm:w-auto gap-3 sm:gap-4">
             <button
-              onClick={() => setPreviewOpen(true)}
+              onClick={openPreview}
               className="w-full sm:w-auto px-7 py-3 rounded-full border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all text-xs focus:outline-none"
             >
               Preview
@@ -2797,8 +2841,13 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           setPageNumbers={setPageNumbers}
           editorProps={{ updateData, updateSummary, updateSkills, updateExperiences, updateEducation, updateItems }}
           checkPremium={checkPremium}
-          onClose={() => setPreviewOpen(false)} 
+          onReady={() => setPreviewLoading(false)}
+          onClose={closePreview}
         />
+      )}
+
+      {previewLoading && (
+        <PreviewLoadingOverlay accent={selectedColor || DEFAULT_ACCENT[selectedTemplate] || DEFAULT_ACCENT['blue-sidebar']} />
       )}
 
       {scoreSheetOpen && !isDesktop && premium && hasJobTarget(jobTarget) && (
