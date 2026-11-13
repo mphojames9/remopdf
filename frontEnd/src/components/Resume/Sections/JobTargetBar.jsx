@@ -12,9 +12,10 @@ import { isQualification } from './skillFilter';
   With `sheet` there is no card and no dock: the panel opens straight away and the score is counted only then, so
   the parent can keep the score out of the page until the person asks for it (the phone's "Finish Resume").
 
-  It never sits on top of the form. On a desktop it is a small dock at the edge of the screen that shows the score
-  and opens a floating panel; on a phone it is a card in the flow of the page (it scrolls away with the form)
-  that opens the same panel as a bottom sheet. Nothing is pinned above the fields, so nothing is hidden.
+  It never sits on top of the form. On every screen size it is a small round button at the bottom right that
+  shows the score: on a desktop it opens a floating panel, on a phone the same panel comes up as a bottom sheet.
+  `dockClassName` sets its `bottom-*` offset (a phone's action bar is taller than a desktop's, so the parent
+  lifts it above the bar). `card` adds the old in-page card; it is off by default.
 
   The score is counted on the device from the resume as it is right now (see atsScore.js), so it moves as the
   person types and never waits for the server. The panel shows where the points come from, which of the job's
@@ -234,11 +235,11 @@ const useScoreGain = (score) => {
   return gain;
 };
 
-const Dock = ({ result, onOpen }) => {
+const Dock = ({ result, onOpen, className = 'bottom-24' }) => {
   const gain = useScoreGain(result.score);
   const shown = useCountUp(result.score, { ms: 500 });
   return (
-    <div className="fixed bottom-24 right-5 z-30 hidden lg:block" style={{ fontFamily: FONT }}>
+    <div className={`fixed right-4 z-30 sm:right-5 ${className}`} style={{ fontFamily: FONT }}>
       {gain && (
         <span key={gain.key} className="jm-delta pointer-events-none absolute -top-9 right-1 rounded-full bg-white px-3 py-1 text-[13px] font-semibold text-[#b8573b] shadow-lg ring-1 ring-slate-200">
           +{gain.diff}
@@ -606,7 +607,7 @@ const Panel = ({ result, target, onClose, onEdit }) => {
 /*                                    the bar                                 */
 /* -------------------------------------------------------------------------- */
 
-const JobTargetBar = ({ target, data, onEdit, sheet = false, onSheetClose }) => {
+const JobTargetBar = ({ target, data, onEdit, sheet = false, onSheetClose, card = false, dockClassName }) => {
   const [open, setOpen] = useState(false);
   const result = useMemo(() => scoreResume(target, data), [target, data]);
   const close = useCallback(() => setOpen(false), []);
@@ -618,8 +619,8 @@ const JobTargetBar = ({ target, data, onEdit, sheet = false, onSheetClose }) => 
 
   return (
     <>
-      <Card result={result} target={target} onOpen={show} />
-      <Dock result={result} onOpen={show} />
+      {card && <Card result={result} target={target} onOpen={show} />}
+      <Dock result={result} onOpen={show} className={dockClassName} />
       {open && <Panel result={result} target={target} onClose={close} onEdit={onEdit} />}
     </>
   );
