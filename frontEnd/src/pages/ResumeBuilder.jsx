@@ -23,6 +23,7 @@ import CoverLetterBuilder from '../components/CoverLetter/CoverLetterBuilder';
 import JobTargetStudio from '../components/Resume/Sections/JobTargetStudio';
 import JobTargetBar from '../components/Resume/Sections/JobTargetBar';
 import PreviewLoadingOverlay from '../components/Resume/PreviewLoadingOverlay';
+import { usePreviewGuard, PreviewShield, PreviewLockScreen } from '../components/Resume/PreviewGuard';
 import { sanitizeJobTarget, hasJobTarget } from '../components/Resume/Sections/jobMatchAI';
 import { buildResumePdf } from '../utils/resumePdf';
 import { 
@@ -348,7 +349,7 @@ const SECTION_EDITORS = {
   certificates: { title: 'Additional sections', Component: AdditionalSections },
 };
 
-const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sectionOrder: savedSectionOrder, setSectionOrder, hiddenSections, setHiddenSections, pageNumbers, setPageNumbers, editorProps, checkPremium, onReady, onClose }) => {
+const ResumePreviewModalInner = ({ data, template, setTemplate, color, setColor, sectionOrder: savedSectionOrder, setSectionOrder, hiddenSections, setHiddenSections, pageNumbers, setPageNumbers, editorProps, checkPremium, onReady, onClose }) => {
   const sectionOrder = normalizeSectionOrder(savedSectionOrder);
   // Sections the user removed from the resume. Their information is kept, they
   // are only left out of the template (and can be added back at any time).
@@ -1015,6 +1016,7 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
                     </PageNumberContext.Provider>
                   </div>
                 </div>
+                {premiumAccess !== true && <PreviewShield />}
               </div>
             </div>
 
@@ -1390,6 +1392,23 @@ const ResumePreviewModal = ({ data, template, setTemplate, color, setColor, sect
           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Preview protection for non-Premium accounts (see PreviewGuard.jsx). While developer tools are open the whole
+// preview is unmounted, so the templates are not in the page at all; it remounts fresh when they are closed.
+const ResumePreviewModal = (props) => {
+  const premiumAccess = usePremiumAccess();
+  const guard = usePreviewGuard(premiumAccess !== true);
+  const { onReady } = props;
+  useEffect(() => {
+    if (guard.locked && typeof onReady === 'function') onReady(); // never leave the loading overlay up
+  }, [guard.locked]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (guard.locked) return <PreviewLockScreen onClose={props.onClose} />;
+  return (
+    <div className="rp-protected">
+      <ResumePreviewModalInner {...props} />
     </div>
   );
 };

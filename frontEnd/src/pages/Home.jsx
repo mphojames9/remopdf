@@ -74,6 +74,21 @@ const PATHS = {
   zap: ['M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'],
   languages: ['m5 8 6 6', 'm4 14 6-6 2-3', 'M2 5h12', 'M7 2h1', 'm22 22-5-10-5 10', 'M14 18h6'],
   calendar: ['M8 2v4', 'M16 2v4', 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z', 'M3 10h18'],
+  highlighter: ['m9 11-6 6v3h9l3-3', 'm22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4'],
+  sign: ['M12 20h9', 'M16.4 3.6a2.1 2.1 0 0 1 3 3L7.4 18.6l-4 1 1-4 12-12Z'],
+  rotate: ['M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.7L21 8', 'M21 3v5h-5'],
+  scissors: ['M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z', 'M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z', 'M20 4 8.1 15.9', 'M14.5 14.5 20 20', 'M8.1 8.1 12 12'],
+  compress: ['m14 10 7-7', 'M20 10h-6V4', 'm3 21 7-7', 'M4 14h6v6'],
+  convert: ['M8 3 4 7l4 4', 'M4 7h16', 'm16 21 4-4-4-4', 'M20 17H4'],
+  droplet: ['M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7Z'],
+  archive: ['M21 8v13H3V8', 'M1 3h22v5H1z', 'M10 12h4'],
+  receipt: ['M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z', 'M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8', 'M12 17.5v-11'],
+  layout: ['M4 3h16a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z', 'M4 14h7a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1Z', 'M17 14h3a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1Z'],
+  shieldCheck: ['M20 13c0 5-3.5 7.5-7.7 8.95a1 1 0 0 1-.66-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.5 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1Z', 'm9 12 2 2 4-4'],
+  spellcheck: ['m6 16 6-12 6 12', 'M8 12h8', 'm16 20 2 2 4-4'],
+  fileUp: ['M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z', 'M14 2v4a2 2 0 0 0 2 2h4', 'M12 18v-6', 'm9 15 3-3 3 3'],
+  target: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z', 'M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z', 'M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z'],
+  fileText: ['M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z', 'M14 2v4a2 2 0 0 0 2 2h4', 'M10 9H8', 'M16 13H8', 'M16 17H8'],
 };
 
 function Icon({ name, className = 'h-5 w-5' }) {
@@ -109,13 +124,45 @@ const atsPoints = [
 
 // top = where the chip appears down the page; the scanner reveals each one as the beam passes it.
 const atsFound = [
-  { label: 'Name and contact', top: '9%', left: true },
+  { label: 'Name and contact', top: '10%', left: true },
   { label: 'Work history', top: '33%' },
-  { label: 'Skills', top: '57%', left: true },
-  { label: 'Education', top: '80%' },
+  { label: 'Skills', top: '48%', left: true },
+  { label: 'Education', top: '62%' },
 ];
 
-const ticker = ['Edit PDF text', 'Highlight text', 'Organize and protect', 'Convert and compress', 'Scan and share', 'ATS-friendly resumes'];
+// Everything the app does, in two rows for the scrolling band under the hero. Each pill opens its tool.
+// `tone` picks the accent of the icon tile; the legend above the band explains the four colours.
+const CAP_TONES = { pdf: '#e8967c', resume: '#a5b1ff', zip: '#5ed6c1', invoice: '#f2c14e' };
+const capLegend = [
+  { label: 'PDF editor', tone: 'pdf' },
+  { label: 'Resume builder', tone: 'resume' },
+  { label: 'Zip tool', tone: 'zip' },
+  { label: 'Invoice builder', tone: 'invoice' },
+];
+const capRows = [
+  [
+    { icon: 'edit', label: 'Edit PDF text', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
+    { icon: 'highlighter', label: 'Highlight text', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
+    { icon: 'sign', label: 'Sign and add images', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
+    { icon: 'rotate', label: 'Add, remove and rotate pages', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
+    { icon: 'scissors', label: 'Split a PDF', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
+    { icon: 'lock', label: 'Lock and unlock', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
+    { icon: 'convert', label: 'Convert file types', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
+    { icon: 'compress', label: 'Compress', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
+    { icon: 'droplet', label: 'Watermark and page numbers', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
+  ],
+  [
+    { icon: 'layout', label: 'Resume templates', to: '/ResumeBuilder', tone: 'resume' },
+    { icon: 'shieldCheck', label: 'ATS-friendly resumes', to: '/ResumeBuilder', tone: 'resume' },
+    { icon: 'spellcheck', label: 'Spelling and grammar checks', to: '/ResumeBuilder', tone: 'resume' },
+    { icon: 'spark', label: 'AI writing assistant', to: '/ResumeBuilder', tone: 'resume' },
+    { icon: 'fileUp', label: 'Import an old resume', to: '/ResumeBuilder', tone: 'resume' },
+    { icon: 'target', label: 'Match a job posting', to: '/ResumeBuilder', tone: 'resume' },
+    { icon: 'fileText', label: 'Cover letters', to: '/ResumeBuilder', tone: 'resume' },
+    { icon: 'archive', label: 'Zip and unzip files', to: '/ZipTool', tone: 'zip' },
+    { icon: 'receipt', label: 'Invoices as PDF', to: '/InvoiceBuilder', tone: 'invoice' },
+  ],
+];
 
 const steps = [
   { title: 'Pick what you need', desc: 'Open a PDF to edit, or start a resume from a template.' },
@@ -158,28 +205,74 @@ const spot = (e) => {
   e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
 };
 
-// A quiet scrolling strip: regular-weight body text in a soft grey on the dark band, with small
-// dots between the items instead of heavy bold headings and big icons.
-function Ticker() {
-  const row = (hidden) => (
-    <ul className="flex shrink-0 items-center" aria-hidden={hidden || undefined}>
-      {ticker.map((t) => (
-        <li key={t} className="flex items-center gap-10 pr-10 text-base font-normal text-slate-300 sm:text-[1.0625rem]">
-          {t}
-          <span aria-hidden="true" className="h-1 w-1 rounded-full bg-[#d9856b]" />
+// The capability band under the hero: two rows of pills that drift in opposite directions, one pill per
+// feature, each linking to its tool. Hover pauses it. With reduced motion the rows stop and wrap, so
+// every feature stays visible and reachable.
+function Capabilities() {
+  const row = (items, dup) => (
+    <ul className={`${dup ? 'cap-dup ' : ''}flex shrink-0 gap-3 pr-3`} aria-hidden={dup || undefined}>
+      {items.map((it) => (
+        <li key={it.label} className="shrink-0">
+          <Link
+            to={it.to}
+            tabIndex={dup ? -1 : undefined}
+            className="group flex items-center gap-3 rounded-2xl bg-white/[0.06] py-2 pl-2 pr-5 ring-1 ring-white/10 backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:bg-white/[0.11] hover:ring-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8967c]"
+          >
+            <span
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl transition duration-300 group-hover:scale-105"
+              style={{ backgroundColor: `${CAP_TONES[it.tone]}26`, color: CAP_TONES[it.tone] }}
+            >
+              <Icon name={it.icon} className="h-[18px] w-[18px]" />
+            </span>
+            <span className="whitespace-nowrap text-[0.9375rem] font-medium tracking-[-0.005em] text-white">{it.label}</span>
+          </Link>
         </li>
       ))}
     </ul>
   );
   return (
-    <div className="bg-[#0e1726] py-3.5">
-      <div className="overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
-        <div className="ticker flex w-max">
-          {row(false)}
-          {row(true)}
+    <section aria-label="Everything RemoPDF can do" className="relative overflow-hidden bg-[#0e1726] py-9 sm:py-11">
+      <style>{`
+        .cap-row { display: flex; width: max-content; }
+        @media (prefers-reduced-motion: no-preference) {
+          .cap-a { animation: cap-left 60s linear infinite; }
+          .cap-b { animation: cap-right 68s linear infinite; }
+          .cap-wrap:hover .cap-row, .cap-wrap:focus-within .cap-row { animation-play-state: paused; }
+          @keyframes cap-left { to { transform: translateX(-50%); } }
+          @keyframes cap-right { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .cap-row, .cap-row ul { width: auto; flex-wrap: wrap; justify-content: center; }
+          .cap-row ul { flex-shrink: 1; padding-right: 0; }
+          .cap-dup { display: none; }
+        }
+      `}</style>
+      <div aria-hidden="true" className="pointer-events-none absolute -left-24 top-4 h-56 w-80 rounded-full bg-[#d9856b]/20 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-24 bottom-0 h-56 w-80 rounded-full bg-[#8b9cf7]/15 blur-3xl" />
+
+      <div className="relative mx-auto flex max-w-7xl flex-col items-center gap-3 px-4 pb-6 text-center sm:flex-row sm:justify-between sm:px-6 sm:text-left lg:px-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-300">One app, every document job</p>
+        <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[0.8125rem] text-slate-400">
+          {capLegend.map((l) => (
+            <li key={l.label} className="flex items-center gap-2">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: CAP_TONES[l.tone] }} />
+              {l.label}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="cap-wrap relative flex flex-col gap-3 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_7%,#000_93%,transparent)]">
+        <div className="cap-row cap-a">
+          {row(capRows[0], false)}
+          {row(capRows[0], true)}
+        </div>
+        <div className="cap-row cap-b">
+          {row(capRows[1], false)}
+          {row(capRows[1], true)}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -193,9 +286,11 @@ function ScanStage() {
           <img
             src={image1}
             alt="Sample resume being read by an ATS scan: name and contact, work history, skills and education are all picked up."
+            width="800"
+            height="1200"
             loading="lazy"
             decoding="async"
-            className="aspect-[3/4] w-full rounded-sm bg-white object-cover object-top shadow-lg"
+            className="block h-auto w-full rounded-sm bg-white shadow-lg"
           />
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
             <span className="ats-bar absolute inset-x-0 top-0 h-0.5 bg-[#f4b19c] shadow-[0_0_18px_4px_rgba(217,133,107,.7)]">
@@ -506,13 +601,6 @@ function ResumeStack() {
           </div>
         </div>
 
-        <div className="layer absolute bottom-[8%] left-[2%] z-20" style={{ '--depth': 40 }}>
-          <span style={{ '--d': '1s' }} className="rise chip flex items-center gap-2 rounded-full bg-[#d9856b] py-2 pl-3 pr-4 text-sm font-semibold text-[#0e1726] shadow-lg">
-            <Icon name="arrowUpRight" className="h-4 w-4" />
-            Download clean PDF
-          </span>
-        </div>
-
       </div>
     </div>
   );
@@ -521,7 +609,7 @@ function ResumeStack() {
 // Closing statement before the final call to action. Row one is the PDF editor's main actions with
 // a small icon pill after each; row two is the rest of the toolset (pages, convert, resumes) in a
 // quieter weight, running the other way. Both loop seamlessly and pause on hover. Without motion
-// they wrap and stay centred. Words come from the `tools`, `atsPoints` and `ticker` lists above.
+// they wrap and stay centred. Words come from the `tools`, `atsPoints` and `capRows` lists above.
 const KIN_VERBS = [
   { word: 'Edit text', icon: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></> },
   { word: 'Highlight', icon: <><path d="m9 11-6 6v3h9l3-3" /><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" /></> },
@@ -924,9 +1012,6 @@ export default function Home() {
           @keyframes f-launch { 45% { translate: 0 -2rem; opacity: 0; } 46% { translate: 0 2rem; opacity: 0; } }
         }
         @media (prefers-reduced-motion: no-preference) {
-          .ticker { animation: marquee 32s linear infinite; }
-          .ticker:hover { animation-play-state: paused; }
-          @keyframes marquee { to { transform: translateX(-50%); } }
           .blob-a { animation: drift 14s ease-in-out infinite; }
           .blob-b { animation: drift 18s ease-in-out infinite reverse; }
           @keyframes drift { 50% { transform: translate(40px, 30px) scale(1.12); } }
@@ -1120,7 +1205,7 @@ export default function Home() {
           </div>
         </section>
 
-        <Ticker />
+        <Capabilities />
 
         {/* PDF editor */}
         <section id="tools" className="scroll-mt-20 border-t border-[#0e1726]/10 bg-white">
@@ -1159,12 +1244,6 @@ export default function Home() {
               <span style={{ '--d': '.2s' }} className="rise chip2 absolute -top-4 left-8 z-10 hidden items-center gap-2 rounded-full bg-[#0e1726] py-2 pl-3 pr-4 text-sm font-medium text-white shadow-lg sm:flex">
                 <Icon name="edit" className="h-4 w-4 text-[#d9856b]" />
                 Edit text on the page
-              </span>
-              <span style={{ '--d': '.4s' }} className="rise chip absolute -bottom-4 right-8 z-10 hidden items-center gap-2 rounded-full bg-white py-2 pl-2.5 pr-4 text-sm font-medium text-[#0e1726] shadow-lg ring-1 ring-black/5 sm:flex">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#d9856b] text-[#0e1726]">
-                  <Icon name="download" className="h-3.5 w-3.5" />
-                </span>
-                Download as PDF
               </span>
             </div>
 
