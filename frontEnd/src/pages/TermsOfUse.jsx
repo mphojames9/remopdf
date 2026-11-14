@@ -197,18 +197,19 @@ function SiteFooter() {
 // The contents list drives the numbering, so adding, removing or moving an entry renumbers the
 // sections and every “section N” reference on the page. Keep each id in sync with its <Sec id=...>.
 
-const LAST_UPDATED = '9 November 2026';
-const CONTACT_EMAIL = 'remopdf@outlook.com';
+const LAST_UPDATED = '13 November 2026';
+const CONTACT_EMAIL = 'support@remopdf.site';
 
 const TOC = [
   { id: 'acceptance', title: 'Acceptance of terms' },
   { id: 'files', title: 'Your files and your privacy' },
-  { id: 'accounts', title: 'Accounts and saved resumes' },
-  { id: 'premium', title: 'Free use, Premium and payments' },
+  { id: 'accounts', title: 'Accounts and signing in' },
+  { id: 'premium', title: 'Free use and Premium' },
+  { id: 'payments', title: 'Payments' },
+  { id: 'refunds', title: 'Cancellation and refunds' },
   { id: 'services', title: 'Outside services we use' },
   { id: 'ai', title: 'AI-assisted features' },
   { id: 'resumes', title: 'Resumes and applicant tracking systems' },
-  { id: 'ads', title: 'Advertising' },
   { id: 'use-limits', title: 'Acceptable use and limits' },
   { id: 'intellectual-property', title: 'Intellectual property' },
   { id: 'warranties', title: 'Disclaimer of warranties' },
@@ -275,8 +276,10 @@ const Ul = ({ children }) => <ul className="list-disc space-y-2 pl-5 marker:text
 
 const GLANCE = [
   { term: 'Your files', detail: 'They are processed to do the job you asked for, then removed. We keep no backups and we do not look through them.' },
-  { term: 'Accounts', detail: 'Optional. You need one to save resumes and to buy Premium.' },
-  { term: 'Cost', detail: 'Many tools are free and ads help pay for them. Premium is a paid upgrade, with the price and length of access shown before you pay.' },
+  { term: 'Accounts', detail: 'Optional. You sign in with a Gmail account to save resumes and to buy Premium. There is no password to remember.' },
+  { term: 'Cost', detail: 'Many tools are free. Premium is a one-off payment for a set period, shown at checkout before you pay. It never renews by itself.' },
+  { term: 'Payments', detail: 'We accept payment only through Paystack, and by no other method.' },
+  { term: 'Refunds', detail: 'Premium starts straight away, so it is not refundable for a change of mind. We refund when we got it wrong, such as a double charge or Premium that never switched on. Your legal rights are not affected.' },
   { term: 'AI and ATS', detail: 'AI suggestions can be wrong, and no resume can be guaranteed to pass an employer’s system. Check everything before you send it.' },
 ];
 
@@ -570,15 +573,42 @@ export default function Terms() {
             </Sec>
 
             <Sec id="accounts">
-              <p>You can use many tools without an account. Some features, such as saved resumes and Premium, need you to sign in.</p>
+              <p>You can use many tools without an account. Saving resumes on our servers and buying Premium need you to sign in.</p>
+              <Sub>Signing in</Sub>
               <Ul>
-                <li>You sign in with your Google account. We create a RemoPDF account for you the first time.</li>
-                <li>Resumes you save are stored with your account so you can open them on another device.</li>
-                <li>You are responsible for activity under your account and for keeping access to your Google account secure.</li>
-                <li>We may suspend or close an account that breaks these Terms or is used to harm the Service or other people.</li>
                 <li>
-                  You can stop using RemoPDF at any time. To close your account or ask for your saved resumes to be deleted, write to{' '}
-                  <a href={`mailto:${CONTACT_EMAIL}`} className={LINK}>{CONTACT_EMAIL}</a>.
+                  You sign in with Google, using a Gmail address (name@gmail.com). Other kinds of email address are not accepted. RemoPDF has no passwords of its own and
+                  never sees or stores your Google password.
+                </li>
+                <li>
+                  The first time you sign in, we create a RemoPDF account for you automatically, using the name and Gmail address on your Google account. By signing in you
+                  agree to these Terms and to our <Link to="/PrivacyPolicy" className={LINK}>privacy policy</Link>.
+                </li>
+                <li>
+                  Your sign-in stays on the device and browser you used until you sign out or it expires, which happens after 30 days. On a shared or public computer,
+                  sign out when you finish.
+                </li>
+              </Ul>
+              <Sub>Your account</Sub>
+              <Ul>
+                <li>An account belongs to one person. Do not share it, sell it or hand it to someone else, and do not create accounts by automated means.</li>
+                <li>
+                  You are responsible for everything done under your account and for keeping your Google account secure. If you think someone else has gained access, sign out,
+                  secure your Google account and tell us at <a href={`mailto:${CONTACT_EMAIL}`} className={LINK}>{CONTACT_EMAIL}</a>.
+                </li>
+                <li>Resumes you save are stored with your account so you can open them on another device. The number you can keep saved depends on your plan.</li>
+                <li>Premium belongs to the account that bought it. It cannot be moved to another account or shared (see <Ref id="premium" />).</li>
+              </Ul>
+              <Sub>Suspending and closing an account</Sub>
+              <Ul>
+                <li>
+                  We may suspend or close an account that breaks these Terms or is used to harm the Service or other people. If we do, any Premium time left on it ends and is
+                  not refunded, except as <Ref id="refunds" /> or the law provides.
+                </li>
+                <li>
+                  You can stop using RemoPDF at any time. To close your account, or to have your saved resumes deleted, write to{' '}
+                  <a href={`mailto:${CONTACT_EMAIL}`} className={LINK}>{CONTACT_EMAIL}</a> from the Gmail address of the account. Any Premium time left ends when the account is
+                  closed (see <Ref id="refunds" />).
                 </li>
               </Ul>
             </Sec>
@@ -589,15 +619,93 @@ export default function Terms() {
                 the foot of each page.
               </p>
               <p>
-                Premium removes that note and unlocks the AI-assisted features described in <Ref id="ai" />. The plan name, price and length of access are shown at checkout
-                before you pay, and Premium is tied to the account you buy it with.
+                Premium removes that note and unlocks the AI-assisted features described in <Ref id="ai" />. It is tied to the account you buy it with (see{' '}
+                <Ref id="accounts" />).
               </p>
-              <Sub>Payments</Sub>
+              <Sub>How Premium works</Sub>
+              <Ul>
+                <li>
+                  Premium is a <strong>one-off payment for a set period of access</strong>. The plan name, price, currency and length of access are shown at checkout before
+                  you pay.
+                </li>
+                <li>
+                  It <strong>does not renew automatically</strong>. RemoPDF never charges you again on its own: a new payment only happens when you go through checkout again.
+                  Because nothing renews, there is no subscription to cancel.
+                </li>
+                <li>
+                  Access starts when your payment is confirmed and runs for the period shown at checkout, whether or not you use it. The days you have left are shown in the
+                  resume builder.
+                </li>
+                <li>When the period ends, your account goes back to the free plan.</li>
+                <li>Premium is for your own use. You may not share it or resell it.</li>
+                <li>We may change prices, plans and features. A change does not affect access you have already paid for.</li>
+              </Ul>
+            </Sec>
+
+            <Sec id="payments">
               <p>
-                Payments are processed by Paystack. You enter your card or bank details in Paystack’s secure window, and they do not reach RemoPDF. Paystack’s own terms and
-                privacy policy apply to the payment. If a payment goes wrong or your access does not appear, contact us at{' '}
-                <a href={`mailto:${CONTACT_EMAIL}`} className={LINK}>{CONTACT_EMAIL}</a> with the email address of your account.
+                We accept payment <strong>only through Paystack</strong>. We do not accept payment by any other method. Anyone who asks you to pay RemoPDF by bank
+                transfer, cash, cryptocurrency, gift card, or by sending card details in an email or message is not acting for us. Please tell us at{' '}
+                <a href={`mailto:${CONTACT_EMAIL}`} className={LINK}>{CONTACT_EMAIL}</a>.
               </p>
+              <Ul>
+                <li>
+                  You pay in Paystack’s secure window. You enter your card or bank details with Paystack, and they do not reach RemoPDF. Paystack’s{' '}
+                  <Ext href="https://paystack.com/za/terms">terms</Ext> and privacy policy apply to the payment.
+                </li>
+                <li>
+                  The price and currency shown at checkout are what you pay. Your bank or card issuer may add its own fees or exchange rates, which we do not control.
+                </li>
+                <li>You must be 18 or older, or have a parent’s or guardian’s permission, to buy Premium.</li>
+                <li>
+                  Paystack confirms your payment. If you were charged but Premium does not appear after a short wait, write to{' '}
+                  <a href={`mailto:${CONTACT_EMAIL}`} className={LINK}>{CONTACT_EMAIL}</a> with the Gmail address of your account and the payment reference or receipt.
+                </li>
+                <li>
+                  Please contact us before disputing a charge with your bank, because we can usually put things right faster. If a payment is reversed or disputed,
+                  we may pause Premium on the account until it is settled.
+                </li>
+              </Ul>
+            </Sec>
+
+            <Sec id="refunds">
+              <p>
+                Premium starts as soon as your payment is confirmed, so it is a digital service that is delivered straight away. Because Premium does not renew, there is
+                nothing to cancel: you can simply stop using it, and it ends when the period you paid for ends.
+              </p>
+              <Sub>When we refund</Sub>
+              <p>
+                Once Premium has started, a payment is not refundable just because you changed your mind or did not use it. We will refund you in full when:
+              </p>
+              <Ul>
+                <li>you were charged but Premium was never activated on your account and we cannot fix it;</li>
+                <li>you were charged more than once for the same purchase (we refund the extra payments);</li>
+                <li>a payment was made on your account without your permission and you tell us promptly;</li>
+                <li>a fault on our side stops you from using Premium and we cannot fix it within a reasonable time;</li>
+                <li>
+                  we close your account for a reason other than a breach of these Terms, or we stop offering Premium, in which case we refund the unused part of the period
+                  you paid for; or
+                </li>
+                <li>the law gives you a right to a refund.</li>
+              </Ul>
+              <Sub>Your legal rights</Sub>
+              <p>
+                Nothing in these Terms takes away a right you have under consumer law, such as the Consumer Protection Act or the Electronic Communications and Transactions
+                Act, that cannot lawfully be excluded. By paying, you ask us to start Premium immediately. The seven-day cooling-off right in the Electronic Communications and
+                Transactions Act does not apply to a service that begins, with your consent, within those seven days.
+              </p>
+              <Sub>How to ask for a refund</Sub>
+              <Ul>
+                <li>
+                  Write to <a href={`mailto:${CONTACT_EMAIL}`} className={LINK}>{CONTACT_EMAIL}</a> with the Gmail address of your account, the payment reference or receipt
+                  from Paystack, and what went wrong.
+                </li>
+                <li>We will reply as soon as we can and tell you whether the refund is approved. We process approved refunds within 30 days of your request.</li>
+                <li>
+                  Approved refunds are paid directly into your bank account. How long your bank takes to show the money is outside our control.
+                </li>
+                <li>If we refund the payment that gave you Premium, that Premium access ends.</li>
+              </Ul>
             </Sec>
 
             <Sec id="services">
@@ -607,8 +715,8 @@ export default function Terms() {
                   <strong>Adobe PDF Services API:</strong> conversions between PDF and Word, Excel or PowerPoint are carried out by Adobe. Those files are sent to Adobe to be
                   converted, and Adobe’s <Ext href="https://www.adobe.com/privacy/policy.html">privacy policy</Ext> applies. Our other tools run on RemoPDF’s own servers.
                 </li>
-                <li><strong>Google:</strong> signing in with your Google account, and advertising (see <Ref id="ads" />).</li>
-                <li><strong>Paystack:</strong> payments for Premium.</li>
+                <li><strong>Google:</strong> signing in with your Google account.</li>
+                <li><strong>Paystack:</strong> payments for Premium (see <Ref id="payments" />).</li>
                 <li><strong>AI providers:</strong> the AI-assisted features, described in <Ref id="ai" />.</li>
                 <li><strong>O*NET:</strong> job title and skill suggestions use occupational data from O*NET.</li>
               </Ul>
@@ -635,22 +743,6 @@ export default function Terms() {
               <p>You are responsible for the accuracy and honesty of everything your resume says.</p>
             </Sec>
 
-            <Sec id="ads">
-              <p>
-                To keep many tools free, RemoPDF shows advertisements served by Google advertising services (Google AdSense and Google AdMob). We do not share your documents
-                with advertisers.
-              </p>
-              <Sub>What Google collects</Sub>
-              <p>
-                Google independently collects and processes device identifiers and similar data, such as advertising IDs, IP addresses, cookie data and device information, to
-                serve personalised or non-personalised ads, prevent fraud and measure ad performance. You can limit personalised ads in your Google ad settings or your browser.
-              </p>
-              <p>
-                We have no direct control over Google’s data practices. For details, see the{' '}
-                <Ext href="https://admob.google.com">Google AdMob website</Ext> and <Ext href="https://policies.google.com/privacy">Google’s Privacy &amp; Terms</Ext>.
-              </p>
-            </Sec>
-
             <Sec id="use-limits">
               <p>By using RemoPDF, you agree that:</p>
               <Ul>
@@ -673,7 +765,7 @@ export default function Terms() {
               <Sub>The Service</Sub>
               <p>
                 The RemoPDF name, logo, website design, interface layout, frontend code and graphics belong to RemoPDF. Adobe and related logos are registered trademarks of Adobe
-                Inc. Google and Google AdMob are registered trademarks of Google LLC.
+                Inc. Google is a registered trademark of Google LLC.
               </p>
               <p>
                 This site incorporates information from O*NET Web Services by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA). O*NET® is a

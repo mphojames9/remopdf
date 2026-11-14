@@ -112,7 +112,7 @@ const MODAL_CSS = `
  *               message in the dialog.
  *  - termsHref / privacyHref (optional): where the links under the button point.
  */
-export default function AuthModal({ open, onClose, onSignIn, termsHref = '/terms', privacyHref = '/privacy' }) {
+export default function AuthModal({ open, onClose, onSignIn, termsHref = '/terms-of-use', privacyHref = '/PrivacyPolicy' }) {
   // '' = idle, 'google' = the Google window is open, 'server' = Google said yes and our server is signing the person in.
   const [stage, setStage] = useState('');
   const [formError, setFormError] = useState('');
@@ -290,7 +290,7 @@ export default function AuthModal({ open, onClose, onSignIn, termsHref = '/terms
 
                 <p className="mt-6 text-center text-[11.5px] leading-relaxed text-slate-400">
                   By continuing, you agree to our{' '}
-                  <a href={termsHref} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline">Terms of Service</a>{' '}
+                  <a href={termsHref} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline">Terms of Use</a>{' '}
                   and{' '}
                   <a href={privacyHref} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline">Privacy Policy</a>.
                 </p>

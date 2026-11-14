@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getPaymentStatus, startPayment, verifyPayment } from '../../api/payments';
-import { PLAN_COPY } from './planCopy';
+import { PLAN_COPY, PLAN_ORDER } from './planCopy';
 
 /* -------------------------------------------------------------------------- */
 /*  Checkout screen (Paystack): full screen, light, white background.         */
@@ -25,6 +25,8 @@ import { PLAN_COPY } from './planCopy';
 /*    onPaid     () => void   payment confirmed (or already active)           */
 /*    onSignIn   () => void   the person needs an account first               */
 /*    doneLabel  text of the final button (default 'Continue to download')    */
+/*    initialPlan  'plus' | 'pro' | 'max' (optional) skips the plan picker    */
+/*               when that plan can be bought (home-page pricing modal)       */
 /* -------------------------------------------------------------------------- */
 
 const INLINE_SRC = 'https://js.paystack.co/v2/inline.js';
@@ -241,7 +243,7 @@ const PlanPicker = ({ plans, current, currentEnds, onChoose }) => {
 
 /* --------------------------------- dialog --------------------------------- */
 
-export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, doneLabel = 'Continue to download' }) {
+export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, doneLabel = 'Continue to download', initialPlan = null }) {
   // 'loading' | 'ready' | 'starting' | 'awaiting' | 'success' | 'error'
   const [phase, setPhase] = useState('loading');
   const [plans, setPlans] = useState([]); // the plans that can be bought, with their prices, from the server
@@ -267,9 +269,11 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
   // The latest callbacks, so effects below never restart just because the parent re-rendered.
   const onPaidRef = useRef(onPaid);
   const onCloseRef = useRef(onClose);
+  const initialPlanRef = useRef(initialPlan);
   useEffect(() => {
     onPaidRef.current = onPaid;
     onCloseRef.current = onClose;
+    initialPlanRef.current = initialPlan;
   });
 
   const signedIn = Boolean(user);
@@ -288,11 +292,16 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
           onPaidRef.current?.(); // nothing higher to buy
           return;
         }
-        setPlans(Array.isArray(status.plans) ? status.plans : []);
+        const available = Array.isArray(status.plans) ? status.plans : [];
+        setPlans(available);
         setChannels(Array.isArray(status.channels) ? status.channels : []);
         setCurrent({ tier: status.tier || 'free', expiresAt: status.expiresAt || null });
         setTestMode(Boolean(status.testMode));
         setPhase('ready');
+        // Coming from the pricing modal: go straight to the details step when that plan is higher than what the account has.
+        const wanted = initialPlanRef.current;
+        const haveRank = PLAN_ORDER.indexOf(status.premium ? status.tier : 'free');
+        if (wanted && available.some((p) => p.id === wanted) && PLAN_ORDER.indexOf(wanted) > haveRank) setChosenId(wanted);
       })
       .catch((err) => {
         if (cancelled) return;

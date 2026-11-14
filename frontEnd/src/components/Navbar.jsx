@@ -48,6 +48,7 @@ const TOOLS = [
 const LINKS = [
   { label: 'Templates', hash: 'templates' },
   { label: 'How it works', hash: 'how-it-works' },
+  { label: 'Pricing', hash: 'pricing' }, // opens the pricing modal on the home page (Home.jsx reads #pricing)
   { label: 'FAQ', hash: 'faq' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/Contact' },

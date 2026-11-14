@@ -1,15 +1,22 @@
 import { Fragment, Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import image1 from '../assets/image1.webp';
 import image2 from '../assets/image2.webp';
 import editorShot from '../assets/editor-preview.webp';
 import editorShotSmall from '../assets/editor-preview-800.webp';
 import brandLogo from '../assets/logo.webp';
 import Navbar from '../components/Navbar';
+import PricingModal from '../components/Pricing/PricingModal';
+import { getCurrentUser, getToken, loginWithGoogle } from '../api/auth';
+import { forgetAiPass } from '../api/payments';
 
 // TemplateShowcase pulls in every resume template, so it lives in its own chunk and is only
 // fetched when the Templates section is about to scroll into view.
 const TemplateShowcase = lazy(() => import('../components/TemplateShowcase'));
+
+// Sign-in (Firebase) and checkout (Paystack) are only needed once someone picks a paid plan, so they load then.
+const AuthModal = lazy(() => import('../components/Auth/AuthModal'));
+const PaymentModal = lazy(() => import('../components/Payment/PaymentModal'));
 
 function LazyOnView({ children, minHeight = 720, rootMargin = '1200px' }) {
   const ref = useRef(null);
@@ -606,6 +613,7 @@ const footerCols = [
       { label: 'PDF editor', to: PDF_EDITOR_ROUTE, kind: 'route' },
       { label: 'Resume builder', to: '/ResumeBuilder', kind: 'route' },
       { label: 'Templates', to: '/#templates', kind: 'route' },
+      { label: 'Pricing', to: '/#pricing', kind: 'route' },
     ],
   },
   {
@@ -905,6 +913,42 @@ function Faq() {
 
 export default function Home() {
   const navigate = useNavigate();
+  const { hash } = useLocation();
+
+  // Pricing lives at /#pricing, so the Navbar link, the footer link and a shared URL all open it, and Back closes it.
+  const pricingOpen = hash === '#pricing';
+  const closePricing = () => navigate({ pathname: '/', hash: '' }, { replace: true });
+
+  // Choosing a paid plan: sign in first when needed, then checkout with that plan already picked.
+  // flow = { plan, stage: 'auth' | 'pay' } while that is happening. flowRef mirrors it for callbacks that outlive a render.
+  const [user, setUser] = useState(() => (getToken() ? getCurrentUser() : null));
+  const [flow, setFlow] = useState(null);
+  const flowRef = useRef(null);
+  const startFlow = (next) => {
+    flowRef.current = next;
+    setFlow(next);
+  };
+  const backToPlans = () => {
+    startFlow(null);
+    navigate({ pathname: '/', hash: '#pricing' }, { replace: true });
+  };
+  const choosePlan = (plan) => {
+    startFlow({ plan, stage: user ? 'pay' : 'auth' });
+    closePricing();
+  };
+  const handleSignIn = async (idToken) => {
+    const signedIn = await loginWithGoogle(idToken);
+    setUser(signedIn);
+    startFlow({ plan: flowRef.current?.plan, stage: 'pay' });
+  };
+  // The sign-in dialog also calls this after a successful sign-in; by then the stage is already 'pay'.
+  const authClosed = () => {
+    if (flowRef.current?.stage === 'auth') backToPlans();
+  };
+  const handlePaid = () => {
+    forgetAiPass(); // the next AI request must carry the new plan, not a pass made for the old one
+    startFlow(null);
+  };
 
   return (
     <div
@@ -1315,6 +1359,24 @@ export default function Home() {
       </main>
 
       <SiteFooter />
+
+      <PricingModal open={pricingOpen && !flow} user={user} onClose={closePricing} onChoose={choosePlan} />
+      {flow && (
+        <Suspense fallback={null}>
+          <AuthModal open={flow.stage === 'auth'} onClose={authClosed} onSignIn={handleSignIn} />
+          {flow.stage === 'pay' && (
+            <PaymentModal
+              open
+              user={user}
+              initialPlan={flow.plan}
+              onClose={backToPlans}
+              onPaid={handlePaid}
+              onSignIn={() => startFlow({ plan: flow.plan, stage: 'auth' })}
+              doneLabel="Done"
+            />
+          )}
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -140,11 +140,13 @@ const TOOL_GROUPS = [
 
 const RESUME_FEATURES = [
   { name: `${TEMPLATE_COUNT} templates`, detail: 'Change the colour, reorder sections and hide the ones you do not need.' },
-  { name: 'Start from a resume you already have', detail: 'Upload a PDF or Word file and the form fills itself in, so you edit instead of retyping.' },
-  { name: 'Spelling and grammar checks', detail: 'A misspelled skill can be skipped by a scan, so mistakes are flagged as you type.' },
+  { name: 'Start from a resume you already have', detail: 'Upload a PDF or Word file and the form fills itself in, so you edit instead of retyping.', premium: true },
+  { name: 'Writing assistant', detail: 'A misspelled skill can be skipped by a scan. It fixes spelling and grammar and offers three versions of what you wrote, and one tap puts a version in your text.', premium: true },
+  { name: 'Write my summary', detail: 'It writes your professional summary from your own work history.', premium: true },
   { name: 'Job title and achievement ideas', detail: 'Suggestions come from O*NET, a large occupational database, so you are not staring at a blank box.' },
   { name: 'Saved resumes', detail: 'Sign in to keep your resumes in your account and pick them up on another device.' },
   { name: 'Job target', detail: 'Add the job you are applying for to see which skills it asks for and which your resume already shows, with a summary written to fit.', premium: true },
+  { name: 'ATS match score', detail: 'A live score out of 100 shows how well your resume matches the job’s requirements, with the keywords you already cover and the ones you are missing.', premium: true },
   { name: 'Cover letter', detail: 'Write a cover letter from the details already in your resume.', premium: true },
 ];
 
@@ -162,15 +164,15 @@ const KEPT_NOTES = [
   },
   {
     title: 'Your account, if you make one',
-    detail: 'Signing in lets you save resumes and manage Premium. Saved resumes are stored with your account.',
+    detail: 'You sign in with a Gmail account, so there is no password to remember. Signing in lets you save resumes and buy Premium. Saved resumes are stored with your account.',
   },
   {
     title: 'AI features',
     detail: 'The writing assistant, job target and cover letter tools send the text you are working on to an AI provider to produce suggestions. They run only when you use them.',
   },
   {
-    title: 'Ads',
-    detail: 'RemoPDF shows ads through Google AdSense to help cover server costs. AdSense uses cookies, and you can limit them in your browser or in your Google ad settings.',
+    title: 'Payments',
+    detail: 'Premium is paid for through Paystack. You enter your card or bank details with Paystack, so they never reach RemoPDF.',
   },
 ];
 
@@ -192,7 +194,7 @@ const FAQS = [
   },
   {
     q: 'Is RemoPDF free?',
-    a: 'You can build and download a resume for free. Free downloads carry a small “Created with RemoPDF” note at the foot of each page. Premium removes the note and adds the AI tools: job target, cover letter and writing analysis. Ads help cover our server costs.',
+    a: 'Yes. Every PDF tool is free, and so is the resume builder: you can build a resume and download it without paying. Free resume downloads carry a small “Created with RemoPDF” note at the foot of each page. Premium is optional. It removes the note and unlocks importing a resume, the writing assistant, the summary writer, job target with a live ATS score, and cover letter. Premium is a one-off payment for a set period of access. It never renews by itself, and you pay through Paystack.',
   },
   {
     q: 'Why is it called RemoPDF?',
@@ -204,7 +206,7 @@ const FAQS = [
   },
   {
     q: 'How do I report a problem or ask for a feature?',
-    a: 'Use the contact page. Tell us which tool you were using and what you expected to happen, and we will take it from there.',
+    a: 'Use the contact page or write to support@remopdf.site. Tell us which tool you were using and what you expected to happen, and we will take it from there.',
   },
 ];
 
