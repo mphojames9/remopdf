@@ -20,14 +20,14 @@ const ZipTool = React.lazy(() => import('./pages/ZipTool'));
 
 /* ==========================================================================
    PREMIUM PAGE LOADER
-   Shown while a page's code loads. It also wakes the backend and tells the
-   truth about it: the status line says "waking up" only while the server has
-   not answered yet, and switches to "ready" the moment it has.
+   Shown while a page's code loads. It also contacts the backend and tells the
+   truth about it: the status line says "loading server data" only while the
+   server has not answered yet, and switches to "ready" the moment it has.
    ========================================================================== */
 const LOADER_STAGES = [
   { at: 0, text: 'Loading your tools' },
-  { at: 3, text: 'Waking up the server' },
-  { at: 9, text: 'Still warming up, almost there' },
+  { at: 3, text: 'Loading server data' },
+  { at: 9, text: 'Still loading, almost there' },
   { at: 22, text: 'Thanks for waiting, nearly ready' },
 ];
 
@@ -54,10 +54,6 @@ const LOADER_CSS = `
   @keyframes pl-shine { 0%, 50% { background-position: 120% 0; } 82%, 100% { background-position: -20% 0; } }
   @keyframes pl-slide { from { transform: translateX(-100%); } to { transform: translateX(270%); } }
   @keyframes pl-shimmer { from { background-position: 100% 0; } to { background-position: 0% 0; } }
-  @keyframes pl-ping { 0% { box-shadow: 0 0 0 0 rgba(224, 20, 20, .5); } 80%, 100% { box-shadow: 0 0 0 8px rgba(224, 20, 20, 0); } }
-  @keyframes pl-ok { 0% { transform: scale(.4); } 60% { transform: scale(1.5); } 100% { transform: scale(1); } }
-  @keyframes pl-drift-a { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(70px, 40px) scale(1.18); } }
-  @keyframes pl-drift-b { 0%, 100% { transform: translate(0, 0) scale(1.1); } 50% { transform: translate(-80px, -30px) scale(.92); } }
 
   .pl-root {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -66,10 +62,6 @@ const LOADER_CSS = `
     animation: pl-appear .5s ease-out .15s backwards; /* a quick page load never flashes the loader */
   }
   .pl-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-
-  .pl-blob { position: absolute; left: 50%; top: 50%; width: 340px; height: 340px; border-radius: 9999px; filter: blur(64px); pointer-events: none; }
-  .pl-blob-a { margin: -250px 0 0 -330px; background: #e01414; opacity: .14; animation: pl-drift-a 9s ease-in-out infinite; }
-  .pl-blob-b { margin: -90px 0 0 -10px; background: #1d3f8f; opacity: .15; animation: pl-drift-b 11s ease-in-out infinite; }
 
   .pl-topbar { position: fixed; inset: 0 0 auto 0; z-index: 5; height: 3px; overflow: hidden; background: rgba(224, 20, 20, .12); }
   .pl-topbar::before {
@@ -108,8 +100,6 @@ const LOADER_CSS = `
   }
 
   .pl-statusline { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 9px; height: 22px; margin-top: 14px; font-size: 13.5px; font-weight: 500; animation: pl-in .6s cubic-bezier(.22, 1, .36, 1) .35s backwards; }
-  .pl-dot { flex: none; width: 7px; height: 7px; border-radius: 9999px; background: #e01414; animation: pl-ping 1.6s ease-out infinite; }
-  .pl-dot-ok { background: #10b981; animation: pl-ok .5s cubic-bezier(.22, 1, .36, 1); }
   .pl-status {
     display: inline-block; color: #64748b;
     background: linear-gradient(100deg, #64748b 35%, #e01414 50%, #64748b 65%) 100% 0 / 250% 100% no-repeat;
@@ -128,8 +118,8 @@ const LOADER_CSS = `
   .pl-note-icon { display: grid; flex: none; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: #fef2f2; color: #dc2626; font-size: 12px; }
 
   @media (prefers-reduced-motion: reduce) {
-    .pl-root, .pl-blob, .pl-logo, .pl-logo-live, .pl-shine, .pl-topbar::before, .pl-track::before,
-    .pl-statusline, .pl-dot, .pl-dot-ok, .pl-status, .pl-note { animation: none; }
+    .pl-root, .pl-logo, .pl-logo-live, .pl-shine, .pl-topbar::before, .pl-track::before,
+    .pl-statusline, .pl-status, .pl-note { animation: none; }
     .pl-logo-ghost, .pl-beam { display: none; }
     .pl-topbar::before, .pl-track::before { width: 100%; transform: none; opacity: .5; }
     .pl-status { background: none; -webkit-text-fill-color: currentColor; }
@@ -180,8 +170,6 @@ const PageLoader = () => {
     <div className="pl-root" aria-busy="true">
       <style>{LOADER_CSS}</style>
       <div className="pl-topbar" aria-hidden="true" />
-      <span className="pl-blob pl-blob-a" aria-hidden="true" />
-      <span className="pl-blob pl-blob-b" aria-hidden="true" />
       <h1 className="pl-sr">Getting RemoPDF ready</h1>
 
       {/* The RemoPDF wordmark, scanned in over and over while the page loads. */}
@@ -194,18 +182,17 @@ const PageLoader = () => {
       <div className="pl-track" aria-hidden="true" />
 
       <p role="status" aria-live="polite" className="pl-statusline">
-        <span className={`pl-dot ${serverReady ? 'pl-dot-ok' : ''}`} aria-hidden="true" />
         <span key={statusText} className={`pl-status ${serverReady ? 'pl-status-ok' : ''}`}>{statusText}</span>
       </p>
 
-      {/* Appears after ~9s, and only while the server is still asleep, so a slow first visit is explained instead of looking broken. */}
+      {/* Appears after ~9s, and only while the server has not answered yet, so a slow first visit is explained instead of looking broken. */}
       <div className="pl-notewrap">
         {!serverReady && stage >= 2 && (
           <p className="pl-note">
             <span className="pl-note-icon" aria-hidden="true">
               <i className="fa-solid fa-hourglass-half"></i>
             </span>
-            <span>Our server naps when it's quiet, so a first visit can take up to a minute. Once it's awake, everything is fast.</span>
+            <span>We're loading your server data. A first visit can take up to a minute; after that, everything is fast.</span>
           </p>
         )}
       </div>

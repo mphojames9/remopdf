@@ -57,11 +57,12 @@ import {
  * scan of it (utils/letterSignature.js). It is kept with the letter on this device and drawn above the typed name,
  * in the preview and in the PDF. Without one the letter shows the typed name, as before.
  *
- * Look and layout (2026 refresh): a flat glass top bar (back arrow, logo, Download), a soft aurora background, the
- * form as a stack of dropdown step cards (each one shows a one-line summary while closed), the preview on a dotted
- * "stage" with a paper-style page, and on small screens a floating Edit / Preview switcher at the bottom. The two
- * main containers (form and preview) run edge to edge with square corners. Only the presentation changed; the
- * behaviour is the same.
+ * Look and layout: a flat glass top bar (back arrow, logo, Download), and a form panel that shows one section at a
+ * time from four tabs: Job (the advert or the resume's job target, then position, company, address and date),
+ * Letter (tone and the text), Design (layout and colour) and Signature. The preview sits on a dotted "stage" with a
+ * paper-style page, and on small screens a floating Edit / Preview switcher sits at the bottom. The two main
+ * containers (form and preview) run edge to edge with square corners. Only the presentation changed; the behaviour
+ * is the same.
  *
  * Props
  *  - resumeData:   the resume being built (same object the builder holds). Its jobTarget (position, company, address,
@@ -80,8 +81,6 @@ import {
 // false: opening the page asks for the job link first and writes nothing until there is a link (or the person
 // chooses "Write with AI"). true: the AI writes a general letter the moment the page opens, link or no link.
 const AUTO_WRITE_WITHOUT_JOB = false;
-
-const REQ_PREVIEW = 4; // how many requirements the list shows before "Show more"
 
 const PREVIEW_FONT = "Helvetica, Arial, 'Liberation Sans', sans-serif";
 const ASCENT = 0.8465; // where Arial/Helvetica put the baseline inside a line box of height = font size
@@ -225,68 +224,70 @@ const aiButtonClass =
 const ghostPillClass =
   'inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 disabled:opacity-50 sm:h-9 sm:px-3';
 
+// A small coral text link, for a quiet second way of doing something (e.g. "Paste the text instead").
+const textLinkClass =
+  'rounded text-[12px] font-medium text-[#a64a30] underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60';
+
 /* ------------------------------------------------------------------ form pieces */
 
 const Field = ({ id, label, optional = false, note = '', children }) => (
   <div className="min-w-0">
-    <label htmlFor={id} className="mb-1 flex items-baseline justify-between gap-2 text-[11.5px] font-medium text-slate-600 sm:mb-1.5 sm:text-[12px]">
-      <span>{label}</span>
-      {optional && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 sm:px-2 sm:text-[10.5px]">Optional</span>}
-      {!optional && note && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 sm:px-2 sm:text-[10.5px]">{note}</span>}
+    <label htmlFor={id} className="mb-1.5 flex items-baseline gap-1.5 text-[12.5px] font-medium text-slate-700">
+      {label}
+      {optional && <span className="font-normal text-slate-400">(optional)</span>}
+      {!optional && note && <span className="ml-auto text-[11.5px] font-medium text-amber-700">{note}</span>}
     </label>
     {children}
   </div>
 );
 
-// One dropdown step of the form. The header always shows the step number, the title and a one-line summary, so a
-// closed step still says where it stands. The body stays in the page when closed (it is only hidden), so nothing
-// the person typed is lost.
-const Accordion = ({ id, step, title, summary, open, onToggle, busy = false, alert = false, children }) => (
-  <section className="bg-white">
-    <h2 className="m-0">
-      <button
-        type="button"
-        id={`${id}-trigger`}
-        aria-expanded={open}
-        aria-controls={`${id}-panel`}
-        onClick={onToggle}
-        className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9856b]/60 sm:px-5 sm:py-3.5"
-      >
-        <span
-          className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold transition-colors motion-reduce:transition-none sm:h-7 sm:w-7 sm:text-[12px] ${
-            open ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
-          }`}
-        >
-          {busy ? <IconSpinner className="h-3.5 w-3.5" /> : step}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[14px] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[15px]">{title}</span>
-          {summary ? <span className="mt-0.5 block truncate text-[11.5px] leading-snug text-slate-500 sm:text-[12px]">{summary}</span> : null}
-        </span>
-        {alert && <span role="img" aria-label="Needs attention" className="h-2 w-2 shrink-0 rounded-full bg-amber-500 ring-4 ring-amber-100" />}
-        <IconChevron className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-300 motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} />
-      </button>
-    </h2>
-    <div
-      id={`${id}-panel`}
-      role="region"
-      aria-labelledby={`${id}-trigger`}
-      className={`grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none ${open ? 'visible grid-rows-[1fr]' : 'invisible grid-rows-[0fr]'}`}
-    >
-      <div className="min-h-0 overflow-hidden">
-        <div className="px-3.5 pb-4 pt-1 sm:px-5 sm:pb-5">{children}</div>
-      </div>
-    </div>
-  </section>
-);
+// The tabs at the top of the form panel. Each one can carry a small status: a spinner while something is being done
+// there, or an amber dot when it needs attention. Arrow keys, Home and End move between them.
+const TabBar = ({ tabs, value, onChange }) => {
+  const onKeyDown = (e) => {
+    const i = tabs.findIndex((t) => t.id === value);
+    let next = -1;
+    if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = tabs.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    onChange(tabs[next].id);
+    document.getElementById(`cl-tab-${tabs[next].id}`)?.focus();
+  };
 
-// A labelled card that holds a few related steps, so the six steps read as three groups instead of six loose boxes.
-const Group = ({ label, children }) => (
-  <div>
-    <p className="mb-1.5 px-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400 sm:mb-2 sm:text-[11px]">{label}</p>
-    <div className="divide-y divide-slate-200/70 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:rounded-2xl">{children}</div>
-  </div>
-);
+  return (
+    <div role="tablist" aria-label="Cover letter sections" onKeyDown={onKeyDown} className="flex shrink-0 border-b border-slate-200 px-2 sm:px-4">
+      {tabs.map((t) => {
+        const on = t.id === value;
+        return (
+          <button
+            key={t.id}
+            id={`cl-tab-${t.id}`}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            aria-controls={`cl-panel-${t.id}`}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onChange(t.id)}
+            className={`relative inline-flex h-12 flex-1 items-center justify-center gap-1.5 px-2 text-[13.5px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none sm:flex-none sm:px-4 ${
+              on ? 'text-slate-900' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            {t.label}
+            {t.busy ? (
+              <IconSpinner className="h-3 w-3 text-slate-400" />
+            ) : t.alert ? (
+              <span role="img" aria-label="Needs attention" className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            ) : null}
+            <span aria-hidden="true" className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full transition-colors motion-reduce:transition-none ${on ? 'bg-[#d9856b]' : 'bg-transparent'}`} />
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 const NOTICE_TONES = {
   info: { box: 'border-slate-200/80 bg-slate-50 text-slate-600', icon: 'bg-white text-slate-400 ring-1 ring-slate-200' },
@@ -418,7 +419,9 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   // already know the position, company and requirements.
   const [letter, setLetter] = useState(() => syncWithTarget(loadLetter(storageKey), resumeData?.jobTarget));
   const [view, setView] = useState('edit'); // small screens show one side at a time
-  const [open, setOpen] = useState({ job: true, who: false, tone: false, design: false, letter: true, sign: false }); // which dropdown steps are open
+  // Which section the form shows. A letter that already has a position or text opens on the letter; a new one on the job.
+  const [tab, setTab] = useState(() => (letter.aiBody || letter.bodyEdited || String(letter.jobTitle || '').trim() ? 'letter' : 'job')); // job | letter | design | signature
+  const [advertOpen, setAdvertOpen] = useState(false); // the advert reader, when the job was imported from the resume
   const [signing, setSigning] = useState(false); // the "Draw your signature" pad is open
   const signingRef = useRef(false); // the same, readable inside the Escape listener
   signingRef.current = signing;
@@ -561,9 +564,6 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
     setPosting({ state: 'idle', code: '', message: '', found: null, ...next });
   };
 
-  const toggleSection = (key) => setOpen((prev) => ({ ...prev, [key]: !prev[key] }));
-  const openSection = (key) => setOpen((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
-
   // Asks the AI for the letter. The reply replaces whatever is shown (callers ask first when the person has edits).
   // details: position, company and requirements to use instead of the saved ones (an advert was just read, and the
   // page has not drawn the new values yet).
@@ -576,8 +576,8 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
     // description often has no title), ask for it instead of writing "the role you are offering".
     if ((target.requirements || []).length > 0 && !String(target.jobTitle || '').trim()) {
       setAiStatus('error', 'position');
-      // The position field lives in a dropdown step: open it first, then focus the field once it is showing.
-      openSection('who');
+      // The position field is on the Job tab: show it first, then focus the field once it is showing.
+      setTab('job');
       if (typeof window !== 'undefined') window.setTimeout(() => document.getElementById('cl-job')?.focus(), 80);
       return;
     }
@@ -661,7 +661,6 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
         state: 'done',
         found: { title: Boolean(found.jobTitle), company: Boolean(found.company), address: Boolean(found.address), count: found.requirements.length, source: found.source },
       });
-      openSection('who'); // the details that were just filled in are in the next step: show them
       if (!current.bodyEdited) generate({ fresh: true, details });
     } catch (err) {
       if (!alive.current) return;
@@ -694,7 +693,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
     if (!targetJob) return;
     setLetter((prev) => applyTarget(prev, resumeData.jobTarget));
     setPostingStatus({ state: 'idle' });
-    openSection('who');
+    setAdvertOpen(false);
     if (!letterRef.current.bodyEdited && premium === true && signedIn !== false) generate({ fresh: true, details: targetJob });
   };
 
@@ -709,6 +708,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
     setLetter((prev) => ({ ...prev, jobUrl: '', requirements: [], duties: [], imported: null }));
     setPasteText('');
     setPasteOpen(false);
+    setAdvertOpen(false);
     setPostingStatus({ state: 'idle' });
   };
 
@@ -797,22 +797,9 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
   const pageCount = layout ? layout.pages.length : 0;
   const positionNeeded = letter.requirements.length > 0 && !letter.jobTitle.trim();
 
-  // The one-line summaries shown on the dropdown headers while a step is closed (and open).
   const reqCount = letter.requirements.length;
-  const jobSummary = postingBusy
-    ? 'Reading the advert…'
-    : reqCount > 0
-      ? `${reqCount} ${reqCount === 1 ? 'requirement' : 'requirements'} ${letter.imported ? 'from your resume' : 'found'}`
-      : letter.jobUrl.trim()
-        ? 'Link added'
-        : 'Paste a link to the advert';
-  const whoSummary = [letter.jobTitle.trim(), letter.company.trim()].filter(Boolean).join(' · ') || 'Position, company, address';
-  const toneSummary = (TONES.find((t) => t.id === letter.tone) || {}).label || '';
-  const colorLabel = (LETTER_COLORS.find((c) => c.id === letter.color) || {}).label || 'Custom colour';
-  const designSummary = `${(TEMPLATES.find((t) => t.id === letter.template) || TEMPLATES[0]).label} · ${colorLabel}`;
-  const letterStatus = writing ? 'Writing…' : letter.bodyEdited ? 'Your own wording' : letter.aiBody ? 'Written by AI' : 'Starter draft';
-  const letterSummary = `${letterStatus} · ${wordCount} ${wordCount === 1 ? 'word' : 'words'}`;
-  const signatureSummary = letter.signature ? (letter.signature.source === 'uploaded' ? 'Uploaded signature added' : 'Your signature is added') : 'Optional · draw or upload';
+  const positionError = ai.state === 'error' && ai.code === 'position';
+  const colorLabel = (LETTER_COLORS.find((c) => c.id === letter.color) || {}).label || 'Custom';
 
   const aiErrorText =
     {
@@ -821,7 +808,7 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
       timeout: 'The AI took too long to answer. A starter draft is shown below.',
       offline: 'Could not reach the AI service. Check your connection. A starter draft is shown below.',
       empty: 'Add your experience, skills or education to the resume and the AI can write the letter from them.',
-      position: 'Type the position you are applying for under “Who is it for” (for example CRM Lead). The letter names it in its first sentence.',
+      position: 'Type the position you are applying for (for example CRM Lead). The letter names it in its first sentence.',
     }[ai.code] || 'The AI writer is unavailable right now. A starter draft is shown below.';
 
   return (
@@ -882,36 +869,33 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
 
       {/* The two main containers run edge to edge with square corners. */}
       <main className="relative z-10 flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* Form panel */}
+        {/* Form panel: one section at a time, picked from the tabs at the top */}
         <aside
           aria-label="Cover letter details"
-          className={`${view === 'edit' ? 'cl-pane-left flex' : 'hidden'} min-h-0 flex-1 flex-col bg-white/70 backdrop-blur-xl lg:flex lg:w-[28rem] lg:flex-none lg:border-r lg:border-slate-200/80 xl:w-[30rem]`}
+          className={`${view === 'edit' ? 'cl-pane-left flex' : 'hidden'} min-h-0 flex-1 flex-col bg-white lg:flex lg:w-[28rem] lg:flex-none lg:border-r lg:border-slate-200/80 xl:w-[30rem]`}
         >
-          <div className="pro-scroll flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 pb-20 sm:space-y-5 sm:p-4 sm:pb-24 lg:pb-6">
-            {fullName && usingAccountName && (
-              <Notice role="status" tone="info" icon={<IconInfo className="h-3.5 w-3.5" />}>
-                {`The letter uses the name on your account, ${fullName}.`}
-              </Notice>
-            )}
+          <TabBar
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              { id: 'job', label: 'Job', alert: positionNeeded, busy: postingBusy },
+              { id: 'letter', label: 'Letter', busy: writing },
+              { id: 'design', label: 'Design' },
+              { id: 'signature', label: 'Signature', busy: signatureBusy },
+            ]}
+          />
 
-            {/* The job: where it comes from, and who the letter goes to */}
-            <Group label="The job">
-              {/* 1 · Job advert */}
-              <Accordion id="cl-sec-job" step="1" title="Job advert" summary={jobSummary} open={open.job} onToggle={() => toggleSection('job')} busy={postingBusy}>
-                <div className="space-y-4">
-                  {letter.imported && (
-                    <div className="flex items-start gap-3 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3">
-                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
-                        <IconCheck className="h-3.5 w-3.5" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-emerald-700">Imported from your resume</p>
-                        <p className="mt-0.5 break-words text-[13px] font-semibold leading-snug text-slate-900">{letter.imported.jobTitle || 'Your target job'}</p>
-                        {letter.imported.company ? <p className="break-words text-[12px] leading-snug text-slate-600">{letter.imported.company}</p> : null}
-                        <p className="mt-1 text-[11.5px] leading-snug text-slate-500">Change the job target on your resume and the letter follows.</p>
-                      </div>
-                    </div>
-                  )}
+          <div
+            key={tab}
+            role="tabpanel"
+            id={`cl-panel-${tab}`}
+            aria-labelledby={`cl-tab-${tab}`}
+            className="pro-scroll flex-1 overflow-y-auto overscroll-contain px-4 pb-24 pt-5 sm:px-6 sm:pt-6 lg:pb-8"
+          >
+            {/* ------------------------------------------------ Job: where it comes from, and who it is for */}
+            {tab === 'job' && (
+              <div className="space-y-7">
+                <section aria-labelledby="cl-advert-title" className="space-y-3">
                   {offerTarget && (
                     <Notice
                       tone="info"
@@ -922,92 +906,103 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
                         </button>
                       }
                     >
-                      {`Use the job target on your resume: ${[targetJob.jobTitle, targetJob.company].filter(Boolean).join(' · ') || 'a target job'}?`}
+                      {`Use the job target on your resume: ${[targetJob.jobTitle, targetJob.company].filter(Boolean).join(' at ') || 'a target job'}?`}
                     </Notice>
                   )}
 
-                  {/* Read another advert: by link, or by pasting its text */}
-                  <div>
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="text-[12px] font-semibold text-slate-700 sm:text-[12.5px]">{letter.imported ? 'Use a different advert' : 'Read the advert'}</span>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-400">Optional</span>
+                  {letter.imported && !advertOpen ? (
+                    <div
+                      title="Change the job target on your resume and the letter follows."
+                      className="flex items-center gap-3 rounded-xl bg-emerald-50/70 py-2.5 pl-3 pr-1.5 ring-1 ring-emerald-200/70"
+                    >
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+                        <IconCheck className="h-3.5 w-3.5" />
+                      </span>
+                      <div id="cl-advert-title" className="min-w-0 flex-1 leading-snug">
+                        <p className="truncate text-[13px] font-semibold text-slate-900">
+                          {`${letter.imported.jobTitle || 'Your target job'}${letter.imported.company ? ` at ${letter.imported.company}` : ''}`}
+                        </p>
+                        <p className="text-[12px] text-slate-500">From your resume’s job target</p>
+                      </div>
+                      <button type="button" onClick={() => setAdvertOpen(true)} className={ghostPillClass}>
+                        Use an advert
+                      </button>
                     </div>
-                    <div className="mb-2.5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1" role="radiogroup" aria-label="How to give the advert">
-                      {[
-                        { id: 'link', label: 'Link', on: !pasteOpen },
-                        { id: 'text', label: 'Paste text', on: pasteOpen },
-                      ].map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          role="radio"
-                          aria-checked={m.on}
-                          onClick={() => setPasteOpen(m.id === 'text')}
-                          className={`h-8 rounded-lg text-[12.5px] font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none ${
-                            m.on ? 'bg-white text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.1),0_0_0_1px_rgba(15,23,42,0.04)]' : 'text-slate-500 hover:text-slate-800'
-                          }`}
-                        >
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {!pasteOpen ? (
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <div className="relative min-w-0 flex-1">
-                          <label htmlFor="cl-link" className="sr-only">
-                            Link to the job you are applying for
-                          </label>
-                          <IconLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 sm:left-3.5 sm:h-4 sm:w-4" />
-                          <input
-                            id="cl-link"
-                            type="text"
-                            inputMode="url"
-                            value={letter.jobUrl}
-                            onChange={setJobUrl}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                readPosting();
-                              }
-                            }}
-                            placeholder="Paste the link to the advert"
-                            className={`${inputClass} pl-9 sm:pl-10`}
-                            autoComplete="off"
-                            autoCapitalize="none"
-                            spellCheck={false}
-                          />
+                  ) : (
+                    <>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h3 id="cl-advert-title" className="text-[13px] font-semibold text-slate-900">
+                          Job advert
+                        </h3>
+                        <div className="flex items-center gap-3">
+                          <button type="button" onClick={() => setPasteOpen((v) => !v)} className={textLinkClass}>
+                            {pasteOpen ? 'Use a link instead' : 'Paste the text instead'}
+                          </button>
+                          {letter.imported && (
+                            <button type="button" onClick={() => setAdvertOpen(false)} className="rounded text-[12px] font-medium text-slate-500 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60">
+                              Cancel
+                            </button>
+                          )}
                         </div>
-                        <button type="button" onClick={readPosting} disabled={postingBusy} className={`${navyButtonClass} w-full sm:w-auto`}>
-                          {postingBusy ? <IconSpinner className="h-4 w-4" /> : null}
-                          {postingBusy ? 'Reading…' : 'Read advert'}
-                        </button>
                       </div>
-                    ) : (
-                      <div id="cl-paste-box" className="space-y-2">
-                        <label htmlFor="cl-paste" className="sr-only">
-                          Job description
-                        </label>
-                        <textarea
-                          id="cl-paste"
-                          value={pasteText}
-                          onChange={(e) => setPasteText(e.target.value.slice(0, 20000))}
-                          rows={5}
-                          placeholder="Paste the whole advert here, including the requirements."
-                          className={textareaClass}
-                        />
-                        <button type="button" onClick={readPosting} disabled={postingBusy} className={`${navyButtonClass} w-full`}>
-                          {postingBusy ? <IconSpinner className="h-4 w-4" /> : null}
-                          {postingBusy ? 'Reading…' : 'Read advert'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+
+                      {!pasteOpen ? (
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <div className="relative min-w-0 flex-1">
+                            <label htmlFor="cl-link" className="sr-only">
+                              Link to the job you are applying for
+                            </label>
+                            <IconLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 sm:left-3.5 sm:h-4 sm:w-4" />
+                            <input
+                              id="cl-link"
+                              type="text"
+                              inputMode="url"
+                              value={letter.jobUrl}
+                              onChange={setJobUrl}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  readPosting();
+                                }
+                              }}
+                              placeholder="Paste the link to the advert"
+                              className={`${inputClass} pl-9 sm:pl-10`}
+                              autoComplete="off"
+                              autoCapitalize="none"
+                              spellCheck={false}
+                            />
+                          </div>
+                          <button type="button" onClick={readPosting} disabled={postingBusy} className={`${navyButtonClass} w-full sm:w-auto`}>
+                            {postingBusy ? <IconSpinner className="h-4 w-4" /> : null}
+                            {postingBusy ? 'Reading…' : 'Read advert'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div id="cl-paste-box" className="space-y-2">
+                          <label htmlFor="cl-paste" className="sr-only">
+                            Job description
+                          </label>
+                          <textarea
+                            id="cl-paste"
+                            value={pasteText}
+                            onChange={(e) => setPasteText(e.target.value.slice(0, 20000))}
+                            rows={5}
+                            placeholder="Paste the whole advert here, including the requirements."
+                            className={textareaClass}
+                          />
+                          <button type="button" onClick={readPosting} disabled={postingBusy} className={`${navyButtonClass} w-full`}>
+                            {postingBusy ? <IconSpinner className="h-4 w-4" /> : null}
+                            {postingBusy ? 'Reading…' : 'Read advert'}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
 
                   <div role="status" aria-live="polite" className="space-y-2 empty:hidden">
                     {postingBusy && (
                       <Notice tone="busy" icon={<IconSpinner className="h-3.5 w-3.5" />}>
-                        Reading the advert. The first one can take up to a minute while the server wakes up.
+                        Reading the advert. The first one can take up to a minute.
                       </Notice>
                     )}
 
@@ -1019,382 +1014,397 @@ export default function CoverLetterBuilder({ resumeData, accountFirstName = '', 
 
                     {!postingBusy && posting.state === 'done' && posting.found && (
                       <Notice tone="ok" icon={<IconCheck className="h-3.5 w-3.5" />}>
-                        {`Found ${posting.found.count} ${posting.found.count === 1 ? 'requirement' : 'requirements'}${posting.found.source === 'text' ? ' in the text you pasted' : ''}`}
+                        {`Found ${posting.found.count} ${posting.found.count === 1 ? 'requirement' : 'requirements'}${posting.found.source === 'text' ? ' in the text you pasted' : ''}.`}
                         {(() => {
                           const filled = [posting.found.title && 'position', posting.found.company && 'company', posting.found.address && 'address'].filter(Boolean);
-                          return filled.length > 0 ? `, and filled in the ${joinList(filled)} in the next step. Check them before you send the letter.` : '. Check the details in the next step.';
+                          return filled.length > 0 ? ` Filled in the ${joinList(filled)} below, so check ${filled.length === 1 ? 'it' : 'them'}.` : '';
                         })()}
-                        {!posting.found.title && ' The advert does not state the position, so type it in the next step: the letter names it in its first sentence.'}
-                        {!posting.found.address && ' The advert gives no address, so add one there if you want it on the letter.'}
+                        {!posting.found.title && ' The advert does not state the position, so type it below.'}
                       </Notice>
                     )}
                   </div>
+                </section>
 
-                  {letter.requirements.length > 0 && (
-                    <div>
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <h3 className="flex items-center gap-2 text-[12px] font-semibold text-slate-800 sm:text-[12.5px]">
-                          The letter will answer these
-                          <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10.5px] font-semibold text-white">{letter.requirements.length}</span>
-                        </h3>
-                        <button type="button" onClick={clearPosting} className={ghostPillClass}>
-                          Clear
-                        </button>
-                      </div>
-                      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white">
-                        <ul className="divide-y divide-slate-100">
-                          {(reqExpanded ? letter.requirements : letter.requirements.slice(0, REQ_PREVIEW)).map((item, i) => (
-                            <li key={`${i}-${item}`} className="flex items-start gap-2.5 py-2 pl-3 pr-1.5 text-[12.5px] leading-snug text-slate-700">
-                              <IconCheck className="mt-[3px] h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                              <span className="min-w-0 flex-1 break-words">{item}</span>
-                              <button
-                                type="button"
-                                onClick={() => removeRequirement(i)}
-                                aria-label={`Remove: ${item}`}
-                                className="-my-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
-                              >
-                                <IconClose className="h-3.5 w-3.5" />
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                        {letter.requirements.length > REQ_PREVIEW && (
-                          <button
-                            type="button"
-                            onClick={() => setReqExpanded((v) => !v)}
-                            aria-expanded={reqExpanded}
-                            className="flex w-full items-center justify-center gap-1.5 border-t border-slate-100 bg-slate-50/70 py-2 text-[12px] font-semibold text-[#a64a30] transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9856b]/60"
-                          >
-                            {reqExpanded ? 'Show fewer' : `Show ${letter.requirements.length - REQ_PREVIEW} more`}
-                            <IconChevron className={`h-3.5 w-3.5 transition-transform motion-reduce:transition-none ${reqExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-                        )}
-                      </div>
+                <section aria-labelledby="cl-details-title" className="space-y-3.5">
+                  <h3 id="cl-details-title" className="text-[13px] font-semibold text-slate-900">
+                    Details
+                  </h3>
+                  <div className="grid gap-3.5 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <Field id="cl-job" label="Position" note={positionNeeded && !positionError ? 'Needed for the letter' : ''}>
+                        <input id="cl-job" type="text" value={letter.jobTitle} onChange={setField('jobTitle')} placeholder="e.g. Front-End Developer" className={inputClass} autoComplete="off" />
+                      </Field>
                     </div>
-                  )}
-                </div>
-              </Accordion>
-
-              {/* 2 · Who is it for */}
-              <Accordion id="cl-sec-who" step="2" title="Who is it for" summary={whoSummary} open={open.who} onToggle={() => toggleSection('who')} alert={positionNeeded}>
-                <div className="grid gap-3 sm:grid-cols-2 sm:gap-x-3 lg:grid-cols-1 xl:grid-cols-2">
-                  <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-                    <Field id="cl-job" label="Position you are applying for" note={positionNeeded ? 'Needed for the letter' : ''}>
-                      <input id="cl-job" type="text" value={letter.jobTitle} onChange={setField('jobTitle')} placeholder="e.g. Front-End Developer" className={inputClass} autoComplete="off" />
+                    <Field id="cl-company" label="Company">
+                      <input id="cl-company" type="text" value={letter.company} onChange={setField('company')} placeholder="e.g. Takealot" className={inputClass} autoComplete="off" />
                     </Field>
-                  </div>
-                  <Field id="cl-company" label="Company">
-                    <input id="cl-company" type="text" value={letter.company} onChange={setField('company')} placeholder="e.g. Takealot" className={inputClass} autoComplete="off" />
-                  </Field>
-                  <Field id="cl-manager" label="Hiring manager" optional>
-                    <input id="cl-manager" type="text" value={letter.hiringManager} onChange={setField('hiringManager')} placeholder="e.g. Ms Dlamini" className={inputClass} autoComplete="off" />
-                  </Field>
-                  <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-                    <Field id="cl-address" label="Company address" optional>
-                      <input id="cl-address" type="text" value={letter.companyAddress} onChange={setField('companyAddress')} placeholder="e.g. 12 Rivonia Road, Sandton" className={inputClass} autoComplete="off" />
+                    <Field id="cl-manager" label="Hiring manager" optional>
+                      <input id="cl-manager" type="text" value={letter.hiringManager} onChange={setField('hiringManager')} placeholder="e.g. Ms Dlamini" className={inputClass} autoComplete="off" />
                     </Field>
-                  </div>
-                  <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+                    <div className="sm:col-span-2">
+                      <Field id="cl-address" label="Company address" optional>
+                        <input id="cl-address" type="text" value={letter.companyAddress} onChange={setField('companyAddress')} placeholder="e.g. 12 Rivonia Road, Sandton" className={inputClass} autoComplete="off" />
+                      </Field>
+                    </div>
                     <Field id="cl-date" label="Date">
                       <input id="cl-date" type="date" value={letter.dateOverride || todayIso()} onChange={setDate} className={inputClass} />
                     </Field>
                   </div>
-                </div>
-              </Accordion>
-            </Group>
 
-            {/* The letter: how it sounds, how it looks, what it says */}
-            <Group label="The letter">
-            {/* 3 · Tone */}
-            <Accordion id="cl-sec-tone" step="3" title="Tone" summary={toneSummary} open={open.tone} onToggle={() => toggleSection('tone')}>
-              <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 sm:rounded-2xl" role="radiogroup" aria-label="Tone of the letter">
-                {TONES.map((tone) => (
-                  <button
-                    key={tone.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={letter.tone === tone.id}
-                    onClick={() => setLetter((prev) => ({ ...prev, tone: tone.id }))}
-                    className={`h-8 rounded-lg text-[12.5px] font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none sm:h-9 sm:rounded-xl sm:text-[13px] ${
-                      letter.tone === tone.id ? 'bg-white text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.1),0_0_0_1px_rgba(15,23,42,0.04)]' : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    {tone.label}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2.5 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
-                {letter.bodyEdited
-                  ? 'You are using your own wording, so changing the tone no longer rewrites the letter. Use “Reset to draft” to start from a new draft.'
-                  : letter.aiBody
-                    ? 'The AI uses the tone the next time it writes the letter. Choose “Rewrite with AI” after changing it.'
-                    : 'Changes the wording of the starter draft below.'}
-              </p>
-            </Accordion>
-
-            {/* 4 · Design */}
-            <Accordion id="cl-sec-design" step="4" title="Design" summary={designSummary} open={open.design} onToggle={() => toggleSection('design')}>
-              <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Design of the letter">
-                {TEMPLATES.map((design) => {
-                  const selected = letter.template === design.id;
-                  return (
-                    <button
-                      key={design.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => setLetter((prev) => ({ ...prev, template: design.id }))}
-                      className={`group rounded-xl p-2 text-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none ${
-                        selected ? 'bg-[#d9856b]/10 ring-2 ring-[#d9856b]' : 'bg-slate-50 ring-1 ring-slate-200 hover:bg-slate-100 hover:ring-slate-300'
-                      }`}
-                    >
-                      <DesignThumb id={design.id} accent={letterColor.accent} pastel={letterColor.pastel} />
-                      <span className={`mt-2 block text-[12.5px] font-medium sm:text-[13px] ${selected ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{design.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Colour: the resume's cream by default, modern light colours, or any colour of their own */}
-              <div className="mt-5">
-                <p className="mb-2 text-[12px] font-semibold text-slate-700 sm:text-[12.5px]">Colour</p>
-                <div className="grid grid-cols-4 gap-2" role="group" aria-label="Colour of the letter">
-                  {LETTER_COLORS.map((c) => {
-                    const look = resolveLetterColor(c.id, accentColor);
-                    const base = HEX_RE.test(look.accent || '') ? look.accent : '#1e3a8a';
-                    const selected = letter.color === c.id;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        aria-pressed={selected}
-                        aria-label={`${c.label} colour`}
-                        onClick={() => setLetter((prev) => ({ ...prev, color: c.id }))}
-                        className={`group flex flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none ${
-                          selected ? 'bg-[#d9856b]/10 ring-2 ring-[#d9856b]' : 'bg-slate-50 ring-1 ring-slate-200 hover:bg-slate-100 hover:ring-slate-300'
-                        }`}
-                      >
-                        <span
-                          className="grid h-8 w-8 place-items-center rounded-full"
-                          style={{
-                            background: rgbCss(look.pastel ? pastelTint(base) : creamTint(base)),
-                            boxShadow: `inset 0 0 0 2px ${look.pastel ? base : 'rgba(120,105,80,0.45)'}`,
-                            color: rgbCss(deepShade(base)),
-                          }}
-                        >
-                          {selected && <IconCheck className="h-3.5 w-3.5" />}
-                        </span>
-                        <span className={`text-[11.5px] font-medium ${selected ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{c.label}</span>
-                      </button>
-                    );
-                  })}
-
-                  {/* Any colour: the native colour picker sits invisibly over the round swatch. */}
-                  {(() => {
-                    const custom = HEX_RE.test(letter.color || '');
-                    const base = custom ? letter.color : CUSTOM_START;
-                    return (
-                      <label
-                        className={`group relative flex cursor-pointer flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 transition-all focus-within:ring-2 focus-within:ring-[#d9856b]/60 motion-reduce:transition-none ${
-                          custom ? 'bg-[#d9856b]/10 ring-2 ring-[#d9856b]' : 'bg-slate-50 ring-1 ring-slate-200 hover:bg-slate-100 hover:ring-slate-300'
-                        }`}
-                      >
-                        <span
-                          className="grid h-8 w-8 place-items-center rounded-full"
-                          style={
-                            custom
-                              ? { background: rgbCss(pastelTint(base)), boxShadow: `inset 0 0 0 2px ${base}`, color: rgbCss(deepShade(base)) }
-                              : { background: 'conic-gradient(from 0deg, #f9a8a8, #fcd9a0, #bfe8b0, #a5dcf0, #c4b8f5, #f5b8dc, #f9a8a8)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.9)' }
-                          }
-                        >
-                          {custom ? <IconCheck className="h-3.5 w-3.5" /> : null}
-                        </span>
-                        <span className={`text-[11.5px] font-medium ${custom ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>Custom</span>
-                        <input
-                          type="color"
-                          value={base}
-                          onChange={(e) => {
-                            const value = e.target.value.toLowerCase();
-                            setLetter((prev) => ({ ...prev, color: value }));
-                          }}
-                          aria-label="Pick your own colour"
-                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                        />
-                      </label>
-                    );
-                  })()}
-                </div>
-              </div>
-            </Accordion>
-
-            {/* 5 · The letter */}
-            <Accordion id="cl-sec-letter" step="5" title="Letter" summary={letterSummary} open={open.letter} onToggle={() => toggleSection('letter')} busy={writing}>
-              {(confirm || letter.bodyEdited || ai.state !== 'blocked') && (
-                <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
-                  {confirm ? (
-                    <>
-                      <span className="mr-auto text-[12px] text-slate-600 sm:text-[12.5px]">{confirm === 'regen' ? 'Replace your edits?' : 'Discard your edits?'}</span>
-                      <button
-                        type="button"
-                        onClick={confirm === 'regen' ? () => generate({ fresh: true }) : resetToDraft}
-                        className="inline-flex h-8 items-center rounded-full bg-[#d9856b]/10 px-3 text-[12px] font-semibold text-[#a64a30] hover:bg-[#d9856b]/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 sm:h-9"
-                      >
-                        {confirm === 'regen' ? 'Yes, rewrite' : 'Yes, reset'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirm('')}
-                        className="inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 sm:h-9"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      {letter.bodyEdited && (
-                        <button type="button" onClick={() => setConfirm('reset')} disabled={writing} className={ghostPillClass}>
-                          <IconRefresh className="h-3.5 w-3.5" />
-                          Reset to draft
-                        </button>
-                      )}
-                      {ai.state !== 'blocked' && (
-                        <button type="button" onClick={rewrite} disabled={writing} className={aiButtonClass}>
-                          <IconSparkle className={`h-3.5 w-3.5 ${writing ? 'animate-pulse' : ''}`} />
-                          {writing ? 'Writing…' : letter.aiBody ? 'Rewrite with AI' : 'Write with AI'}
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* What the AI is doing, or why it is not */}
-              <div role="status" aria-live="polite" className="empty:hidden">
-                {writing && (
-                  <Notice tone="busy" icon={<IconSpinner className="h-3.5 w-3.5" />} className="mb-3">
-                    {letter.requirements.length > 0 ? 'Writing your letter from your resume and what the job asks for.' : 'Writing your letter from your resume.'} The first one can take up to a minute while the server wakes up.
-                  </Notice>
-                )}
-
-                {!writing && ai.state === 'blocked' && (
-                  <Notice
-                    tone="info"
-                    icon={<IconSparkle className="h-3.5 w-3.5" />}
-                    className="mb-3"
-                    action={
-                      <button type="button" onClick={ai.code === 'signin' ? requestSignIn : requestUpgrade} className={navyPillClass}>
-                        {ai.code === 'signin' ? 'Sign in' : 'Upgrade'}
-                      </button>
-                    }
-                  >
-                    {ai.code === 'signin'
-                      ? 'Sign in to have AI write this letter from your resume. Until then, here is a starter draft you can edit.'
-                      : 'AI-written letters are a Premium feature. Here is a starter draft you can edit.'}
-                  </Notice>
-                )}
-
-                {!writing && ai.state === 'error' && (
-                  <Notice
-                    tone="warn"
-                    icon={<IconInfo className="h-3.5 w-3.5" />}
-                    className="mb-3"
-                    action={
-                      ai.code !== 'empty' ? (
+                  {positionError && (
+                    <Notice
+                      tone="warn"
+                      icon={<IconInfo className="h-3.5 w-3.5" />}
+                      action={
                         <button
                           type="button"
                           onClick={() => generate({ fresh: true })}
-                          className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-amber-900 ring-1 ring-amber-300 transition-colors hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 sm:px-3.5 sm:py-1.5"
+                          className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-amber-900 ring-1 ring-amber-300 transition-colors hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                         >
-                          {ai.code === 'position' ? 'Write letter' : 'Try again'}
+                          Write letter
                         </button>
-                      ) : null
-                    }
-                  >
-                    {aiErrorText}
-                  </Notice>
-                )}
+                      }
+                    >
+                      {aiErrorText}
+                    </Notice>
+                  )}
+                </section>
 
-                {!writing && !postingBusy && ai.state === 'idle' && !letter.aiBody && !letter.bodyEdited && (
-                  <Notice tone="info" icon={<IconInfo className="h-3.5 w-3.5" />} className="mb-3">
-                    Add a job advert in step 1 for a letter that answers what the job asks for, or choose “Write with AI” for a general one. Until then, this is a starter draft.
-                  </Notice>
-                )}
-
-                {!writing && ownUnlistedClaims.length > 0 && (
-                  <Notice tone="warn" icon={<IconInfo className="h-3.5 w-3.5" />} className="mb-3">
-                    Your letter names a qualification your resume does not list ({joinList(ownUnlistedClaims.map((q) => `“${q}”`))}). Employers check these with the school, so remove it from the letter, or add it under Education or Certificates first if you hold it.
-                  </Notice>
+                {reqCount > 0 && (
+                  <section aria-label="What the letter answers">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setReqExpanded((v) => !v)}
+                        aria-expanded={reqExpanded}
+                        aria-controls="cl-req-list"
+                        className="flex min-w-0 flex-1 items-center gap-2 rounded-lg py-1 text-left text-[13px] font-semibold text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                      >
+                        <IconChevron className={`h-4 w-4 shrink-0 text-slate-400 transition-transform motion-reduce:transition-none ${reqExpanded ? '' : '-rotate-90'}`} />
+                        <span className="truncate">{`${reqCount} ${reqCount === 1 ? 'requirement' : 'requirements'} the letter answers`}</span>
+                      </button>
+                      <button type="button" onClick={clearPosting} className={ghostPillClass}>
+                        Clear
+                      </button>
+                    </div>
+                    {reqExpanded && (
+                      <ul id="cl-req-list" className="pro-scroll mt-2 max-h-72 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200/80">
+                        {letter.requirements.map((item, i) => (
+                          <li key={`${i}-${item}`} className="flex items-start gap-2.5 py-2 pl-3 pr-1.5 text-[12.5px] leading-snug text-slate-700">
+                            <IconCheck className="mt-[3px] h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                            <span className="min-w-0 flex-1 break-words">{item}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeRequirement(i)}
+                              aria-label={`Remove: ${item}`}
+                              className="-my-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                            >
+                              <IconClose className="h-3.5 w-3.5" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
                 )}
               </div>
-
-              <label htmlFor="cl-body" className="sr-only">
-                Letter text
-              </label>
-              <textarea
-                id="cl-body"
-                value={body}
-                onChange={setBody}
-                readOnly={writing}
-                aria-busy={writing}
-                rows={10}
-                spellCheck
-                className={`${textareaClass} min-h-[11rem] sm:min-h-[16rem] ${writing ? 'opacity-60' : ''}`}
-              />
-              <div className="mt-2 flex items-center justify-between gap-3 text-[11.5px] font-medium text-slate-400">
-                <span className="inline-flex items-center gap-1.5">
-                  <IconEdit className="h-3.5 w-3.5" />
-                  {`${wordCount} ${wordCount === 1 ? 'word' : 'words'}`}
-                </span>
-                {pageCount > 0 && <span>{`${pageCount} ${pageCount === 1 ? 'page' : 'pages'}`}</span>}
-              </div>
-            </Accordion>
-
-            </Group>
-
-            <Group label="Finish">
-            {/* 6 · Signature */}
-            <Accordion id="cl-sec-sign" step="6" title="Signature" summary={signatureSummary} open={open.sign} onToggle={() => toggleSection('sign')} busy={signatureBusy}>
-              {letter.signature ? (
-                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-                  <img src={letter.signature.dataUrl} alt="Your signature" className="h-12 min-w-0 max-w-[55%] object-contain object-left" draggable={false} />
-                  <span className="flex-1" />
-                  <button type="button" onClick={removeSignature} className={ghostPillClass}>
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <p className="text-[12px] leading-snug text-slate-500 sm:text-[12.5px]">Your signature goes above your typed name. It stays on this device and is only used in the PDF you download.</p>
-              )}
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => setSigning(true)} className={navyButtonClass}>
-                  <IconPen className="h-4 w-4" />
-                  {letter.signature ? 'Draw again' : 'Draw signature'}
-                </button>
-                <button type="button" onClick={() => signatureFileRef.current?.click()} disabled={signatureBusy} className={outlineButtonClass}>
-                  {signatureBusy ? <IconSpinner className="h-4 w-4" /> : <IconUpload className="h-4 w-4" />}
-                  Upload a picture
-                </button>
-                <input ref={signatureFileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={onSignatureFile} className="sr-only" tabIndex={-1} aria-label="Upload a picture of your signature" />
-              </div>
-              <p className="mt-2 text-[11.5px] leading-snug text-slate-400">For a picture, sign on plain white paper in good light. The paper is removed for you.</p>
-              {signatureError && (
-                <p role="alert" className="mt-2 text-[12px] leading-snug text-red-600">
-                  {signatureError}
-                </p>
-              )}
-            </Accordion>
-            </Group>
-
-            {prepared?.lost && (
-              <Notice role="status" tone="info" icon={<IconInfo className="h-3.5 w-3.5" />}>
-                Some characters, such as emoji, can’t be used in a PDF letter and are left out.
-              </Notice>
             )}
 
-            {premium !== true && (
-              <p className="px-1 text-[11.5px] leading-relaxed text-slate-500 sm:text-[12px]">
-                Free downloads carry a small “Created with RemoPDF” line at the bottom of each page. Premium removes it.
-              </p>
+            {/* ------------------------------------------------ Letter: tone, then the text itself */}
+            {tab === 'letter' && (
+              <div className="space-y-5">
+                {fullName && usingAccountName && (
+                  <Notice role="status" tone="info" icon={<IconInfo className="h-3.5 w-3.5" />}>
+                    {`The letter uses the name on your account, ${fullName}.`}
+                  </Notice>
+                )}
+
+                <div>
+                  <div className="mb-2 flex items-baseline justify-between gap-3">
+                    <span id="cl-tone-label" className="text-[13px] font-semibold text-slate-900">
+                      Tone
+                    </span>
+                    {(letter.bodyEdited || letter.aiBody) && (
+                      <span className="text-[12px] text-slate-400">{letter.bodyEdited ? 'Your edited text stays as it is' : 'Used the next time you rewrite'}</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1" role="radiogroup" aria-labelledby="cl-tone-label">
+                    {TONES.map((tone) => (
+                      <button
+                        key={tone.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={letter.tone === tone.id}
+                        onClick={() => setLetter((prev) => ({ ...prev, tone: tone.id }))}
+                        className={`h-9 rounded-lg text-[13px] font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none ${
+                          letter.tone === tone.id ? 'bg-white text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.1),0_0_0_1px_rgba(15,23,42,0.04)]' : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        {tone.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  {(confirm || letter.bodyEdited || ai.state !== 'blocked') && (
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      {confirm ? (
+                        <>
+                          <span className="mr-auto text-[12.5px] text-slate-600">{confirm === 'regen' ? 'Replace your edits?' : 'Discard your edits?'}</span>
+                          <button
+                            type="button"
+                            onClick={confirm === 'regen' ? () => generate({ fresh: true }) : resetToDraft}
+                            className="inline-flex h-9 items-center rounded-full bg-[#d9856b]/10 px-3.5 text-[12px] font-semibold text-[#a64a30] hover:bg-[#d9856b]/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60"
+                          >
+                            {confirm === 'regen' ? 'Yes, rewrite' : 'Yes, reset'}
+                          </button>
+                          <button type="button" onClick={() => setConfirm('')} className={ghostPillClass}>
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {ai.state !== 'blocked' && (
+                            <button type="button" onClick={rewrite} disabled={writing} className={aiButtonClass}>
+                              <IconSparkle className={`h-3.5 w-3.5 ${writing ? 'animate-pulse' : ''}`} />
+                              {writing ? 'Writing…' : letter.aiBody ? 'Rewrite with AI' : 'Write with AI'}
+                            </button>
+                          )}
+                          {letter.bodyEdited && (
+                            <button type="button" onClick={() => setConfirm('reset')} disabled={writing} className={ghostPillClass}>
+                              <IconRefresh className="h-3.5 w-3.5" />
+                              Reset to draft
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* What the AI is doing, or why it is not */}
+                  <div role="status" aria-live="polite" className="empty:hidden">
+                    {writing && (
+                      <Notice tone="busy" icon={<IconSpinner className="h-3.5 w-3.5" />} className="mb-3">
+                        {letter.requirements.length > 0 ? 'Writing your letter from your resume and what the job asks for.' : 'Writing your letter from your resume.'} The first one can take up to a minute.
+                      </Notice>
+                    )}
+
+                    {!writing && ai.state === 'blocked' && (
+                      <Notice
+                        tone="info"
+                        icon={<IconSparkle className="h-3.5 w-3.5" />}
+                        className="mb-3"
+                        action={
+                          <button type="button" onClick={ai.code === 'signin' ? requestSignIn : requestUpgrade} className={navyPillClass}>
+                            {ai.code === 'signin' ? 'Sign in' : 'Upgrade'}
+                          </button>
+                        }
+                      >
+                        {ai.code === 'signin' ? 'Sign in to have AI write this letter from your resume. Until then, here is a starter draft you can edit.' : 'AI-written letters are a Premium feature. Here is a starter draft you can edit.'}
+                      </Notice>
+                    )}
+
+                    {!writing && ai.state === 'error' && !positionError && (
+                      <Notice
+                        tone="warn"
+                        icon={<IconInfo className="h-3.5 w-3.5" />}
+                        className="mb-3"
+                        action={
+                          ai.code !== 'empty' ? (
+                            <button
+                              type="button"
+                              onClick={() => generate({ fresh: true })}
+                              className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-amber-900 ring-1 ring-amber-300 transition-colors hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                            >
+                              Try again
+                            </button>
+                          ) : null
+                        }
+                      >
+                        {aiErrorText}
+                      </Notice>
+                    )}
+
+                    {!writing && !postingBusy && ai.state === 'idle' && !letter.aiBody && !letter.bodyEdited && (
+                      <Notice tone="info" icon={<IconInfo className="h-3.5 w-3.5" />} className="mb-3">
+                        This is a starter draft. Add the job for a letter that answers what it asks for, or choose “Write with AI”.
+                      </Notice>
+                    )}
+
+                    {!writing && ownUnlistedClaims.length > 0 && (
+                      <Notice tone="warn" icon={<IconInfo className="h-3.5 w-3.5" />} className="mb-3">
+                        Your letter names a qualification your resume does not list ({joinList(ownUnlistedClaims.map((q) => `“${q}”`))}). Employers check these with the school, so remove it from the letter, or add it under Education or Certificates first if you hold it.
+                      </Notice>
+                    )}
+
+                    {prepared?.lost && (
+                      <Notice tone="info" icon={<IconInfo className="h-3.5 w-3.5" />} className="mb-3">
+                        Some characters, such as emoji, can’t be used in a PDF letter and are left out.
+                      </Notice>
+                    )}
+                  </div>
+
+                  <label htmlFor="cl-body" className="sr-only">
+                    Letter text
+                  </label>
+                  <textarea
+                    id="cl-body"
+                    value={body}
+                    onChange={setBody}
+                    readOnly={writing}
+                    aria-busy={writing}
+                    rows={12}
+                    spellCheck
+                    className={`${textareaClass} min-h-[14rem] sm:min-h-[22rem] ${writing ? 'opacity-60' : ''}`}
+                  />
+                  <p className="mt-2 text-[12px] text-slate-400">
+                    {`${wordCount} ${wordCount === 1 ? 'word' : 'words'}`}
+                    {pageCount > 0 ? `, ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}` : ''}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ------------------------------------------------ Design: layout and colour */}
+            {tab === 'design' && (
+              <div className="space-y-7">
+                <section aria-labelledby="cl-layout-title">
+                  <h3 id="cl-layout-title" className="mb-3 text-[13px] font-semibold text-slate-900">
+                    Layout
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-labelledby="cl-layout-title">
+                    {TEMPLATES.map((design) => {
+                      const selected = letter.template === design.id;
+                      return (
+                        <button
+                          key={design.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => setLetter((prev) => ({ ...prev, template: design.id }))}
+                          className={`group rounded-xl p-2.5 text-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 motion-reduce:transition-none ${
+                            selected ? 'bg-[#d9856b]/10 ring-2 ring-[#d9856b]' : 'bg-slate-50 ring-1 ring-slate-200 hover:bg-slate-100 hover:ring-slate-300'
+                          }`}
+                        >
+                          <DesignThumb id={design.id} accent={letterColor.accent} pastel={letterColor.pastel} />
+                          <span className={`mt-2 block text-[13px] font-medium ${selected ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>{design.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <section aria-labelledby="cl-colour-title">
+                  <div className="mb-3 flex items-baseline justify-between gap-3">
+                    <h3 id="cl-colour-title" className="text-[13px] font-semibold text-slate-900">
+                      Colour
+                    </h3>
+                    <span className="text-[12px] text-slate-500">{colorLabel}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-3" role="group" aria-labelledby="cl-colour-title">
+                    {LETTER_COLORS.map((c) => {
+                      const look = resolveLetterColor(c.id, accentColor);
+                      const base = HEX_RE.test(look.accent || '') ? look.accent : '#1e3a8a';
+                      const selected = letter.color === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          aria-pressed={selected}
+                          aria-label={`${c.label} colour`}
+                          title={c.label}
+                          onClick={() => setLetter((prev) => ({ ...prev, color: c.id }))}
+                          className={`grid h-10 w-10 place-items-center rounded-full p-0.5 transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/60 focus-visible:ring-offset-2 motion-reduce:transition-none ${
+                            selected ? 'ring-2 ring-[#d9856b] ring-offset-2' : 'hover:ring-2 hover:ring-slate-300 hover:ring-offset-2'
+                          }`}
+                        >
+                          <span
+                            className="grid h-full w-full place-items-center rounded-full"
+                            style={{
+                              background: rgbCss(look.pastel ? pastelTint(base) : creamTint(base)),
+                              boxShadow: `inset 0 0 0 2px ${look.pastel ? base : 'rgba(120,105,80,0.45)'}`,
+                              color: rgbCss(deepShade(base)),
+                            }}
+                          >
+                            {selected && <IconCheck className="h-3.5 w-3.5" />}
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                    {/* Any colour: the native colour picker sits invisibly over the round swatch. */}
+                    {(() => {
+                      const custom = HEX_RE.test(letter.color || '');
+                      const base = custom ? letter.color : CUSTOM_START;
+                      return (
+                        <label
+                          title="Pick your own colour"
+                          className={`relative grid h-10 w-10 cursor-pointer place-items-center rounded-full p-0.5 transition-shadow focus-within:ring-2 focus-within:ring-[#d9856b]/60 focus-within:ring-offset-2 motion-reduce:transition-none ${
+                            custom ? 'ring-2 ring-[#d9856b] ring-offset-2' : 'hover:ring-2 hover:ring-slate-300 hover:ring-offset-2'
+                          }`}
+                        >
+                          <span
+                            className="grid h-full w-full place-items-center rounded-full"
+                            style={
+                              custom
+                                ? { background: rgbCss(pastelTint(base)), boxShadow: `inset 0 0 0 2px ${base}`, color: rgbCss(deepShade(base)) }
+                                : { background: 'conic-gradient(from 0deg, #f9a8a8, #fcd9a0, #bfe8b0, #a5dcf0, #c4b8f5, #f5b8dc, #f9a8a8)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.9)' }
+                            }
+                          >
+                            {custom ? <IconCheck className="h-3.5 w-3.5" /> : null}
+                          </span>
+                          <input
+                            type="color"
+                            value={base}
+                            onChange={(e) => {
+                              const value = e.target.value.toLowerCase();
+                              setLetter((prev) => ({ ...prev, color: value }));
+                            }}
+                            aria-label="Pick your own colour"
+                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                          />
+                        </label>
+                      );
+                    })()}
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {/* ------------------------------------------------ Signature */}
+            {tab === 'signature' && (
+              <div className="space-y-4">
+                {letter.signature && (
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                    <img src={letter.signature.dataUrl} alt="Your signature" className="h-12 min-w-0 max-w-[55%] object-contain object-left" draggable={false} />
+                    <span className="flex-1" />
+                    <button type="button" onClick={removeSignature} className={ghostPillClass}>
+                      Remove
+                    </button>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setSigning(true)} className={navyButtonClass}>
+                    <IconPen className="h-4 w-4" />
+                    {letter.signature ? 'Draw again' : 'Draw signature'}
+                  </button>
+                  <button type="button" onClick={() => signatureFileRef.current?.click()} disabled={signatureBusy} className={outlineButtonClass}>
+                    {signatureBusy ? <IconSpinner className="h-4 w-4" /> : <IconUpload className="h-4 w-4" />}
+                    Upload a picture
+                  </button>
+                  <input ref={signatureFileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={onSignatureFile} className="sr-only" tabIndex={-1} aria-label="Upload a picture of your signature" />
+                </div>
+                <p className="text-[12px] leading-snug text-slate-400">It goes above your typed name and stays on this device. For a photo, sign on plain white paper in good light.</p>
+                {signatureError && (
+                  <p role="alert" className="text-[12px] leading-snug text-red-600">
+                    {signatureError}
+                  </p>
+                )}
+
+                {premium !== true && <p className="border-t border-slate-100 pt-4 text-[12px] leading-relaxed text-slate-500">Free downloads carry a small “Created with RemoPDF” line at the bottom of each page. Premium removes it.</p>}
+              </div>
             )}
           </div>
         </aside>

@@ -56,8 +56,8 @@ const Row = ({ skill, note, onAdd }) => (
       <Plus />
     </button>
     <span className="min-w-0">
-      <span className="block text-sm font-medium text-slate-800">{skill}</span>
-      {note && <span className="mt-0.5 block text-xs leading-snug text-slate-500">{note}</span>}
+      <span className="block break-words text-sm font-medium text-slate-800">{skill}</span>
+      {note && <span className="mt-0.5 block break-words text-xs leading-snug text-slate-500">{note}</span>}
     </span>
   </li>
 );
@@ -141,17 +141,18 @@ const JobSkillMatch = ({ data, onAdd }) => {
 
   return (
     <section aria-label="Skills matched to the job" aria-busy={loading} className="mb-8 rounded-md border border-[#d9856b]/30 bg-[#d9856b]/5">
-      <header className="flex items-start gap-3 px-4 pt-4">
+      {/* A grid, not a row: on a narrow phone "Check again" drops under the text instead of squeezing it to one word a line. */}
+      <header className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 px-4 pt-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
         <span className="mt-0.5"><Sparkle /></span>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-slate-900">Matched to {target.title || 'your target job'}</h2>
+        <div className="min-w-0">
+          <h2 className="break-words text-sm font-semibold text-slate-900">Matched to {target.title || 'your target job'}</h2>
           <p className="mt-0.5 text-xs leading-snug text-slate-600">What the job asks for, compared with your work history.</p>
         </div>
         <button
           type="button"
           onClick={() => setRecheck((n) => n + 1)}
           disabled={loading}
-          className={`shrink-0 rounded px-2 py-1 text-xs font-semibold text-[#b8573b] hover:bg-[#d9856b]/10 disabled:opacity-40 ${FOCUS}`}
+          className={`col-start-2 row-start-2 -ml-2 mt-1 justify-self-start rounded px-2 py-1 text-xs font-semibold text-[#b8573b] hover:bg-[#d9856b]/10 disabled:opacity-40 sm:col-start-3 sm:row-start-1 sm:ml-0 sm:mt-0 sm:justify-self-auto ${FOCUS}`}
         >
           Check again
         </button>

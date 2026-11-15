@@ -247,8 +247,9 @@ export default function AuthModal({ open, onClose, onSignIn, termsHref = '/terms
           </button>
 
           <div className="pro-scroll flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <div className="w-full px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-8 md:my-auto md:px-10 md:pb-10 md:pt-16">
-              <div className="auth-swap mx-auto w-full max-w-[25rem]">
+            {/* Phones: the column fills the screen, so the terms line below can sit at the very bottom (mt-auto). */}
+            <div className="flex w-full flex-1 flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-8 md:my-auto md:block md:flex-none md:px-10 md:pb-10 md:pt-16">
+              <div className="auth-swap mx-auto flex w-full max-w-[25rem] flex-1 flex-col md:block md:flex-none">
                 <h2 id="auth-title" className="text-xl font-semibold leading-tight tracking-tight text-slate-900 md:text-[22px]">
                   Sign in to RemoPDF
                 </h2>
@@ -288,7 +289,7 @@ export default function AuthModal({ open, onClose, onSignIn, termsHref = '/terms
                   <span>Secure sign-in with Google. RemoPDF never sees or stores your Google password.</span>
                 </p>
 
-                <p className="mt-6 text-center text-[11.5px] leading-relaxed text-slate-400">
+                <p className="mt-auto pt-8 text-center text-[11.5px] leading-relaxed text-slate-400 md:mt-6 md:pt-0">
                   By continuing, you agree to our{' '}
                   <a href={termsHref} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1e3a8a] underline-offset-2 hover:underline">Terms of Use</a>{' '}
                   and{' '}

@@ -101,9 +101,10 @@ const SummarySection = ({ data, updateSummary }) => {
 
       {/* Auto-write: the summary, written from the work history and skills */}
       <section aria-label="Write my summary" aria-busy={loading} className="mb-6 rounded-md border border-[#d9856b]/30 bg-[#d9856b]/5 px-4 py-4">
-        <div className="flex flex-wrap items-center gap-3">
+        {/* A grid, not a wrapping row: on a narrow phone the button drops under the text instead of squeezing it to one word a line. */}
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
           <span className="mt-0.5 self-start"><Sparkle /></span>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <h2 className="text-sm font-semibold text-slate-900">Let us write it for you</h2>
             <p className="mt-0.5 text-xs leading-snug text-slate-600">
               {tailored
@@ -116,7 +117,7 @@ const SummarySection = ({ data, updateSummary }) => {
             type="button"
             onClick={() => write(ready)}
             disabled={loading}
-            className={`shrink-0 rounded-full bg-[#d9856b] px-5 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-60 ${FOCUS}`}
+            className={`col-start-2 row-start-2 justify-self-start rounded-full bg-[#d9856b] px-5 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-60 sm:col-start-3 sm:row-start-1 sm:justify-self-auto ${FOCUS}`}
           >
             {loading ? 'Writing…' : ready ? 'Write another' : premium === false ? 'Write my summary (Premium)' : 'Write my summary'}
           </button>

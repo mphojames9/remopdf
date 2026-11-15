@@ -32,7 +32,7 @@ const MODES = [
 ];
 
 const HELP = {
-  link: 'Works with most job boards and company sites. If a site blocks us, paste the advert instead.',
+  link: 'Works with company sites and many job boards. Some boards don’t let us read their pages: if yours doesn’t, paste the advert instead.',
   text: 'Paste the whole advert, requirements included.',
   title: 'No advert? We’ll use the standard skills and tools for that kind of role.',
 };
@@ -349,9 +349,22 @@ const JobTargetStudio = ({ open, initial = null, onSave, onSkip, onClose, onRemo
               )}
 
               {error && (
-                <p role="alert" className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm leading-relaxed text-amber-900">
-                  {ERROR_TEXT[error.code] || error.message || ERROR_TEXT.unavailable}
-                </p>
+                <div role="alert" className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm leading-relaxed text-amber-900">
+                  <p>{ERROR_TEXT[error.code] || error.message || ERROR_TEXT.unavailable}</p>
+                  {/* A link the server cannot read (the site is blocking it, or too slow): one tap to the box that always works. */}
+                  {mode === 'link' && (error.code === 'unreadable' || error.code === 'nodetails') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('text');
+                        setError(null);
+                      }}
+                      className={`mt-2 font-semibold text-[#b8573b] underline underline-offset-2 ${FOCUS}`}
+                    >
+                      Paste the advert instead
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
