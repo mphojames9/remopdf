@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { scoreResume, scoreLabel } from './atsScore';
+import { reviewResume } from './resumeReview';
 import { isQualification } from './skillFilter';
 
 /*
@@ -21,6 +22,10 @@ import { isQualification } from './skillFilter';
   person types and never waits for the server. The panel shows where the points come from, which of the job's
   keywords the resume already has, and which are still missing, with qualifications kept apart from skills because
   a qualification is only worth adding when the person really holds it.
+
+  Premium also gets a written review in the panel (resumeReview.js): what is missing big time and what needs improving,
+  each with the reason it matters for this job and what to do about it, plus what already works. It is worked out on
+  the device from the same resume, so it never disagrees with the score above it.
 
   Look: Outfit throughout (the panel is portalled to <body>, so it sets the font itself instead of inheriting the
   builder's). The one memorable element is the score numeral over a threshold meter whose four segments are the
@@ -415,7 +420,146 @@ const NextMove = ({ move }) => (
   </div>
 );
 
-const Panel = ({ result, target, onClose, onEdit }) => {
+/* -------------------------------------------------------------------------- */
+/*                               the written review                           */
+/* -------------------------------------------------------------------------- */
+
+const fmtPoints = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+
+// One finding: the title row is always shown, the explanation opens under it.
+const FindingCard = ({ item, number, open, onToggle }) => {
+  const bodyId = useId();
+  const big = item.level === 'missing';
+  return (
+    <li className="overflow-hidden rounded-2xl bg-white" style={{ boxShadow: `inset 0 0 0 1px ${big ? 'rgba(217,133,107,.38)' : 'rgba(15,23,42,.09)'}` }}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={open ? bodyId : undefined}
+        className={`flex w-full items-start gap-3 px-4 py-3.5 text-left ${FOCUS}`}
+      >
+        <span
+          className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold tabular-nums ${big ? 'bg-[#d9856b] text-white' : 'bg-slate-100 text-slate-600'}`}
+          aria-hidden="true"
+        >
+          {number}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">{item.title}</span>
+          <span className="mt-0.5 block text-xs text-slate-500">{item.where}</span>
+        </span>
+        {item.points > 0 && (
+          <span className="mt-0.5 shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-emerald-800" title="Points you can still win">
+            +{fmtPoints(item.points)}
+          </span>
+        )}
+        <Icon d={ICON.chevron} className={`mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 motion-reduce:transition-none ${open ? 'rotate-90' : ''}`} stroke={2.2} />
+      </button>
+
+      {open && (
+        <div id={bodyId} className="border-t border-slate-100 px-4 pb-4 pt-3.5">
+          <p className="text-[13.5px] leading-relaxed text-slate-700">{item.body}</p>
+
+          {item.terms && item.terms.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {item.terms.map((t) => (
+                <Chip key={t.term} tone={t.must ? 'must' : 'missing'}>{t.term}</Chip>
+              ))}
+            </div>
+          )}
+
+          {item.examples && item.examples.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {item.examples.map((example) => (
+                <li key={example.line} className="rounded-xl bg-slate-50 px-3 py-2.5 text-[13px] leading-snug">
+                  <span className="block text-slate-700">“{example.line}”</span>
+                  {example.note && <span className="mt-1 block font-medium text-[#8c3d27]">{example.note}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-3.5 rounded-xl px-3.5 py-3" style={{ background: '#fff6f2', boxShadow: 'inset 0 0 0 1px rgba(217,133,107,.2)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8c3d27]">How to fix it</p>
+            <p className="mt-1 text-[13.5px] leading-relaxed text-slate-700">{item.fix}</p>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+};
+
+const ReviewGroup = ({ title, note, items, offset, openIds, onToggle }) =>
+  items.length === 0 ? null : (
+    <div className="mt-6">
+      <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+        {title}
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{items.length}</span>
+      </h4>
+      <p className="mt-1 text-[13px] leading-snug text-slate-500">{note}</p>
+      <ul className="mt-3 space-y-2.5">
+        {items.map((item, i) => (
+          <FindingCard key={item.id} item={item} number={offset + i + 1} open={openIds.has(item.id)} onToggle={() => onToggle(item.id)} />
+        ))}
+      </ul>
+    </div>
+  );
+
+const Review = ({ review }) => {
+  const all = useMemo(() => [...review.missing, ...review.improve], [review]);
+  // The first three open by themselves, so the most important advice is already readable; the rest open on a tap.
+  const [openIds, setOpenIds] = useState(() => new Set(all.slice(0, 3).map((f) => f.id)));
+  const toggle = useCallback((id) => {
+    setOpenIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const allOpen = all.length > 0 && all.every((f) => openIds.has(f.id));
+
+  return (
+    <section aria-label="Written review">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-medium text-slate-500">Written review</p>
+          <h3 className="mt-0.5 text-[18px] font-semibold leading-snug text-slate-900">What’s missing and what to improve</h3>
+        </div>
+        {all.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setOpenIds(allOpen ? new Set() : new Set(all.map((f) => f.id)))}
+            className={`mt-1 shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 ${FOCUS}`}
+          >
+            {allOpen ? 'Collapse all' : 'Expand all'}
+          </button>
+        )}
+      </div>
+      <p className="mt-2 text-[13.5px] leading-relaxed text-slate-600">{review.verdict}</p>
+
+      <ReviewGroup title="Missing big time" note="These hold your resume back the most. Fix them first." items={review.missing} offset={0} openIds={openIds} onToggle={toggle} />
+      <ReviewGroup title="Needs improving" note="Not gaps, but a recruiter or a scan will notice them." items={review.improve} offset={review.missing.length} openIds={openIds} onToggle={toggle} />
+
+      {review.good.length > 0 && (
+        <div className="mt-6">
+          <h4 className="text-[15px] font-semibold text-slate-900">Already working</h4>
+          <ul className="mt-2.5 space-y-2">
+            {review.good.map((line) => (
+              <li key={line} className="flex items-start gap-2 text-[13px] leading-snug text-slate-600">
+                <Icon d={ICON.check} className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" stroke={2.6} />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+};
+
+const Panel = ({ result, target, data, onClose, onEdit }) => {
   const panelRef = useRef(null);
   const closeRef = useRef(null);
   const shown = useCountUp(result.score, { ms: 1000, initial: 0 });
@@ -459,6 +603,7 @@ const Panel = ({ result, target, onClose, onEdit }) => {
   const next = TIERS[index + 1];
   const tone = tierTone(index);
   const hasMust = missingSkills.some((k) => k.must);
+  const review = useMemo(() => reviewResume(target, data, result), [target, data, result]);
 
   return createPortal(
     <div className="jm-root fixed inset-0 z-[58]" style={{ fontFamily: FONT }}>
@@ -517,6 +662,12 @@ const Panel = ({ result, target, onClose, onEdit }) => {
         {/* Body */}
         <div className="pro-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
           <NextMove move={insight(result, false)} />
+
+          {review && (
+            <div className="mt-7">
+              <Review review={review} />
+            </div>
+          )}
 
           <div className="mt-7">
             <Group title="Where your points come from">
@@ -615,13 +766,13 @@ const JobTargetBar = ({ target, data, onEdit, sheet = false, onSheetClose, card 
   if (!result) return null;
 
   // Sheet only: the parent decides when to open it (it mounts this when it wants the score).
-  if (sheet) return <Panel result={result} target={target} onClose={onSheetClose || close} onEdit={onEdit} />;
+  if (sheet) return <Panel result={result} target={target} data={data} onClose={onSheetClose || close} onEdit={onEdit} />;
 
   return (
     <>
       {card && <Card result={result} target={target} onOpen={show} />}
       <Dock result={result} onOpen={show} className={dockClassName} />
-      {open && <Panel result={result} target={target} onClose={close} onEdit={onEdit} />}
+      {open && <Panel result={result} target={target} data={data} onClose={close} onEdit={onEdit} />}
     </>
   );
 };
