@@ -1124,7 +1124,10 @@ def call_groq_posting(messages, plan: ai_models.Plan) -> str:
 
 
 def _posting_error(err: PostingError) -> HTTPException:
-    return HTTPException(status_code=400 if err.code == "badlink" else 422, detail={"code": err.code, "message": err.message})
+    detail = {"code": err.code, "message": err.message}
+    if err.reason:
+        detail["reason"] = err.reason  # for whoever is debugging (Network tab, Render logs); the app only shows `message`
+    return HTTPException(status_code=400 if err.code == "badlink" else 422, detail=detail)
 
 
 @router.post("/job-posting")

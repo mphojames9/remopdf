@@ -331,8 +331,12 @@ class TargetRequest(BaseModel):
     title: str = Field("", max_length=120)  # or just the job title (also used when a link cannot be read)
 
 
-def _fail(status: int, code: str, message: str) -> HTTPException:
-    return HTTPException(status_code=status, detail={"code": code, "message": message})
+def _fail(status: int, code: str, message: str, reason: str = "") -> HTTPException:
+    # `reason` is for whoever is debugging (the Network tab, the Render logs); the app only shows `message`.
+    detail = {"code": code, "message": message}
+    if reason:
+        detail["reason"] = reason
+    return HTTPException(status_code=status, detail=detail)
 
 
 def _posting_messages(posting) -> list:
@@ -393,7 +397,7 @@ def build_target(body: TargetRequest, request: Request):
             posting = read_posting_text(text) if use_text else read_posting_url(url)
         except PostingError as err:
             if not typed_title:
-                raise _fail(400 if err.code == "badlink" else 422, err.code, err.message)
+                raise _fail(400 if err.code == "badlink" else 422, err.code, err.message, err.reason)
             notice = {"code": err.code, "message": "We couldn't read that advert, so this is based on the job title alone. Paste the advert for a closer match."}
 
     fields = {"job_title": "", "company": "", "address": "", "requirements": [], "duties": []}

@@ -36,7 +36,9 @@ const MIN_RELEVANCE = 45;
 // After a failed request (server down, key missing, quota hit) skip O*NET for a while so the
 // form answers from the dataset straight away instead of waiting on a timeout for every keystroke.
 const COOLDOWN_MS = 60 * 1000;
-const MAX_TITLES_FOR_SKILLS = 3;
+// The job target plus the person's own jobs. 3 was too few: with a job target set, the oldest job (often where the
+// person did the hands-on work, e.g. Quality Controller) was dropped and never contributed a single skill.
+const MAX_TITLES_FOR_SKILLS = 5;
 
 /* ------------------------------ console logging ----------------------------- */
 
@@ -155,6 +157,88 @@ const friendlyTitle = (raw) => {
 // Task statements read as bullets without the closing full stop.
 const cleanTask = (text) => String(text || '').replace(/\s+/g, ' ').trim().replace(/[.;\s]+$/, '');
 
+/* ------------------- matching a job title to an O*NET occupation ------------------- */
+
+// O*NET's keyword search is loose: "Quality Controller" also returns Industrial Engineers, Weighers and software
+// testers, and the first hit used to win. Two things keep the right occupation on top.
+//
+// 1. TITLE_ALIASES: everyday titles that O*NET files under a different official name. `keyword` is what is searched
+//    instead, and `occupation` picks the right official occupation out of the results by its name. If the search does
+//    not return it, the normal matching below is used, so an alias can never make things worse than before.
+// 2. rankOccupations(): results are ordered by how many words of the typed title they share (first five letters, so
+//    "controller" meets "control"), and software / IT occupations are dropped unless the title itself is a tech title.
+//
+// To cover another title, add one entry: test = regex on the lower-case title, keyword = what to search,
+// occupation = regex on the official O*NET name, titles = job titles worth offering in the Title field.
+const TITLE_ALIASES = [
+  {
+    // Quality Controller, Quality Inspector, QC Officer, Quality Control Technician ...
+    test: /^(qc|quality)( control| assurance)?( (controller|inspector|checker|officer|operator|technician|clerk|assistant))?$/,
+    keyword: 'quality control inspector',
+    occupation: /^inspectors, testers, sorters, samplers/i,
+    titles: ['Quality Control Inspector', 'Quality Assurance Inspector', 'Quality Control Officer', 'Quality Control Technician'],
+  },
+  {
+    // Quality Manager, Quality Assurance Manager ...
+    test: /^(qc|quality)( control| assurance)?( systems)? (manager|coordinator)$/,
+    keyword: 'quality control systems manager',
+    occupation: /^quality control systems managers/i,
+    titles: ['Quality Control Manager', 'Quality Assurance Manager', 'Quality Control Systems Manager'],
+  },
+  {
+    // Production Supervisor, Factory Supervisor, Shift Supervisor, Team Leader in a factory ...
+    test: /^(production|factory|plant|workshop|manufacturing|fabrication|shift)( floor)? (supervisor|foreman|team leader|leader)$/,
+    keyword: 'production supervisor',
+    occupation: /^first-line supervisors of production and operating workers/i,
+    titles: ['Production Supervisor', 'Manufacturing Supervisor', 'Shift Supervisor'],
+  },
+  {
+    // Production Manager, Factory Manager, Plant Manager ...
+    test: /^(production|factory|plant|workshop|manufacturing|fabrication) manager$/,
+    keyword: 'industrial production manager',
+    occupation: /^industrial production managers/i,
+    titles: ['Production Manager', 'Plant Manager', 'Manufacturing Manager'],
+  },
+];
+
+const aliasFor = (title) => {
+  const key = norm(cleanQuery(title));
+  return key ? TITLE_ALIASES.find((alias) => alias.test.test(key)) || null : null;
+};
+
+const STOP_WORDS = new Set(['and', 'of', 'the', 'for', 'in', 'a', 'an', 'to', 'at', 'on']);
+const stems = (value) =>
+  norm(value)
+    .split(' ')
+    .filter((w) => w && !STOP_WORDS.has(w))
+    .map((w) => w.slice(0, 5));
+
+// 0 to 1: the share of the typed title's words that the occupation's name also has.
+const titleOverlap = (title, occupationTitle) => {
+  const typed = stems(cleanQuery(title));
+  if (!typed.length) return 0;
+  const official = new Set(stems(occupationTitle));
+  return typed.filter((w) => official.has(w)).length / typed.length;
+};
+
+const TECH_OCCUPATION = /\b(software|computer|web|database|network|programmer|developer|cyber|information security)\b/i;
+const TECH_TITLE = /\b(software|computer|web|database|network|programmer|developer|cyber|data|it|devops|qa|tester|testing|automation|frontend|front end|backend|back end|full stack|app|application|digital|cloud)\b/i;
+
+// O*NET's results for a typed title, best first. `strict` also drops results that share no word with the title
+// (Industrial Engineer, Weigher ... for "Quality Controller"), as long as something better is left.
+const rankOccupations = (title, list, { strict = false } = {}) => {
+  let pool = list.filter(isRelevant);
+  if (!TECH_TITLE.test(String(title || '').toLowerCase())) {
+    const nonTech = pool.filter((o) => !TECH_OCCUPATION.test(o.title));
+    if (nonTech.length) pool = nonTech;
+  }
+  const ranked = pool
+    .map((occupation, i) => ({ occupation, i, fit: titleOverlap(title, occupation.title) }))
+    .sort((a, b) => b.fit - a.fit || a.i - b.i);
+  const kept = strict && ranked.some((r) => r.fit > 0) ? ranked.filter((r) => r.fit > 0) : ranked;
+  return kept.map((r) => r.occupation);
+};
+
 /* ------------------------------- request layer ------------------------------ */
 
 let pausedUntil = 0;
@@ -227,8 +311,12 @@ const isRelevant = (occupation) => occupation.score == null || occupation.score 
 const resolveOccupation = async (title) => {
   const q = cleanQuery(title);
   if (q.length < 2) return null;
-  const list = await searchOccupations(q, 5);
-  return list.find(isRelevant) || null;
+  const alias = aliasFor(q);
+  if (alias) {
+    const hit = (await searchOccupations(alias.keyword, 8)).find((o) => alias.occupation.test(o.title));
+    if (hit) return hit;
+  }
+  return rankOccupations(q, await searchOccupations(q, 8))[0] || null;
 };
 
 const occupationLabel = (o) => `${o.code} ${o.title}${o.score == null ? '' : ` (match score ${o.score})`}`;
@@ -241,8 +329,9 @@ export const suggestTitles = async ({ query = '', skills = [], previousTitles = 
   if (q.length >= 2) {
     try {
       const found = await searchOccupations(q, limit + 4);
-      const relevant = found.filter(isRelevant);
-      const titles = unique(relevant.map((o) => friendlyTitle(o.title)));
+      const relevant = rankOccupations(q, found, { strict: true });
+      const alias = aliasFor(q);
+      const titles = unique([...(alias ? alias.titles : []), ...relevant.map((o) => friendlyTitle(o.title))]);
       if (titles.length) {
         const result = { suggestions: titles.slice(0, limit), source: 'onet' };
         logResult('suggestTitles', { query }, result, { 'O*NET occupations matched': relevant.map(occupationLabel) });

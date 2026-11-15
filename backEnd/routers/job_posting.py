@@ -18,11 +18,18 @@ SAFETY. The server downloads an address that a visitor typed, so the address is 
     check and the download (DNS rebinding); the certificate is still checked against the real host name;
   - every redirect is checked the same way, and at most MAX_REDIRECTS are followed;
   - the download is cut off after MAX_BYTES and after TOTAL_TIMEOUT_S seconds; only text pages are accepted.
+
+WHEN A LINK CANNOT BE READ. Every way the download can fail ends in a PostingError whose `message` says what happened
+in plain words (timed out, refused, closed the connection, blocked us ...) and whose `reason` holds the technical
+detail. The reason is printed to the server log and sent back with the error, so a refusal can be traced from the
+browser's Network tab or the Render logs instead of guessing.
 """
+import functools
 import html as html_lib
 import http.client
 import ipaddress
 import json
+import os
 import re
 import socket
 import ssl
@@ -30,24 +37,55 @@ import time
 import zlib
 from html.parser import HTMLParser
 from typing import Dict, List, Optional
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import quote, urljoin, urlsplit
 
 MAX_BYTES = 1_500_000  # a job page is far smaller; more than this is cut off, not an error
 MAX_REDIRECTS = 4
-CONNECT_TIMEOUT_S = 8
-TOTAL_TIMEOUT_S = 20
+CONNECT_TIMEOUT_S = 10  # how long to wait for a website to accept the connection
+READ_TIMEOUT_S = 15  # how long to wait for it to send (the next piece of) the page; a busy job board can be slow
+TOTAL_TIMEOUT_S = 25  # the whole download, redirects included
+MAX_ADDRESSES = 3  # a website can have several addresses: try up to this many before giving up
 TEXT_LIMIT = 14000  # characters of page text handed to the AI
 MIN_TEXT_CHARS = 200  # less than this means the page holds no job description (or it only loads in a browser)
-USER_AGENT = "Mozilla/5.0 (compatible; RemoPDF-JobReader/1.0; +https://remopdf.site)"
+
+# Job boards commonly answer a browser and drop the connection (or refuse) for anything that calls itself a robot, so
+# the page is asked for the way a normal browser asks. Browser versions age: set JOB_READER_USER_AGENT in the
+# environment (Render) to change it without touching the code, or bump CHROME_MAJOR here now and then.
+CHROME_MAJOR = "142"
+_DEFAULT_USER_AGENT = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{CHROME_MAJOR}.0.0.0 Safari/537.36"
+USER_AGENT = (os.environ.get("JOB_READER_USER_AGENT") or "").strip() or _DEFAULT_USER_AGENT
+
+REQUEST_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-ZA,en;q=0.9",
+    "Accept-Encoding": "gzip",  # the only compression _read_body can unpack
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+}
+if USER_AGENT == _DEFAULT_USER_AGENT:  # browser hints must agree with the User-Agent, or they give the game away
+    REQUEST_HEADERS.update({
+        "Sec-CH-UA": f'"Chromium";v="{CHROME_MAJOR}", "Google Chrome";v="{CHROME_MAJOR}", "Not_A Brand";v="99"',
+        "Sec-CH-UA-Mobile": "?0",
+        "Sec-CH-UA-Platform": '"Windows"',
+    })
 
 
 class PostingError(Exception):
-    """Something the person can act on. code: badlink | unreadable | nodetails."""
+    """Something the person can act on. code: badlink | unreadable | nodetails.
 
-    def __init__(self, code: str, message: str):
+    message  what the person sees.
+    reason   for whoever is debugging (server log, the browser's Network tab): the technical detail. May be empty.
+    """
+
+    def __init__(self, code: str, message: str, reason: str = ""):
         super().__init__(message)
         self.code = code
         self.message = message
+        self.reason = reason
 
 
 PASTE_HINT = "Paste the job description into the box instead."
@@ -108,15 +146,22 @@ def parse_job_url(raw: str):
     path = parts.path or "/"
     if parts.query:
         path = f"{path}?{parts.query}"
+    # A web address copied from a page can hold letters a request line cannot carry (an accent, a long dash, a curly
+    # quote). They are sent as %XX, the way a browser does it; escapes that are already there stay as they are.
+    path = quote(path, safe="/%:@!$&'()*+,;=~-._?[]")
     return scheme, host, port, path
 
 
-def _resolve_public(host: str, port: int) -> str:
-    """The one address to connect to. Every address the name resolves to must be public."""
+def _resolve_public(host: str, port: int) -> List[str]:
+    """Every address to try, best first. Every address the name resolves to must be public."""
     try:
         infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
-    except (socket.gaierror, UnicodeError, OSError):
-        raise PostingError("unreadable", "That website could not be found. Check the link, or paste the job description into the box instead.")
+    except (socket.gaierror, UnicodeError, OSError) as err:
+        raise PostingError(
+            "unreadable",
+            "That website could not be found. Check the link, or paste the job description into the box instead.",
+            f"dns: {type(err).__name__}: {str(err)[:120]}",
+        )
     addresses = []
     for info in infos:
         ip = info[4][0]
@@ -124,32 +169,143 @@ def _resolve_public(host: str, port: int) -> str:
             addresses.append(ip)
     if not addresses or not all(_is_public(ip) for ip in addresses):
         raise PostingError("badlink", "That web address can't be used.")
-    # Prefer IPv4: some hosts publish an IPv6 address they cannot actually serve.
+    # Prefer IPv4: some hosts publish an IPv6 address they cannot actually serve. The rest are the fallbacks.
     addresses.sort(key=lambda ip: ":" in ip)
-    return addresses[0]
+    return addresses
 
 
 # --------------------------------------------------------------------------- #
 #                                 the download                                #
 # --------------------------------------------------------------------------- #
 
+@functools.lru_cache(maxsize=1)
+def _tls_context() -> ssl.SSLContext:
+    context = ssl.create_default_context()  # certificate and host name are checked
+    context.set_alpn_protocols(["http/1.1"])  # say so, as a browser does (this code only speaks HTTP/1.1)
+    return context
+
+
 class _PinnedHTTP(http.client.HTTPConnection):
-    def __init__(self, host, port, ip, timeout):
-        super().__init__(host, port, timeout=timeout)
+    """Connects to one chosen address (`ip`), whatever the host name resolves to later."""
+
+    def __init__(self, host, port, ip, connect_timeout, read_timeout):
+        super().__init__(host, port, timeout=read_timeout)
         self._ip = ip
+        self._connect_timeout = connect_timeout
 
     def connect(self):
-        self.sock = socket.create_connection((self._ip, self.port), self.timeout)
+        sock = socket.create_connection((self._ip, self.port), self._connect_timeout)
+        sock.settimeout(self.timeout)  # from here on the limit is how long the site may stay silent
+        self.sock = sock
 
 
 class _PinnedHTTPS(http.client.HTTPSConnection):
-    def __init__(self, host, port, ip, timeout):
-        super().__init__(host, port, timeout=timeout, context=ssl.create_default_context())
+    def __init__(self, host, port, ip, connect_timeout, read_timeout):
+        super().__init__(host, port, timeout=read_timeout, context=_tls_context())
         self._ip = ip
+        self._connect_timeout = connect_timeout
 
     def connect(self):
-        sock = socket.create_connection((self._ip, self.port), self.timeout)
-        self.sock = self._context.wrap_socket(sock, server_hostname=self.host)  # certificate checked for the host name
+        sock = socket.create_connection((self._ip, self.port), self._connect_timeout)
+        sock.settimeout(self.timeout)
+        try:
+            self.sock = self._context.wrap_socket(sock, server_hostname=self.host)  # certificate checked for the host name
+        except BaseException:
+            sock.close()
+            raise
+
+
+class _NetworkFailure(Exception):
+    """One failed attempt to reach a website. kind: certificate | timeout | refused | closed | unreachable | other."""
+
+    def __init__(self, kind: str, reason: str):
+        super().__init__(reason)
+        self.kind = kind
+        self.reason = reason
+
+
+# What the person is told for each kind of failure. The honest cause is far more useful than one catch-all line:
+# "closed the connection" means the website is turning robots away, "timed out" means it was too slow.
+_FAILURE_TEXT = {
+    "certificate": "That website's security certificate could not be verified. ",
+    "timeout": "That website took too long to answer. ",
+    "refused": "That website refused the connection. ",
+    "closed": "That website closed the connection without showing the page, which job boards often do to automated readers. ",
+    "unreachable": "We could not connect to that website. ",
+    "other": "That page could not be reached. ",
+}
+
+
+def _classify(err: BaseException) -> _NetworkFailure:
+    reason = type(err).__name__ + (f": {str(err)[:150]}" if str(err) else "")
+    text = str(err).lower()
+    if isinstance(err, ssl.SSLCertVerificationError):
+        kind = "certificate"
+    elif isinstance(err, (socket.timeout, TimeoutError)) or "timed out" in text:
+        kind = "timeout"
+    elif isinstance(err, ConnectionRefusedError):
+        kind = "refused"
+    elif isinstance(err, (ssl.SSLError, ConnectionError, http.client.RemoteDisconnected, http.client.BadStatusLine, http.client.IncompleteRead)):
+        # A reset, a dropped connection, an empty answer, or a refused secure handshake: the site hung up on us.
+        kind = "closed"
+    elif isinstance(err, OSError) and err.errno in (101, 113, 51, 65, 10051, 10065):  # network / host unreachable (Linux, macOS, Windows)
+        kind = "unreachable"
+    else:
+        kind = "other"
+    return _NetworkFailure(kind, reason)
+
+
+def _remember_cookies(jar: Dict[str, str], response) -> None:
+    """Keeps the cookies a site sets while redirecting us, for the next step of the same download (some sites send
+    "set a cookie, then try again" and would otherwise redirect forever). Never kept beyond this one download."""
+    for header in response.msg.get_all("Set-Cookie") or []:
+        pair = header.split(";", 1)[0].strip()
+        name, _, value = pair.partition("=")
+        name = name.strip()
+        if not name:
+            continue
+        if not value or "max-age=0" in header.lower():
+            jar.pop(name, None)
+        elif len(jar) < 20:
+            jar[name] = value.strip()[:1000]
+
+
+def _attempt(scheme: str, host: str, port: int, ip: str, path: str, headers: Dict[str, str], deadline: float):
+    """One try at one address. -> (connection, response); the caller closes the connection. Raises _NetworkFailure."""
+    left = deadline - time.monotonic()
+    if left <= 0:
+        raise _NetworkFailure("timeout", "the time limit for the whole download ran out")
+    connection_class = _PinnedHTTPS if scheme == "https" else _PinnedHTTP
+    connection = connection_class(host, port, ip, min(CONNECT_TIMEOUT_S, left), min(READ_TIMEOUT_S, left))
+    try:
+        connection.request("GET", path, headers=headers)
+        return connection, connection.getresponse()
+    except (OSError, http.client.HTTPException) as err:
+        connection.close()
+        raise _classify(err)
+
+
+def _connect(scheme: str, host: str, port: int, addresses: List[str], path: str, headers: Dict[str, str], deadline: float):
+    """Tries the website's addresses in turn until one answers. -> (connection, response). Raises PostingError."""
+    tries = addresses[:MAX_ADDRESSES]
+    if len(tries) == 1:
+        tries = tries * 2  # a site with one address gets a second go: one that drops the first connection often answers the next
+    failure: Optional[_NetworkFailure] = None
+    timed_out = set()
+    for ip in tries:
+        if ip in timed_out:
+            continue  # it was too slow a moment ago; a second wait would only use up the time limit
+        try:
+            return _attempt(scheme, host, port, ip, path, headers, deadline)
+        except _NetworkFailure as err:
+            failure = err
+            print(f"[job_posting] {host}: {err.kind}: {err.reason}")  # the host only, never the full link (it can carry tokens)
+            if err.kind == "timeout":
+                timed_out.add(ip)
+            elif err.kind == "certificate":
+                break  # another address will not fix a certificate
+    failure = failure or _NetworkFailure("timeout", "the time limit for the whole download ran out")
+    raise PostingError("unreadable", _FAILURE_TEXT[failure.kind] + PASTE_HINT, f"{failure.kind}: {failure.reason}")
 
 
 def _charset(content_type: str, head: bytes) -> str:
@@ -177,14 +333,19 @@ def _read_body(response, deadline: float) -> bytes:
     elif encoding in ("identity", ""):
         inflater = None
     else:
-        raise PostingError("unreadable", "That page could not be read. " + PASTE_HINT)
+        raise PostingError("unreadable", "That page could not be read. " + PASTE_HINT, f"unsupported Content-Encoding: {encoding[:20]}")
 
     chunks: List[bytes] = []
     size = 0
     while size < MAX_BYTES:
         if time.monotonic() > deadline:
             break  # a slow page: use what has arrived
-        chunk = response.read(65536)
+        try:
+            chunk = response.read1(65536)  # whatever has arrived, not "wait until 64 KB is here"
+        except (OSError, http.client.HTTPException):
+            if chunks:
+                break  # the site stalled or hung up part-way: use what came
+            raise
         if not chunk:
             break
         if inflater is not None:
@@ -201,57 +362,50 @@ def fetch_page(url: str) -> Dict[str, str]:
     """Downloads the page. -> {'html': str, 'url': final address}. Raises PostingError."""
     deadline = time.monotonic() + TOTAL_TIMEOUT_S
     current = url
+    cookies: Dict[str, Dict[str, str]] = {}  # per host, for the redirects of this one download only
 
     for _ in range(MAX_REDIRECTS + 1):
         scheme, host, port, path = parse_job_url(current)
-        ip = _resolve_public(host, port)
-        connection_class = _PinnedHTTPS if scheme == "https" else _PinnedHTTP
-        connection = connection_class(host, port, ip, CONNECT_TIMEOUT_S)
-        try:
-            try:
-                connection.request(
-                    "GET",
-                    path,
-                    headers={
-                        "User-Agent": USER_AGENT,
-                        "Accept": "text/html,application/xhtml+xml,text/plain;q=0.8,*/*;q=0.5",
-                        "Accept-Language": "en",
-                        "Accept-Encoding": "gzip, identity",
-                    },
-                )
-                response = connection.getresponse()
-            except ssl.SSLError:
-                raise PostingError("unreadable", "That website's security certificate could not be verified. " + PASTE_HINT)
-            except (OSError, http.client.HTTPException):
-                raise PostingError("unreadable", "That page could not be reached. " + PASTE_HINT)
+        addresses = _resolve_public(host, port)
+        jar = cookies.setdefault(host, {})
+        headers = dict(REQUEST_HEADERS)
+        if jar:
+            headers["Cookie"] = "; ".join(f"{name}={value}" for name, value in jar.items())
 
+        connection, response = _connect(scheme, host, port, addresses, path, headers, deadline)
+        try:
             status = response.status
             if status in (301, 302, 303, 307, 308):
                 location = response.getheader("Location")
                 if not location:
-                    raise PostingError("unreadable", "That page could not be read. " + PASTE_HINT)
+                    raise PostingError("unreadable", "That page could not be read. " + PASTE_HINT, f"HTTP {status} with no Location header")
+                _remember_cookies(jar, response)
                 current = urljoin(f"{scheme}://{host}{path}", location)
                 continue
             if status in (401, 403, 429, 999):
-                raise PostingError("unreadable", "That site doesn't let us read the page automatically. " + PASTE_HINT)
+                print(f"[job_posting] {host}: HTTP {status}")
+                raise PostingError("unreadable", "That site doesn't let us read the page automatically. " + PASTE_HINT, f"HTTP {status}")
             if status in (404, 410):
-                raise PostingError("unreadable", "That page wasn't found. The advert may have closed, or the link is incomplete.")
+                raise PostingError("unreadable", "That page wasn't found. The advert may have closed, or the link is incomplete.", f"HTTP {status}")
             if status != 200:
-                raise PostingError("unreadable", "That page could not be read. " + PASTE_HINT)
+                print(f"[job_posting] {host}: HTTP {status}")
+                raise PostingError("unreadable", "That page could not be read. " + PASTE_HINT, f"HTTP {status}")
 
             content_type = (response.getheader("Content-Type") or "").lower()
             if content_type and not any(t in content_type for t in ("text/html", "application/xhtml", "text/plain")):
-                raise PostingError("unreadable", "That link isn't a web page we can read. " + PASTE_HINT)
+                raise PostingError("unreadable", "That link isn't a web page we can read. " + PASTE_HINT, f"content type {content_type[:60]}")
 
             try:
                 raw = _read_body(response, deadline)
-            except (OSError, http.client.HTTPException):
-                raise PostingError("unreadable", "That page could not be read. " + PASTE_HINT)
+            except (OSError, http.client.HTTPException) as err:
+                failure = _classify(err)
+                print(f"[job_posting] {host}: while reading the page: {failure.kind}: {failure.reason}")
+                raise PostingError("unreadable", "That page could not be read. " + PASTE_HINT, f"reading the page: {failure.reason}")
             return {"html": raw.decode(_charset(content_type, raw), errors="replace"), "url": current}
         finally:
             connection.close()
 
-    raise PostingError("unreadable", "That link redirects too many times. " + PASTE_HINT)
+    raise PostingError("unreadable", "That link redirects too many times. " + PASTE_HINT, f"more than {MAX_REDIRECTS} redirects")
 
 
 # --------------------------------------------------------------------------- #
