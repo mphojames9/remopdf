@@ -4,33 +4,35 @@ Which Groq model answers which job, how hard it thinks, how much each plan may u
 Every AI call in the backend (routers/writing_ai.py and routers/job_match.py) goes through complete() here, so the
 quality settings live in one place and cannot drift apart.
 
-The four plans
+The two plans
   The accounts server (routes/payments.js) puts the plan the person has paid for into the signed "AI pass"
   (claim "tier"). routers/writing_ai.py checks the pass and hands the tier to plan_for(), which answers with
   everything that changes from plan to plan:
 
-      plan   price   model                 thinking          token room   AI actions / day   what it can use
-      ----   -----   -------------------   ---------------   ----------   ----------------   ------------------------------
-      free   R0      openai/gpt-oss-20b    low               x1.0          6                 writing suggestions only
-      plus   R59     openai/gpt-oss-120b   low               x1.0         25                 everything
-      pro    R99     openai/gpt-oss-120b   medium (default)  x1.0         40                 everything
-      max    R159    openai/gpt-oss-120b   high              x1.3         60                 everything
+      plan      model                 thinking   token room   AI actions / day   what it can use
+      -------   -------------------   --------   ----------   ----------------   ------------------------------
+      free      (none)                -          -             0                 no AI suggestions at all
+      premium   openai/gpt-oss-120b   high       x1.3         60                 everything
 
-  "Thinking" is moved one step down (free, plus) or up (max) from the level each task asks for in TASKS below, so a
-  Max person gets "high" where Pro gets "medium", and "medium" where Pro gets "low" (reading an advert).
+  Premium is one plan that is bought for 7, 14 or 30 days (R39 / R78 / R156): every length gets the same, best setting,
+  so nobody who pays is served a weaker model than anybody else. The strongest model Groq offers for production use
+  is gpt-oss-120b (Groq's newer models are still labelled "preview", which Groq says is not for production), and it
+  runs at its "high" thinking setting with 30% more room to think. When Groq promotes a stronger model to production,
+  set GROQ_MODEL_PREMIUM in Render and nothing else has to change.
+
+  "Thinking" is moved one step up from the level each task asks for in TASKS below, so Premium gets "high" where a
+  task asks for "medium", and "medium" where it asks for "low" (reading an advert).
   Groq's list prices (US$ per million tokens in / out): gpt-oss-20b 0.075 / 0.30, gpt-oss-120b 0.15 / 0.60.
-  See README-PLANS.md for the cost per action and the margin per plan.
+
+  Passes made before the plans changed still carry "plus", "pro" or "max": they are served as Premium (see clean_tier()).
 
 Settings (all optional, set in Render -> Environment)
-  GROQ_MODEL            If set, this model is used for EVERYTHING, for every plan (and no fallback is needed). It is
-                        also the instant way back to the old behaviour:  GROQ_MODEL=openai/gpt-oss-20b
-  GROQ_MODEL_FREE | GROQ_MODEL_PLUS | GROQ_MODEL_PRO | GROQ_MODEL_MAX
-                        Swap the model of ONE plan without touching code (for example when Groq releases a better one).
+  GROQ_MODEL            If set, this model is used for EVERYTHING (and no fallback is needed). It is also the instant
+                        way back to a cheaper model:  GROQ_MODEL=openai/gpt-oss-20b
+  GROQ_MODEL_PREMIUM    Swap the Premium model without touching code (for example when Groq releases a better one).
   GROQ_FALLBACK_MODEL   Used when the main model is rate-limited, down, slow or returns something unusable.
-                        Default: openai/gpt-oss-20b (the free plan has none: it already runs on that model).
-                        Set it to the same value as the main model to turn the fallback off.
-  AI_DAILY_FREE | AI_DAILY_PLUS | AI_DAILY_PRO | AI_DAILY_MAX
-                        AI actions per person per day (South African time). 0 = no AI on that plan.
+                        Default: openai/gpt-oss-20b. Set it to the same value as the main model to turn the fallback off.
+  AI_DAILY_PREMIUM      AI actions per Premium person per day (South African time). Default 60.
 
 How a call is made (see complete())
   1. main model, the plan's thinking level for the task
@@ -57,13 +59,14 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 PREMIUM_MODEL = "openai/gpt-oss-120b"
 FALLBACK_MODEL = "openai/gpt-oss-20b"
-LIGHT_MODEL = "openai/gpt-oss-20b"  # the free plan's model: the cheapest one that still follows the rules of the prompts
+LIGHT_MODEL = "openai/gpt-oss-20b"  # only the cheap fallback now: the free plan has no AI, so no one is served by it directly
 
 # Kept so older imports (`from routers.writing_ai import DEFAULT_MODEL`) still work.
 DEFAULT_MODEL = PREMIUM_MODEL
 
-TIERS = ("free", "plus", "pro", "max")  # lowest to highest
-DEFAULT_TIER = "pro"  # used when nothing says otherwise: this is exactly how every Premium person was served before plans
+TIERS = ("free", "premium")  # lowest to highest
+LEGACY_PAID_TIERS = ("plus", "pro", "max")  # the plans that existed before there was just Premium: served as Premium
+DEFAULT_TIER = "premium"  # used when nothing says otherwise: only paying people ever reach the AI
 _EFFORTS = ("low", "medium", "high")
 
 
@@ -93,16 +96,16 @@ TASKS = {
     "target": Task("low", 4000, 22, 0.1),
 }
 
-# The lowest plan that may use each kind of call. The free plan gets the writing assistant (the as-you-type review) so
-# every signed-in person can try the AI; the heavier features (cover letter, job matching) are what the paid plans add.
+# The lowest plan that may use each kind of call. The free plan has no AI suggestions at all, so every kind of call
+# needs Premium: the writing assistant, the summary writer, job matching, the cover letter and reading an advert.
 MIN_TIER = {
-    "analyze": "free",
-    "rewrite": "plus",
-    "letter": "plus",
-    "summary": "plus",
-    "skills": "plus",
-    "posting": "plus",
-    "target": "plus",
+    "analyze": "premium",
+    "rewrite": "premium",
+    "letter": "premium",
+    "summary": "premium",
+    "skills": "premium",
+    "posting": "premium",
+    "target": "premium",
 }
 
 # What one model request costs against the daily allowance. A letter reads the whole resume and the advert and is
@@ -120,16 +123,12 @@ class TierSpec:
 
 
 TIER_SPECS: Dict[str, TierSpec] = {
-    # R0: the small model, thinking low. About R0.007 per action; no fallback (it is already the cheapest model).
-    "free": TierSpec(LIGHT_MODEL, None, -1, 1.0, 6),
-    # R59: the large model with little thinking. Noticeably better wording and far fewer answers thrown away by the
-    # honesty checks, for about R0.016 per action.
-    "plus": TierSpec(PREMIUM_MODEL, FALLBACK_MODEL, -1, 1.0, 25),
-    # R99: the large model thinking at the task's own level ("medium"): what Premium was before plans existed. About R0.032.
-    "pro": TierSpec(PREMIUM_MODEL, FALLBACK_MODEL, 0, 1.0, 40),
-    # R159: the large model thinking one step harder everywhere ("high" where Pro has "medium") with 30% more room to
-    # think. About R0.053 per action.
-    "max": TierSpec(PREMIUM_MODEL, FALLBACK_MODEL, 1, 1.3, 60),
+    # No AI: nothing reaches the model on this plan (MIN_TIER refuses every call and the allowance is 0). The row only
+    # exists so that plan_for("free") still answers with something sensible.
+    "free": TierSpec(LIGHT_MODEL, None, -1, 1.0, 0),
+    # Premium, whichever length was bought: the large model thinking one step harder than each task asks for ("high"
+    # where a task says "medium") with 30% more room to think, and 60 AI actions a day. About R0.05 per action.
+    "premium": TierSpec(PREMIUM_MODEL, FALLBACK_MODEL, 1, 1.3, 60),
 }
 
 
@@ -137,18 +136,28 @@ def _env(name: str) -> str:
     return (os.getenv(name) or "").strip()
 
 
+def normalize_tier(tier: Optional[str]) -> Optional[str]:
+    """"free" or "premium" for a tier we know (the old "plus" / "pro" / "max" are Premium now), otherwise None."""
+    if tier in TIER_SPECS:
+        return tier
+    if tier in LEGACY_PAID_TIERS:
+        return "premium"
+    return None
+
+
 def clean_tier(tier: Optional[str]) -> str:
     """The tier if it is one we know, otherwise DEFAULT_TIER."""
-    return tier if tier in TIER_SPECS else DEFAULT_TIER
+    return normalize_tier(tier) or DEFAULT_TIER
 
 
 def tier_rank(tier: Optional[str]) -> int:
+    tier = normalize_tier(tier)
     return TIERS.index(tier) if tier in TIERS else -1
 
 
 def allowed(tier: Optional[str], task: str) -> bool:
     """Whether this plan may use this kind of call at all."""
-    needed = MIN_TIER.get(task, "plus")
+    needed = MIN_TIER.get(task, "premium")
     return tier_rank(tier) >= tier_rank(needed)
 
 
@@ -161,7 +170,7 @@ def daily_limit(tier: str) -> int:
 
 
 def primary_model() -> str:
-    """The model that answers first for the default (Pro) plan. GROQ_MODEL, when set, wins for every task."""
+    """The model that answers first for the default (Premium) plan. GROQ_MODEL, when set, wins for every task."""
     return plan_for(DEFAULT_TIER).model
 
 
@@ -195,8 +204,8 @@ class Plan:
 
     @property
     def cache_id(self) -> str:
-        """What a stored reply is filed under. Includes the tier, so a Max answer (thought harder) is never served to
-        Plus, and a Plus answer is never served to Max."""
+        """What a stored reply is filed under. Includes the tier, so an answer is only ever served to the plan it was
+        written for."""
         return f"{self.tier}:{self.model}"
 
     def effort_for(self, task_effort: str) -> str:
@@ -205,7 +214,8 @@ class Plan:
 
 
 def plan_for(tier: Optional[str] = None) -> Plan:
-    """The plan for a tier ("free" | "plus" | "pro" | "max"); anything else is served as DEFAULT_TIER."""
+    """The plan for a tier ("free" | "premium"; the old "plus" | "pro" | "max" are Premium); anything else is served as
+    DEFAULT_TIER."""
     tier = clean_tier(tier)
     spec = TIER_SPECS[tier]
     model = _env("GROQ_MODEL") or _env(f"GROQ_MODEL_{tier.upper()}") or spec.model
@@ -344,7 +354,7 @@ def complete(
 
     get_client   returns the OpenAI-compatible Groq client (it may raise HTTPException when the key is missing: that
                  is passed straight up, it is not a model failure)
-    plan         what the person has paid for (plan_for(tier)); without one the call is served as the default (Pro) plan
+    plan         what the person has paid for (plan_for(tier)); without one the call is served as the default (Premium) plan
     model        overrides the plan's main model (kept for older callers)
     """
     spec = TASKS[task]

@@ -197,7 +197,7 @@ function SiteFooter() {
 // The contents list drives the numbering, so adding, removing or moving an entry renumbers the
 // sections and every “section N” reference on the page. Keep each id in sync with its <Sec id=...>.
 
-const LAST_UPDATED = '13 November 2026';
+const LAST_UPDATED = '16 November 2026';
 const CONTACT_EMAIL = 'support@remopdf.site';
 
 const TOC = [
@@ -277,7 +277,7 @@ const Ul = ({ children }) => <ul className="list-disc space-y-2 pl-5 marker:text
 const GLANCE = [
   { term: 'Your files', detail: 'They are processed to do the job you asked for, then removed. We keep no backups and we do not look through them.' },
   { term: 'Accounts', detail: 'Optional. You sign in with a Gmail account to save resumes and to buy Premium. There is no password to remember.' },
-  { term: 'Cost', detail: 'Many tools are free. Premium is a one-off payment for a set period, shown at checkout before you pay. It never renews by itself.' },
+  { term: 'Cost', detail: 'Many tools are free. Premium is a one-off payment: R39 for 7 days, R78 for 14 days or R156 for 30 days, shown at checkout before you pay. It never renews by itself.' },
   { term: 'Payments', detail: 'We accept payment only through Paystack, and by no other method.' },
   { term: 'Refunds', detail: 'Premium starts straight away, so it is not refundable for a change of mind. We refund when we got it wrong, such as a double charge or Premium that never switched on. Your legal rights are not affected.' },
   { term: 'AI and ATS', detail: 'AI suggestions can be wrong, and no resume can be guaranteed to pass an employer’s system. Check everything before you send it.' },
@@ -615,30 +615,47 @@ export default function Terms() {
 
             <Sec id="premium">
               <p>
-                Many tools can be used without paying, and you can build and download a resume for free. Free resume downloads carry a small “Created with RemoPDF” note at
-                the foot of each page.
+                Many tools can be used without paying. On the free plan you can build a resume, save 1 resume and download it as often as you like. Free resume downloads
+                carry a small “Created with RemoPDF” note at the foot of each page. The free plan has no AI suggestions and does not import an existing resume.
               </p>
               <p>
-                Premium removes that note and unlocks the AI-assisted features described in <Ref id="ai" />. It is tied to the account you buy it with (see{' '}
-                <Ref id="accounts" />).
+                Premium removes that note and unlocks the AI-assisted features described in <Ref id="ai" />, importing an existing resume, and saving up to 10 resumes. It is
+                tied to the account you buy it with (see <Ref id="accounts" />).
+              </p>
+              <Sub>Prices and lengths</Sub>
+              <p>Premium is sold in three lengths. Every length gives you exactly the same Premium: only the number of days and the price are different.</p>
+              <Ul>
+                <li><strong>7 days:</strong> R39</li>
+                <li><strong>14 days:</strong> R78</li>
+                <li><strong>30 days:</strong> R156</li>
+              </Ul>
+              <p>
+                Prices are in South African rand (ZAR). The length, price and currency are shown at checkout before you pay, and what you see there is what you pay.
               </p>
               <Sub>How Premium works</Sub>
               <Ul>
                 <li>
-                  Premium is a <strong>one-off payment for a set period of access</strong>. The plan name, price, currency and length of access are shown at checkout before
-                  you pay.
+                  Premium is a <strong>one-off payment for a set period of access</strong>: 7, 14 or 30 days, whichever you choose at checkout.
                 </li>
                 <li>
                   It <strong>does not renew automatically</strong>. RemoPDF never charges you again on its own: a new payment only happens when you go through checkout again.
                   Because nothing renews, there is no subscription to cancel.
                 </li>
                 <li>
-                  Access starts when your payment is confirmed and runs for the period shown at checkout, whether or not you use it. The days you have left are shown in the
+                  Access starts when your payment is confirmed and runs for the period you paid for, whether or not you use it. The days you have left are shown in the
                   resume builder.
                 </li>
-                <li>When the period ends, your account goes back to the free plan.</li>
+                <li>
+                  If you pay while you still have Premium, the new days are added after the days you already have, so you do not lose any. At most 90 days of Premium can be
+                  waiting at once.
+                </li>
+                <li>
+                  AI suggestions have a daily allowance, currently 60 AI actions a day, which starts again at midnight South African time. We may change this allowance to keep the
+                  Service available for everyone.
+                </li>
+                <li>When your Premium days run out, your account goes back to the free plan.</li>
                 <li>Premium is for your own use. You may not share it or resell it.</li>
-                <li>We may change prices, plans and features. A change does not affect access you have already paid for.</li>
+                <li>We may change prices, lengths and features. A change does not affect access you have already paid for.</li>
               </Ul>
             </Sec>
 
@@ -725,7 +742,7 @@ export default function Terms() {
 
             <Sec id="ai">
               <p>
-                The summary suggestions, writing analysis, job target and cover letter tools use artificial intelligence. When you use one, the text you are working on, such as
+                The summary suggestions, writing analysis, job target and cover letter tools are part of Premium and use artificial intelligence. When you use one, the text you are working on, such as
                 your resume content or a job advert, is sent to an AI provider so it can produce a response. Do not include information you do not want processed this way.
               </p>
               <p>If you add a job advert by web address, our server fetches that public page to read it.</p>

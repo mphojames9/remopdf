@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
   payment code (the AI writing assistant in every section of the builder).
 
     setPremiumAccess(true | false | null)   called by the builder whenever /api/payments/status answers
-    usePremiumAccess()                      -> true | false | null   (true = any paid plan: Plus, Pro or Max)
-    setAccessTier('free' | 'plus' | 'pro' | 'max' | null)   the plan, called by the builder with the same answer
-    useAccessTier()                         -> 'free' | 'plus' | 'pro' | 'max' | null   (null = not known yet)
+    usePremiumAccess()                      -> true | false | null   (true = Premium is running, whatever length was bought)
+    setAccessTier('free' | 'premium' | null)   the plan, called by the builder with the same answer
+    useAccessTier()                         -> 'free' | 'premium' | null   (null = not known yet)
     requestUpgrade()                        asks the builder to open the payment dialog
     onUpgradeRequest(handler)               the builder registers here; returns an unsubscribe function
 
@@ -20,7 +20,7 @@ import { useEffect, useState } from 'react';
   who is signed in without Premium: paying needs an account, so signing in comes first.
 
   null means "not known yet". Nothing here grants anything: the server checks Premium again on every AI
-  request, so this only decides what the page shows and whether it bothers to ask.
+  request (the free plan has no AI suggestions), so this only decides what the page shows and whether it bothers to ask.
 */
 
 let access = null;
@@ -35,8 +35,8 @@ export const setPremiumAccess = (value) => {
 
 export const getPremiumAccess = () => access;
 
-// The plan itself. Premium (above) only says "has paid for something"; this says which of the three paid plans.
-const TIER_NAMES = ['free', 'plus', 'pro', 'max'];
+// The plan itself, as the same two names the server uses.
+const TIER_NAMES = ['free', 'premium'];
 let tier = null;
 const tierListeners = new Set();
 

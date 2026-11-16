@@ -1667,9 +1667,9 @@ const greetingFor = (date) => {
   return 'Good evening';
 };
 
-// "Upgrade" in the top bar. Once the account has paid it turns into a small badge with the name of the plan (Plus, Pro
-// or Max) and the days left (read from the server, which works them out from the payment in the database). On Plus and
-// Pro the badge is a button that opens the plans again, so a better plan is one tap away.
+// "Get Premium" in the top bar. Once the account has paid it turns into a small badge saying "Premium" with the days
+// left (read from the server, which works them out from the payments in the database). The badge is a button that opens
+// checkout again, so more days can be added at any time (they start when the current ones end).
 // `dark` is for the dark bar on small screens, `compact` shortens the label so it fits there.
 const SparkIcon = ({ className = 'h-3.5 w-3.5' }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1704,7 +1704,7 @@ const PremiumButton = ({ premium, tier = null, daysLeft = 0, expiresAt = null, o
       endDate && !Number.isNaN(endDate.getTime())
         ? endDate.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
         : '';
-    const canUpgrade = tier !== 'max' && typeof onClick === 'function';
+    const canUpgrade = typeof onClick === 'function';
     const label = tier ? planName(tier) : 'Premium';
     const badgeClass = `inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold ${
       dark ? 'bg-white/10 text-white ring-1 ring-white/20' : 'bg-[#d9856b]/10 text-[#a64a30] ring-1 ring-[#d9856b]/30'
@@ -1720,7 +1720,7 @@ const PremiumButton = ({ premium, tier = null, daysLeft = 0, expiresAt = null, o
         )}
       </>
     );
-    const title = `${label} plan${endsOn ? ` ends on ${endsOn}` : ''}${canUpgrade ? '. Tap to see better plans.' : ''}`;
+    const title = `${label}${endsOn ? ` ends on ${endsOn}` : ''}${canUpgrade ? '. Tap to add more days.' : ''}`;
     return canUpgrade ? (
       <button
         type="button"
@@ -1747,7 +1747,7 @@ const PremiumButton = ({ premium, tier = null, daysLeft = 0, expiresAt = null, o
       }`}
     >
       <SparkIcon className={`h-3.5 w-3.5 transition-transform group-hover:rotate-12 ${dark ? 'text-white' : 'text-[#f2a98f]'}`} />
-      {compact ? 'Upgrade' : 'Upgrade your plan'}
+      Get Premium
     </button>
   );
 };
@@ -2146,20 +2146,20 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   const pendingDownloadRef = useRef(null);
   const [paymentFromDownload, setPaymentFromDownload] = useState(false);
   const [premium, setPremium] = useState(false);
-  const [premiumTier, setPremiumTier] = useState('free'); // 'free' | 'plus' | 'pro' | 'max'
+  const [premiumTier, setPremiumTier] = useState('free'); // 'free' | 'premium'
   const [premiumInfo, setPremiumInfo] = useState({ daysLeft: 0, expiresAt: null });
   const tierRef = useRef(null); // the plan the AI pass was made for
 
   // Takes what /api/payments/status says (or null when signed out) and updates the badge from it.
   const applyAccess = useCallback((status) => {
     const active = Boolean(status?.premium);
-    const tier = active ? (['plus', 'pro', 'max'].includes(status?.tier) ? status.tier : 'pro') : 'free';
+    const tier = active ? 'premium' : 'free';
     if (tierRef.current !== null && tierRef.current !== tier) forgetAiPass(); // the plan changed: the next AI request carries the new one
     tierRef.current = tier;
     setPremium(active);
     setPremiumTier(tier);
     setPremiumAccess(active); // also tells the AI writing assistant (signed out counts as "no Premium")
-    setAccessTier(status ? tier : null); // the plan itself: which AI the account gets
+    setAccessTier(status ? tier : null); // the plan itself: Premium has AI suggestions, Free has none
     setPremiumInfo({
       daysLeft: active ? Math.max(0, Number(status.daysLeft) || 0) : 0,
       expiresAt: active ? status.expiresAt || null : null,
@@ -2178,7 +2178,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
 
   // Whether this account has already paid and how many days are left, so the top bar shows "Premium" with a
   // countdown instead of the upgrade button. It is read again whenever the person comes back to this tab, so
-  // the number stays right after a day or more, and the badge goes away by itself once the 30 days are over.
+  // the number stays right after a day or more, and the badge goes away by itself once the paid days are over.
   useEffect(() => {
     if (!profile.user?.id) {
       applyAccess(null);
@@ -2209,7 +2209,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   }, [profile.user?.id, applyAccess]);
 
   // How many resumes an account may keep depends on Premium, so the limit is read again from the server
-  // whenever Premium starts (paid in this session) or runs out (the 30 days are over).
+  // whenever Premium starts (paid in this session) or runs out (the paid days are over).
   const premiumSeenRef = useRef(false);
   useEffect(() => {
     if (premiumSeenRef.current === premium) return;
@@ -2791,16 +2791,12 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
               {premium && (
                 <MenuRow
                   icon={<SparkIcon className="h-4 w-4" />}
-                  label={`${planName(premiumTier)} plan`}
+                  label={planName(premiumTier)}
                   value={premiumInfo.daysLeft > 0 ? `${premiumInfo.daysLeft} ${premiumInfo.daysLeft === 1 ? 'day' : 'days'} left` : 'Active'}
-                  onClick={
-                    premiumTier !== 'max'
-                      ? () => {
-                          setMenuOpen(false);
-                          openUpgrade();
-                        }
-                      : undefined
-                  }
+                  onClick={() => {
+                    setMenuOpen(false);
+                    openUpgrade();
+                  }}
                 />
               )}
             </>

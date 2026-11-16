@@ -4,14 +4,15 @@
   The Groq key lives on the server (routers/writing_ai.py, env GROQ_API_KEY). Nothing secret is in
   this file, and the key must never be put in the React app: anything in the bundle is public.
 
-  Every signed-in account can use the writing assistant: the free plan on a small, cheap AI model with a small daily
-  allowance, the paid plans (Plus, Pro, Max) on larger models that think harder, with a bigger allowance. Before a
+  The writing assistant is part of Premium (the free plan has no AI suggestions). Every Premium account, whichever
+  length of Premium it bought, is answered by the strongest AI model, thinking hardest, with a daily allowance. Before a
   review the app gets a short-lived "AI pass" from the accounts server (getAiPass in api/payments.js): a signed note
-  saying which plan this account has right now. The AI service checks the pass itself before it uses the key, so it
-  never has to reach the accounts server, and it picks the model from the plan. This file only reports what was said:
-    403 -> WritingAIError('premium')    signed in, but this plan cannot use that feature
+  saying this account has Premium right now (the server answers 403 to an account without it). The AI service checks
+  the pass itself before it uses the key, so it never has to reach the accounts server. This file only reports what
+  was said:
+    403 -> WritingAIError('premium')    signed in, but without Premium
     401 -> WritingAIError('signin')     not signed in, or the session ran out
-    429 -> WritingAIError('quota')      today's AI allowance for this plan is used up (renews at midnight, South Africa)
+    429 -> WritingAIError('quota')      today's AI allowance is used up (renews at midnight, South Africa)
     429 -> WritingAIError('busy')       too many reviews in a minute
 
     analyzeWriting({ text, field, jobTitle, jobTarget, signal })   -> { rewrites, needs }

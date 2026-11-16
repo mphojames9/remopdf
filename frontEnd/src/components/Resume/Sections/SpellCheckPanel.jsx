@@ -21,13 +21,11 @@ import { usePremiumAccess, useAccessTier, requestUpgrade, setPremiumAccess, useS
 // panel can ask "Make it stronger" questions about lines that state no scale or result ("How many staff did you
 // supervise?"). They are only questions: nothing is added to the text until the writer types the answer.
 //
-// Every signed-in account can use the assistant. The free plan runs on a small, cheap AI model with a small daily
-// allowance; Plus, Pro and Max run on larger models that think harder, with a bigger allowance (the AI service picks
-// the model from the plan in the AI pass, see routers/ai_models.py). Signed out, the panel shows a sign-in note and
-// sends nothing. When today's allowance is used up the panel says so and offers the plans (nothing is sent until the
-// allowance renews at midnight in South Africa, or the plan changes). Tailoring to a job is a paid feature, so on the
-// free plan the assistant reviews the text without the job target. The plan comes from the builder through
-// hooks/premiumAccess.js.
+// The assistant is part of Premium. Every Premium account gets the strongest AI model, thinking hardest, whichever
+// length of Premium was bought (the AI service picks the model from the AI pass, see routers/ai_models.py). Signed out,
+// the panel shows a sign-in note and sends nothing. Signed in on the free plan, it shows what Premium adds and a button
+// that opens checkout, and sends nothing. When today's allowance is used up the panel says so (nothing is sent until the
+// allowance renews at midnight in South Africa). The plan comes from the builder through hooks/premiumAccess.js.
 //
 // The panel can be hidden: tapping its header collapses it to a single line that still shows how
 // many versions are ready. That choice is remembered and shared by every panel on the page.
@@ -37,8 +35,8 @@ const TYPING_PAUSE_MS = 1400; // review this long after the last keystroke
 
 const ERROR_TEXT = {
   busy: 'That was a lot of reviews in a minute. Give it a moment, then try again.',
-  quota: 'You have used today’s AI suggestions for your plan. They start again at midnight.',
-  premium: 'This part of the writing assistant is included in the paid plans.',
+  quota: 'You have used today’s AI suggestions. They start again at midnight.',
+  premium: 'AI suggestions are part of Premium.',
   timeout: 'The AI took too long to answer. The server may be waking up, so try again in a few seconds.',
   offline: 'Couldn’t reach the AI service. Check your connection and try again.',
   unavailable: 'AI review is unavailable right now. You can keep writing and try again later.',
@@ -176,13 +174,14 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
   const value = typeof text === 'string' ? text : '';
   const premium = usePremiumAccess();
   const tier = useAccessTier();
-  // Tailoring to a job is a paid feature: on the free plan the assistant reviews the text without the job target.
+  // Tailoring to a job is part of Premium (and so is the whole assistant: the free plan sends nothing, see `locked`).
   const jobTarget = premium === true ? askedTarget : null;
   const tailored = hasJobTarget(jobTarget) && (field === 'summary' || field === 'experience');
   const targetKey = tailored ? `${jobTarget.title}|${jobTarget.keywords.map((k) => k.term).join(',')}` : '';
   const open = useStore(openStore);
   const signedOut = useSignedIn() === false;
-  const locked = signedOut; // known to be signed out: nothing is sent to the AI
+  const needsPremium = !signedOut && premium === false; // signed in on the free plan: no AI suggestions
+  const locked = signedOut || needsPremium; // nothing is sent to the AI
   const quotaHitRef = useRef(0); // when today's allowance was found used up (0 = not)
   const [state, setState] = useState({ status: 'idle', result: null, error: null });
   const [applied, setApplied] = useState(false); // a version was just chosen and nothing has changed since
@@ -199,7 +198,8 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
   // Review the text a moment after the last keystroke. Typing again cancels a review in flight.
   useEffect(() => {
     if (locked) {
-      // Signed out: no review, and nothing from an earlier one stays on screen. Signing in flips `locked` and this runs again.
+      // Signed out, or on the free plan: no review, and nothing from an earlier one stays on screen. Signing in or
+      // paying flips `locked` and this runs again.
       analyzedRef.current = null;
       setApplied(false);
       setState((s) => (s.status === 'idle' && !s.result && !s.error ? s : { status: 'idle', result: null, error: null }));
@@ -337,7 +337,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
           {locked && (
             <span className="inline-flex items-center gap-1.5 text-xs text-[#8f4631] whitespace-nowrap">
               <Lock />
-              <span className="sr-only sm:not-sr-only">Sign in</span>
+              <span className="sr-only sm:not-sr-only">{signedOut ? 'Sign in' : 'Premium'}</span>
             </span>
           )}
           {!locked && !loading && state.status === 'error' && (
@@ -355,14 +355,28 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
 
       {open && (
         <div id={bodyId.current}>
-          {locked && (
+          {signedOut && (
             <div className="px-3 py-3 flex flex-col gap-2">
               <p className="text-xs leading-relaxed text-slate-600">
-                Sign in to use AI suggestions and get three polished versions of your text to choose from.
+                Sign in to get started. AI suggestions are part of Premium: three polished versions of your text to choose from.
               </p>
               <div>
                 <button type="button" onClick={requestSignIn} className={PRIMARY_BUTTON}>
                   Sign in
+                </button>
+              </div>
+            </div>
+          )}
+
+          {needsPremium && (
+            <div className="px-3 py-3 flex flex-col gap-2">
+              <p className="text-xs leading-relaxed text-slate-600">
+                AI suggestions are part of Premium: three polished versions of what you wrote, tailored to the job you are applying for,
+                on our strongest AI. Pay once for 7, 14 or 30 days. Nothing renews on its own.
+              </p>
+              <div>
+                <button type="button" onClick={requestUpgrade} className={PRIMARY_BUTTON}>
+                  Get Premium
                 </button>
               </div>
             </div>
@@ -379,16 +393,8 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
                   ? state.error.message || ERROR_TEXT.quota
                   : ERROR_TEXT[state.error && state.error.code] || ERROR_TEXT.unavailable}
               </p>
-              {/* A used-up allowance is fixed by a bigger plan (or by waiting until midnight), not by retrying. */}
-              {state.error && state.error.code === 'quota' ? (
-                tier !== 'max' && (
-                  <div>
-                    <button type="button" onClick={requestUpgrade} className={PRIMARY_BUTTON}>
-                      See plans
-                    </button>
-                  </div>
-                )
-              ) : (
+              {/* A used-up allowance is fixed by waiting until midnight, not by retrying. */}
+              {state.error && state.error.code === 'quota' ? null : (
                 /* An expired sign-in cannot be fixed by retrying: the message says to sign in again. */
                 !(state.error && state.error.code === 'signin') && (
                   <div>

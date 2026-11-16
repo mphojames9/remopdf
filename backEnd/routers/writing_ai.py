@@ -27,20 +27,21 @@ The React app (writingAI.js) calls:
 The Groq key stays on the server. Setup, once:
 
     Render -> Environment:  GROQ_API_KEY = <your key>
-    (optional)              GROQ_MODEL          = one model for everything, every plan (see routers/ai_models.py)
-    (optional)              GROQ_MODEL_FREE / _PLUS / _PRO / _MAX = the model of one plan
+    (optional)              GROQ_MODEL          = one model for everything (see routers/ai_models.py)
+    (optional)              GROQ_MODEL_PREMIUM  = the Premium model (default: openai/gpt-oss-120b)
     (optional)              GROQ_FALLBACK_MODEL = the safety-net model (default: openai/gpt-oss-20b)
-    (optional)              AI_DAILY_FREE / _PLUS / _PRO / _MAX = AI actions per person per day
+    (optional)              AI_DAILY_PREMIUM    = AI actions per Premium person per day (default: 60)
 
-Four plans (Free, Plus R59, Pro R99, Max R159). The model, how hard it thinks and how much a person may use per day
-all follow the plan they paid for; the table is in routers/ai_models.py. The request must carry an "AI pass"
-("Authorization: Bearer <pass>"): a short-lived signed note that the accounts server (the Node app with
-sign-in and Paystack) hands to every signed-in account at GET /api/payments/ai-pass, saying which plan the account
+Two plans: Free (R0) has no AI suggestions at all, and Premium (R39 for 7 days, R78 for 14 days, R156 for 30 days; one
+payment, never renews) gets all of it on the strongest model, thinking hardest. The model, how hard it thinks and how
+much a person may use per day follow the plan; the table is in routers/ai_models.py. The request must carry an "AI
+pass" ("Authorization: Bearer <pass>"): a short-lived signed note that the accounts server (the Node app with
+sign-in and Paystack) hands to every Premium account at GET /api/payments/ai-pass, saying which plan the account
 has right now (claim "tier"). This service has no accounts of its own and never calls the accounts server (which may
 not even be reachable from here); it only checks the pass's signature with a secret both sides share. Answers: 401
-(no valid pass), 403 (this plan cannot use that feature), 429 (too many requests, or today's allowance is used up:
-detail.code is "quota") or 503 (secret not set), always without calling Groq. The free plan can only use
-/analyze. Setup, once, the SAME value in both places:
+(no valid pass), 403 (the free plan cannot use AI suggestions), 429 (too many requests, or today's allowance is used
+up: detail.code is "quota") or 503 (secret not set), always without calling Groq. Setup, once, the SAME value in
+both places:
 
     Render -> Environment:  AI_PASS_SECRET = <32+ random characters>
     accounts server .env:   AI_PASS_SECRET = <the same value>
@@ -369,9 +370,9 @@ def _cache_key(text: str, field: str, job_title: str, model: str) -> str:
 # --------------------------------------------------------------------------- #
 # The plan decision is made in one place only, accessFor() in the accounts server's routes/payments.js.
 # It signs a short "AI pass" (HS256 JWT, a few minutes long, never longer than the paid access) that says which plan
-# the account has ("tier": free | plus | pro | max). Here the pass is checked, with nothing but the shared secret: no
+# the account has ("tier": free | premium). Here the pass is checked, with nothing but the shared secret: no
 # network call, no database. Anything else (no pass, a pass signed by someone else, changed, expired, made for another
-# purpose, a plan that cannot use this feature, secret not set) means Groq is not called.
+# purpose, the free plan, secret not set) means Groq is not called.
 
 UNAVAILABLE = "AI suggestions are unavailable right now. Please try again later."
 MIN_SECRET_CHARS = 32  # a short secret could be guessed, and anyone who guesses it could use the Groq key for free
@@ -428,15 +429,16 @@ def require_access(token: str, task: str = "analyze") -> ai_models.Access:
     if payload.get("aud") != PASS_AUDIENCE:
         raise HTTPException(status_code=401, detail="Your AI access is not valid. Please reload the page.")
 
-    tier = payload.get("tier")
-    if tier not in ai_models.TIERS:
-        # A pass made by the accounts server from before plans existed: it only says "premium", which was the Pro experience.
-        tier = ai_models.DEFAULT_TIER if payload.get("premium") is True else None
+    # "free" | "premium"; a pass signed before there was just Premium says "plus" | "pro" | "max", which is Premium now,
+    # and one that only says { premium: true } is Premium too.
+    tier = ai_models.normalize_tier(payload.get("tier"))
+    if tier is None and payload.get("premium") is True:
+        tier = ai_models.DEFAULT_TIER
     subject = payload.get("sub")
     if tier is None or not isinstance(subject, str) or not subject:
         raise HTTPException(status_code=403, detail="AI suggestions need a plan. Please reload the page.")
     if not ai_models.allowed(tier, task):
-        raise HTTPException(status_code=403, detail="This feature is part of the paid plans. Upgrade to use it.")
+        raise HTTPException(status_code=403, detail="AI suggestions are part of Premium. Upgrade to use them.")
     return ai_models.Access(tier=tier, subject=subject)
 
 
@@ -448,12 +450,11 @@ def _spend(access: Optional[ai_models.Access], task: str) -> None:
     try:
         ai_models.spend(access.tier, access.subject, task)
     except ai_models.QuotaExceeded as err:
-        upgrade = " Upgrade your plan for more." if access.tier != "max" else ""
         raise HTTPException(
             status_code=429,
             detail={
                 "code": "quota",
-                "message": f"You have used today's {err.limit} AI actions on the {access.tier.capitalize()} plan. They start again at midnight.{upgrade}",
+                "message": f"You have used today's {err.limit} AI actions on your Premium plan. They start again at midnight.",
                 "tier": access.tier,
                 "limit": err.limit,
             },
@@ -970,7 +971,7 @@ def _groq_failure(err: Exception) -> HTTPException:
 @router.post("/cover-letter")
 def cover_letter(body: CoverLetterRequest, request: Request):
     # Same gate as /analyze: nothing below (the cache, the Groq key) is reachable without a valid AI pass, and the
-    # plan has to include cover letters (the free plan does not).
+    # plan has to be Premium (the free plan has no AI).
     token = _bearer_pass(request)
     if _rate_limited(request, "letter", LETTER_RATE_MAX):
         raise HTTPException(status_code=429, detail="Too many requests. Try again in a minute.")
@@ -1119,7 +1120,7 @@ def build_posting_messages(posting):
 
 
 def call_groq_posting(messages, plan: ai_models.Plan) -> str:
-    # Extraction, not writing: as little variation as possible (temperature 0.1, thinking "low" on Pro).
+    # Extraction, not writing: as little variation as possible (temperature 0.1, thinking one step above "low" on Premium).
     return ai_models.complete(_groq_client, messages, task="posting", plan=plan)
 
 

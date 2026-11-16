@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getPaymentStatus, startPayment, verifyPayment } from '../../api/payments';
-import { PLAN_COPY, PLAN_ORDER } from './planCopy';
+import { PLAN_COPY, bestValueId, dayWord } from './planCopy';
 
 /* -------------------------------------------------------------------------- */
 /*  Checkout screen (Paystack): full screen, light, white background.         */
 /*                                                                            */
-/*  Step 1  Plan      the person picks Plus, Pro or Max. Only the plan's name   */
-/*                    is sent to the server; it looks up the price itself.    */
+/*  Step 1  Plan      the person picks how long Premium lasts: 7, 14 or 30     */
+/*                    days. Every length gives the same Premium. Only the     */
+/*                    length's id is sent to the server; it looks up the      */
+/*                    price itself. Paid once, nothing renews on its own.     */
 /*  Step 2  Details   the person confirms who is paying (name, email, phone). */
 /*  Step 3  Payment   Paystack's secure window opens on the card form; the    */
 /*                    card number, expiry and CVV are typed THERE, never into */
@@ -25,8 +27,8 @@ import { PLAN_COPY, PLAN_ORDER } from './planCopy';
 /*    onPaid     () => void   payment confirmed (or already active)           */
 /*    onSignIn   () => void   the person needs an account first               */
 /*    doneLabel  text of the final button (default 'Continue to download')    */
-/*    initialPlan  'plus' | 'pro' | 'max' (optional) skips the plan picker    */
-/*               when that plan can be bought (home-page pricing modal)       */
+/*    initialPlan  '7d' | '14d' | '30d' (optional) skips the plan picker      */
+/*               when that length can be bought (home-page pricing modal)     */
 /* -------------------------------------------------------------------------- */
 
 const INLINE_SRC = 'https://js.paystack.co/v2/inline.js';
@@ -57,7 +59,7 @@ const loadPaystack = () => {
   return scriptPromise;
 };
 
-// The amount arrives in the smallest unit (5900 = R59.00). Rands are written the South African way: R59, R159.
+// The amount arrives in the smallest unit (3900 = R39.00). Rands are written the South African way: R39, R156.
 const formatPrice = (amount, currency) => {
   const value = Number(amount) / 100;
   if (currency === 'ZAR') return `R${Number.isInteger(value) ? value : value.toFixed(2)}`;
@@ -173,60 +175,57 @@ const secondaryButton =
 
 /* ------------------------------- plan picker ------------------------------ */
 
-// Three cards, one per paid plan. `current` is the plan the person already has ('free' for none): plans at or below it
-// cannot be bought again, a higher one can (it applies straight away; the lower plan carries on underneath).
-const PlanPicker = ({ plans, current, currentEnds, onChoose }) => {
-  const order = ['free', 'plus', 'pro', 'max'];
-  const rank = (id) => order.indexOf(id);
-  const endsOn = formatDate(currentEnds);
+// Three cards, one per length of Premium. Every length gives the same Premium, so the features are listed once above
+// them. `current` is what the account has now: paying while Premium is running adds the new days after the current
+// ones, so a card is only disabled when that would pile up more than `maxDays` waiting days.
+const PlanPicker = ({ plans, current, maxDays, onChoose }) => {
+  const endsOn = formatDate(current.expiresAt);
+  const hasPremium = current.tier === 'premium';
+  const bestId = bestValueId(plans);
   return (
     <div>
       <Stepper current={0} />
-      <h3 className="mt-6 text-lg font-semibold tracking-tight sm:text-xl">Choose your plan</h3>
+      <h3 className="mt-6 text-lg font-semibold tracking-tight sm:text-xl">{hasPremium ? 'Add more Premium' : 'Choose how long you want Premium'}</h3>
       <p className="mt-1 text-[13px] text-slate-500">
-        {current !== 'free'
-          ? `You are on ${PLAN_COPY[current]?.name || 'a paid plan'}${endsOn ? ` until ${endsOn}` : ''}. A higher plan starts straight away.`
-          : 'Every plan lasts 30 days and is paid once. There is nothing to cancel.'}
+        {hasPremium
+          ? `You have Premium${endsOn ? ` until ${endsOn}` : ''} (${dayWord(current.daysLeft)} left). New days are added after these, so none are lost.`
+          : 'Paid once. Nothing renews on its own, so there is nothing to cancel.'}
       </p>
+
+      <ul className="mt-5 grid gap-x-6 gap-y-2.5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[12.5px] leading-snug text-slate-600 sm:grid-cols-2 sm:p-5">
+        {PLAN_COPY.premium.features.map((feature) => (
+          <li key={feature} className="flex gap-2">
+            <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" /> {feature}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[12px] text-slate-500">Every length gets all of this. Only the number of days is different.</p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-3">
         {plans.map((plan) => {
-          const copy = PLAN_COPY[plan.id] || { name: plan.name, quality: '', features: [] };
-          const owned = rank(current) >= rank(plan.id);
+          const best = plan.id === bestId;
+          const tooMany = hasPremium && current.daysLeft + plan.days > maxDays;
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col rounded-2xl border bg-white p-5 shadow-sm ${
-                copy.popular && !owned ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
-              }`}
+              className={`relative flex flex-col rounded-2xl border bg-white p-5 shadow-sm ${best && !tooMany ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'}`}
             >
-              {copy.popular && !owned && (
+              {best && !tooMany && (
                 <span className="absolute -top-2.5 left-5 rounded-full bg-slate-900 px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
-                  Most popular
+                  Best value
                 </span>
               )}
-              <div className="flex items-baseline justify-between gap-2">
-                <h4 className="text-[15px] font-semibold tracking-tight">{copy.name}</h4>
-                <span className="rounded-full bg-[#d9856b]/10 px-2 py-0.5 text-[11px] font-semibold text-[#a64a30]">{copy.quality}</span>
-              </div>
+              <h4 className="text-[15px] font-semibold tracking-tight">{dayWord(plan.days)}</h4>
               <p className="mt-3 text-[30px] font-semibold leading-none tracking-tight tabular-nums">{formatPrice(plan.amount, plan.currency)}</p>
-              <p className="mt-1.5 text-[12px] text-slate-500">{describeAccess(plan.days)}</p>
-
-              <ul className="mt-4 flex-1 space-y-2.5 text-[12.5px] leading-snug text-slate-600">
-                {copy.features.map((feature) => (
-                  <li key={feature} className="flex gap-2">
-                    <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" /> {feature}
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-1.5 flex-1 text-[12px] text-slate-500">Paid once, for {dayWord(plan.days)} of Premium</p>
 
               <button
                 type="button"
                 onClick={() => onChoose(plan.id)}
-                disabled={owned}
-                className={`mt-5 ${(copy.popular && !owned ? primaryButton : secondaryButton).replace('h-10', 'h-11')}`}
+                disabled={tooMany}
+                className={`mt-5 ${(best && !tooMany ? primaryButton : secondaryButton).replace('h-10', 'h-11')}`}
               >
-                {owned ? (plan.id === current ? 'Your plan' : 'Included in your plan') : `Choose ${copy.name}`}
+                {tooMany ? 'You already have the most days' : hasPremium ? `Add ${dayWord(plan.days)}` : `Get ${dayWord(plan.days)}`}
               </button>
             </div>
           );
@@ -234,8 +233,8 @@ const PlanPicker = ({ plans, current, currentEnds, onChoose }) => {
       </div>
 
       <p className="mt-5 text-[12px] leading-relaxed text-slate-500">
-        Staying on Free? Just close this window: you keep the basic AI assistant ({PLAN_COPY.free.aiPerDay} AI actions a day) and can
-        still download your PDF with a small RemoPDF label.
+        Staying on Free? Just close this window: you keep unlimited downloads (with a small RemoPDF label) and 1 saved resume. Free has no
+        AI suggestions and no resume importing.
       </p>
     </div>
   );
@@ -247,8 +246,9 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
   // 'loading' | 'ready' | 'starting' | 'awaiting' | 'success' | 'error'
   const [phase, setPhase] = useState('loading');
   const [plans, setPlans] = useState([]); // the plans that can be bought, with their prices, from the server
-  const [chosenId, setChosenId] = useState(null); // 'plus' | 'pro' | 'max' once picked
-  const [current, setCurrent] = useState({ tier: 'free', expiresAt: null }); // what the account has right now
+  const [chosenId, setChosenId] = useState(null); // '7d' | '14d' | '30d' once picked
+  const [current, setCurrent] = useState({ tier: 'free', expiresAt: null, daysLeft: 0 }); // what the account has right now
+  const [maxDays, setMaxDays] = useState(90); // the most days that can be waiting at once
   const [channels, setChannels] = useState([]);
   const [testMode, setTestMode] = useState(false);
   const [message, setMessage] = useState('');
@@ -288,20 +288,19 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
     getPaymentStatus()
       .then((status) => {
         if (cancelled) return;
-        if (status.premium && status.tier === 'max') {
-          onPaidRef.current?.(); // nothing higher to buy
-          return;
-        }
         const available = Array.isArray(status.plans) ? status.plans : [];
+        const daysLeft = status.premium ? Math.max(0, Number(status.daysLeft) || 0) : 0;
+        const limit = Number(status.maxBankedDays) || 90;
         setPlans(available);
         setChannels(Array.isArray(status.channels) ? status.channels : []);
-        setCurrent({ tier: status.tier || 'free', expiresAt: status.expiresAt || null });
+        setCurrent({ tier: status.premium ? 'premium' : 'free', expiresAt: status.expiresAt || null, daysLeft });
+        setMaxDays(limit);
         setTestMode(Boolean(status.testMode));
         setPhase('ready');
-        // Coming from the pricing modal: go straight to the details step when that plan is higher than what the account has.
-        const wanted = initialPlanRef.current;
-        const haveRank = PLAN_ORDER.indexOf(status.premium ? status.tier : 'free');
-        if (wanted && available.some((p) => p.id === wanted) && PLAN_ORDER.indexOf(wanted) > haveRank) setChosenId(wanted);
+        // Coming from the pricing modal: go straight to the details step when that length can be bought. Paying again
+        // while Premium is running is fine (the days are added after the current ones), up to the most that can wait.
+        const wanted = available.find((p) => p.id === initialPlanRef.current);
+        if (wanted && daysLeft + wanted.days <= limit) setChosenId(wanted.id);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -509,7 +508,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
               <h2 id="payment-title" className="truncate text-[15px] font-semibold leading-tight tracking-tight">
                 Secure checkout
               </h2>
-              <p className="truncate text-[12px] leading-tight text-slate-500">{plan ? `${plan.name}, ${price}` : 'Choose your plan'}</p>
+              <p className="truncate text-[12px] leading-tight text-slate-500">{plan ? `${plan.name}, ${price}` : 'Choose how long you want Premium'}</p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
@@ -543,7 +542,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
               <h3 className="mt-5 text-xl font-semibold tracking-tight sm:text-2xl">Payment received</h3>
               <p className="mt-1.5 text-[14px] leading-relaxed text-slate-500">
                 Thank you{name.trim() ? `, ${name.trim().split(' ')[0]}` : ''}!{' '}
-                {plan ? `Your ${PLAN_COPY[plan.id]?.name || plan.name} plan is active.` : 'Your plan is active.'}
+                {plan ? `Premium is on: ${dayWord(plan.days)} added to your account.` : 'Premium is on.'}
               </p>
               {plan && (
                 <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-left">
@@ -551,7 +550,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
                     <span className="text-slate-600">{plan.name}</span>
                     <span className="font-semibold tabular-nums">{price}</span>
                   </div>
-                  <p className="mt-0.5 text-[12px] text-slate-500">{describeAccess(plan.days)}</p>
+                  <p className="mt-0.5 text-[12px] text-slate-500">{describeAccess(plan.days)}. Paid once; it does not renew.</p>
                 </div>
               )}
               <button ref={primaryRef} type="button" onClick={() => onPaidRef.current?.()} className={`${primaryButton} mt-6`}>
@@ -595,7 +594,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
           </div>
         ) : showPicker ? (
           /* ------------------------------ step 1: plan ------------------------------ */
-          <PlanPicker plans={plans} current={current.tier} currentEnds={current.expiresAt} onChoose={setChosenId} />
+          <PlanPicker plans={plans} current={current} maxDays={maxDays} onChoose={setChosenId} />
         ) : (
           /* ------------------------ steps 2 and 3: details, payment ------------------------ */
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-12">
@@ -616,13 +615,16 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
               </div>
 
               <ul className="mt-6 hidden space-y-3 border-t border-slate-200 pt-5 text-[13px] leading-snug text-slate-600 lg:block">
-                {(PLAN_COPY[plan?.id]?.features || []).map((feature) => (
+                {PLAN_COPY.premium.features.map((feature) => (
                   <li key={feature} className="flex gap-2.5">
                     <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" /> {feature}
                   </li>
                 ))}
                 <li className="flex gap-2.5">
                   <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" /> Unlocked as soon as your payment is confirmed
+                </li>
+                <li className="flex gap-2.5">
+                  <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" /> Paid once. It never renews on its own
                 </li>
                 <li className="flex gap-2.5">
                   <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" /> Saved to your account, works on every device
@@ -665,7 +667,7 @@ export default function PaymentModal({ open, user, onClose, onPaid, onSignIn, do
                       disabled={busy}
                       className="mt-5 text-[12.5px] font-semibold text-slate-500 transition-colors hover:text-slate-900 focus:outline-none focus-visible:underline disabled:opacity-50"
                     >
-                      ← Change plan
+                      ← Change length
                     </button>
                     <h3 className="mt-3 text-lg font-semibold tracking-tight sm:text-xl">Billing details</h3>
                     <p className="mt-1 text-[13px] text-slate-500">Confirm who is paying.</p>

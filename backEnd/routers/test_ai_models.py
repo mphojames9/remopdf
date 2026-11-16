@@ -87,14 +87,14 @@ class Plan(unittest.TestCase):
         os.environ.pop("GROQ_MODEL", None)
         os.environ.pop("GROQ_FALLBACK_MODEL", None)
 
-    def test_a_good_first_answer_costs_one_call_on_the_main_model_at_the_tasks_thinking_level(self):
+    def test_a_good_first_answer_costs_one_call_on_the_main_model_at_premium_thinking(self):
         client = FakeClient(reply(GOOD))
         self.assertEqual(run(client), GOOD)
         self.assertEqual(len(client.calls), 1)
         call = client.calls[0]
         self.assertEqual(call["model"], "openai/gpt-oss-120b")
-        self.assertEqual(call["extra_body"], {"reasoning_effort": "medium"})
-        self.assertEqual(call["max_completion_tokens"], m.TASKS["letter"].max_tokens)
+        self.assertEqual(call["extra_body"], {"reasoning_effort": "high"})  # Premium thinks one step above the task's own level
+        self.assertEqual(call["max_completion_tokens"], int(m.TASKS["letter"].max_tokens * 1.3))
         self.assertEqual(call["response_format"], {"type": "json_object"})
         self.assertEqual(client.options[0]["max_retries"], 0)  # the fallback model is the retry, not hidden SDK retries
 
@@ -184,159 +184,147 @@ class PlanTestCase(unittest.TestCase):
 
 
 class Plans(PlanTestCase):
-    def test_each_plan_has_the_model_and_thinking_it_was_priced_for(self):
-        free, plus, pro, top = (m.plan_for(t) for t in ("free", "plus", "pro", "max"))
-        self.assertEqual(free.model, "openai/gpt-oss-20b")  # the cheapest model: this is what makes the free plan affordable
-        for plan in (plus, pro, top):
-            self.assertEqual(plan.model, "openai/gpt-oss-120b")
-        # thinking: free and plus one step below the task's level, pro at it, max one step above
-        self.assertEqual([p.effort_for("medium") for p in (free, plus, pro, top)], ["low", "low", "medium", "high"])
-        self.assertEqual([p.effort_for("low") for p in (free, plus, pro, top)], ["low", "low", "low", "medium"])
-        self.assertEqual(top.effort_for("high"), "high")  # never above the top
+    def test_there_are_two_plans_free_and_premium(self):
+        self.assertEqual(m.TIERS, ("free", "premium"))
+        self.assertEqual(m.DEFAULT_TIER, "premium")
 
-    def test_every_step_up_buys_more_thinking_room_or_more_use(self):
-        order = [m.plan_for(t) for t in m.TIERS]
-        self.assertEqual([p.tier for p in order], ["free", "plus", "pro", "max"])
-        self.assertEqual([p.daily_credits for p in order], sorted({p.daily_credits for p in order}))  # strictly increasing
-        self.assertGreater(order[3].budget_x, order[2].budget_x)
+    def test_premium_gets_the_strongest_model_thinking_hardest_with_the_most_room(self):
+        premium = m.plan_for("premium")
+        self.assertEqual(premium.model, "openai/gpt-oss-120b")
+        self.assertEqual(premium.fallback, "openai/gpt-oss-20b")
+        self.assertEqual([premium.effort_for(e) for e in ("low", "medium", "high")], ["medium", "high", "high"])  # a step up, never above the top
+        self.assertEqual(premium.budget_x, 1.3)
+        self.assertEqual(premium.daily_credits, 60)
 
-    def test_pro_is_exactly_what_every_premium_person_had_before_plans(self):
-        pro = m.plan_for("pro")
-        self.assertEqual(pro.model, m.primary_model())
-        self.assertEqual(pro.fallback, m.fallback_model())
-        self.assertEqual((pro.effort_shift, pro.budget_x), (0, 1.0))
-        self.assertEqual(m.plan_for("something else").tier, "pro")  # an unknown plan is served as Pro, never as Max
-        self.assertEqual(m.plan_for(None).tier, "pro")
+    def test_the_free_plan_has_no_ai_to_spend(self):
+        free = m.plan_for("free")
+        self.assertEqual(free.daily_credits, 0)
+        self.assertIsNone(free.fallback)
 
-    def test_the_free_plan_has_no_fallback_and_paid_plans_fall_back_to_the_small_model(self):
-        self.assertIsNone(m.plan_for("free").fallback)
-        for tier in ("plus", "pro", "max"):
-            self.assertEqual(m.plan_for(tier).fallback, "openai/gpt-oss-20b")
+    def test_the_old_paid_plans_are_premium_now(self):
+        for old in ("plus", "pro", "max"):
+            self.assertEqual(m.normalize_tier(old), "premium", old)
+            self.assertEqual(m.plan_for(old).tier, "premium", old)
+            self.assertEqual(m.plan_for(old).model, "openai/gpt-oss-120b", old)
+            self.assertTrue(m.allowed(old, "letter"), old)
+        self.assertEqual(m.tier_rank("max"), m.tier_rank("premium"))
 
-    def test_one_plans_model_can_be_swapped_without_touching_the_others(self):
-        os.environ["GROQ_MODEL_MAX"] = "some/better-model"
-        self.assertEqual(m.plan_for("max").model, "some/better-model")
-        self.assertEqual(m.plan_for("pro").model, "openai/gpt-oss-120b")
+    def test_an_unknown_or_missing_plan_is_served_as_the_default_never_as_free_ai(self):
+        self.assertEqual(m.plan_for("something else").tier, "premium")
+        self.assertEqual(m.plan_for(None).tier, "premium")
+        self.assertIsNone(m.normalize_tier("something else"))
+        self.assertIsNone(m.normalize_tier(None))
+
+    def test_the_premium_model_can_be_swapped_without_touching_code(self):
+        os.environ["GROQ_MODEL_PREMIUM"] = "some/better-model"
+        self.assertEqual(m.plan_for("premium").model, "some/better-model")
         self.assertEqual(m.plan_for("free").model, "openai/gpt-oss-20b")
 
     def test_groq_model_still_wins_for_every_plan_and_turns_every_fallback_off(self):
         os.environ["GROQ_MODEL"] = "openai/gpt-oss-20b"
-        os.environ["GROQ_MODEL_MAX"] = "ignored/when-groq-model-is-set"
+        os.environ["GROQ_MODEL_PREMIUM"] = "ignored/when-groq-model-is-set"
         for tier in m.TIERS:
             plan = m.plan_for(tier)
             self.assertEqual(plan.model, "openai/gpt-oss-20b", tier)
             self.assertIsNone(plan.fallback, tier)
 
-    def test_an_answer_is_filed_per_plan_so_max_never_gets_plus_answers_or_the_other_way_round(self):
+    def test_an_answer_is_filed_per_plan(self):
         ids = {m.plan_for(t).cache_id for t in m.TIERS}
-        self.assertEqual(len(ids), 4)
+        self.assertEqual(len(ids), 2)
 
-    def test_the_free_plan_can_only_use_the_writing_assistant(self):
-        self.assertTrue(m.allowed("free", "analyze"))
+    def test_the_free_plan_has_no_ai_suggestions_at_all_and_premium_has_every_kind(self):
         for task in m.TASKS:
-            if task != "analyze":
-                self.assertFalse(m.allowed("free", task), task)
-            self.assertTrue(m.allowed("plus", task), task)
-            self.assertTrue(m.allowed("max", task), task)
+            self.assertFalse(m.allowed("free", task), task)
+            self.assertTrue(m.allowed("premium", task), task)
+        self.assertFalse(m.allowed(None, "analyze"))
         self.assertEqual(set(m.MIN_TIER), set(m.TASKS))  # a new kind of call must say who may use it
 
-    def test_daily_allowances_can_be_changed_in_the_environment(self):
-        os.environ["AI_DAILY_FREE"] = "3"
-        os.environ["AI_DAILY_PLUS"] = "not a number"
-        self.assertEqual(m.plan_for("free").daily_credits, 3)
-        self.assertEqual(m.plan_for("plus").daily_credits, 25)  # a bad value falls back to the default
+    def test_the_daily_allowance_can_be_changed_in_the_environment(self):
+        os.environ["AI_DAILY_PREMIUM"] = "100"
+        self.assertEqual(m.plan_for("premium").daily_credits, 100)
+        os.environ["AI_DAILY_PREMIUM"] = "not a number"
+        self.assertEqual(m.plan_for("premium").daily_credits, 60)  # a bad value falls back to the default
 
 
 class PlanCalls(PlanTestCase):
-    def test_max_thinks_high_with_more_room_where_pro_thinks_medium(self):
-        pro_client, max_client = FakeClient(reply(GOOD)), FakeClient(reply(GOOD))
-        run(pro_client, plan=m.plan_for("pro"))
-        run(max_client, plan=m.plan_for("max"))
-        self.assertEqual(pro_client.calls[0]["extra_body"], {"reasoning_effort": "medium"})
-        self.assertEqual(max_client.calls[0]["extra_body"], {"reasoning_effort": "high"})
-        self.assertEqual(max_client.calls[0]["max_completion_tokens"], int(m.TASKS["letter"].max_tokens * 1.3))
-        self.assertGreater(max_client.calls[0]["max_completion_tokens"], pro_client.calls[0]["max_completion_tokens"])
-
-    def test_free_runs_on_the_small_model_at_low_thinking(self):
+    def test_premium_thinks_high_with_more_room_where_the_task_asks_for_medium(self):
         client = FakeClient(reply(GOOD))
-        run(client, task="analyze", plan=m.plan_for("free"))
-        self.assertEqual(client.calls[0]["model"], "openai/gpt-oss-20b")
-        self.assertEqual(client.calls[0]["extra_body"], {"reasoning_effort": "low"})
-
-    def test_plus_uses_the_large_model_with_little_thinking(self):
-        client = FakeClient(reply(GOOD))
-        run(client, task="analyze", plan=m.plan_for("plus"))
+        run(client, plan=m.plan_for("premium"))
         self.assertEqual(client.calls[0]["model"], "openai/gpt-oss-120b")
-        self.assertEqual(client.calls[0]["extra_body"], {"reasoning_effort": "low"})
+        self.assertEqual(client.calls[0]["extra_body"], {"reasoning_effort": "high"})
+        self.assertEqual(client.calls[0]["max_completion_tokens"], int(m.TASKS["letter"].max_tokens * 1.3))
 
-    def test_the_free_plan_has_nothing_to_fall_back_to(self):
-        client = FakeClient(RuntimeError("429 rate limit"))
-        with self.assertRaises(RuntimeError):
-            run(client, task="analyze", plan=m.plan_for("free"))
-        self.assertEqual(len(client.calls), 1)
+    def test_reading_an_advert_still_thinks_a_step_harder_on_premium(self):
+        client = FakeClient(reply(GOOD))
+        run(client, task="posting", plan=m.plan_for("premium"))
+        self.assertEqual(client.calls[0]["extra_body"], {"reasoning_effort": "medium"})  # the task asks for "low"
 
-    def test_a_paid_plan_falls_back_to_the_small_model(self):
+    def test_a_premium_person_who_hits_a_rate_limit_falls_back_to_the_small_model(self):
         client = FakeClient(RuntimeError("429 rate limit"), reply(GOOD))
-        self.assertEqual(run(client, task="analyze", plan=m.plan_for("max")), GOOD)
+        self.assertEqual(run(client, task="analyze", plan=m.plan_for("premium")), GOOD)
         self.assertEqual([c["model"] for c in client.calls], ["openai/gpt-oss-120b", "openai/gpt-oss-20b"])
 
-    def test_a_cut_off_max_reply_is_retried_with_room_but_never_beyond_the_cap(self):
+    def test_a_cut_off_premium_reply_is_retried_with_room_but_never_beyond_the_cap(self):
         client = FakeClient(reply("{", finish="length"), reply(GOOD))
-        run(client, task="letter", plan=m.plan_for("max"))
+        run(client, task="letter", plan=m.plan_for("premium"))
         first, second = client.calls
         self.assertEqual(second["extra_body"], {"reasoning_effort": "low"})
         self.assertGreater(second["max_completion_tokens"], first["max_completion_tokens"])
         self.assertLessEqual(second["max_completion_tokens"], int(8000 * 1.3))
 
-    def test_no_plan_means_the_default_plan_so_older_callers_are_unchanged(self):
+    def test_no_plan_means_the_default_plan_so_older_callers_get_premium_not_a_weaker_model(self):
         client = FakeClient(reply(GOOD))
         run(client, task="letter")
-        self.assertEqual(client.calls[0]["extra_body"], {"reasoning_effort": "medium"})
+        self.assertEqual(client.calls[0]["model"], "openai/gpt-oss-120b")
+        self.assertEqual(client.calls[0]["extra_body"], {"reasoning_effort": "high"})
 
 
 class Allowance(PlanTestCase):
-    NOON = datetime.datetime(2026, 11, 13, 10, 0, tzinfo=m.SOUTH_AFRICA)
+    NOON = datetime.datetime(2026, 11, 16, 10, 0, tzinfo=m.SOUTH_AFRICA)
 
     def test_every_request_is_counted_until_the_days_allowance_is_used_up(self):
+        os.environ["AI_DAILY_PREMIUM"] = "6"
         for n in range(1, 7):
-            self.assertEqual(m.spend("free", "acct-1", "analyze", now=self.NOON), (n, 6))
+            self.assertEqual(m.spend("premium", "acct-1", "analyze", now=self.NOON), (n, 6))
         with self.assertRaises(m.QuotaExceeded) as caught:
-            m.spend("free", "acct-1", "analyze", now=self.NOON)
-        self.assertEqual((caught.exception.tier, caught.exception.limit, caught.exception.used), ("free", 6, 6))
-        self.assertEqual(m.usage("acct-1", "free", now=self.NOON), (6, 6))  # the refused request was not charged
+            m.spend("premium", "acct-1", "analyze", now=self.NOON)
+        self.assertEqual((caught.exception.tier, caught.exception.limit, caught.exception.used), ("premium", 6, 6))
+        self.assertEqual(m.usage("acct-1", "premium", now=self.NOON), (6, 6))  # the refused request was not charged
+
+    def test_premium_gets_sixty_a_day(self):
+        for n in range(1, 61):
+            self.assertEqual(m.spend("premium", "acct-1", "analyze", now=self.NOON), (n, 60))
+        with self.assertRaises(m.QuotaExceeded):
+            m.spend("premium", "acct-1", "analyze", now=self.NOON)
 
     def test_a_letter_costs_two_and_is_refused_when_only_one_is_left(self):
-        os.environ["AI_DAILY_PLUS"] = "5"
-        self.assertEqual(m.spend("plus", "acct-1", "letter", now=self.NOON), (2, 5))
-        self.assertEqual(m.spend("plus", "acct-1", "letter", now=self.NOON), (4, 5))
+        os.environ["AI_DAILY_PREMIUM"] = "5"
+        self.assertEqual(m.spend("premium", "acct-1", "letter", now=self.NOON), (2, 5))
+        self.assertEqual(m.spend("premium", "acct-1", "letter", now=self.NOON), (4, 5))
         with self.assertRaises(m.QuotaExceeded):
-            m.spend("plus", "acct-1", "letter", now=self.NOON)
-        self.assertEqual(m.spend("plus", "acct-1", "analyze", now=self.NOON), (5, 5))  # the last single credit still works
+            m.spend("premium", "acct-1", "letter", now=self.NOON)
+        self.assertEqual(m.spend("premium", "acct-1", "analyze", now=self.NOON), (5, 5))  # the last single credit still works
 
     def test_people_do_not_share_an_allowance(self):
+        os.environ["AI_DAILY_PREMIUM"] = "6"
         for _ in range(6):
-            m.spend("free", "acct-1", "analyze", now=self.NOON)
-        self.assertEqual(m.spend("free", "acct-2", "analyze", now=self.NOON), (1, 6))
+            m.spend("premium", "acct-1", "analyze", now=self.NOON)
+        self.assertEqual(m.spend("premium", "acct-2", "analyze", now=self.NOON), (1, 6))
 
     def test_the_day_starts_again_at_midnight_in_south_africa_not_in_utc(self):
+        os.environ["AI_DAILY_PREMIUM"] = "6"
         utc = datetime.timezone.utc
         for _ in range(6):
-            m.spend("free", "acct-1", "analyze", now=datetime.datetime(2026, 11, 13, 21, 59, tzinfo=utc))  # 23:59 in SA
+            m.spend("premium", "acct-1", "analyze", now=datetime.datetime(2026, 11, 16, 21, 59, tzinfo=utc))  # 23:59 in SA
         with self.assertRaises(m.QuotaExceeded):
-            m.spend("free", "acct-1", "analyze", now=datetime.datetime(2026, 11, 13, 21, 59, tzinfo=utc))
+            m.spend("premium", "acct-1", "analyze", now=datetime.datetime(2026, 11, 16, 21, 59, tzinfo=utc))
         # 22:00 UTC is 00:00 in South Africa: a new day
-        self.assertEqual(m.spend("free", "acct-1", "analyze", now=datetime.datetime(2026, 11, 13, 22, 0, tzinfo=utc)), (1, 6))
+        self.assertEqual(m.spend("premium", "acct-1", "analyze", now=datetime.datetime(2026, 11, 16, 22, 0, tzinfo=utc)), (1, 6))
 
-    def test_a_plan_with_no_allowance_cannot_use_the_ai_at_all(self):
-        os.environ["AI_DAILY_FREE"] = "0"
+    def test_the_free_plan_has_no_allowance_so_nothing_is_ever_charged_to_it(self):
         with self.assertRaises(m.QuotaExceeded):
             m.spend("free", "acct-1", "analyze", now=self.NOON)
-
-    def test_a_higher_plan_has_room_the_lower_one_does_not(self):
-        for _ in range(6):
-            m.spend("free", "acct-1", "analyze", now=self.NOON)
-        # paying for Plus lifts the limit for the same account straight away
-        self.assertEqual(m.spend("plus", "acct-1", "analyze", now=self.NOON), (7, 25))
+        self.assertEqual(m.usage("acct-1", "free", now=self.NOON), (0, 0))
 
 
 class ReadingReplies(unittest.TestCase):

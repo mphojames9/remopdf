@@ -38,18 +38,21 @@ async function request(method, path, body) {
 }
 
 /**
- * { premium, tier, expiresAt, daysLeft, testMode, channels, plans: [{ id, name, amount, currency, days }] }
- *   premium  true for any paid plan
- *   tier     'free' | 'plus' | 'pro' | 'max': the plan the account has right now
- *   plans    the three plans that can be bought; amount is in the smallest unit (5900 = R59.00)
+ * { premium, tier, expiresAt, daysLeft, testMode, channels, maxBankedDays, plans: [{ id, name, amount, currency, days }] }
+ *   premium        true while Premium is running
+ *   tier           'free' | 'premium': the plan the account has right now
+ *   daysLeft       days of Premium left, counting any that were paid for in advance
+ *   maxBankedDays  the most days that can be waiting at once (more cannot be added until some are used)
+ *   plans          the three lengths of Premium that can be bought: 7d, 14d and 30d; amount is in the smallest unit
+ *                  (3900 = R39.00)
  */
 export const getPaymentStatus = () => request('GET', '/status');
 
 /**
- * Starts a payment. `details` is { plan, name, phone }: `plan` is 'plus' | 'pro' | 'max' (the server looks up the
- * price, so the browser only says which plan), name and phone come from the billing form (the email always comes
- * from the account). Resolves to { accessCode, reference }, or { premium: true } when the account already has that
- * plan or a better one.
+ * Starts a payment. `details` is { plan, name, phone }: `plan` is '7d' | '14d' | '30d' (the server looks up the
+ * price, so the browser only says how long), name and phone come from the billing form (the email always comes from
+ * the account). Resolves to { accessCode, reference }. Paying while Premium is running adds the new days after the
+ * current ones; the server answers 409 only when that would pile up more than maxBankedDays.
  */
 export const startPayment = (details = {}) => request('POST', '/initialize', details);
 
@@ -57,9 +60,9 @@ export const startPayment = (details = {}) => request('POST', '/initialize', det
 export const verifyPayment = (reference) => request('GET', `/verify/${encodeURIComponent(reference)}`);
 
 /*
- * The AI pass: a short signed note from the accounts server saying which plan this account has right now (free, plus,
- * pro or max). The AI service checks the signature itself, so it never has to reach the accounts server (which may
- * only run on this computer), and it picks the AI model for that plan. Kept in memory until half a minute before it
+ * The AI pass: a short signed note from the accounts server saying this account has Premium right now. Only Premium
+ * accounts get one (the free plan has no AI suggestions: 403). The AI service checks the signature itself, so it never
+ * has to reach the accounts server (which may only run on this computer), and it serves the account on the best model. Kept in memory until half a minute before it
  * runs out. Call forgetAiPass() when the plan changes (a payment just went through) so the next request carries the
  * new plan instead of the old one.
  */

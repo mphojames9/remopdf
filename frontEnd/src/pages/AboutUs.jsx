@@ -194,7 +194,7 @@ const FAQS = [
   },
   {
     q: 'Is RemoPDF free?',
-    a: 'Yes. Every PDF tool is free, and so is the resume builder: you can build a resume and download it without paying. Free resume downloads carry a small “Created with RemoPDF” note at the foot of each page. Premium is optional. It removes the note and unlocks importing a resume, the writing assistant, the summary writer, job target with a live ATS score, and cover letter. Premium is a one-off payment for a set period of access. It never renews by itself, and you pay through Paystack.',
+    a: 'Yes. Every PDF tool is free, and so is the resume builder: you can build a resume, save one resume and download it as often as you like without paying. Free resume downloads carry a small “Created with RemoPDF” note at the foot of each page, and the free plan has no AI suggestions and no resume importing. Premium is optional. It costs R39 for 7 days, R78 for 14 days or R156 for 30 days, and every length gives you the same thing: the strongest AI on every suggestion, importing a resume, the writing assistant, the summary writer, job target with a live ATS score, cover letter, PDFs without the note, and up to 10 saved resumes. You pay once through Paystack. It never renews by itself, so there is nothing to cancel.',
   },
   {
     q: 'Why is it called RemoPDF?',

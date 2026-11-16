@@ -41,7 +41,7 @@ Honesty is built in, because the output ends up on a real resume that a real emp
 The ATS match score itself is NOT computed here: the app counts keywords on the device (atsScore.js), so it
 updates as the person types and costs nothing.
 
-Paid plans only (Plus, Pro, Max; the free plan gets 403), with the same "AI pass" as routers/writing_ai.py (the Node
+Premium only (the free plan gets 403), with the same "AI pass" as routers/writing_ai.py (the Node
 accounts server signs it, this service only checks the signature with AI_PASS_SECRET). The plan in the pass decides the
 model, the thinking level and the daily allowance (all in routers/ai_models.py). Same Groq key (GROQ_API_KEY) and the same
 O*NET key (ONET_API_KEY) as the routers it reuses. Nothing to install.
@@ -214,7 +214,7 @@ def _seniority(title: str) -> str:
 
 
 def _gate(request: Request, bucket: str, limit: int, task: str):
-    # Same order as routers/writing_ai.py: nothing below this (the cache, Groq, O*NET) is reachable without a paid plan.
+    # Same order as routers/writing_ai.py: nothing below this (the cache, Groq, O*NET) is reachable without Premium.
     # Returns who is asking and which plan they have; the routes pass it on so the right model answers.
     token = _bearer_pass(request)
     if _rate_limited(request, bucket, limit):
@@ -382,7 +382,7 @@ def build_target(body: TargetRequest, request: Request):
     if not url and not text and not typed_title:
         raise _fail(400, "badlink", "Paste the link to the job advert, paste the advert, or type the job title.")
 
-    model = _plan(access).cache_id  # the cache is filed per plan: a Max answer is never served to Plus, nor the reverse
+    model = _plan(access).cache_id  # the cache is filed per plan
     use_text = len(text) >= 80
     key = "jm-target-v2:" + _hash(model, text if use_text else "", "" if use_text else url, typed_title)
     cached = _cache_get(key)
@@ -596,7 +596,7 @@ def match_skills(body: SkillsRequest, request: Request):
     have = {_norm(s) for s in _lines(body.resume.skills, 60, 60)}
     have.discard("")
 
-    model = _plan(access).cache_id  # the cache is filed per plan: a Max answer is never served to Plus, nor the reverse
+    model = _plan(access).cache_id  # the cache is filed per plan
     job_text = _job_block(target, skills_only=True)
     key = "jm-skills-v3:" + _hash(model, job_text, candidate, "|".join(sorted(have)))
     cached = _cache_get(key)
@@ -767,7 +767,7 @@ def write_summary(body: SummaryRequest, request: Request):
         forbidden = [n for n in (_one_line(target.title, 120), _one_line(target.company, 120)) if n]
     ad_terms = [k.term.strip() for k in (target.keywords[:40] if has_job else []) if k.term.strip() and k.source != "onet"]
 
-    model = _plan(access).cache_id  # the cache is filed per plan: a Max answer is never served to Plus, nor the reverse
+    model = _plan(access).cache_id  # the cache is filed per plan
     variant = int(body.variant or 0)
     key = "jm-summary-v3:" + _hash(model, job_text, facts, str(variant))
     cached = _cache_get(key)
@@ -891,7 +891,7 @@ def rewrite(body: RewriteRequest, request: Request):
     if not _job_norm(target).strip():
         raise HTTPException(status_code=400, detail="There is no job to tailor this to.")
 
-    model = _plan(access).cache_id  # the cache is filed per plan: a Max answer is never served to Plus, nor the reverse
+    model = _plan(access).cache_id  # the cache is filed per plan
     entry_title = _one_line(body.job_title, 120)
     key = "jm-rewrite-v3:" + _hash(model, body.field, entry_title, _job_block(target, reference=False), text)
     cached = _cache_get(key)

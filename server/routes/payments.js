@@ -5,23 +5,24 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Payment from '../models/Payment.js';
 import requireAuth from '../middleware/requireAuth.js';
-import { DAY_MS, MAX_ACCESS_DAYS, accessFromPayments, findPlan, getPlans, isPaidTier, tierRank } from '../lib/plans.js';
+import { DAY_MS, MAX_ACCESS_DAYS, MAX_BANKED_DAYS, accessFromPayments, canAddPlan, findPlan, getPlans } from '../lib/plans.js';
 
 /*
  * Paystack payments.
  *
- *   GET  /api/payments/status               -> { premium, tier, expiresAt, daysLeft, testMode, plans }
- *   GET  /api/payments/ai-pass              -> { pass, expiresIn, tier }   (any signed-in account: a signed pass for the AI service)
- *   POST /api/payments/initialize           -> { accessCode, reference }   body { plan: 'plus' | 'pro' | 'max', name?, phone? }
- *                                              (or { premium: true } if the account already has that plan or a better one)
+ *   GET  /api/payments/status               -> { premium, tier, expiresAt, daysLeft, testMode, plans, channels, maxBankedDays }
+ *   GET  /api/payments/ai-pass              -> { pass, expiresIn, tier }   (Premium only: a signed pass for the AI service)
+ *   POST /api/payments/initialize           -> { accessCode, reference }   body { plan: '7d' | '14d' | '30d', name?, phone? }
  *   GET  /api/payments/verify/:reference    -> { status: 'success' | 'failed' | 'pending', ... }
  *   POST /api/payments/webhook              (Paystack -> us; see paystackWebhook, mounted in index.js)
  *
- * Four plans (lib/plans.js): free, plus (R59), pro (R99), max (R159). The prices live only on the server
- * (PLAN_PLUS_AMOUNT / PLAN_PRO_AMOUNT / PLAN_MAX_AMOUNT, PAYMENT_CURRENCY and PAYMENT_ACCESS_DAYS in server/.env), so
- * the browser only chooses WHICH plan, never what it pays. The secret key never leaves the server.
- * A plan lasts at most 30 days from the day of payment (MAX_ACCESS_DAYS); daysLeft is worked out from the database.
- * The plan a person has is the highest one with a payment that has not run out (accessFromPayments in lib/plans.js).
+ * Two plans (lib/plans.js): free, and Premium, which is bought once for 7 days (R39), 14 days (R78) or 30 days (R156).
+ * Every length gives the same Premium. Nothing renews on its own: a new payment only happens when the person goes
+ * through checkout again. The prices live only on the server (PLAN_7D_AMOUNT / PLAN_14D_AMOUNT / PLAN_30D_AMOUNT and
+ * PAYMENT_CURRENCY in server/.env), so the browser only chooses WHICH length, never what it pays. The secret key
+ * never leaves the server.
+ * Paying while Premium is still running adds the new days after the current ones (accessFromPayments in lib/plans.js),
+ * up to MAX_BANKED_DAYS in total; daysLeft is worked out from the database.
  */
 
 const PAYSTACK_API = 'https://api.paystack.co';
@@ -40,7 +41,7 @@ const getChannels = () => {
 
 // Read on every call (not once at import) so a changed .env is picked up after a restart without surprises.
 const secretKey = () => (process.env.PAYSTACK_SECRET_KEY || '').trim();
-// A plan as the browser sees it: { id, name, amount, currency, days }, amount in the smallest unit (5900 = R59.00).
+// A plan as the browser sees it: { id, name, amount, currency, days }, amount in the smallest unit (3900 = R39.00).
 const publicPlans = () => getPlans();
 
 // Errors with `expose` are safe to show to the person; anything else becomes a generic 500.
@@ -79,12 +80,13 @@ async function paystack(method, path, body) {
 /*
  * What the person has right now, read from their payments in the database:
  *   { premium, tier, expiresAt, daysLeft }
- * `tier` is the highest plan with a payment that has not run out ('free' when none), `premium` is true for any paid
- * plan. The rules (stacked payments, the 30-day cap, old payments counting as Pro) are in lib/plans.js.
- * The last 10 payments are enough: nothing older than 30 days can still be running.
+ * `tier` is 'premium' while paid time is left and 'free' otherwise; `premium` is the same as a boolean. The rules
+ * (payments laid end to end, the 30-day cap on one payment, old Plus / Pro / Max payments counting as Premium) are in
+ * lib/plans.js. Payments can be stacked up to MAX_BANKED_DAYS, which needs at most 13 of the shortest plan, so the last
+ * 30 payments are always enough.
  */
 export async function accessFor(userId) {
-  const payments = await Payment.find({ user: userId, status: 'success' }).sort({ paidAt: -1 }).limit(10).lean();
+  const payments = await Payment.find({ user: userId, status: 'success' }).sort({ paidAt: -1 }).limit(30).lean();
   return accessFromPayments(payments);
 }
 
@@ -141,11 +143,11 @@ const verifyLimiter = rateLimit({
 
 /*
  * AI suggestions run on a separate service (it holds the Groq key and cannot see this database), and it may not be
- * able to reach this server at all. So a signed-in account asks for an "AI pass" here: a short signed note saying
- * which plan the account has right now ({ tier: 'free' | 'plus' | 'pro' | 'max', premium: true | false }). The browser
- * hands it to the AI service, which checks the signature with the same AI_PASS_SECRET and never has to call this
- * server. The plan in the pass decides which AI model answers and how much the account may use per day. A pass never
- * outlives the paid access it was made from, so a plan that ends stops working within minutes.
+ * able to reach this server at all. So a Premium account asks for an "AI pass" here: a short signed note saying which
+ * plan the account has right now ({ tier: 'premium', premium: true }). The browser hands it to the AI service, which
+ * checks the signature with the same AI_PASS_SECRET and never has to call this server. The free plan has no AI
+ * suggestions, so it gets no pass (403). A pass never outlives the paid access it was made from, so Premium that ends
+ * stops working within minutes.
  *
  * AI_PASS_SECRET: at least 32 random characters, the SAME value in server/.env and on the AI service (Render), and
  * not the JWT_SECRET, so that service can never make sign-in tokens.
@@ -162,13 +164,19 @@ const router = Router();
 router.get('/status', requireAuth, async (req, res, next) => {
   try {
     const access = await accessFor(req.userId);
-    return res.json({ ...access, testMode: secretKey().startsWith('sk_test_'), plans: publicPlans(), channels: getChannels() });
+    return res.json({
+      ...access,
+      testMode: secretKey().startsWith('sk_test_'),
+      plans: publicPlans(),
+      channels: getChannels(),
+      maxBankedDays: MAX_BANKED_DAYS, // the most days that can be waiting at once, so the checkout can say when more cannot be added
+    });
   } catch (err) {
     return next(err);
   }
 });
 
-/* GET /api/payments/ai-pass  ->  { pass, expiresIn, tier }   (any signed-in account: the free plan gets a pass too) */
+/* GET /api/payments/ai-pass  ->  { pass, expiresIn, tier }   (Premium only; the free plan has no AI suggestions: 403) */
 router.get('/ai-pass', requireAuth, verifyLimiter, async (req, res, next) => {
   try {
     const secret = aiPassSecret();
@@ -178,8 +186,11 @@ router.get('/ai-pass', requireAuth, verifyLimiter, async (req, res, next) => {
     }
 
     const access = await accessFor(req.userId);
-    // A paid plan's pass never outlives the paid access; the free plan has no end date.
-    const secondsLeft = access.premium ? Math.floor((access.expiresAt.getTime() - Date.now()) / 1000) : AI_PASS_SECONDS;
+    if (!access.premium) {
+      return res.status(403).json({ message: 'AI suggestions are part of Premium. Upgrade to use them.' });
+    }
+    // The pass never outlives the paid access.
+    const secondsLeft = Math.floor((access.expiresAt.getTime() - Date.now()) / 1000);
     const expiresIn = Math.max(1, Math.min(AI_PASS_SECONDS, secondsLeft));
     const pass = jwt.sign({ tier: access.tier, premium: access.premium }, secret, {
       algorithm: 'HS256',
@@ -193,7 +204,7 @@ router.get('/ai-pass', requireAuth, verifyLimiter, async (req, res, next) => {
   }
 });
 
-/* POST /api/payments/initialize  { plan, name?, phone? }  ->  201 { accessCode, reference } */
+/* POST /api/payments/initialize  { plan: '7d' | '14d' | '30d', name?, phone? }  ->  201 { accessCode, reference } */
 router.post('/initialize', requireAuth, initLimiter, async (req, res, next) => {
   try {
     const user = await User.findById(req.userId);
@@ -205,16 +216,18 @@ router.post('/initialize', requireAuth, initLimiter, async (req, res, next) => {
     if (billingName.length > 100) return res.status(400).json({ message: 'That name is too long.' });
     if (billingPhone && !PHONE_RE.test(billingPhone)) return res.status(400).json({ message: 'Enter a valid phone number, or leave it empty.' });
 
-    // Which plan. Only the three paid ones exist; the price is looked up here, never taken from the browser.
+    // Which length. Only the three Premium ones exist; the price is looked up here, never taken from the browser.
     const planId = typeof req.body?.plan === 'string' ? req.body.plan.trim().toLowerCase() : '';
-    const plan = isPaidTier(planId) ? findPlan(planId) : null;
-    if (!plan) return res.status(400).json({ message: 'Choose a plan to continue.' });
+    const plan = findPlan(planId);
+    if (!plan) return res.status(400).json({ message: 'Choose how long you want Premium for to continue.' });
 
-    // Already on this plan or a better one: nothing to buy. A better plan can be bought on top of a lower one
-    // (the higher plan applies straight away, and the lower one carries on underneath until its own days run out).
+    // Paying again while Premium is running is fine: the new days start when the current ones end, so none are lost.
+    // Only an enormous pile of waiting days is refused.
     const access = await accessFor(user.id);
-    if (tierRank(access.tier) >= tierRank(plan.id)) {
-      return res.json({ premium: true, tier: access.tier, expiresAt: access.expiresAt, daysLeft: access.daysLeft });
+    if (!canAddPlan(access, plan)) {
+      return res.status(409).json({
+        message: `You already have ${access.daysLeft} days of Premium, and at most ${MAX_BANKED_DAYS} days can be waiting at once. You can add more when some of it has been used.`,
+      });
     }
 
     const channels = getChannels();
@@ -242,7 +255,8 @@ router.post('/initialize', requireAuth, initLimiter, async (req, res, next) => {
         metadata: {
           userId: user.id,
           plan: plan.name,
-          tier: plan.id,
+          tier: 'premium',
+          days: plan.days,
           // Shown on the transaction in the Paystack dashboard.
           custom_fields: [
             ...(billingName ? [{ display_name: 'Name', variable_name: 'billing_name', value: billingName }] : []),
