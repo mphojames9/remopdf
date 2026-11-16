@@ -112,15 +112,28 @@ function Icon({ name, className = 'h-5 w-5' }) {
 /*  Content                                                            */
 /* ------------------------------------------------------------------ */
 
-const editorPoints = [
-  { art: 'text', title: 'Edit and add text', desc: 'Click a line to fix it, or place new text anywhere on the page.' },
-  { art: 'mark', title: 'Highlight, sign, add images', desc: 'Mark what matters, add your signature, or place an image on the page.' },
-  { art: 'pages', title: 'Add, remove and rotate pages', desc: 'Change the page order of a file, with every page shown in the sidebar.' },
-  { art: 'split', title: 'Split a PDF', desc: 'Break a big file into smaller ones, ready to send on their own.' },
-  { art: 'lock', title: 'Lock and unlock', desc: 'Protect a PDF with a password, and unlock it when you need to work on it.' },
-  { art: 'convert', title: 'Convert file types', desc: 'Switch between PDF and other file types in a few taps.' },
-  { art: 'compress', title: 'Compress', desc: 'Shrink heavy files so they are easy to email and upload.' },
-  { art: 'finish', title: 'Watermark and page numbers', desc: 'Finish the file with a watermark and page numbers, then download it.' },
+// The resume builder's main features, drawn as cards in the #tools section. `art` picks the little scene in ToolArt.
+const resumePoints = [
+  { art: 'text', title: 'A first draft in about 10 minutes', desc: 'Add your work history and the AI builder drafts your summary. You start from a draft, not a blank page.' },
+  { art: 'assist', title: 'AI smart assist on every line', desc: 'Not sure how to word it? Get stronger rewrites of any summary or job description, each with a short reason it works. You choose what goes in.' },
+  { art: 'spell', title: 'Fewer typos, clearer wording', desc: 'Spelling and grammar are checked as you type, so a slip is less likely to cost you a keyword or a first impression.' },
+  { art: 'ats', title: 'ATS-friendly templates', desc: 'Pick from 30 layouts with clear headings and plain, readable text, so applicant tracking systems pick up your details in the right place.' },
+  { art: 'letter', title: 'A cover letter to match', desc: 'Write a cover letter from the same details, shaped to the job you are applying for, and sign it on screen.' },
+  { art: 'keywords', title: 'Tailored to the job', desc: 'Paste a job advert or link and see the keywords it asks for, which of your skills already match, and a score that updates as you write.' },
+  { art: 'import', title: 'Start from your old resume', desc: 'Upload the resume you already have and edit it in the builder instead of retyping it.' },
+  { art: 'convert', title: 'Download a clean A4 PDF', desc: 'Preview it, switch template or colour, then download a PDF that is ready to email or upload.' },
+];
+
+// The PDF editor's tools, listed compactly in the PDF section further down the page.
+const pdfTools = [
+  { icon: 'edit', label: 'Edit and add text' },
+  { icon: 'highlighter', label: 'Highlight, sign, add images' },
+  { icon: 'rotate', label: 'Add, remove and rotate pages' },
+  { icon: 'scissors', label: 'Split a PDF' },
+  { icon: 'lock', label: 'Lock and unlock' },
+  { icon: 'convert', label: 'Convert file types' },
+  { icon: 'compress', label: 'Compress' },
+  { icon: 'droplet', label: 'Watermark and page numbers' },
 ];
 
 const atsPoints = [
@@ -141,6 +154,12 @@ const atsFound = [
 // `tone` picks the colour of its small icon.
 const CAP_TONES = { pdf: '#e8967c', resume: '#a5b1ff', zip: '#5ed6c1', invoice: '#f2c14e' };
 const capItems = [
+  { icon: 'spark', label: 'AI smart assist', to: '/ResumeBuilder', tone: 'resume' },
+  { icon: 'layout', label: 'ATS-friendly templates', to: '/ResumeBuilder', tone: 'resume' },
+  { icon: 'fileText', label: 'Cover letters', to: '/ResumeBuilder', tone: 'resume' },
+  { icon: 'spellcheck', label: 'Spelling and grammar checks', to: '/ResumeBuilder', tone: 'resume' },
+  { icon: 'target', label: 'Match a job posting', to: '/ResumeBuilder', tone: 'resume' },
+  { icon: 'fileUp', label: 'Import an old resume', to: '/ResumeBuilder', tone: 'resume' },
   { icon: 'edit', label: 'Edit PDF text', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
   { icon: 'highlighter', label: 'Highlight text', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
   { icon: 'sign', label: 'Sign and add images', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
@@ -150,35 +169,31 @@ const capItems = [
   { icon: 'convert', label: 'Convert file types', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
   { icon: 'compress', label: 'Compress', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
   { icon: 'droplet', label: 'Watermark and page numbers', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'layout', label: 'Resume templates', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'shieldCheck', label: 'ATS-friendly resumes', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'spellcheck', label: 'Spelling and grammar checks', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'spark', label: 'AI writing assistant', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'fileUp', label: 'Import an old resume', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'target', label: 'Match a job posting', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'fileText', label: 'Cover letters', to: '/ResumeBuilder', tone: 'resume' },
   { icon: 'archive', label: 'Zip and unzip files', to: '/ZipTool', tone: 'zip' },
   { icon: 'receipt', label: 'Invoices as PDF', to: '/InvoiceBuilder', tone: 'invoice' },
 ];
 
 const steps = [
-  { title: 'Pick what you need', desc: 'Open a PDF to edit, or start a resume from a template.' },
-  { title: 'Make your changes', desc: 'Edit text, highlight and organize pages, or fill in your resume with spelling and grammar checks as you type.' },
-  { title: 'Download your PDF', desc: 'Preview the result, then download a clean PDF.' },
+  { title: 'Add your details', desc: 'Pick a template, or import the resume you already have. Then add your work history, education and skills.' },
+  { title: 'Let AI smart assist help', desc: 'Draft your summary, get stronger rewrites of any line, and match your skills to a job advert. Spelling and grammar are checked as you type.' },
+  { title: 'Add a cover letter, then download', desc: 'Write a matching cover letter, preview both, and download clean A4 PDFs.' },
 ];
 
 const faqs = [
-  { topic: 'General', q: 'What can I do with this app?', a: 'Edit and highlight text in PDFs, organize and protect them, convert and compress files, scan and share documents, and build a resume from a template.' },
-  { topic: 'PDFs', q: 'Can I edit text that is already in a PDF?', a: 'Yes. Open the file in the PDF editor, click a line and type. You can also add new text anywhere on the page, highlight, sign, or place an image.' },
-  { topic: 'PDFs', q: 'How do I make a PDF smaller?', a: 'Use Compress. It shrinks heavy files so they are easy to email and upload.' },
-  { topic: 'PDFs', q: 'Can I put a password on a PDF?', a: 'Yes. Lock a PDF with a password, and unlock it when you need to work on it again.' },
+  { topic: 'General', q: 'What can I do with this app?', a: 'Build an ATS-friendly resume and a matching cover letter with help from AI, or edit, organize, protect, convert and compress PDFs. There are also tools for zipping files and making invoices.' },
+  { topic: 'Resumes', q: 'How does AI smart assist help?', a: 'It drafts your summary from the work history you add, suggests stronger wording for any summary or job description, and shows which skills from a job advert you already have. Nothing goes into your resume until you choose it, and it only works from the details you have entered.' },
+  { topic: 'Resumes', q: 'Can I write a cover letter too?', a: 'Yes. The cover letter builder uses the details from your resume and can pull in the job you are applying for. Preview it, sign it on screen and download it as a PDF.' },
   {
     topic: 'Resumes', q: 'What does ATS friendly mean?',
     a: 'Many employers use applicant tracking systems (ATS) to scan resumes before a person reads them. Our resume templates use clear headings and readable text so those systems can pick up your details correctly.',
   },
-  { topic: 'General', q: 'Do I need design skills?', a: 'No. For resumes, choose a template and add your details. For PDFs, open a file and edit right on the page.' },
+  { topic: 'Resumes', q: 'Will the spell check catch every mistake?', a: 'Spelling and grammar are checked as you type, which catches most slips. Give your resume one last read before you send it.' },
   { topic: 'Resumes', q: 'Can I use my existing resume?', a: 'Yes. Import your current resume in the builder and edit it from there.' },
-  { topic: 'General', q: 'What file do I get?', a: 'A PDF, ready to email or upload. Resumes come as A4.' },
+  { topic: 'General', q: 'Do I need design skills?', a: 'No. For resumes, choose a template and add your details. For PDFs, open a file and edit right on the page.' },
+  { topic: 'General', q: 'What file do I get?', a: 'A PDF, ready to email or upload. Resumes and cover letters come as A4.' },
+  { topic: 'PDFs', q: 'Can I edit text that is already in a PDF?', a: 'Yes. Open the file in the PDF editor, click a line and type. You can also add new text anywhere on the page, highlight, sign, or place an image.' },
+  { topic: 'PDFs', q: 'How do I make a PDF smaller?', a: 'Use Compress. It shrinks heavy files so they are easy to email and upload.' },
+  { topic: 'PDFs', q: 'Can I put a password on a PDF?', a: 'Yes. Lock a PDF with a password, and unlock it when you need to work on it again.' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -313,61 +328,101 @@ function ToolArt({ type }) {
       </span>
     );
 
-  if (type === 'mark')
+  if (type === 'assist')
+    art = (
+      <span className="flex items-center gap-3">
+        <span className={`${PAGE} block h-20 w-14 p-2.5`}>
+          <span className={`${BAR} w-full`} />
+          <span className={`${BAR} mt-2 w-3/4`} />
+          <span className={`${BAR} mt-2 w-full`} />
+        </span>
+        <span className="ta-pop flex text-[#d9856b]">
+          <Icon name="spark" className="h-6 w-6" />
+        </span>
+        <span className="block w-16 space-y-1.5">
+          <span className="block h-5 rounded-md bg-white shadow-sm ring-2 ring-[#d9856b]" />
+          <span className="block h-5 rounded-md bg-white shadow-sm ring-1 ring-black/10" />
+          <span className="block h-5 rounded-md bg-white shadow-sm ring-1 ring-black/10" />
+        </span>
+      </span>
+    );
+
+  if (type === 'spell')
+    art = (
+      <span className="flex flex-col items-center gap-2.5 text-[13px] font-semibold text-[#0e1726]">
+        <span className="rounded-md bg-white px-3 py-1.5 shadow-sm ring-1 ring-black/10">
+          <span className="underline decoration-red-400 decoration-wavy underline-offset-4">Maneger</span>
+        </span>
+        <span className="ta-pop flex items-center gap-1.5 rounded-md bg-[#0e1726] px-3 py-1.5 text-white shadow-md">
+          <Icon name="check" className="h-3.5 w-3.5 text-[#d9856b]" />
+          Manager
+        </span>
+      </span>
+    );
+
+  if (type === 'ats')
+    art = (
+      <span className="flex items-center gap-3">
+        <span className={`${PAGE} block h-24 w-[4.75rem] p-3`}>
+          <span className={`${BAR} w-2/3 bg-[#0e1726]/70`} />
+          <span className={`${BAR} mt-2 w-full`} />
+          <span className={`${BAR} mt-1.5 w-4/5`} />
+          <span className={`${BAR} mt-3 w-1/2 bg-[#0e1726]/70`} />
+          <span className={`${BAR} mt-2 w-full`} />
+        </span>
+        <span className="space-y-2">
+          {['Name', 'Work', 'Skills'].map((label) => (
+            <span key={label} className="ta-pop flex items-center gap-1.5 rounded-full bg-white py-1 pl-1 pr-2.5 text-[11px] font-semibold shadow-sm ring-1 ring-black/5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#d9856b] text-[#0e1726]">
+                <Icon name="check" className="h-2.5 w-2.5" />
+              </span>
+              {label}
+            </span>
+          ))}
+        </span>
+      </span>
+    );
+
+  if (type === 'letter')
     art = (
       <span className={`${PAGE} block h-24 w-[4.75rem] p-3`}>
-        <span className="relative block h-2 w-full">
-          <span className="ta-hl absolute inset-y-0 left-0 w-full rounded-sm bg-[#d9856b]/45" />
-          <span className={`${BAR} absolute inset-x-0 top-0.5 w-full`} />
-        </span>
+        <span className={`${BAR} w-2/5`} />
+        <span className={`${BAR} mt-2.5 w-full`} />
         <span className={`${BAR} mt-2 w-4/5`} />
         <span className={`${BAR} mt-2 w-full`} />
-        <svg viewBox="0 0 60 16" className="mt-2.5 h-4 w-full" aria-hidden="true">
+        <svg viewBox="0 0 60 16" className="mt-2 h-4 w-full" aria-hidden="true">
           <path className="ta-sig" d="M2 12c6-12 8-12 6-2s6 4 9-4 4 10 9 2 6-6 9-1 7 3 11-3" pathLength="1" fill="none" stroke="#0e1726" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </span>
     );
 
-  if (type === 'pages')
+  if (type === 'keywords')
     art = (
-      <span className="flex items-center gap-3">
+      <span className="flex max-w-[10.5rem] flex-wrap justify-center gap-1.5">
+        {[['Excel', true], ['Reporting', true], ['Scheduling', false], ['Budgeting', true], ['SAP', false]].map(([word, hit]) => (
+          <span
+            key={word}
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${hit ? 'bg-[#d9856b]/20 text-[#7a3b28] ring-[#d9856b]/40' : 'bg-white text-slate-500 ring-black/10'}`}
+          >
+            {word}
+          </span>
+        ))}
+      </span>
+    );
+
+  if (type === 'import')
+    art = (
+      <span className="flex items-center gap-2.5">
         <span className={`${PAGE} block h-16 w-12 p-2`}>
           <span className={`${BAR} w-full`} />
           <span className={`${BAR} mt-1.5 w-3/4`} />
+          <span className={`${BAR} mt-1.5 w-full`} />
         </span>
-        <span className={`${PAGE} ta-rot block h-16 w-12 p-2`}>
-          <span className={`${BAR} w-full`} />
-          <span className={`${BAR} mt-1.5 w-3/4`} />
+        <span className="relative block h-px w-12 bg-[#0e1726]/25">
+          <span className="ta-dot absolute -top-[3px] left-[calc(100%-6px)] block h-1.5 w-1.5 rounded-full bg-[#d9856b]" />
         </span>
-        <span className="ta-add flex h-16 w-12 items-center justify-center rounded-[3px] border border-dashed border-[#d9856b] text-[#d9856b]">
-          <Icon name="plus" className="h-4 w-4" />
-        </span>
-      </span>
-    );
-
-  if (type === 'split')
-    art = (
-      <span className="relative block h-24 w-[4.75rem]">
-        <span className="ta-sl absolute inset-y-0 left-0 w-1/2 bg-white py-3 pl-3 shadow-md ring-1 ring-black/10">
-          {['w-full', 'w-full', 'w-full', 'w-full'].map((w, i) => (
-            <span key={i} className={`${BAR} ${i ? 'mt-2' : ''} ${w} rounded-r-none`} />
-          ))}
-        </span>
-        <span className="ta-sr absolute inset-y-0 right-0 w-1/2 bg-white py-3 pr-3 shadow-md ring-1 ring-black/10">
-          {['w-full', 'w-2/3', 'w-full', 'w-1/3'].map((w, i) => (
-            <span key={i} className={`${BAR} ${i ? 'mt-2' : ''} ${w} rounded-l-none`} />
-          ))}
-        </span>
-        <span className="ta-cut absolute -inset-y-1 left-1/2 w-0 border-l border-dashed border-[#d9856b]" />
-      </span>
-    );
-
-  if (type === 'lock')
-    art = (
-      <span className="relative block h-20 w-14">
-        <span className="ta-shackle absolute left-2.5 top-0 block h-9 w-9 rounded-t-full border-4 border-b-0 border-[#0e1726]" />
-        <span className="absolute inset-x-0 bottom-0 flex h-11 items-center justify-center rounded-lg bg-[#0e1726]">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#d9856b]" />
+        <span className="ta-pop flex h-16 w-12 items-center justify-center rounded-[3px] bg-white text-[#d9856b] shadow-md ring-1 ring-[#d9856b]">
+          <Icon name="edit" className="h-5 w-5" />
         </span>
       </span>
     );
@@ -387,29 +442,6 @@ function ToolArt({ type }) {
       </span>
     );
 
-  if (type === 'compress')
-    art = (
-      <span className="block w-28 space-y-3">
-        {[0, 1, 2].map((i) => (
-          <span key={i} className="block h-2.5 w-full rounded-full bg-[#0e1726]/15">
-            <span className="ta-bar block h-full w-[30%] rounded-full bg-[#0e1726]" style={{ '--i': i }} />
-          </span>
-        ))}
-      </span>
-    );
-
-  if (type === 'finish')
-    art = (
-      <span className={`${PAGE} relative block h-24 w-[4.75rem] overflow-hidden p-3`}>
-        <span className={`${BAR} w-full`} />
-        <span className={`${BAR} mt-2 w-4/5`} />
-        <span className={`${BAR} mt-2 w-full`} />
-        <span className={`${BAR} mt-2 w-3/5`} />
-        <span className="ta-wm absolute inset-0 flex -rotate-[30deg] items-center justify-center text-[11px] font-extrabold tracking-wide text-[#d9856b]/60">DRAFT</span>
-        <span className="ta-pn absolute inset-x-0 bottom-1.5 block text-center text-[9px] font-medium text-slate-500">1</span>
-      </span>
-    );
-
   return (
     <div aria-hidden="true" className="flex h-28 items-center justify-center overflow-hidden rounded-xl bg-[#eef1f9] ring-1 ring-[#0e1726]/5">
       {art}
@@ -417,11 +449,11 @@ function ToolArt({ type }) {
   );
 }
 
-// The editor feature list. From sm up it is the plain grid. On a phone each item becomes a card that sticks
+// The resume feature list. From sm up it is the plain grid. On a phone each item becomes a card that sticks
 // near the top while the next one slides up over it, so the cards pile onto each other one by one. The sticky
 // part is pure CSS (.ec-* rules below); this effect only measures how far each card has been covered and
 // sets --sc (scale) and --dim (shade) so the older cards sink back as the stack grows.
-function EditorCards() {
+function FeatureCards() {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -486,11 +518,11 @@ function EditorCards() {
 
   return (
     <ul ref={ref} className="ec-list mt-14 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-      {editorPoints.map((pt, i) => (
+      {resumePoints.map((pt, i) => (
         <li key={pt.title} style={{ '--i': i % 4, '--n': i }} className="ec-item reveal">
           <div className="ec-card">
             <span className="ec-count" aria-hidden="true">
-              {String(i + 1).padStart(2, '0')} / {String(editorPoints.length).padStart(2, '0')}
+              {String(i + 1).padStart(2, '0')} / {String(resumePoints.length).padStart(2, '0')}
             </span>
             <ToolArt type={pt.art} />
             <h3 className="mt-5 font-display text-lg font-bold">{pt.title}</h3>
@@ -610,17 +642,18 @@ const footerCols = [
   {
     title: 'Product',
     links: [
-      { label: 'PDF editor', to: PDF_EDITOR_ROUTE, kind: 'route' },
       { label: 'Resume builder', to: '/ResumeBuilder', kind: 'route' },
       { label: 'Templates', to: '/#templates', kind: 'route' },
+      { label: 'PDF editor', to: PDF_EDITOR_ROUTE, kind: 'route' },
       { label: 'Pricing', to: '/#pricing', kind: 'route' },
     ],
   },
   {
     title: 'Learn',
     links: [
-      { label: 'PDF editor', to: '#tools', kind: 'anchor' },
+      { label: 'Resume builder', to: '#tools', kind: 'anchor' },
       { label: 'ATS scan', to: '#ats', kind: 'anchor' },
+      { label: 'PDF editor', to: '#pdf-editor', kind: 'anchor' },
       { label: 'How it works', to: '#how-it-works', kind: 'anchor' },
       { label: 'FAQ', to: '#faq', kind: 'anchor' },
     ],
@@ -652,7 +685,7 @@ function FooterLink({ link }) {
   );
 }
 
-const BLURB = 'Edit, organize, convert and share PDFs, or build an ATS-friendly resume from a template.';
+const BLURB = 'Build an ATS-friendly resume and cover letter with AI smart assist, or edit and convert your PDFs.';
 
 const ONET_URL = 'https://services.onetcenter.org/';
 const ONET_BADGE = 'https://www.onetcenter.org/image/link/onet-in-it.svg';
@@ -818,7 +851,7 @@ function SiteFooter() {
   );
 }
 
-const faqTopics = ['All', 'General', 'PDFs', 'Resumes'];
+const faqTopics = ['All', 'General', 'Resumes', 'PDFs'];
 const faqTopicIcon = { All: 'grid', General: 'spark', PDFs: 'edit', Resumes: 'briefcase' };
 
 function Faq() {
@@ -998,7 +1031,6 @@ export default function Home() {
         .spot:hover::before { opacity: 1; }
         .squiggle path { stroke-dasharray: 1; }
         .ta-sig { stroke-dasharray: 1; }
-        .ta-shackle { transform-origin: 100% 100%; }
         .ats-bar { display: none; }
         @property --fold { syntax: '<length>'; inherits: true; initial-value: 0px; }
         .fold-wrap { --fold-size: 3.5rem; --fold: 0px; }
@@ -1050,32 +1082,12 @@ export default function Home() {
           .ta-caret { animation: ta-move 3.6s steps(9, end) infinite; }
           @keyframes ta-grow { 0% { width: 0; } 70%, 100% { width: 100%; } }
           @keyframes ta-move { 0% { left: 0; } 70%, 100% { left: 100%; } }
-          .ta-hl { animation: ta-hl 4.2s ease-in-out infinite; }
-          @keyframes ta-hl { 0% { width: 0; } 30%, 90% { width: 100%; } 100% { width: 0; } }
           .ta-sig { animation: ta-sig 4.2s ease-in-out infinite; }
           @keyframes ta-sig { 0%, 32% { stroke-dashoffset: 1; } 70%, 92% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 1; } }
-          .ta-rot { animation: ta-rot 4s ease-in-out infinite; }
-          @keyframes ta-rot { 0%, 20% { rotate: 0deg; } 45%, 70% { rotate: 90deg; } 95%, 100% { rotate: 0deg; } }
-          .ta-add { animation: ta-add 4s ease-in-out infinite; }
-          @keyframes ta-add { 0%, 50% { opacity: .45; scale: .92; } 70%, 90% { opacity: 1; scale: 1; } 100% { opacity: .45; scale: .92; } }
-          .ta-sl { animation: ta-sl 4s ease-in-out infinite; }
-          .ta-sr { animation: ta-sr 4s ease-in-out infinite; }
-          @keyframes ta-sl { 0%, 25% { translate: 0 0; rotate: 0deg; } 50%, 75% { translate: -12px 0; rotate: -4deg; } 100% { translate: 0 0; rotate: 0deg; } }
-          @keyframes ta-sr { 0%, 25% { translate: 0 0; rotate: 0deg; } 50%, 75% { translate: 12px 0; rotate: 4deg; } 100% { translate: 0 0; rotate: 0deg; } }
-          .ta-cut { animation: ta-cut 4s ease-in-out infinite; }
-          @keyframes ta-cut { 0%, 15% { opacity: 0; } 30%, 70% { opacity: 1; } 85%, 100% { opacity: 0; } }
-          .ta-shackle { animation: ta-lock 4s ease-in-out infinite; }
-          @keyframes ta-lock { 0%, 25% { translate: 0 0; rotate: 0deg; } 45%, 65% { translate: 0 -7px; rotate: -22deg; } 85%, 100% { translate: 0 0; rotate: 0deg; } }
           .ta-dot { animation: ta-dot 3s ease-in-out infinite; }
           @keyframes ta-dot { 0% { left: 0; opacity: 0; } 15% { opacity: 1; } 70% { left: calc(100% - 6px); opacity: 1; } 85%, 100% { left: calc(100% - 6px); opacity: 0; } }
           .ta-pop { animation: ta-pop 3s ease-in-out infinite; }
           @keyframes ta-pop { 0%, 68% { scale: 1; } 78% { scale: 1.14; } 90%, 100% { scale: 1; } }
-          .ta-bar { animation: ta-bar 3.6s ease-in-out infinite; animation-delay: calc(var(--i, 0) * .22s); }
-          @keyframes ta-bar { 0%, 12% { width: 100%; } 55%, 85% { width: 30%; } 100% { width: 100%; } }
-          .ta-wm { animation: ta-wm 4s ease-in-out infinite; }
-          @keyframes ta-wm { 0%, 15% { opacity: 0; } 40%, 85% { opacity: 1; } 100% { opacity: 0; } }
-          .ta-pn { animation: ta-pn 4s ease-in-out infinite; }
-          @keyframes ta-pn { 0%, 40% { scale: 1; } 52% { scale: 1.5; } 64%, 100% { scale: 1; } }
         }
         .hero-glow { background: radial-gradient(26rem circle at var(--mx, 70%) var(--my, 30%), rgba(217,133,107,.2), transparent 70%); }
         @media (prefers-reduced-motion: no-preference) {
@@ -1187,11 +1199,11 @@ export default function Home() {
           <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-8 lg:pb-24 lg:pt-16">
             <div className="hero-out">
               <h1 className="font-display text-[2.75rem] font-extrabold leading-[1.02] tracking-[-0.035em] [text-wrap:balance] sm:text-6xl lg:text-[4.5rem]">
-                {'Edit PDFs. Build resumes.'.split(' ').map((w, i) => (
+                {'Your resume, drafted in minutes.'.split(' ').map((w, i) => (
                   <span key={i}>
                     <span className={`word relative ${i >= 2 ? 'grad-text' : ''}`} style={{ '--i': i }}>
                       {w}
-                      {i === 3 && (
+                      {i === 4 && (
                         <svg className="squiggle absolute -bottom-1.5 left-0 h-3 w-full overflow-visible" viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true">
                           <path d="M3 8c30-7 60 5 95-1s60-4 99-1" pathLength="1" fill="none" stroke="#d9856b" strokeWidth="5" strokeLinecap="round" />
                         </svg>
@@ -1201,14 +1213,14 @@ export default function Home() {
                 ))}
               </h1>
               <p className="rise mt-6 max-w-lg text-lg leading-relaxed text-slate-600" style={{ '--d': '.1s' }}>
-                Edit, organize, convert and share PDFs, or build an ATS-friendly resume from a template. Download a clean PDF either way.
+                Add your details and the AI builder helps write every section. It checks your spelling as you type, sets everything in an ATS-friendly template, and adds a cover letter to match. Download a clean A4 PDF.
               </p>
               <div className="rise mt-9 flex flex-col gap-3 sm:flex-row" style={{ '--d': '.2s' }}>
-                <Link to={PDF_EDITOR_ROUTE} onPointerMove={magnet} onPointerLeave={unmagnet} className="btn btn-primary magnet">
-                  Open PDF editor
+                <Link to="/ResumeBuilder" onPointerMove={magnet} onPointerLeave={unmagnet} className="btn btn-primary magnet">
+                  Build my resume
                 </Link>
-                <Link to="/ResumeBuilder" className="btn btn-line">
-                  Build a resume
+                <Link to={PDF_EDITOR_ROUTE} className="btn btn-line">
+                  Edit a PDF
                 </Link>
               </div>
             </div>
@@ -1219,47 +1231,26 @@ export default function Home() {
 
         <Capabilities />
 
-        {/* PDF editor */}
+        {/* Resume builder: what you get */}
         <section id="tools" className="scroll-mt-20 border-t border-[#0e1726]/10 bg-white">
           <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <h2 className="reveal max-w-2xl font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
-                  Edit a PDF right on the page.
+                  Write a better resume, in less time.
                 </h2>
                 <p className="reveal mt-4 max-w-xl text-slate-600" style={{ '--i': 1 }}>
-                  Open a file and change it where it sits: fix a typo, add text, highlight a line, sign. Then split, lock, convert or compress it before you download.
+                  The builder walks you through each section. AI smart assist helps with the wording, the spell check catches slips as you type, and a cover letter to match is one step away.
                 </p>
               </div>
               <div className="reveal" style={{ '--i': 2 }}>
-                <Link to={PDF_EDITOR_ROUTE} onPointerMove={magnet} onPointerLeave={unmagnet} className="btn btn-primary magnet">
-                  Open PDF editor
+                <Link to="/ResumeBuilder" onPointerMove={magnet} onPointerLeave={unmagnet} className="btn btn-primary magnet">
+                  Build my resume
                 </Link>
               </div>
             </div>
 
-            <div className="shot-in relative mt-12">
-              <div className="rounded-3xl bg-[#f3dbd1] p-3 sm:p-6 lg:p-8">
-                <img
-                  src={editorShot}
-                  srcSet={`${editorShotSmall} 800w, ${editorShot} 1600w`}
-                  sizes="(min-width: 1280px) 1152px, 92vw"
-                  alt="The RemoPDF editor with a toolbar for text, highlight, signature and image tools, a page sidebar, and an invoice open on the page."
-                  width="1600"
-                  height="751"
-                  loading="lazy"
-                  decoding="async"
-                  draggable={false}
-                  className="block h-auto w-full rounded-xl bg-white shadow-2xl ring-1 ring-black/10"
-                />
-              </div>
-              <span style={{ '--d': '.2s' }} className="rise chip2 absolute -top-4 left-8 z-10 hidden items-center gap-2 rounded-full bg-[#0e1726] py-2 pl-3 pr-4 text-sm font-medium text-white shadow-lg sm:flex">
-                <Icon name="edit" className="h-4 w-4 text-[#d9856b]" />
-                Edit text on the page
-              </span>
-            </div>
-
-            <EditorCards />
+            <FeatureCards />
           </div>
         </section>
 
@@ -1308,16 +1299,74 @@ export default function Home() {
           </div>
         </section>
 
+        {/* PDF editor */}
+        <section id="pdf-editor" className="scroll-mt-20 border-t border-[#0e1726]/10 bg-white">
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h2 className="reveal max-w-2xl font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
+                  Need to edit a PDF? That is built in too.
+                </h2>
+                <p className="reveal mt-4 max-w-xl text-slate-600" style={{ '--i': 1 }}>
+                  Open a file and change it where it sits: fix a typo, add text, highlight a line, sign. Then split, lock, convert or compress it before you download.
+                </p>
+              </div>
+              <div className="reveal" style={{ '--i': 2 }}>
+                <Link to={PDF_EDITOR_ROUTE} onPointerMove={magnet} onPointerLeave={unmagnet} className="btn btn-primary magnet">
+                  Open PDF editor
+                </Link>
+              </div>
+            </div>
+
+            <div className="shot-in relative mt-12">
+              <div className="rounded-3xl bg-[#f3dbd1] p-3 sm:p-6 lg:p-8">
+                <img
+                  src={editorShot}
+                  srcSet={`${editorShotSmall} 800w, ${editorShot} 1600w`}
+                  sizes="(min-width: 1280px) 1152px, 92vw"
+                  alt="The RemoPDF editor with a toolbar for text, highlight, signature and image tools, a page sidebar, and an invoice open on the page."
+                  width="1600"
+                  height="751"
+                  loading="lazy"
+                  decoding="async"
+                  draggable={false}
+                  className="block h-auto w-full rounded-xl bg-white shadow-2xl ring-1 ring-black/10"
+                />
+              </div>
+              <span style={{ '--d': '.2s' }} className="rise chip2 absolute -top-4 left-8 z-10 hidden items-center gap-2 rounded-full bg-[#0e1726] py-2 pl-3 pr-4 text-sm font-medium text-white shadow-lg sm:flex">
+                <Icon name="edit" className="h-4 w-4 text-[#d9856b]" />
+                Edit text on the page
+              </span>
+            </div>
+
+            <ul className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {pdfTools.map((tool) => (
+                <li key={tool.label}>
+                  <Link
+                    to={PDF_EDITOR_ROUTE}
+                    className="flex h-full items-center gap-3 rounded-xl bg-[#fafafb] p-3 ring-1 ring-[#0e1726]/10 transition-colors duration-200 hover:ring-[#0e1726]/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e1726]"
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#f3dbd1] text-[#0e1726]">
+                      <Icon name={tool.icon} className="h-[1.1rem] w-[1.1rem]" />
+                    </span>
+                    <span className="text-sm font-semibold leading-snug">{tool.label}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
         {/* How it works */}
         <section id="how-it-works" className="dark-sec bleed scroll-mt-20 bg-[#0e1726] text-white">
           <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20 lg:px-8">
             <div className="reveal lg:sticky lg:top-28 lg:self-start">
               <h2 className="font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
-                From file to finished PDF in three steps.
+                From blank page to finished resume in three steps.
               </h2>
               <p className="mt-4 max-w-md text-slate-300">Already have a resume? Import it and skip straight to editing.</p>
-              <Link to={PDF_EDITOR_ROUTE} className="btn btn-primary mt-8">
-                Open PDF editor
+              <Link to="/ResumeBuilder" className="btn btn-primary mt-8">
+                Build my resume
               </Link>
             </div>
             <ol className="relative space-y-12">
@@ -1344,14 +1393,14 @@ export default function Home() {
         <section className="cta-band bg-[#d9856b]">
           <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-4 py-14 sm:px-6 sm:py-16 lg:flex-row lg:items-center lg:px-8">
             <h2 className="reveal max-w-xl font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
-              Your next PDF or resume is a few minutes away.
+              Your next resume is a few minutes away.
             </h2>
             <div className="reveal flex flex-col gap-3 sm:flex-row" style={{ '--i': 2 }}>
-              <Link to={PDF_EDITOR_ROUTE} onPointerMove={magnet} onPointerLeave={unmagnet} className="btn btn-ink magnet">
-                Open PDF editor
+              <Link to="/ResumeBuilder" onPointerMove={magnet} onPointerLeave={unmagnet} className="btn btn-ink magnet">
+                Build my resume
               </Link>
-              <Link to="/ResumeBuilder" className="btn btn-line">
-                Build a resume
+              <Link to={PDF_EDITOR_ROUTE} className="btn btn-line">
+                Edit a PDF
               </Link>
             </div>
           </div>
