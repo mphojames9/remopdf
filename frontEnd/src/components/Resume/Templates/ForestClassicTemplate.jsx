@@ -1,458 +1,567 @@
 import React from 'react';
-import { renderAchievements } from '../Sections/richText';
-import renderCertificates from '../Sections/renderCertificates';
+import { parseBlocks, renderInline } from '../Sections/richText';
+import ResumePhoto from '../Sections/ResumePhoto';
+import { languageLevelInfo } from '../Sections/LanguageLevelSelect';
+import { getSkillLevelLabel } from '../Sections/SkillsField';
+import { formatRange } from '../Sections/dateFormat';
 import {
   PAGE_WIDTH_PX,
   PAGE_HEIGHT_PX,
   tint,
   jobDates,
+  skillRating,
   DEFAULT_ACCENT,
   usePaginatedBlocks,
   A4Page,
+  padLast,
   endGroup,
   editAttrs,
   markSection,
-  renderExtraSections,
 } from './templateShared';
 
 /**
- * Atlas (id: atlas). A single-column, text-only resume with a strong identity.
- * Everything that makes it look designed is CSS shapes and type; every word on the
- * page is real text in reading order (no photo, icons or images; the skill level meter is a CSS shape next to a real text level word).
+ * Apex Executive (id: apex-executive). A dark obsidian sidebar with a gold accent beside an off-white main
+ * column whose experience, projects, education and certificates sit on a thin timeline with diamond markers.
  *
- *   - oversized name, with a large soft circle and ring behind the header
- *   - contact details as a 4-column grid (repeat(4, 1fr)): a small label over each value
- *   - a full-height accent rail down the left edge of every page
- *   - a light timeline rail with accent nodes for Experience and Education
- *   - the summary set as a larger lead paragraph
- *   - skills and languages in two columns, each with a 5-segment level meter and the level word
- *     (skills: Beginner ... Expert; languages: their own level, e.g. Native, Fluent);
- *     set SHOW_SKILL_LEVELS to false for outlined chips (or a plain comma line via SKILLS_AS_CHIPS)
+ *   sidebar  photo, Contact, Details, Expertise (skill bars), Languages, Interests
+ *   main     name + profession, Summary, Experience, Projects, Education, Certifications, References
  *
- * Type: Outfit for display, Inter for body (both must be loaded by the app; the system
- * UI font is the fallback). Small coloured text uses a darkened accent so it stays
- * readable and prints well; the pure accent is used for shapes only.
+ * The accent colour (gold by default) drives every coloured detail: heading badges (Experience / Projects),
+ * timeline diamonds, company names, bullets, skill bars, the rule above the name, the photo frame and the
+ * sidebar headings and icons. The sidebar itself stays obsidian; when the accent is too dark to read on it
+ * (e.g. navy), the sidebar uses a lightened copy of the accent so text and bars never disappear.
  *
- * Pagination follows the other templates: a flat list of plain DOM atoms split into
- * A4 pages by usePaginatedBlocks. Gaps are padding (never margin), display fonts are
- * inline on the atoms, and body margins are inline px so the hidden measuring box
- * matches the real page body.
+ * Both columns are paginated on their own with usePaginatedBlocks and the page count is whichever needs
+ * more. Everything inside a column is a FLAT list of plain elements (no section wrappers); the timeline line
+ * is drawn per element (border-left), so it stays continuous when an entry continues on the next page.
  *
- * To register: add 'atlas' to DEFAULT_ACCENT (suggested #F26A21) and to your template
- * list. A missing key falls back to FALLBACK_ACCENT. Use a #rrggbb accent.
+ * Register: id 'apex-executive' in Templates/index.js, DEFAULT_ACCENT (suggested #C5A059), TEMPLATE_CARDS in
+ * TemplateThumbs.jsx and in TemplateShowcase.jsx. A missing accent key falls back to FALLBACK_ACCENT.
  */
 
-const SKILLS_AS_CHIPS = true; // only used when SHOW_SKILL_LEVELS is false
-const SHOW_SKILL_LEVELS = true; // two-column list: name, a 5-segment meter and the level word
-// Skill levels come from the skill's `rating` (1-5, set in the Skills step). 0 / missing = no level shown.
-const SKILL_LEVELS = ['Beginner', 'Basic', 'Intermediate', 'Advanced', 'Expert'];
+/* ------------------------------ Design tokens ------------------------------ */
+const FONT = `ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`;
 
-// Language levels are words (Native, Fluent, ...), so the bar count comes from the word.
-// Anything unrecognised still shows its word, just without a meter.
-const LANGUAGE_RANK = [
-  [/native|mother|bilingual/i, 5],
-  [/fluent|proficien/i, 4],
-  [/advanced|upper|professional|working/i, 3],
-  [/intermediate|conversation/i, 2],
-  [/beginner|basic|elementary|novice|a1|a2/i, 1],
-];
-const languageRating = (level) => {
-  const hit = LANGUAGE_RANK.find(([re]) => re.test(String(level || '')));
-  return hit ? hit[1] : 0;
-};
+const FALLBACK_ACCENT = '#C5A059';
+const OBSIDIAN = '#1A1D20'; // sidebar background, main headings
+const PHOTO_BG = '#111214';
+const SIDE_TEXT = '#E8E9EA';
+const SIDE_MUTED = '#B0B3B8';
+const SIDE_LINE = 'rgba(255, 255, 255, 0.1)';
+const SIDE_TRACK = '#2C3035'; // empty part of a skill bar
+const PAPER = '#FAFAFA'; // main column
+const BODY = '#4A4F55';
+const MUTED = '#8A8F96';
+const LINE = '#E0E0E0'; // header rule and timeline
 
-const BODY_FONT = `'Inter', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif`;
-const DISPLAY_FONT = `'Outfit', 'Inter', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif`;
-const FALLBACK_ACCENT = '#F26A21';
-const INK = '#0E1116';
-const TEXT = '#3B4350';
+// Geometry (px). The hidden measuring boxes must be exactly as wide as the real column bodies.
+const SIDEBAR_W = 270; // 34% of the A4 width
+const SIDE_PAD = 32;
+const SIDE_CONTENT_W = SIDEBAR_W - SIDE_PAD * 2;
+const MAIN_W = PAGE_WIDTH_PX - SIDEBAR_W;
+const MAIN_PAD_X = 40;
+const MAIN_PAD_Y = 40;
+const MAIN_CONTENT_W = MAIN_W - MAIN_PAD_X * 2;
+const MARKER_GUTTER = 6; // room left of the main column for the timeline diamonds (they sit 5px outside it)
+const SIDE_MAX_HEIGHT = PAGE_HEIGHT_PX - SIDE_PAD * 2; // pages 2+
+const MAIN_MAX_HEIGHT = PAGE_HEIGHT_PX - MAIN_PAD_Y * 2; // pages 2+
 
-const RAIL_W = 8; // accent strip on the left edge
-const MARGIN_L = 60;
-const MARGIN_R = 48;
-const MARGIN_BOTTOM = 40;
-const MARGIN_TOP_FIRST = 26; // page 1, under the header
-const MARGIN_TOP_NEXT = 44; // pages 2+
-const CONTENT_WIDTH = PAGE_WIDTH_PX - MARGIN_L - MARGIN_R; // the hidden measuring box must match
-const CONTENT_MAX_HEIGHT = PAGE_HEIGHT_PX - MARGIN_TOP_NEXT - MARGIN_BOTTOM; // usable height on pages 2+
+// Sections that live in the sidebar. Everything else goes in the main column.
+const SIDEBAR_KEYS = ['skills', 'languages', 'hobbies'];
 
-// Darken a #rrggbb colour toward black (used for small accent-coloured text).
-const shade = (hex, amount) => {
+/* ------------------------------ Colour helpers ----------------------------- */
+const luminance = (hex) => {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
-  const n = m ? parseInt(m[1], 16) : 0x1f3a5f;
-  const f = 1 - amount;
-  return `rgb(${Math.round(((n >> 16) & 255) * f)}, ${Math.round(((n >> 8) & 255) * f)}, ${Math.round((n & 255) * f)})`;
+  if (!m) return 0.5;
+  const n = parseInt(m[1], 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+// The accent as it appears on the dark sidebar: unchanged when it is bright enough, lightened when it is not.
+const onDark = (hex) => (luminance(hex) < 0.2 ? tint(hex, 0.55) : hex);
+
+/* ------------------------------ Contact lines ------------------------------ */
+// The builder hands over one flat list of strings. Personal details ("Born: ...", "Nationality: ...")
+// are pulled out and shown as label / value pairs; everything else is a contact line with an icon.
+const DETAIL_RULES = [
+  [/^(born|date of birth|dob)\s*:/i, 'Date of birth'],
+  [/^(nationality|citizenship)\s*:/i, 'Nationality'],
+  [/^(gender|sex)\s*:/i, 'Gender'],
+  [/^(marital status|civil status)\s*:/i, 'Marital status'],
+  [/^(driver'?s?|driving)\s+licen[cs]e\b/i, "Driver's licence"],
+];
+
+const parseDetail = (line) => {
+  const text = String(line).trim();
+  const rule = DETAIL_RULES.find(([re]) => re.test(text));
+  if (!rule) return null;
+  const m = /^[^:]+:\s*(.+)$/.exec(text);
+  return { label: rule[1], value: m ? m[1].trim() : 'Yes' };
 };
 
-// One date format everywhere: "May 2026", "May 2026 – Present", and "10 Sep 2026" for a full date (Born).
-// Anything that is not a recognisable date (a bare year, free text) is left as written.
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const MONTH_NAMES = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-const PRESENT_RE = /^(present|current|now|ongoing|today|to date)$/i;
+// An email typed without its "@" (e.g. "name9gmail.com") still gets the mail icon.
+const MAIL_HOST = /^(?!www\.)[^\s@/]+(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|proton|protonmail)\.(com|me|co\.za|co\.uk)$/;
 
-// 0-11 for "5", "05", "May", "sept", "September"; -1 when it is not a month.
-const monthIndex = (token) => {
-  const t = String(token).trim().toLowerCase();
-  if (/^\d{1,2}$/.test(t)) { const n = Number(t); return n >= 1 && n <= 12 ? n - 1 : -1; }
-  return t.length >= 3 ? MONTH_NAMES.findIndex((name) => name.startsWith(t)) : -1;
+const contactKind = (raw) => {
+  const s = String(raw).trim().toLowerCase();
+  const m = s.match(/^([a-z][a-z .\/&-]{1,28}):(?!\/\/)\s*/); // a leading "Label:" (not the "https:" of a URL)
+  const label = m ? m[1] : '';
+  const value = m ? s.slice(m[0].length) : s;
+
+  if (s.includes('linkedin')) return 'linkedin';
+  if (s.includes('github')) return 'github';
+  if (value.includes('@') || /e-?mail/.test(label) || MAIL_HOST.test(value)) return 'mail';
+  if (/^(tel|telephone|phone|mobile|cell|whatsapp|fax)\b/.test(label) || /^[+()\d\s.-]{7,}$/.test(value)) return 'phone';
+  if (/web|site|portfolio|url|link/.test(label) || /(https?:\/\/|www\.|\.(com|dev|io|net|org|me|site|co|app)\b)/.test(value)) return 'globe';
+  if (/address|location|city|based|residen/.test(label)
+    || /\d+\s+.*\b(street|st|road|rd|avenue|ave|drive|dr|lane|ln|blvd|boulevard|close|crescent|way)\b/.test(value)
+    || /\bp\.?o\.?\s*box\b/.test(value)
+    || value.includes(',')) return 'pin';
+  return 'dot';
 };
 
-const fmtMonthYear = (part) => {
-  const t = String(part || '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
-  if (!t) return '';
-  if (PRESENT_RE.test(t)) return 'Present';
-  let m;
-  let i = -1;
-  let y = '';
-  if ((m = /^(\d{1,2})[\s/.-](\d{4})$/.exec(t))) { i = monthIndex(m[1]); y = m[2]; } //   05 2026 | 5/2026 | 05-2026
-  else if ((m = /^(\d{4})[\s/.-](\d{1,2})$/.exec(t))) { i = monthIndex(m[2]); y = m[1]; } // 2026-05 | 2026/05
-  else if ((m = /^([a-z]{3,9})\.?[\s/.-]*(\d{4})$/i.exec(t))) { i = monthIndex(m[1]); y = m[2]; } // May 2026 | September 2026
-  return i >= 0 ? `${MONTHS[i]} ${y}` : t;
+// A resume has one location: only the first address-like line gets the pin. If nothing looked like an
+// address, the first unrecognised line is the most likely one. Every other unknown line gets a neutral dot.
+const resolveContactKinds = (lines) => {
+  const kinds = lines.map(contactKind);
+  let pinSeen = false;
+  const out = kinds.map((k) => {
+    if (k !== 'pin') return k;
+    if (pinSeen) return 'dot';
+    pinSeen = true;
+    return 'pin';
+  });
+  if (!pinSeen) {
+    const i = out.indexOf('dot');
+    if (i >= 0) out[i] = 'pin';
+  }
+  return out;
 };
 
-// "05 2026 – Present", "05/2026 - 08/2027", "Jan 2020 to Mar 2022" all become "May 2026 – Present" etc.
-const fmtDateRange = (value) => {
-  const raw = String(value || '').trim();
-  if (!raw) return '';
-  return raw.split(/\s*[–—]\s*|\s+-\s+|\s+to\s+/i).map(fmtMonthYear).filter(Boolean).join(' – ');
+const ICON_PATHS = {
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>,
+  phone: <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />,
+  pin: <><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></>,
+  globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>,
+  linkedin: <><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 11v6M8 7.5v.01M12 17v-6M12 13.5a2.5 2.5 0 0 1 5 0V17" /></>,
+  github: <><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></>,
+  dot: <circle cx="12" cy="12" r="3" />,
 };
 
-// A full date with a day (Born): "10 September 2026", "2026-09-10", "10/09/2026" (day first) -> "10 Sep 2026".
-const fmtFullDate = (value) => {
-  const t = String(value || '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
-  let m;
-  let d = 0;
-  let i = -1;
-  let y = '';
-  if ((m = /^(\d{1,2})\s+([a-z]{3,9})\.?\s+(\d{4})$/i.exec(t))) { d = Number(m[1]); i = monthIndex(m[2]); y = m[3]; }
-  else if ((m = /^([a-z]{3,9})\.?\s+(\d{1,2})\s+(\d{4})$/i.exec(t))) { d = Number(m[2]); i = monthIndex(m[1]); y = m[3]; }
-  else if ((m = /^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$/.exec(t))) { y = m[1]; i = monthIndex(m[2]); d = Number(m[3]); }
-  else if ((m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(t))) { d = Number(m[1]); i = monthIndex(m[2]); y = m[3]; }
-  return i >= 0 && d >= 1 && d <= 31 ? `${d} ${MONTHS[i]} ${y}` : t;
-};
-
-// Certificates are drawn by the shared renderCertificates, which prints `date` exactly as stored.
-// Format the dates before handing them over (works for a plain array or a { enabled, items } object).
-const withFormattedDates = (certs) => {
-  const fix = (c) => (c && typeof c === 'object' && c.date ? { ...c, date: fmtDateRange(c.date) } : c);
-  if (Array.isArray(certs)) return certs.map(fix);
-  if (certs && Array.isArray(certs.items)) return { ...certs, items: certs.items.map(fix) };
-  return certs;
-};
-
-// Heading: a short accent bar above a large title. The bar is CSS only, so the heading stays plain text.
-const HEADING_CLASS =
-  `mb-3 text-[17px] font-semibold tracking-tight before:mb-2 before:block before:h-[3px] before:w-7 before:rounded-full before:bg-[var(--accent)] before:content-['']`;
-
-// Contact entries arrive as plain strings. Each one is sorted into:
-//   - Email, Phone, Location, Website(s), LinkedIn
-//   - anything written as "Label: value" that is not one of those, e.g.
-//     "Born: 10 September 2026", "Nationality: South African" (uses its own label)
-// splitContacts returns one flat list of { label, values } cells for the header grid.
-const PRIMARY_ORDER = ['Email', 'Phone', 'Location', 'Website', 'LinkedIn'];
-const KNOWN_LABELS = {
-  email: 'Email', 'e-mail': 'Email',
-  phone: 'Phone', tel: 'Phone', telephone: 'Phone', mobile: 'Phone', cell: 'Phone',
-  location: 'Location', address: 'Location', city: 'Location',
-  website: 'Website', web: 'Website', portfolio: 'Website', site: 'Website',
-  linkedin: 'LinkedIn',
-};
-
-// Kind of an unlabelled value, chosen from what it looks like (anything unrecognised is a location).
-const kindOf = (value) => {
-  const t = String(value).trim().toLowerCase();
-  if (t.includes('@')) return 'Email';
-  if (t.includes('linkedin')) return 'LinkedIn';
-  if (/^\+?[\d\s().-]{7,}$/.test(t)) return 'Phone';
-  if (/^(https?:\/\/|www\.)/.test(t) || /\.(com|dev|io|net|org|co|me|app|site|za)(\/|$)/.test(t)) return 'Website';
-  return 'Location';
-};
-
-const tidyValue = (kind, value) => (
-  kind === 'Website' || kind === 'LinkedIn' ? value.replace(/^https?:\/\//i, '').replace(/\/+$/, '') : value
+const ContactIcon = ({ name, color }) => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ marginTop: 1 }} aria-hidden="true">
+    {ICON_PATHS[name] || ICON_PATHS.dot}
+  </svg>
 );
 
-const splitContacts = (list) => {
-  const slots = {};
-  const details = [];
-  (list || []).forEach((raw) => {
-    if (typeof raw !== 'string') return;
-    // "[www.site.com](https://www.site.com)" -> "www.site.com"
-    const text = raw.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').trim();
-    if (!text) return;
-    const m = /^([A-Za-z][A-Za-z .'’/-]{1,28}):\s*(?!\/\/)(.+)$/.exec(text);
-    let kind;
-    let value = text;
-    if (m) {
-      const known = KNOWN_LABELS[m[1].trim().toLowerCase()];
-      if (!known) {
-        const label = m[1].trim();
-        const isBirth = /^(born|birth|dob|date of birth)\b/i.test(label);
-        details.push({ label: label.charAt(0).toUpperCase() + label.slice(1), value: isBirth ? fmtFullDate(m[2].trim()) : m[2].trim() });
-        return;
-      }
-      kind = known;
-      value = m[2].trim();
-    } else {
-      kind = kindOf(text);
-    }
-    (slots[kind] = slots[kind] || []).push(tidyValue(kind, value));
-  });
-  const primary = PRIMARY_ORDER.filter((k) => slots[k]).map((k) => ({
-    label: k === 'Website' && slots[k].length > 1 ? 'Websites' : k,
-    values: slots[k],
-  }));
-  return [...primary, ...details.map((d) => ({ label: d.label, values: [d.value] }))];
-};
-
-const AtlasTemplate = (props) => {
+/* -------------------------------- Template -------------------------------- */
+const ApexExecutiveTemplate = (props) => {
   const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, sectionOrder, edit } = props;
-  const accentColor = props.accentColor || DEFAULT_ACCENT.atlas || FALLBACK_ACCENT;
-  const accentText = shade(accentColor, 0.3);
-  const railColor = tint(accentColor, 0.78);
+  const accent = props.accentColor || DEFAULT_ACCENT['apex-executive'] || FALLBACK_ACCENT;
+  const sideAccent = onDark(accent);
 
-  const headingStyle = { fontFamily: DISPLAY_FONT, color: INK, '--accent': accentColor };
-  const heading = (key, text) => <h3 key={`${key}-h`} className={HEADING_CLASS} style={headingStyle}>{text}</h3>;
-
-  // Title with the dates on the same line, employer / school under it. One atom, so a title is never stranded.
-  const entryHead = (title, date, primary, secondary) => (
-    <div>
-      <div className="flex items-baseline justify-between gap-4">
-        <p className="text-[15px] font-semibold leading-snug tracking-tight" style={{ fontFamily: DISPLAY_FONT, color: INK }}>{title}</p>
-        {date && (
-          <span className="shrink-0 whitespace-nowrap text-[10.5px] tabular-nums text-slate-700">
-            {fmtDateRange(date)}
-          </span>
-        )}
-      </div>
-      {(primary || secondary) && (
-        <p className="mt-0.5 text-[12.5px] leading-snug">
-          {primary && <span className="font-medium" style={{ color: accentText }}>{primary}</span>}
-          {secondary && <span className="text-slate-500">{primary ? ', ' : ''}{secondary}</span>}
-        </p>
-      )}
-    </div>
-  );
-
-  // One entry on the timeline rail: every atom carries the rail's left border, the head also carries the node.
-  // The gap between entries is padding, so the rail stays unbroken between atoms and across a page break.
-  const railEntry = (id, head, bodyNodes, isLastEntry) => {
-    const list = [head, ...bodyNodes].filter(Boolean);
-    return list.map((node, i) => (
-      <div
-        key={`${id}-${i}`}
-        className={`relative ml-[5px] border-l-2 pl-5 ${i === list.length - 1 && !isLastEntry ? 'pb-6' : 'pb-1'}`}
-        style={{ borderColor: railColor }}
-      >
-        {i === 0 && (
+  /* ----------------------------- Small helpers ----------------------------- */
+  // Bold / italic / bullet text. Bullets use a small accent diamond, plain lines stay paragraphs.
+  // `spaced` adds the gap between blocks as an mb-* class (so padLast / endGroup can replace it on the last one);
+  // blocks inside a timeline entry get their gap from the entry instead.
+  const richBlocks = (text, keyPrefix, { size = 13, leading = 1.625, weight, justify = false, spaced = false } = {}) =>
+    parseBlocks(text).map((block, i) => {
+      const key = `${keyPrefix}-${i}`;
+      const style = {
+        fontSize: size,
+        lineHeight: leading,
+        color: BODY,
+        ...(weight ? { fontWeight: weight } : {}),
+        ...(justify ? { textAlign: 'justify' } : {}),
+      };
+      const gap = spaced ? 'mb-2' : '';
+      return block.bullet ? (
+        <div key={key} className={`flex items-start gap-3 ${gap}`.trim()} style={style}>
           <span
-            className="absolute -left-[7px] top-[5px] h-3 w-3 rounded-full border-2 bg-white"
-            style={{ borderColor: accentColor }}
+            aria-hidden="true"
+            className="shrink-0"
+            style={{ width: 6, height: 6, marginTop: Math.round((size * leading) / 2 - 3), backgroundColor: accent, transform: 'rotate(45deg)' }}
           />
-        )}
-        {node}
-      </div>
-    ));
-  };
+          <span className="min-w-0 break-words">{renderInline(block.text, key)}</span>
+        </div>
+      ) : (
+        <p key={key} className={`break-words ${gap}`.trim()} style={style}>{renderInline(block.text, key)}</p>
+      );
+    });
 
-  const richLines = (text, prefix) => (
-    text ? renderAchievements(text, prefix).map((el, i) => <div key={`${prefix}-w${i}`}>{el}</div>) : []
+  const sideHeading = (key, text) => (
+    <h3
+      key={`${key}-h`}
+      className="text-[10px] font-black uppercase border-b pb-2 mb-4"
+      style={{ color: sideAccent, borderColor: SIDE_LINE, letterSpacing: '0.4em' }}
+    >
+      {text}
+    </h3>
   );
 
-  // One item with a level (a skill or a language): name, then a 5-segment meter plus the level as real text.
-  // The meter is CSS only and hidden from readers; the level word carries the information.
-  const levelCell = (key, name, rating, levelText) => (
-    <div key={key} className="min-w-0">
-      <p className="text-[12.5px] font-medium leading-snug [overflow-wrap:anywhere]" style={{ color: INK }}>{name}</p>
-      {(rating > 0 || levelText) && (
-        <div className="mt-1 flex items-center gap-2">
-          {rating > 0 && (
-            <span aria-hidden="true" className="flex gap-[3px]">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <span key={n} className="h-[3px] w-[18px] rounded-full" style={{ background: n <= rating ? accentColor : railColor }} />
-              ))}
-            </span>
-          )}
-          {levelText && <span className="text-[10.5px] leading-none" style={{ color: accentText }}>{levelText}</span>}
-        </div>
+  // `badge`: the square behind the letter. Experience and Projects use the accent, the rest use obsidian.
+  const mainHeading = (key, text, letter, badge) => (
+    <h3
+      key={`${key}-h`}
+      className="flex items-center gap-3 text-sm font-black uppercase mb-5"
+      style={{ color: OBSIDIAN, letterSpacing: '0.25em' }}
+    >
+      <span
+        className="w-4 h-4 shrink-0 flex items-center justify-center text-white text-[10px]"
+        style={{ backgroundColor: badge, letterSpacing: 0 }}
+      >
+        {letter}
+      </span>
+      <span>{text}</span>
+    </h3>
+  );
+
+  // One element of a timeline entry. Each element draws its own piece of the vertical line (border-left),
+  // so the line carries on across a page break. The first element of an entry also carries the diamond.
+  const timeline = (key, content, isFirst, gap, markerColor) => (
+    <div key={key} className="relative pl-5 border-l" style={{ borderColor: LINE, paddingBottom: gap }}>
+      {isFirst && (
+        <span
+          aria-hidden="true"
+          className="absolute"
+          style={{ width: 9, height: 9, left: -5, top: 6, backgroundColor: PAPER, border: `2px solid ${markerColor}`, transform: 'rotate(45deg)' }}
+        />
+      )}
+      {content}
+    </div>
+  );
+
+  // rows = [{ el, gap }]. gap = space under that row inside the entry; the entry's last row gets mb-4 instead.
+  const entry = (id, rows, markerColor) => {
+    const list = rows.filter(Boolean);
+    return padLast(
+      list.map(({ el, gap }, i) => timeline(`${id}-${i}`, el, i === 0, i === list.length - 1 ? 0 : gap, markerColor)),
+      'mb-4',
+    );
+  };
+
+  const titleRow = (title, date, size, dateSize = 12) => (
+    <div className="flex items-baseline justify-between gap-3">
+      <p className="font-bold uppercase break-words" style={{ fontSize: size, color: OBSIDIAN, letterSpacing: '0.025em', lineHeight: 1.3 }}>{title}</p>
+      {date && (
+        <span className="shrink-0 font-bold uppercase whitespace-nowrap" style={{ fontSize: dateSize, color: MUTED, letterSpacing: '0.1em' }}>{date}</span>
       )}
     </div>
   );
 
-  const skillCell = (sk, i) => {
-    const rating = Math.max(0, Math.min(5, Math.round(Number(sk.rating) || 0)));
-    return levelCell(`skill-${sk.id ?? i}`, sk.text, rating, SKILL_LEVELS[rating - 1]);
-  };
+  // Second line of an entry. kind 'company' (experience): gold, black weight, uppercase. kind 'school': dark grey, bold.
+  const metaRow = (primary, secondary, kind = 'company') => (
+    <div className="flex items-baseline justify-between gap-3">
+      {primary ? (
+        kind === 'company' ? (
+          <p className="font-black uppercase break-words" style={{ fontSize: 13, color: accent, letterSpacing: '0.05em' }}>{primary}</p>
+        ) : (
+          <p className="font-bold break-words" style={{ fontSize: 14, color: BODY }}>{primary}</p>
+        )
+      ) : <span />}
+      {secondary && <p className="shrink-0 font-semibold uppercase whitespace-nowrap" style={{ fontSize: 11, color: MUTED }}>{secondary}</p>}
+    </div>
+  );
 
-  const languageCell = (l, i) => {
-    const level = String(l.level || '').trim();
-    return levelCell(`lang-${l.id ?? i}`, l.name, languageRating(level), level);
-  };
+  const bodyRows = (text, keyPrefix) => richBlocks(text, keyPrefix).map((el) => ({ el, gap: 8 }));
 
-  // Two items per row, one atom per row, so a long list can split across pages.
-  const pairRows = (items, cell, prefix) => {
-    const rows = [];
-    for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
-    return rows.map((row, r) => (
-      <div
-        key={`${prefix}-row-${r}`}
-        className={`grid gap-x-8 ${r === rows.length - 1 ? '' : 'pb-3.5'}`}
-        style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}
-      >
-        {row.map((item, j) => cell(item, r * 2 + j))}
-      </div>
-    ));
-  };
+  /* ------------------------------ MAIN column ------------------------------ */
+  const projectItems = (projects?.items || []).filter((p) => p.title || p.description);
+  const certificateItems = (certificates?.items || []).filter((c) => c.name || c.issuer);
+  const referenceItems = (references?.items || []).filter((r) => r.name);
 
-  const skillAtoms = () => {
-    if (SHOW_SKILL_LEVELS) return pairRows(namedSkills, skillCell, 'skills');
-    return [SKILLS_AS_CHIPS ? (
-      <div key="skills-chips" className="flex flex-wrap gap-1.5">
-        {namedSkills.map((sk, i) => (
-          <span
-            key={`skill-${sk.id ?? i}`}
-            className="rounded-md border px-2.5 py-[3px] text-[11.5px] font-medium leading-snug"
-            style={{ borderColor: '#E2E8F0', background: '#F8FAFC', color: INK }}
-          >
-            {sk.text}
-          </span>
-        ))}
-      </div>
-    ) : (
-      <p key="skills-list" className="text-[12.5px] font-medium leading-relaxed" style={{ color: INK }}>
-        {namedSkills.map((sk) => sk.text).filter(Boolean).join(', ')}
-      </p>
-    )];
-  };
-
-  // Languages use the same bar meter as skills. The shared renderer draws dots, so this template draws its own.
-  const languageList = (languages && languages.enabled !== false
-    ? (Array.isArray(languages) ? languages : languages.items || [])
-    : []
-  ).filter((l) => l && l.name && String(l.name).trim());
-  const languageBlocks = languageList.length > 0
-    ? endGroup([heading('languages', 'Languages'), ...pairRows(languageList, languageCell, 'languages')])
-    : [];
-
-  const sectionMap = {
-    // Lead paragraph: larger and darker than the body. The overrides reach into whatever renderAchievements outputs.
-    summary: summary ? endGroup([
-      heading('summary', 'Professional Summary'),
-      ...renderAchievements(summary, 'summary').map((el, i) => (
-        <div key={`summary-w${i}`} className="[&_*]:!text-[13.5px] [&_*]:!leading-[1.65] [&_*]:!text-[#1F2937]">{el}</div>
-      )),
-    ]) : [],
+  const mainMap = {
+    // No heading, exactly like the original design: the summary opens the page under the name.
+    summary: summary ? endGroup(richBlocks(summary, 'summary', { size: 13, leading: 1.8, weight: 500, justify: true, spaced: true })) : [],
 
     experience: jobs.length > 0 ? endGroup([
-      heading('experience', 'Work Experience'),
-      ...jobs.flatMap((job, i) => railEntry(
-        `job-${job.id ?? i}`,
-        entryHead(job.title, jobDates(job), job.employer, [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(', ')),
-        richLines(job.achievements, `job-${job.id ?? i}-ach`),
-        i === jobs.length - 1,
-      )),
+      mainHeading('experience', 'Experience', 'E', accent),
+      ...jobs.flatMap((job) => {
+        const id = `job-${job.id}`;
+        const place = [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(' · ');
+        const head = job.title || job.employer;
+        const sub = job.title ? job.employer : '';
+        return entry(id, [
+          { el: titleRow(head, jobDates(job), 16), gap: 2 },
+          (sub || place) && { el: metaRow(sub, place, 'company'), gap: 8 },
+          ...bodyRows(job.achievements, `${id}-ach`),
+        ], accent);
+      }),
     ]) : [],
 
     education: educations.length > 0 ? endGroup([
-      heading('education', 'Education'),
-      ...educations.flatMap((ed, i) => {
-        const title = [ed.degree, ed.field].filter(Boolean).join(', ');
-        return railEntry(
-          `education-${ed.id ?? i}`,
-          title
-            ? entryHead(title, ed.date, ed.institution, ed.location)
-            : entryHead(ed.institution, ed.date, '', ed.location),
-          richLines(ed.achievements, `education-${ed.id ?? i}-ach`),
-          i === educations.length - 1,
+      mainHeading('education', 'Education', 'A', OBSIDIAN),
+      ...educations.flatMap((ed) => {
+        const id = `education-${ed.id}`;
+        const title = [ed.degree, ed.field].filter(Boolean).join(', ') || ed.institution;
+        const school = title === ed.institution ? '' : ed.institution;
+        return entry(id, [
+          { el: titleRow(title, ed.date, 15), gap: 2 },
+          (school || ed.location) && { el: metaRow(school, ed.location, 'school'), gap: 8 },
+          ...bodyRows(ed.achievements, `${id}-ach`),
+        ], OBSIDIAN);
+      }),
+    ]) : [],
+  };
+
+  const mainExtras = {
+    projects: projects?.enabled && projectItems.length > 0 ? endGroup([
+      mainHeading('projects', 'Projects', 'P', accent),
+      ...projectItems.flatMap((p) => {
+        const id = `project-${p.id}`;
+        return entry(id, [
+          { el: titleRow(p.title || 'Project', '', 15), gap: 2 },
+          p.link && { el: <p className="break-all" style={{ fontSize: 11, color: MUTED }}>{p.link}</p>, gap: 8 },
+          ...bodyRows(p.description, `${id}-desc`),
+        ], accent);
+      }),
+    ]) : [],
+
+    certificates: certificates?.enabled && certificateItems.length > 0 ? endGroup([
+      mainHeading('certificates', 'Certifications', 'C', OBSIDIAN),
+      ...certificateItems.flatMap((c) => {
+        const id = `certificate-${c.id}`;
+        return entry(id, [
+          { el: titleRow(c.name || c.issuer, c.date ? formatRange(c.date) : '', 14, 11), gap: 2 },
+          c.name && c.issuer && {
+            el: <p className="font-bold uppercase break-words" style={{ fontSize: 13, color: accent }}>{c.issuer}</p>,
+            gap: 6,
+          },
+          c.link && { el: <p className="break-all" style={{ fontSize: 11, color: MUTED }}>{c.link}</p>, gap: 6 },
+          ...bodyRows(c.description, `${id}-desc`),
+        ], OBSIDIAN);
+      }),
+    ]) : [],
+
+    references: references?.enabled && (references.availableUponRequest || referenceItems.length > 0) ? endGroup([
+      mainHeading('references', 'References', 'R', OBSIDIAN),
+      ...(references.availableUponRequest
+        ? [<p key="references-note" style={{ fontSize: 13, color: BODY }}>Available upon request.</p>]
+        : referenceItems.map((r) => (
+          // Two cards per row. inline-block keeps every card a plain element of the flat list.
+          <div
+            key={`reference-${r.id}`}
+            className="relative pl-5 border-l mb-4"
+            style={{ display: 'inline-block', verticalAlign: 'top', width: '50%', boxSizing: 'border-box', paddingRight: 20, borderColor: LINE }}
+          >
+            <span
+              aria-hidden="true"
+              className="absolute"
+              style={{ width: 9, height: 9, left: -5, top: 6, backgroundColor: PAPER, border: `2px solid ${OBSIDIAN}`, transform: 'rotate(45deg)' }}
+            />
+            <p className="font-bold uppercase break-words" style={{ fontSize: 14, color: OBSIDIAN, letterSpacing: '0.025em', lineHeight: 1.3 }}>{r.name}</p>
+            {r.relationship && (
+              <p className="font-bold break-words" style={{ fontSize: 12, color: accent, marginTop: 2 }}>{r.relationship}</p>
+            )}
+            {r.contact && <p className="font-medium break-all" style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{r.contact}</p>}
+          </div>
+        ))),
+    ]) : [],
+  };
+
+  const mainOrder = (sectionOrder || []).filter((key) => !SIDEBAR_KEYS.includes(key));
+  // Summary has no heading in this design, so it is clickable in edit mode but gets no pencil / bin on top of its text.
+  const mainBlocks = mainOrder.flatMap((key) => markSection(edit, key, mainMap[key] || mainExtras[key] || [], key !== 'summary'));
+
+  /* ----------------------------- SIDEBAR column ---------------------------- */
+  const languageItems = (languages?.items || []).filter((l) => l.name);
+  const hobbyBlocks = hobbies?.enabled && hobbies.text ? parseBlocks(hobbies.text) : [];
+
+  const sideMap = {
+    skills: namedSkills.length > 0 ? endGroup([
+      sideHeading('skills', 'Expertise'),
+      ...namedSkills.map((s) => {
+        const rating = skillRating(s);
+        return (
+          <div key={`skill-${s.id}`} className="mb-4" title={rating > 0 ? getSkillLevelLabel(rating) : undefined}>
+            <div className="font-semibold break-words" style={{ fontSize: 13, color: SIDE_TEXT, letterSpacing: '0.025em', lineHeight: 1.35 }}>{s.text}</div>
+            {rating > 0 && (
+              <div className="w-full overflow-hidden" style={{ height: 4, marginTop: 6, backgroundColor: SIDE_TRACK }}>
+                <div style={{ height: '100%', width: `${(rating / 5) * 100}%`, backgroundColor: sideAccent }} />
+              </div>
+            )}
+          </div>
         );
       }),
     ]) : [],
 
-    skills: namedSkills.length > 0 ? endGroup([
-      heading('skills', 'Skills'),
-      ...skillAtoms(),
+    languages: languages?.enabled && languageItems.length > 0 ? endGroup([
+      sideHeading('languages', 'Languages'),
+      ...languageItems.map((l) => {
+        const { label } = languageLevelInfo(l);
+        return (
+          <div key={`language-${l.id}`} className="flex justify-between items-baseline gap-2 mb-4">
+            <span className="font-semibold break-words" style={{ fontSize: 13, color: SIDE_TEXT, letterSpacing: '0.025em' }}>{l.name}</span>
+            <span className="shrink-0 uppercase" style={{ fontSize: 11, color: SIDE_MUTED, letterSpacing: '0.1em' }}>{label}</span>
+          </div>
+        );
+      }),
+    ]) : [],
+
+    hobbies: hobbyBlocks.length > 0 ? endGroup([
+      sideHeading('hobbies', 'Interests'),
+      ...hobbyBlocks.map((block, i) => (
+        <div key={`hobby-${i}`} className="flex items-start gap-3 mb-4" style={{ fontSize: 13, fontWeight: 300, color: SIDE_TEXT, letterSpacing: '0.025em', lineHeight: 1.45 }}>
+          <span aria-hidden="true" className="shrink-0" style={{ width: 6, height: 6, marginTop: 6, backgroundColor: sideAccent, transform: 'rotate(45deg)' }} />
+          <span className="min-w-0 break-words">{renderInline(block.text, `hobby-${i}`)}</span>
+        </div>
+      )),
     ]) : [],
   };
 
-  const extras = {
-    ...renderExtraSections({ projects, languages, hobbies, references, headingClass: HEADING_CLASS, headingStyle, accentColor }),
-    ...renderCertificates({ certificates: withFormattedDates(certificates), headingClass: HEADING_CLASS, headingStyle }),
-    languages: languageBlocks,
-  };
-  const allBlocks = sectionOrder.flatMap((key) => markSection(edit, key, sectionMap[key] || extras[key] || []));
-  const { pages, measureContainerRef, firstBodyRef, measureContent } = usePaginatedBlocks(allBlocks, CONTENT_MAX_HEIGHT);
+  const sideOrder = (sectionOrder || []).filter((key) => SIDEBAR_KEYS.includes(key));
+  const sideBlocks = sideOrder.flatMap((key) => markSection(edit, key, sideMap[key] || []));
 
-  // Header pieces.
+  // Page 1 only: photo, contact lines and personal details. This block is not paginated; the sections
+  // below it use whatever height is left on page 1 (firstBodyRef), then continue on the next pages.
+  const allLines = (contactList || []).filter((c) => typeof c === 'string' && c.trim());
+  const details = [];
+  const contacts = [];
+  allLines.forEach((line) => {
+    const d = parseDetail(line);
+    if (d) details.push(d); else contacts.push(line);
+  });
+  const contactKinds = resolveContactKinds(contacts);
+  const hasPhoto = Boolean(personal && personal.photo);
+  const hasSideHead = hasPhoto || contacts.length > 0 || details.length > 0;
+
+  /* ------------------------------- Main header ------------------------------ */
   const name = (fullName || 'Your Name').trim();
-  const nameSize = name.length > 22 ? 40 : name.length > 16 ? 46 : 54;
-  const professionParts = (personal.profession || '').split('|').map((s) => s.trim()).filter(Boolean);
-  const contactCells = splitContacts(contactList);
+  const nameSize = name.length <= 8 ? 48 : name.length <= 10 ? 40 : name.length <= 13 ? 34 : name.length <= 17 ? 30 : name.length <= 24 ? 26 : 22;
+  const professionParts = ((personal && personal.profession) || '').split('|').map((p) => p.trim()).filter(Boolean);
+
+  /* ------------------------------ Pagination ------------------------------- */
+  const main = usePaginatedBlocks(mainBlocks, MAIN_MAX_HEIGHT);
+  const side = usePaginatedBlocks(sideBlocks, SIDE_MAX_HEIGHT);
+  const pageCount = Math.max(1, main.pages.length, side.pages.length);
 
   return (
     <>
-      {/* Hidden copy of every atom, as wide as the real page body, used to measure the page breaks. */}
+      {/* Hidden copies of every element, one box per column, as wide as the real column body. */}
       <div
-        ref={measureContainerRef}
+        ref={main.measureContainerRef}
         className="absolute pointer-events-none"
-        style={{ top: -9999, left: -9999, width: CONTENT_WIDTH, fontFamily: BODY_FONT }}
+        style={{ top: -9999, left: -9999, width: MAIN_CONTENT_W, fontFamily: FONT }}
       >
-        {measureContent}
+        {main.measureContent}
+      </div>
+      <div
+        ref={side.measureContainerRef}
+        className="absolute pointer-events-none"
+        style={{ top: -9999, left: -9999, width: SIDE_CONTENT_W, fontFamily: FONT }}
+      >
+        {side.measureContent}
       </div>
 
-      {pages.map((pageBlocks, index) => (
-        <A4Page key={index} pageNum={index + 1} totalPages={pages.length}>
+      {Array.from({ length: pageCount }, (_, index) => (
+        <A4Page key={index} pageNum={index + 1} totalPages={pageCount}>
           <div
-            className="relative flex h-full w-full flex-col overflow-hidden bg-white text-left antialiased"
-            style={{ fontFamily: BODY_FONT, color: TEXT, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+            className="relative flex w-full h-full text-left"
+            style={{ fontFamily: FONT, color: BODY, backgroundColor: PAPER, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
           >
-            {/* Decorative shapes: CSS only, no text. */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0" style={{ width: RAIL_W, background: accentColor }} />
-            {index === 0 && (
-              <>
-                <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-[360px] w-[360px] rounded-full" style={{ background: tint(accentColor, 0.92) }} />
-                <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-14 h-[240px] w-[240px] rounded-full border" style={{ borderColor: tint(accentColor, 0.65) }} />
-              </>
-            )}
+            {/* ------------------------------ Sidebar ------------------------------ */}
+            <div
+              className="shrink-0 h-full flex flex-col"
+              style={{ width: SIDEBAR_W, padding: SIDE_PAD, backgroundColor: OBSIDIAN, color: SIDE_TEXT }}
+            >
+              {index === 0 && hasSideHead && (
+                <div {...editAttrs(edit, 'personal')} className="shrink-0" style={{ marginBottom: sideBlocks.length > 0 ? 28 : 0 }}>
+                  {hasPhoto && (
+                    <div className="flex justify-center" style={{ marginBottom: contacts.length || details.length ? 28 : 0 }}>
+                      <div className="relative" style={{ width: 160, height: 160 }}>
+                        <div aria-hidden="true" className="absolute inset-0 border" style={{ borderColor: sideAccent, transform: 'translate(8px, 8px)' }} />
+                        <div
+                          className="relative w-full h-full overflow-hidden border"
+                          style={{ borderColor: SIDE_LINE, backgroundColor: PHOTO_BG, filter: 'grayscale(0.15)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.35)' }}
+                        >
+                          <ResumePhoto src={personal.photo} style={{ ...(personal.photoStyle || {}), shape: 'square', border: 'none' }} sizePx={158} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-            {index === 0 && (
-              <div {...editAttrs(edit, 'personal')} className="relative shrink-0 pt-12" style={{ paddingLeft: MARGIN_L, paddingRight: MARGIN_R }}>
-                <h1 className="break-words font-semibold leading-[1.02] tracking-[-0.04em]" style={{ fontFamily: DISPLAY_FONT, fontSize: nameSize, color: INK }}>
-                  {name}
-                </h1>
-                {professionParts.length > 0 && (
-                  <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[17px]" style={{ fontFamily: DISPLAY_FONT, color: accentText }}>
-                    {professionParts.map((part, i) => (
-                      <React.Fragment key={i}>
-                        {i > 0 && <span aria-hidden="true" className="h-4 w-px" style={{ backgroundColor: tint(accentColor, 0.5) }} />}
-                        <span>{part}</span>
-                      </React.Fragment>
-                    ))}
-                  </p>
-                )}
-                {contactCells.length > 0 && (
-                  <div className="mt-6 grid gap-x-5 gap-y-4" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-                    {contactCells.map((cell) => (
-                      <div key={cell.label} className="min-w-0">
-                        <p className="text-[9px] font-medium uppercase leading-none tracking-[0.1em] text-slate-400">{cell.label}</p>
-                        {cell.values.map((v, i) => (
-                          <p key={i} className={`${i === 0 ? 'mt-1.5' : 'mt-0.5'} text-[11.5px] leading-snug [overflow-wrap:anywhere]`} style={{ color: INK }}>{v}</p>
+                  {contacts.length > 0 && (
+                    <div style={{ marginBottom: details.length ? 28 : 0 }}>
+                      {sideHeading('contact', 'Contact')}
+                      <div className="flex flex-col" style={{ gap: 14 }}>
+                        {contacts.map((c, i) => (
+                          <div key={`contact-${i}`} className="flex items-start gap-3" style={{ fontSize: 13, fontWeight: 300, color: SIDE_MUTED, letterSpacing: '0.025em', lineHeight: 1.45 }}>
+                            <ContactIcon name={contactKinds[i]} color={sideAccent} />
+                            <span className="min-w-0 break-words">{c}</span>
+                          </div>
                         ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {details.length > 0 && (
+                    <div>
+                      {sideHeading('details', 'Details')}
+                      <div className="flex flex-col" style={{ gap: 14 }}>
+                        {details.map((d) => (
+                          <div key={d.label} className="flex flex-col" style={{ gap: 2 }}>
+                            <span className="font-bold uppercase" style={{ fontSize: 9, color: SIDE_MUTED, letterSpacing: '0.1em' }}>{d.label}</span>
+                            <span className="break-words" style={{ fontSize: 13, fontWeight: 300, color: SIDE_TEXT }}>{d.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div ref={index === 0 ? side.firstBodyRef : undefined} className="flex-1 min-h-0 overflow-hidden">
+                {side.pages[index] || null}
+              </div>
+            </div>
+
+            {/* ------------------------------ Main column ------------------------------ */}
+            <div
+              className="shrink-0 h-full flex flex-col"
+              style={{ width: MAIN_W, padding: `${MAIN_PAD_Y}px ${MAIN_PAD_X}px`, backgroundColor: PAPER }}
+            >
+              {index === 0 && (
+                <div
+                  {...editAttrs(edit, 'personal')}
+                  className="relative shrink-0 border-b"
+                  style={{ borderColor: LINE, paddingBottom: 24, marginBottom: 24 }}
+                >
+                  <span aria-hidden="true" className="absolute top-0 right-0" style={{ width: 64, height: 4, backgroundColor: accent }} />
+                  <h1
+                    className="font-black uppercase break-words"
+                    style={{ fontSize: nameSize, lineHeight: 1.05, letterSpacing: '-0.025em', color: OBSIDIAN, paddingRight: 72 }}
+                  >
+                    {name}
+                  </h1>
+                  {professionParts.length > 0 && (
+                    <p
+                      className="flex flex-wrap items-center font-bold uppercase"
+                      style={{ marginTop: 10, columnGap: 12, rowGap: 4, fontSize: 14, color: accent, letterSpacing: '0.3em', lineHeight: 1.4 }}
+                    >
+                      {professionParts.map((part, i) => (
+                        <React.Fragment key={i}>
+                          {i > 0 && <span aria-hidden="true" style={{ width: 1, height: 12, backgroundColor: LINE }} />}
+                          <span>{part}</span>
+                        </React.Fragment>
+                      ))}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div
+                ref={index === 0 ? main.firstBodyRef : undefined}
+                className="flex-1 min-h-0 overflow-hidden"
+                style={{ marginLeft: -MARKER_GUTTER, paddingLeft: MARKER_GUTTER }}
+              >
+                {main.pages[index] || null}
+                {isEmpty && index === 0 && (
+                  <p className="text-xs italic text-slate-400">Nothing entered yet — fill in a few steps to see them appear here.</p>
                 )}
               </div>
-            )}
-
-            <div
-              ref={index === 0 ? firstBodyRef : undefined}
-              className="relative min-h-0 flex-1 overflow-hidden"
-              style={{ marginLeft: MARGIN_L, marginRight: MARGIN_R, marginTop: index === 0 ? MARGIN_TOP_FIRST : MARGIN_TOP_NEXT, marginBottom: MARGIN_BOTTOM }}
-            >
-              {pageBlocks}
-              {isEmpty && index === 0 && (
-                <p className="text-xs italic text-slate-400">Nothing entered yet — fill in a few steps to see them appear here.</p>
-              )}
             </div>
           </div>
         </A4Page>
@@ -461,4 +570,4 @@ const AtlasTemplate = (props) => {
   );
 };
 
-export default AtlasTemplate;
+export default ApexExecutiveTemplate;
