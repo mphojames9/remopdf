@@ -1,419 +1,525 @@
-import React from 'react';
-import { renderAchievements } from '../Sections/richText';
-import renderCertificates from '../Sections/renderCertificates';
+import React, { useEffect } from 'react';
+import { parseBlocks, renderInline } from '../Sections/richText';
+import { languageLevelInfo } from '../Sections/LanguageLevelSelect';
+import { formatRange } from '../Sections/dateFormat';
 import {
-  PAGE_WIDTH_PX,
   PAGE_HEIGHT_PX,
-  tint,
-  jobDates,
+  PAGE_WIDTH_PX,
   DEFAULT_ACCENT,
+  jobDates,
   usePaginatedBlocks,
   A4Page,
-  endGroup,
+  padLast,
   editAttrs,
   markSection,
-  renderExtraSections,
+  SectionControls,
 } from './templateShared';
 
 /**
- * Atlas Sidebar (id: atlas-sidebar). The Atlas look with a right-hand sidebar.
+ * Architect (id: architect). A single-column page built on a "label rail": every section has its title in a
+ * narrow left column (28%) and its content in the wide right column (72%), with a fine two-tone rule between
+ * sections. Serif (Playfair Display) name with the surname in the accent colour, contact lines in boxed icons
+ * at the top right, and Skills / Hobbies / Languages side by side in one three-column block.
  *
- *   header   oversized name, profession and a spec-style contact row, across the full width
- *   main     (left)  Summary, Work Experience on a timeline rail, Projects, Hobbies, References
- *   sidebar  (right) Skills, Education, Certificates, Languages, on a tinted panel
+ *   header   name + profession | contact lines (page 1 only)
+ *   rows     Details, Profile, Experience, Projects, Education, Certifications, References (in the user's order)
+ *   grid     Skills | Hobbies | Languages, placed where the first of those three sections sits in the order
  *
- * Reading order stays sensible for parsers: contact details first, then the main column,
- * then the sidebar. Everything is real text; the circles, rail and dot grid are CSS only.
+ * The accent colour (navy by default) drives the surname, the rules, the diamond markers, company / school /
+ * issuer lines, bullets, language bars and the contact icon boxes.
  *
- * Both columns are paginated on their own with usePaginatedBlocks and the page count is
- * whichever needs more, so the sidebar panel runs the full height of every later page.
- * Gaps are padding (never margin), display fonts are inline on the atoms, and all body
- * margins are inline px, so the hidden measuring boxes match the real columns.
+ * Everything is a FLAT list of rows (plain elements), so long sections split cleanly across pages. The rule
+ * above a section is its own element that travels with the section's first row; if a page happens to start on
+ * a rule, that rule is not drawn.
  *
- * Skills and languages are a vertical list of plain text items with a small accent dot (no chips, backgrounds or borders).
- *
- * Type: Outfit for display, Inter for body (both must be loaded by the app). Small
- * coloured text uses a darkened accent; the pure accent is used for shapes only.
- *
- * To register: add 'atlas-sidebar' to DEFAULT_ACCENT (suggested #F26A21) and to your
- * template list. A missing key falls back to the 'atlas' accent, then FALLBACK_ACCENT.
- * Use a #rrggbb accent.
+ * Register: id 'architect' in Templates/index.js, DEFAULT_ACCENT (suggested #164179), TEMPLATE_CARDS in
+ * TemplateThumbs.jsx and in TemplateShowcase.jsx. A missing accent key falls back to FALLBACK_ACCENT.
  */
 
-const BODY_FONT = `'Inter', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif`;
-const DISPLAY_FONT = `'Outfit', 'Inter', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif`;
-const FALLBACK_ACCENT = '#F26A21';
-const INK = '#0E1116';
-const TEXT = '#3B4350';
+/* ------------------------------ Design tokens ------------------------------ */
+const INTER = `'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif`;
+const PLAYFAIR = `'Playfair Display', Georgia, 'Times New Roman', serif`;
+const FONT_LINK_ID = 'architect-font-link';
+const FONT_HREF = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap';
 
-// Which sections live in the sidebar. Everything else goes in the main column, in sectionOrder order.
-const SIDEBAR_KEYS = new Set(['skills', 'education', 'certificates', 'languages']);
+const FALLBACK_ACCENT = '#164179';
+const INK = '#0B1325'; // names, titles, section labels
+const TEXT = '#2c3545'; // body copy
+const SLATE_500 = '#64748b'; // dates
+const SLATE_400 = '#94a3b8'; // locations
+const SLATE_200 = '#e2e8f0'; // rules
+const SLATE_100 = '#f1f5f9'; // hairline under an entry title
 
-// Geometry (px).
-const RAIL_W = 8; // accent strip on the left edge
-const SIDEBAR_W = 236;
-const SIDE_PAD_X = 22;
-const MAIN_PAD_L = 60;
-const MAIN_PAD_R = 28;
-const MARGIN_TOP_FIRST = 24; // page 1, under the header
-const MARGIN_TOP_NEXT = 44; // pages 2+
-const MARGIN_BOTTOM = 40;
+// Geometry (px). The hidden measuring box must be exactly as wide as the real page body.
+const PAD_X = 56;
+const PAD_TOP = 48;
+const PAD_BOTTOM = 32; // the paginator keeps a further 48px clear above it for the page number
+const CONTENT_W = PAGE_WIDTH_PX - PAD_X * 2;
+const MAX_HEIGHT = PAGE_HEIGHT_PX - PAD_TOP - PAD_BOTTOM; // pages 2+
+const LABEL_W = '28%';
+const BODY_W = '72%';
 
-const SIDE_CONTENT_W = SIDEBAR_W - SIDE_PAD_X * 2; // the hidden sidebar measuring box must match
-const MAIN_CONTENT_W = PAGE_WIDTH_PX - MAIN_PAD_L - MAIN_PAD_R - SIDEBAR_W; // the hidden main measuring box must match
-const NEXT_PAGE_MAX_HEIGHT = PAGE_HEIGHT_PX - MARGIN_TOP_NEXT - MARGIN_BOTTOM; // pages 2+, both columns
+// Skills, Hobbies and Languages share one three-column block, in this column order.
+const GRID_KEYS = ['skills', 'hobbies', 'languages'];
 
-// Darken a #rrggbb colour toward black (used for small accent-coloured text).
-const shade = (hex, amount) => {
+/* ------------------------------ Colour helper ------------------------------ */
+const alpha = (hex, a) => {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
-  const n = m ? parseInt(m[1], 16) : 0x1f3a5f;
-  const f = 1 - amount;
-  return `rgb(${Math.round(((n >> 16) & 255) * f)}, ${Math.round(((n >> 8) & 255) * f)}, ${Math.round((n & 255) * f)})`;
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 };
 
-// Heading: a short accent bar above the title. The bar is CSS only, so the heading stays plain text.
-const HEADING_BASE =
-  `font-semibold tracking-tight before:mb-2 before:block before:h-[3px] before:rounded-full before:bg-[var(--accent)] before:content-['']`;
-const MAIN_HEADING = `${HEADING_BASE} mb-3 text-[17px] before:w-7`;
-const SIDE_HEADING = `${HEADING_BASE} mb-2.5 text-[15px] before:w-6`;
+/* ------------------------------ Contact lines ------------------------------ */
+// The builder hands over one flat list of strings. Personal details ("Born: ...", "Nationality: ...")
+// are pulled out and shown as label / value pairs; everything else is a contact line with an icon.
+const DETAIL_RULES = [
+  [/^(born|date of birth|dob)\s*:/i, 'Date of birth'],
+  [/^(nationality|citizenship)\s*:/i, 'Nationality'],
+  [/^(gender|sex)\s*:/i, 'Gender'],
+  [/^(marital status|civil status)\s*:/i, 'Marital status'],
+  [/^(driver'?s?|driving)\s+licen[cs]e\b/i, "Driver's licence"],
+];
 
-// The outlined pill around a date. Experience, education and certificates all use it.
-const DATE_PILL = 'shrink-0 whitespace-nowrap rounded-full border px-2.5 py-[1px] text-[10.5px] tabular-nums text-slate-700';
-
-// Splits a contact entry into a small label and its value.
-// "Nationality: South African" -> Nationality / South African. Otherwise the label is guessed from the value.
-const splitContact = (raw) => {
-  const text = String(raw).trim();
-  const own = /^([^:/@\d][^:/@]{1,23}):\s*(?!\/\/)(.+)$/.exec(text);
-  if (own) return { label: own[1].trim(), value: own[2].trim() };
-  const t = text.toLowerCase();
-  if (t.includes('@')) return { label: 'Email', value: text };
-  if (t.includes('linkedin')) return { label: 'LinkedIn', value: text };
-  if (/^\+?[\d\s().-]{7,}$/.test(t)) return { label: 'Phone', value: text };
-  if (/^(https?:\/\/|www\.)/.test(t) || /\.(com|dev|io|net|org|co|me|app|site)(\/|$)/.test(t)) return { label: 'Website', value: text };
-  if (/licen[sc]e/.test(t)) return { label: 'Licence', value: text };
-  return { label: 'Location', value: text };
+const parseDetail = (line) => {
+  const text = String(line).trim();
+  const rule = DETAIL_RULES.find(([re]) => re.test(text));
+  if (!rule) return null;
+  const m = /^[^:]+:\s*(.+)$/.exec(text);
+  return { label: rule[1], value: m ? m[1].trim() : 'Yes' };
 };
 
-// First non-empty string among the given keys of an object (languages can store their fields under different names).
-const pick = (obj, keys) => {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (typeof v === 'string' && v.trim()) return v.trim();
-  }
-  return '';
+// An email typed without its "@" (e.g. "name9gmail.com") still gets the mail icon.
+const MAIL_HOST = /^(?!www\.)[^\s@/]+(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|proton|protonmail)\.(com|me|co\.za|co\.uk)$/;
+
+const contactKind = (raw) => {
+  const s = String(raw).trim().toLowerCase();
+  const m = s.match(/^([a-z][a-z .\/&-]{1,28}):(?!\/\/)\s*/); // a leading "Label:" (not the "https:" of a URL)
+  const label = m ? m[1] : '';
+  const value = m ? s.slice(m[0].length) : s;
+
+  if (s.includes('linkedin')) return 'linkedin';
+  if (s.includes('github')) return 'github';
+  if (value.includes('@') || /e-?mail/.test(label) || MAIL_HOST.test(value)) return 'mail';
+  if (/^(tel|telephone|phone|mobile|cell|whatsapp|fax)\b/.test(label) || /^[+()\d\s.-]{7,}$/.test(value)) return 'phone';
+  if (/web|site|portfolio|url|link/.test(label) || /(https?:\/\/|www\.|\.(com|dev|io|net|org|me|site|co|app)\b)/.test(value)) return 'globe';
+  if (/address|location|city|based|residen/.test(label)
+    || /\d+\s+.*\b(street|st|road|rd|avenue|ave|drive|dr|lane|ln|blvd|boulevard|close|crescent|way)\b/.test(value)
+    || /\bp\.?o\.?\s*box\b/.test(value)
+    || value.includes(',')) return 'pin';
+  return 'dot';
 };
 
-// Dates: "05 2026", "2026-05", "May 2026", "14/05/2026" ... all become "May 2026". Anything unrecognised is left as typed.
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const monthLabel = (n, year) => (n >= 1 && n <= 12 ? `${MONTHS[n - 1]} ${year}` : null);
-const RANGE_SEP = /\s+[–—-]\s+|\s*[–—]\s*|\s+to\s+/i;
-const OPEN_ENDED = /^(present|current|now|ongoing)$/i;
-
-// "May 2026" for a recognised date, otherwise null.
-const parseDate = (raw) => {
-  const t = String(raw ?? '').trim();
-  if (!t) return null;
-  let m = /^(\d{4})[\s/.-]+(\d{1,2})(?:[\s/.-]+\d{1,2})?(?:T.*)?$/.exec(t); // 2026-05, 2026-05-14, 2026/5
-  if (m) return monthLabel(+m[2], m[1]);
-  m = /^(\d{1,2})[\s/.-]+(\d{4})$/.exec(t); // 05 2026, 5/2026
-  if (m) return monthLabel(+m[1], m[2]);
-  m = /^(\d{1,2})[\s/.-]+(\d{1,2})[\s/.-]+(\d{4})$/.exec(t); // 14/05/2026 (day first unless the second number can't be a month)
-  if (m) return monthLabel(+m[2] > 12 ? +m[1] : +m[2], m[3]);
-  m = /^([A-Za-z]{3,9})\.?,?\s+(\d{4})$/.exec(t); // May 2026, September 2026, Sept 2026
-  if (m) {
-    const i = MONTHS.findIndex((x) => x.toLowerCase() === m[1].slice(0, 3).toLowerCase());
-    if (i >= 0) return `${MONTHS[i]} ${m[2]}`;
-  }
-  return null;
-};
-
-const formatDate = (raw) => {
-  const t = String(raw ?? '').trim();
-  return parseDate(t) ?? t;
-};
-
-// A range such as "05 2026 – Present": each side is formatted, the separator is kept as an en dash.
-const formatRange = (raw) => {
-  const t = String(raw ?? '').trim();
-  if (!t) return '';
-  return t.split(RANGE_SEP).map(formatDate).join(' – ');
-};
-
-// Same, but only when the whole text is a date or a date range, so ordinary sentences are never touched.
-const formatDateText = (raw) => {
-  const t = String(raw ?? '').trim();
-  if (!t) return raw;
-  const parts = t.split(RANGE_SEP);
-  if (!parts.every((p) => parseDate(p) !== null || OPEN_ENDED.test(p.trim()))) return raw;
-  return parts.map(formatDate).join(' – ');
-};
-
-// Formats every date in one entry (a certificate or project): date-named fields, separate month fields ("10" -> "Oct"),
-// and any other field whose whole value is a date.
-const formatEntryDates = (item) => {
-  if (!item || typeof item !== 'object') return item;
-  const out = { ...item };
-  Object.keys(out).forEach((k) => {
-    const v = out[k];
-    if (typeof v !== 'string' && typeof v !== 'number') return;
-    if (/date|issued|expir|valid/i.test(k) && typeof v === 'string') out[k] = formatRange(v);
-    else if (/month/i.test(k) && /^\s*\d{1,2}\s*$/.test(String(v)) && +v >= 1 && +v <= 12) out[k] = MONTHS[+v - 1];
-    else if (typeof v === 'string') out[k] = formatDateText(v);
+// A resume has one location: only the first address-like line gets the pin. If nothing looked like an
+// address, the first unrecognised line is the most likely one. Every other unknown line gets a neutral dot.
+const resolveContactKinds = (lines) => {
+  const kinds = lines.map(contactKind);
+  let pinSeen = false;
+  const out = kinds.map((k) => {
+    if (k !== 'pin') return k;
+    if (pinSeen) return 'dot';
+    pinSeen = true;
+    return 'pin';
   });
+  if (!pinSeen) {
+    const i = out.indexOf('dot');
+    if (i >= 0) out[i] = 'pin';
+  }
   return out;
 };
 
-// Certificates and projects arrive as { enabled, items: [...] } (a plain array also works).
-const withFormattedDates = (data) => {
-  if (Array.isArray(data)) return data.map(formatEntryDates);
-  if (data && typeof data === 'object' && Array.isArray(data.items)) return { ...data, items: data.items.map(formatEntryDates) };
-  return data;
-};
+// The design lists phone, email, website, location, then the social links.
+const KIND_ORDER = ['phone', 'mail', 'globe', 'pin', 'linkedin', 'github', 'dot'];
 
-// `languages` is not always an array (it can be an object or a string), so normalise it before mapping.
-const toList = (v) => {
-  if (Array.isArray(v)) return v;
-  if (typeof v === 'string') return v.split(/[\n;]+/).map((x) => x.trim()).filter(Boolean);
-  if (v && typeof v === 'object') {
-    for (const k of ['items', 'list', 'entries', 'languages']) if (Array.isArray(v[k])) return v[k];
-    const vals = Object.values(v);
-    if (vals.length && vals.every((x) => x && typeof x === 'object')) return vals;
-    if (vals.length && vals.every((x) => typeof x === 'string')) return Object.entries(v).map(([name, level]) => ({ name, level }));
-  }
-  return [];
+const ICON_PATHS = {
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>,
+  phone: <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />,
+  pin: <><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></>,
+  globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>,
+  github: <><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></>,
+  dot: <circle cx="12" cy="12" r="3" />,
 };
+const LINKEDIN_FILLED = 'M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z';
 
-const AtlasSidebarTemplate = (props) => {
+// Icon inside a small outlined box, as in the original header.
+const ContactIcon = ({ name, accent }) => (
+  <span
+    className="flex shrink-0 items-center justify-center rounded"
+    style={{ width: 20, height: 20, border: `1px solid ${alpha(accent, 0.5)}`, color: accent }}
+    aria-hidden="true"
+  >
+    {name === 'linkedin' ? (
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d={LINKEDIN_FILLED} /></svg>
+    ) : (
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        {ICON_PATHS[name] || ICON_PATHS.dot}
+      </svg>
+    )}
+  </span>
+);
+
+// Language level (1-5 in the app) -> bar length, matching the original design's steps.
+const BAR_WIDTH = { 1: '35%', 2: '60%', 3: '80%', 4: '100%', 5: '100%' };
+
+/* -------------------------------- Template -------------------------------- */
+const ArchitectTemplate = (props) => {
   const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, sectionOrder, edit } = props;
-  const accentColor = props.accentColor || DEFAULT_ACCENT['atlas-sidebar'] || DEFAULT_ACCENT.atlas || FALLBACK_ACCENT;
-  const accentText = shade(accentColor, 0.3);
-  const railColor = tint(accentColor, 0.78);
-  const panelBg = tint(accentColor, 0.95);
+  const accent = props.accentColor || DEFAULT_ACCENT.architect || FALLBACK_ACCENT;
 
-  const headingStyle = { fontFamily: DISPLAY_FONT, color: INK, '--accent': accentColor };
-  const heading = (key, text, cls) => <h3 key={`${key}-h`} className={cls} style={headingStyle}>{text}</h3>;
+  // Inter (text) and Playfair Display (name, italic company / school lines). Added once, shared by every Architect on the page.
+  useEffect(() => {
+    if (typeof document === 'undefined' || document.getElementById(FONT_LINK_ID)) return;
+    const link = document.createElement('link');
+    link.id = FONT_LINK_ID;
+    link.rel = 'stylesheet';
+    link.href = FONT_HREF;
+    document.head.appendChild(link);
+  }, []);
 
-  // Items are plain text; the dot before each one is a CSS shape, so the text stays clean.
-  const itemList = (key, items) => (
-    <div key={key} className="flex flex-col gap-1.5" style={{ '--accent': accentColor }}>
-      {items.map((it, i) => (
-        <span
-          key={`${key}-${it.id ?? i}`}
-          className="relative pl-3 text-[11px] font-medium leading-snug before:absolute before:left-0 before:top-[0.5em] before:h-1 before:w-1 before:rounded-full before:bg-[var(--accent)] before:content-['']"
-          style={{ color: INK }}
-        >
-          {it.text}
-          {it.note && <span className="font-normal text-slate-500"> ({it.note})</span>}
-        </span>
-      ))}
-    </div>
-  );
-
-  // Main column: title with the dates in an outlined pill, employer / location under it.
-  const mainHead = (title, date, primary, secondary) => (
-    <div>
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-[15px] font-semibold leading-snug tracking-tight" style={{ fontFamily: DISPLAY_FONT, color: INK }}>{title}</p>
-        {date && (
-          <span
-            className={`mt-[1px] ${DATE_PILL}`}
-            style={{ borderColor: tint(accentColor, 0.55) }}
-          >
-            {date}
-          </span>
-        )}
-      </div>
-      {(primary || secondary) && (
-        <p className="mt-0.5 text-[12.5px] leading-snug">
-          {primary && <span className="font-medium" style={{ color: accentText }}>{primary}</span>}
-          {secondary && <span className="text-slate-500">{primary ? ', ' : ''}{secondary}</span>}
-        </p>
+  /* ----------------------------- Small helpers ----------------------------- */
+  // Section title in the label rail. With `key`, edit mode shows the pencil / bin next to it.
+  const label = (text, key) => (
+    <div role="heading" aria-level={2} className="relative text-[12.5px] font-bold uppercase" style={{ color: INK, letterSpacing: '0.25em', lineHeight: 1.3 }}>
+      {text}
+      {key && edit && edit.enabled && (
+        <SectionControls label={text} onEdit={() => edit.onEdit(key)} onRemove={() => edit.onRemove(key)} />
       )}
     </div>
   );
 
-  // Timeline rail for Experience: every atom carries the rail's left border, the head also carries the node.
-  // The gap between entries is padding, so the rail stays unbroken between atoms and across a page break.
-  const railEntry = (id, head, bodyNodes, isLastEntry, isFirstEntry) => {
-    const list = [head, ...bodyNodes].filter(Boolean);
-    return list.map((node, i) => (
-      <div
-        key={`${id}-${i}`}
-        className={`relative ml-[5px] border-l-2 pl-5 ${i === list.length - 1 && !isLastEntry ? 'pb-6' : 'pb-1'}`}
-        style={{ borderColor: railColor }}
-      >
-        {i === 0 && (
-          <span
-            className="absolute -left-[7px] top-[5px] h-3 w-3 rounded-full border-2"
-            style={{
-              borderColor: accentColor,
-              background: isFirstEntry ? accentColor : '#fff',
-              boxShadow: isFirstEntry ? `0 0 0 4px ${tint(accentColor, 0.85)}` : 'none',
-            }}
-          />
-        )}
-        {node}
-      </div>
-    ));
+  // One row = label rail + content. Rows are the atoms the paginator moves between pages.
+  // `keepWithNext` makes the row an <h3>, which is what the paginator treats as "never alone at the bottom of a
+  // page": the row moves to the next page together with the line that follows it.
+  const row = (key, head, content, className = '', keepWithNext = false) => {
+    const Tag = keepWithNext ? 'h3' : 'div';
+    return (
+      <Tag key={key} className={`flex w-full shrink-0 text-left font-normal ${className}`.trim()}>
+        <div className="shrink-0 pr-4" style={{ width: LABEL_W }}>{head}</div>
+        <div className="min-w-0" style={{ width: BODY_W }}>{content}</div>
+      </Tag>
+    );
   };
 
-  // Sidebar entries are compact and have no rail.
-  const sideEntry = (id, head, bodyNodes, isLastEntry) => {
-    const list = [head, ...bodyNodes].filter(Boolean);
-    return list.map((node, i) => (
-      <div key={`${id}-${i}`} style={{ paddingBottom: i === list.length - 1 ? (isLastEntry ? 0 : 14) : 3 }}>{node}</div>
-    ));
-  };
-
-  const richLines = (text, prefix) => (
-    text ? renderAchievements(text, prefix).map((el, i) => <div key={`${prefix}-w${i}`}>{el}</div>) : []
+  // The two-tone rule above a section. It is an <h3> so the paginator keeps it with the row that follows;
+  // data-divider lets a page that starts on a rule leave it out.
+  const divider = (id) => (
+    <h3 key={`divider-${id}`} data-divider="true" aria-hidden="true" className="flex w-full shrink-0 items-center my-6">
+      <span className="block shrink-0" style={{ width: LABEL_W, height: 1, backgroundColor: alpha(accent, 0.4) }} />
+      <span className="block flex-1" style={{ height: 1, backgroundColor: SLATE_200 }} />
+    </h3>
   );
 
-  const sectionMap = {
-    // Lead paragraph: larger and darker than the body. The overrides reach into whatever renderAchievements outputs.
-    summary: summary ? endGroup([
-      heading('summary', 'Professional Summary', MAIN_HEADING),
-      ...renderAchievements(summary, 'summary').map((el, i) => (
-        <div key={`summary-w${i}`} className="[&_*]:!text-[13px] [&_*]:!leading-[1.65] [&_*]:!text-[#1F2937]">{el}</div>
-      )),
-    ]) : [],
+  const diamond = (
+    <span
+      aria-hidden="true"
+      className="shrink-0 bg-white"
+      style={{ width: 6, height: 6, marginTop: 5, border: `1px solid ${accent}`, transform: 'rotate(45deg)' }}
+    />
+  );
 
-    experience: jobs.length > 0 ? endGroup([
-      heading('experience', 'Work Experience', MAIN_HEADING),
-      ...jobs.flatMap((job, i) => railEntry(
-        `job-${job.id ?? i}`,
-        mainHead(job.title, formatRange(jobDates(job)), job.employer, [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(', ')),
-        richLines(job.achievements, `job-${job.id ?? i}-ach`),
-        i === jobs.length - 1,
-        i === 0,
-      )),
-    ]) : [],
+  // Title line (+ dates) and an optional italic serif line (company / school / issuer) with a place on the right.
+  const entryHead = ({ title, date, sub, place, line }) => (
+    <div className="flex items-start gap-4">
+      {diamond}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="mb-1.5 flex items-baseline justify-between border-b pb-1" style={{ borderColor: SLATE_100 }}>
+          <p className="min-w-0 break-words font-bold uppercase" style={{ fontSize: 12, color: INK, letterSpacing: '0.025em', lineHeight: 1.3 }}>{title}</p>
+          {date && (
+            <span className="ml-2 shrink-0 text-right font-semibold uppercase" style={{ fontSize: 10, color: SLATE_500, letterSpacing: '0.1em' }}>{date}</span>
+          )}
+        </div>
+        {(sub || place) && (
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="min-w-0 break-words italic" style={{ fontFamily: PLAYFAIR, fontSize: 12, color: accent }}>{sub}</p>
+            {place && <p className="shrink-0" style={{ fontSize: 10, color: SLATE_400 }}>{place}</p>}
+          </div>
+        )}
+        {line && <p className="break-all" style={{ fontSize: 10, color: SLATE_400, marginTop: 2 }}>{line}</p>}
+      </div>
+    </div>
+  );
 
-    education: educations.length > 0 ? endGroup([
-      heading('education', 'Education', SIDE_HEADING),
-      ...educations.flatMap((ed, i) => {
-        const title = [ed.degree, ed.field].filter(Boolean).join(', ') || ed.institution;
-        const school = title === ed.institution ? '' : ed.institution;
-        const meta = [formatRange(ed.date), ed.location].filter(Boolean).join(', ');
-        return sideEntry(
-          `education-${ed.id ?? i}`,
-          (
-            <div>
-              <p className="text-[12.5px] font-semibold leading-snug" style={{ fontFamily: DISPLAY_FONT, color: INK }}>{title}</p>
-              {school && <p className="text-[11.5px] font-medium leading-snug" style={{ color: accentText }}>{school}</p>}
-              {meta && <p className="mt-0.5 text-[10.5px] leading-snug text-slate-500">{meta}</p>}
-            </div>
-          ),
-          richLines(ed.achievements, `education-${ed.id ?? i}-ach`),
-          i === educations.length - 1,
-        );
-      }),
-    ]) : [],
+  // A line of detail text under an entry: indented to the title, with a small bullet when the text is a bullet.
+  const detailRow = (key, block) => (
+    <div key={key} className="mb-1.5 flex w-full shrink-0">
+      <div className="shrink-0" style={{ width: LABEL_W }} />
+      <div
+        className="flex min-w-0 items-start gap-2.5"
+        style={{ width: BODY_W, paddingLeft: 22, fontSize: 11, lineHeight: 1.7, color: TEXT, textAlign: 'justify' }}
+      >
+        {block.bullet && <span aria-hidden="true" className="shrink-0 leading-none" style={{ color: accent, fontSize: 14 }}>•</span>}
+        <span className="min-w-0 flex-1 break-words" style={{ paddingTop: 1 }}>{renderInline(block.text, key)}</span>
+      </div>
+    </div>
+  );
 
-    skills: namedSkills.length > 0 ? endGroup([
-      heading('skills', 'Skills', SIDE_HEADING),
-      itemList('skills-list', namedSkills.map((sk) => ({ id: sk.id, text: sk.text }))),
-    ]) : [],
+  // One entry: head row (+ the section label on the first entry) and its detail rows. The last row carries the gap.
+  const entry = (id, head, headProps, text) => {
+    const blocks = parseBlocks(text);
+    return padLast([
+      row(`${id}-h`, head, entryHead(headProps), 'mb-2', blocks.length > 0),
+      ...blocks.map((block, i) => detailRow(`${id}-d${i}`, block)),
+    ], 'mb-4');
   };
 
-  // Extras come from the shared helpers, called once per column so each gets that column's heading size.
-  const projectList = withFormattedDates(projects);
-  const certList = withFormattedDates(certificates);
-  const mainExtras = renderExtraSections({ projects: projectList, languages, hobbies, references, headingClass: MAIN_HEADING, headingStyle, accentColor });
-  const sideExtras = renderExtraSections({ projects: projectList, languages, hobbies, references, headingClass: SIDE_HEADING, headingStyle, accentColor });
-  const sideCerts = renderCertificates({ certificates: certList, headingClass: SIDE_HEADING, headingStyle, dateClass: DATE_PILL, dateStyle: { borderColor: tint(accentColor, 0.55) } });
+  /* ------------------------------ Row sections ----------------------------- */
+  const projectItems = (projects?.items || []).filter((p) => p.title || p.description);
+  const certificateItems = (certificates?.items || []).filter((c) => c.name || c.issuer);
+  const referenceItems = (references?.items || []).filter((r) => r.name);
 
-  // Languages are shown like skills (plain items). If no name can be read, the shared renderer's output is kept.
-  const languageItems = toList(languages)
-    .map((l, i) => (typeof l === 'string'
-      ? { id: i, text: l.trim(), note: '' }
-      : { id: l?.id ?? i, text: pick(l, ['name', 'language', 'lang', 'text', 'label']), note: pick(l, ['level', 'proficiency', 'fluency']) }))
-    .filter((l) => l.text);
-  if ('languages' in sideExtras && languageItems.length > 0) {
-    sideExtras.languages = endGroup([heading('languages', 'Languages', SIDE_HEADING), itemList('languages-list', languageItems)]);
-  }
+  const sectionMap = {
+    summary: summary ? [
+      divider('summary'),
+      ...parseBlocks(summary).map((block, i, all) => row(
+        `summary-${i}`,
+        i === 0 ? label('Profile', 'summary') : null,
+        <p
+          className="break-words"
+          style={{ fontSize: 11, lineHeight: 1.85, color: TEXT, textAlign: 'justify' }}
+        >
+          {block.bullet && <span aria-hidden="true" style={{ color: accent, marginRight: 8 }}>•</span>}
+          {renderInline(block.text, `summary-${i}`)}
+        </p>,
+        i < all.length - 1 ? 'mb-2' : '',
+        i === 0 && all.length > 1,
+      )),
+    ] : [],
 
-  const mainKeys = sectionOrder.filter((key) => !SIDEBAR_KEYS.has(key));
-  const sideKeys = sectionOrder.filter((key) => SIDEBAR_KEYS.has(key));
-  const mainBlocks = mainKeys.flatMap((key) => markSection(edit, key, sectionMap[key] || mainExtras[key] || []));
-  const sideBlocks = sideKeys.flatMap((key) => markSection(edit, key, sectionMap[key] || sideExtras[key] || sideCerts[key] || []));
+    experience: jobs.length > 0 ? [
+      divider('experience'),
+      ...jobs.flatMap((job, i) => entry(
+        `job-${job.id}`,
+        i === 0 ? label('Experience', 'experience') : null,
+        {
+          title: job.title || job.employer,
+          date: jobDates(job),
+          sub: job.title ? job.employer : '',
+          place: [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(' · '),
+        },
+        job.achievements,
+      )),
+    ] : [],
 
-  const main = usePaginatedBlocks(mainBlocks, NEXT_PAGE_MAX_HEIGHT);
-  const side = usePaginatedBlocks(sideBlocks, NEXT_PAGE_MAX_HEIGHT);
-  const pageCount = Math.max(1, main.pages.length, side.pages.length);
+    projects: projects?.enabled && projectItems.length > 0 ? [
+      divider('projects'),
+      ...projectItems.flatMap((p, i) => entry(
+        `project-${p.id}`,
+        i === 0 ? label('Projects', 'projects') : null,
+        { title: p.title || 'Project', line: p.link },
+        p.description,
+      )),
+    ] : [],
 
-  // Header pieces.
-  const name = (fullName || 'Your Name').trim();
-  const nameParts = name.split(/\s+/);
-  const firstName = nameParts[0];
-  const restName = nameParts.slice(1).join(' ');
-  const nameSize = name.length > 22 ? 42 : name.length > 16 ? 50 : 60;
-  const professionParts = (personal.profession || '').split('|').map((s) => s.trim()).filter(Boolean);
-  const contacts = (contactList || []).filter((c) => typeof c === 'string' && c.trim());
+    education: educations.length > 0 ? [
+      divider('education'),
+      ...educations.flatMap((ed, i) => {
+        const degree = [ed.degree, ed.field].filter(Boolean).join(', ');
+        return entry(
+          `education-${ed.id}`,
+          i === 0 ? label('Education', 'education') : null,
+          { title: ed.institution || degree, date: ed.date, sub: ed.institution ? degree : '', place: ed.location },
+          ed.achievements,
+        );
+      }),
+    ] : [],
+
+    certificates: certificates?.enabled && certificateItems.length > 0 ? [
+      divider('certificates'),
+      ...certificateItems.flatMap((c, i) => entry(
+        `certificate-${c.id}`,
+        i === 0 ? label('Certifications', 'certificates') : null,
+        { title: c.name || c.issuer, date: c.date ? formatRange(c.date) : '', sub: c.name ? c.issuer : '', line: c.link },
+        c.description,
+      )),
+    ] : [],
+
+    references: references?.enabled && (references.availableUponRequest || referenceItems.length > 0) ? [
+      divider('references'),
+      ...(references.availableUponRequest
+        ? [row('references-note', label('References', 'references'), <p style={{ fontSize: 11, lineHeight: 1.7, color: TEXT }}>Available upon request.</p>)]
+        : referenceItems.map((r, i) => row(
+          `reference-${r.id}`,
+          i === 0 ? label('References', 'references') : null,
+          <div className="flex items-start gap-4">
+            {diamond}
+            <div className="flex min-w-0 flex-1 flex-col">
+              <p className="break-words font-bold uppercase" style={{ fontSize: 12, color: INK, letterSpacing: '0.025em', lineHeight: 1.3 }}>{r.name}</p>
+              {r.relationship && (
+                <p className="break-words italic" style={{ fontFamily: PLAYFAIR, fontSize: 12, color: accent, marginTop: 2 }}>{r.relationship}</p>
+              )}
+              {r.contact && (
+                <p className="break-all font-medium" style={{ fontSize: 10.5, color: SLATE_500, letterSpacing: '0.025em', marginTop: 4 }}>{r.contact}</p>
+              )}
+            </div>
+          </div>,
+          'mb-4',
+        ))),
+    ] : [],
+  };
+
+  /* ------------------------------ Details block ---------------------------- */
+  const allLines = (contactList || []).filter((c) => typeof c === 'string' && c.trim());
+  const details = [];
+  const contacts = [];
+  allLines.forEach((line) => {
+    const d = parseDetail(line);
+    if (d) details.push(d); else contacts.push({ text: line });
+  });
+  const kinds = resolveContactKinds(contacts.map((c) => c.text));
+  contacts.forEach((c, i) => { c.kind = kinds[i]; });
+  contacts.sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind)); // stable: same kind keeps the user's order
+
+  const detailBlocks = details.length > 0 ? markSection(edit, 'personal', [
+    divider('details'),
+    row(
+      'details-row',
+      label('Details'),
+      <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+        {details.map((d) => (
+          <div key={d.label} className="flex flex-col">
+            <span className="font-bold uppercase" style={{ fontSize: 9, color: accent, letterSpacing: '0.2em' }}>{d.label}</span>
+            <span className="break-words" style={{ fontSize: 11, color: TEXT, marginTop: 2 }}>{d.value}</span>
+          </div>
+        ))}
+      </div>,
+    ),
+  ], false) : [];
+
+  /* ------------------------ Skills | Hobbies | Languages ------------------------ */
+  const languageItems = (languages?.items || []).filter((l) => l.name);
+  const hobbyBlocks = hobbies?.enabled && hobbies.text ? parseBlocks(hobbies.text) : [];
+  const visibleGridKeys = GRID_KEYS.filter((key) => (sectionOrder || []).includes(key));
+  const columnItems = {
+    skills: namedSkills.map((s) => ({ id: `skill-${s.id}`, text: s.text })),
+    hobbies: hobbyBlocks.map((b, i) => ({ id: `hobby-${i}`, text: b.text })),
+    languages: languageItems.map((l) => ({ id: `language-${l.id}`, name: l.name, ...languageLevelInfo(l) })),
+  };
+  const columnTitles = { skills: 'Skills', hobbies: 'Hobbies', languages: 'Languages' };
+  const activeCols = Object.fromEntries(GRID_KEYS.map((key) => [key, visibleGridKeys.includes(key) ? columnItems[key] : []]));
+  const gridRows = Math.max(...GRID_KEYS.map((key) => activeCols[key].length));
+
+  const dot = <span aria-hidden="true" className="shrink-0" style={{ width: 4, height: 4, backgroundColor: accent, transform: 'rotate(45deg)' }} />;
+  const plainCell = (item) => (
+    <div className="flex items-center gap-3">
+      {dot}
+      <span className="min-w-0 break-words font-medium" style={{ fontSize: 11, color: TEXT, letterSpacing: '0.025em' }}>{renderInline(item.text, item.id)}</span>
+    </div>
+  );
+  const languageCell = (item) => (
+    <div className="flex items-center gap-3" title={item.label}>
+      {dot}
+      <span className="shrink-0 break-words font-medium" style={{ width: 72, fontSize: 11, lineHeight: 1.3, color: TEXT, letterSpacing: '0.025em' }}>{item.name}</span>
+      <span className="block flex-1 overflow-hidden rounded-full" style={{ height: 4, minWidth: 40, backgroundColor: SLATE_100 }}>
+        <span className="block h-full rounded-full" style={{ width: BAR_WIDTH[item.rating] || '55%', backgroundColor: accent }} />
+      </span>
+    </div>
+  );
+  const cell = (key, item) => (
+    <div {...editAttrs(edit, key)} className="min-w-0">
+      {item ? (key === 'languages' ? languageCell(item) : plainCell(item)) : null}
+    </div>
+  );
+
+  const gridBlocks = gridRows > 0 ? [
+    divider('grid'),
+    // Heading row: an <h3> keeps it with the first data row. Titles are spans so no heading sits inside another.
+    <h3 key="grid-head" className="mb-5 mt-1 grid w-full shrink-0 grid-cols-3 gap-8">
+      {GRID_KEYS.map((key) => (
+        <div key={key} {...editAttrs(edit, key)} className="min-w-0">
+          {activeCols[key].length > 0 && (
+            <span className="relative block text-[12.5px] font-bold uppercase" style={{ color: INK, letterSpacing: '0.25em', lineHeight: 1.3 }}>
+              {columnTitles[key]}
+              {edit && edit.enabled && (
+                <SectionControls label={columnTitles[key]} onEdit={() => edit.onEdit(key)} onRemove={() => edit.onRemove(key)} />
+              )}
+            </span>
+          )}
+        </div>
+      ))}
+    </h3>,
+    ...Array.from({ length: gridRows }, (_, i) => (
+      <div key={`grid-row-${i}`} className="mb-3 grid w-full shrink-0 grid-cols-3 gap-8">
+        {GRID_KEYS.map((key) => <React.Fragment key={key}>{cell(key, activeCols[key][i])}</React.Fragment>)}
+      </div>
+    )),
+  ] : [];
+
+  /* ---------------------------- Put it in order ---------------------------- */
+  const allBlocks = [...detailBlocks];
+  let gridPlaced = false;
+  (sectionOrder || []).forEach((key) => {
+    if (GRID_KEYS.includes(key)) {
+      if (!gridPlaced) { gridPlaced = true; allBlocks.push(...gridBlocks); }
+      return;
+    }
+    // The section label carries its own pencil / bin, so the rows are only tagged as clickable here.
+    allBlocks.push(...markSection(edit, key, sectionMap[key] || [], false));
+  });
+
+  const main = usePaginatedBlocks(allBlocks, MAX_HEIGHT);
+  const { pages, measureContainerRef, firstBodyRef, measureContent } = main;
+
+  // A page that starts on a section rule leaves it out (the rule only separates sections on the same page).
+  const visibleAtoms = (nodes, pageIndex) => (
+    pageIndex > 0 && nodes[0] && nodes[0].props && nodes[0].props['data-divider'] ? nodes.slice(1) : nodes
+  );
+
+  /* ---------------------------------- Header ---------------------------------- */
+  const nameParts = (fullName || 'Your Name').trim().split(/\s+/);
+  const lastName = nameParts.length > 1 ? nameParts.pop() : '';
+  const firstName = nameParts.join(' ');
+  const longest = Math.max(firstName.length, lastName.length);
+  const nameSize = longest <= 8 ? 52 : longest <= 10 ? 46 : longest <= 12 ? 40 : longest <= 15 ? 34 : longest <= 19 ? 28 : 24;
+  const professionParts = ((personal && personal.profession) || '').split('|').map((p) => p.trim()).filter(Boolean);
 
   return (
     <>
-      {/* Hidden copies of every atom, one box per column, as wide as the real column body. */}
+      {/* Hidden copy of every row, as wide as the real page body. A flex column, like the real body, so margins add up the same way. */}
       <div
-        ref={main.measureContainerRef}
-        className="absolute pointer-events-none"
-        style={{ top: -9999, left: -9999, width: MAIN_CONTENT_W, fontFamily: BODY_FONT }}
+        ref={measureContainerRef}
+        className="pointer-events-none absolute flex flex-col"
+        style={{ top: -9999, left: -9999, width: CONTENT_W, fontFamily: INTER }}
       >
-        {main.measureContent}
-      </div>
-      <div
-        ref={side.measureContainerRef}
-        className="absolute pointer-events-none"
-        style={{ top: -9999, left: -9999 - SIDEBAR_W, width: SIDE_CONTENT_W, fontFamily: BODY_FONT }}
-      >
-        {side.measureContent}
+        {measureContent}
       </div>
 
-      {Array.from({ length: pageCount }, (_, index) => (
-        <A4Page key={index} pageNum={index + 1} totalPages={pageCount}>
+      {pages.map((pageBlocks, index) => (
+        <A4Page key={index} pageNum={index + 1} totalPages={pages.length}>
           <div
-            className="relative flex h-full w-full flex-col overflow-hidden bg-white text-left antialiased"
-            style={{ fontFamily: BODY_FONT, color: TEXT, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+            className="relative flex h-full w-full flex-col bg-white text-left"
+            style={{ padding: `${PAD_TOP}px ${PAD_X}px ${PAD_BOTTOM}px`, fontFamily: INTER, color: TEXT, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
           >
-            {/* Decorative shapes: CSS only, no text. */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 left-0"
-              style={{ width: RAIL_W, background: index === 0 ? `linear-gradient(to bottom, ${INK} 0, ${INK} 150px, ${accentColor} 150px)` : accentColor }}
-            />
-            {index === 0 ? (
-              <>
-                <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-[360px] w-[360px] rounded-full" style={{ background: `radial-gradient(circle at 30% 30%, ${tint(accentColor, 0.84)}, ${tint(accentColor, 0.95)})` }} />
-                <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-14 h-[240px] w-[240px] rounded-full border" style={{ borderColor: tint(accentColor, 0.6) }} />
-                <div aria-hidden="true" className="pointer-events-none absolute right-[48px] top-[44px] h-[84px] w-[132px]" style={{ backgroundImage: `radial-gradient(${accentColor} 1.3px, transparent 1.5px)`, backgroundSize: '12px 12px', opacity: 0.5 }} />
-              </>
-            ) : (
-              <p className="absolute text-[10.5px] font-medium text-slate-400" style={{ left: MAIN_PAD_L, top: 20, fontFamily: DISPLAY_FONT }}>{name}</p>
-            )}
-
             {index === 0 && (
-              <div {...editAttrs(edit, 'personal')} className="relative shrink-0 pt-12" style={{ paddingLeft: MAIN_PAD_L, paddingRight: 36, paddingBottom: 14 }}>
-                <h1 className="break-words leading-[1.02] tracking-[-0.045em]" style={{ fontFamily: DISPLAY_FONT, fontSize: nameSize, color: INK }}>
-                  <span className="font-light">{firstName}</span>
-                  {restName && (<>{' '}<span className="font-semibold">{restName}</span></>)}
-                </h1>
-                {professionParts.length > 0 && (
-                  <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[17px]" style={{ fontFamily: DISPLAY_FONT, color: accentText }}>
-                    {professionParts.map((part, i) => (
-                      <React.Fragment key={i}>
-                        {i > 0 && <span aria-hidden="true" className="h-4 w-px" style={{ backgroundColor: tint(accentColor, 0.5) }} />}
-                        <span>{part}</span>
-                      </React.Fragment>
-                    ))}
-                  </p>
-                )}
+              <div {...editAttrs(edit, 'personal')} className="mb-8 flex w-full shrink-0 items-start justify-between gap-6">
+                <div className="flex min-w-0 flex-col">
+                  <h1
+                    className="break-words font-bold uppercase"
+                    style={{ fontFamily: PLAYFAIR, fontSize: nameSize, lineHeight: 1.05, letterSpacing: '0.025em', color: INK }}
+                  >
+                    {firstName}
+                    {lastName && (<><br /><span style={{ color: accent }}>{lastName}</span></>)}
+                  </h1>
+                  {professionParts.length > 0 && (
+                    <div className="flex flex-wrap items-center" style={{ marginTop: 16, columnGap: 16, rowGap: 4 }}>
+                      <span aria-hidden="true" className="shrink-0" style={{ width: 32, height: 1, backgroundColor: accent }} />
+                      <h2 className="flex flex-wrap items-center font-bold uppercase" style={{ fontSize: 11.5, color: TEXT, letterSpacing: '0.3em', lineHeight: 1.5, columnGap: 12 }}>
+                        {professionParts.map((part, i) => (
+                          <React.Fragment key={i}>
+                            {i > 0 && <span aria-hidden="true" style={{ width: 1, height: 10, backgroundColor: SLATE_200 }} />}
+                            <span>{part}</span>
+                          </React.Fragment>
+                        ))}
+                      </h2>
+                    </div>
+                  )}
+                </div>
+
                 {contacts.length > 0 && (
-                  <div className="mt-6 flex flex-wrap gap-y-3">
+                  <div className="flex shrink-0 flex-col" style={{ gap: 10, paddingTop: 8, fontSize: 10.5, fontWeight: 500, color: TEXT }}>
                     {contacts.map((c, i) => (
-                      <div key={i} className="mr-5 border-r border-slate-200 pr-5 last:mr-0 last:border-r-0 last:pr-0">
-                        <p className="text-[9.5px] font-medium leading-none tracking-[0.06em] text-slate-400">{splitContact(c).label}</p>
-                        <p className="mt-1 text-[11.5px] leading-snug [overflow-wrap:anywhere]" style={{ color: INK }}>{splitContact(c).value}</p>
+                      <div key={`contact-${i}`} className="flex items-center gap-3">
+                        <ContactIcon name={c.kind} accent={accent} />
+                        <span className="break-words" style={{ maxWidth: 240, letterSpacing: '0.025em', lineHeight: 1.35 }}>{c.text}</span>
                       </div>
                     ))}
                   </div>
@@ -421,34 +527,11 @@ const AtlasSidebarTemplate = (props) => {
               </div>
             )}
 
-            <div className="flex min-h-0 flex-1">
-              {/* Main column, on the left. */}
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div
-                  ref={index === 0 ? main.firstBodyRef : undefined}
-                  className="relative min-h-0 flex-1 overflow-hidden"
-                  style={{ marginLeft: MAIN_PAD_L, marginRight: MAIN_PAD_R, marginTop: index === 0 ? MARGIN_TOP_FIRST : MARGIN_TOP_NEXT, marginBottom: MARGIN_BOTTOM }}
-                >
-                  {main.pages[index] || null}
-                  {isEmpty && index === 0 && (
-                    <p className="text-xs italic text-slate-400">Nothing entered yet — fill in a few steps to see them appear here.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Sidebar, on the right. Positioned so its tint paints over the header circle where they meet. */}
-              <div
-                className="relative flex shrink-0 flex-col"
-                style={{ width: SIDEBAR_W, background: panelBg, borderLeft: `1px solid ${tint(accentColor, 0.82)}` }}
-              >
-                <div
-                  ref={index === 0 ? side.firstBodyRef : undefined}
-                  className="relative min-h-0 flex-1 overflow-hidden"
-                  style={{ marginLeft: SIDE_PAD_X, marginRight: SIDE_PAD_X, marginTop: index === 0 ? MARGIN_TOP_FIRST : MARGIN_TOP_NEXT, marginBottom: MARGIN_BOTTOM }}
-                >
-                  {side.pages[index] || null}
-                </div>
-              </div>
+            <div ref={index === 0 ? firstBodyRef : undefined} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {visibleAtoms(pageBlocks, index)}
+              {isEmpty && index === 0 && (
+                <p className="text-xs italic text-slate-400">Nothing entered yet — fill in a few steps to see them appear here.</p>
+              )}
             </div>
           </div>
         </A4Page>
@@ -457,4 +540,4 @@ const AtlasSidebarTemplate = (props) => {
   );
 };
 
-export default AtlasSidebarTemplate;
+export default ArchitectTemplate;
