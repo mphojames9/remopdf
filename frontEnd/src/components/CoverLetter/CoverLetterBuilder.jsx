@@ -320,7 +320,7 @@ const DesignThumb = ({ id, accent, pastel = false }) => {
   const deep = rgbCss(deepShade(color));
   const tint = rgbCss(pastel ? pastelTint(color) : creamTint(color));
   // Lines of the letter underneath the header: a number is a line of that width in %, 0 is a gap.
-  const lines = id === 'banner' ? [30, 22, 0, 100, 96, 100, 64, 0, 100, 90, 54] : [0, 100, 94, 100, 58, 0, 100, 96, 100, 70, 0, 100, 88];
+  const lines = id === 'banner' ? [30, 22, 0, 100, 96, 100, 64, 0, 100, 90, 54] : [100, 94, 100, 58, 0, 100, 96, 100, 70, 0, 100, 88];
   return (
     <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[3px] bg-white ring-1 ring-slate-900/10" aria-hidden="true">
       {id === 'banner' ? (
@@ -335,18 +335,21 @@ const DesignThumb = ({ id, accent, pastel = false }) => {
         </div>
       ) : (
         <>
-          <span className="absolute left-[8%] top-[7%] h-[4.5%] w-[38%] rounded-[1px] bg-slate-800" />
-          <span className="absolute left-[8%] top-[13.5%] h-[2.5%] w-[26%] rounded-full" style={{ background: color }} />
-          <span className="absolute left-[8%] top-[18%] h-[2%] w-[56%] rounded-full bg-slate-300" />
-          <span className="absolute inset-x-[8%] top-[23%] h-[1.5px]" style={{ background: color }} />
-          {/* The employer on the left, the applicant's address on the right. */}
-          <span className="absolute left-[8%] top-[25.5%] h-[1.5px] w-[26%] rounded-full bg-slate-400/60" />
-          <span className="absolute left-[8%] top-[28%] h-[1.5px] w-[20%] rounded-full bg-slate-400/60" />
-          <span className="absolute right-[8%] top-[25.5%] h-[1.5px] w-[22%] rounded-full bg-slate-400/60" />
-          <span className="absolute right-[8%] top-[28%] h-[1.5px] w-[15%] rounded-full bg-slate-400/60" />
+          {/* Name centred, a thin line, centred address and contacts, the date on the right, the employer on the left, a centred RE: line. */}
+          <span className="absolute left-[28%] top-[7%] h-[4%] w-[44%] rounded-[1px] bg-slate-800" />
+          <span className="absolute left-[36%] top-[12.5%] h-[2%] w-[28%] rounded-full" style={{ background: color }} />
+          <span className="absolute inset-x-[8%] top-[16.5%] h-[1.5px]" style={{ background: color }} />
+          <span className="absolute left-[30%] top-[19.5%] h-[1.5px] w-[40%] rounded-full bg-slate-300" />
+          <span className="absolute left-[35%] top-[22%] h-[1.5px] w-[30%] rounded-full bg-slate-300" />
+          <span className="absolute left-[33%] top-[24.5%] h-[1.5px] w-[34%] rounded-full bg-slate-300" />
+          <span className="absolute right-[8%] top-[29%] h-[1.5px] w-[22%] rounded-full bg-slate-400/70" />
+          <span className="absolute left-[8%] top-[32%] h-[1.5px] w-[28%] rounded-full bg-slate-400/70" />
+          <span className="absolute left-[8%] top-[34.5%] h-[1.5px] w-[22%] rounded-full bg-slate-400/70" />
+          <span className="absolute left-[8%] top-[37%] h-[1.5px] w-[25%] rounded-full bg-slate-400/70" />
+          <span className="absolute left-[30%] top-[41.5%] h-[1.5px] w-[40%] rounded-full bg-slate-400/70" />
         </>
       )}
-      <div className={`absolute inset-x-[8%] flex flex-col gap-[3.2%] ${id === 'banner' ? 'top-[40%]' : 'top-[30%]'}`}>
+      <div className={`absolute inset-x-[8%] flex flex-col gap-[3.2%] ${id === 'banner' ? 'top-[40%]' : 'top-[46%]'}`}>
         {lines.map((w, i) => (w === 0 ? <span key={i} className="h-[2%]" /> : <span key={i} className="h-[1.5px] rounded-full bg-slate-300" style={{ width: `${w}%` }} />))}
       </div>
     </div>
