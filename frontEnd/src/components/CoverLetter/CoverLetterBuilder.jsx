@@ -320,7 +320,7 @@ const DesignThumb = ({ id, accent, pastel = false }) => {
   const deep = rgbCss(deepShade(color));
   const tint = rgbCss(pastel ? pastelTint(color) : creamTint(color));
   // Lines of the letter underneath the header: a number is a line of that width in %, 0 is a gap.
-  const lines = id === 'banner' ? [30, 22, 0, 100, 96, 100, 64, 0, 100, 90, 54] : [100, 94, 100, 58, 0, 100, 96, 100, 70, 0, 100, 88];
+  const lines = id === 'banner' ? [30, 22, 0, 100, 96, 100, 64, 0, 100, 90, 54] : [0, 100, 94, 100, 58, 0, 100, 96, 100, 70, 0, 100, 88];
   return (
     <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[3px] bg-white ring-1 ring-slate-900/10" aria-hidden="true">
       {id === 'banner' ? (
@@ -339,6 +339,11 @@ const DesignThumb = ({ id, accent, pastel = false }) => {
           <span className="absolute left-[8%] top-[13.5%] h-[2.5%] w-[26%] rounded-full" style={{ background: color }} />
           <span className="absolute left-[8%] top-[18%] h-[2%] w-[56%] rounded-full bg-slate-300" />
           <span className="absolute inset-x-[8%] top-[23%] h-[1.5px]" style={{ background: color }} />
+          {/* The employer on the left, the applicant's address on the right. */}
+          <span className="absolute left-[8%] top-[25.5%] h-[1.5px] w-[26%] rounded-full bg-slate-400/60" />
+          <span className="absolute left-[8%] top-[28%] h-[1.5px] w-[20%] rounded-full bg-slate-400/60" />
+          <span className="absolute right-[8%] top-[25.5%] h-[1.5px] w-[22%] rounded-full bg-slate-400/60" />
+          <span className="absolute right-[8%] top-[28%] h-[1.5px] w-[15%] rounded-full bg-slate-400/60" />
         </>
       )}
       <div className={`absolute inset-x-[8%] flex flex-col gap-[3.2%] ${id === 'banner' ? 'top-[40%]' : 'top-[30%]'}`}>

@@ -338,7 +338,11 @@ const managerName = (value) => clean(value).replace(/^dear\s+/i, '').replace(/[,
 /**
  * Everything the letter shows, as plain strings and blocks. The preview and the PDF both draw from this, so
  * they can never disagree.
- *   { name, profession, contacts[], dateText, recipient[], salutation, blocks[], closing, signName, signature }
+ *   { name, profession, contacts[], contactsOnly[], address[], dateText, recipient[], salutation, blocks[], closing, signName, signature }
+ *   contacts      email, phone, town and province, websites (the Banner design shows all of these in its banner)
+ *   contactsOnly  the same without the town and province (the Classic design shows these under the name)
+ *   address[]     the applicant's own address as lines (street; town, province, postal code): the Classic design sets
+ *                 it on the right of the page, opposite the employer on the left
  */
 export function buildLetterModel(resumeData, letter, body) {
   const personal = resumeData?.personal || {};
@@ -350,11 +354,15 @@ export function buildLetterModel(resumeData, letter, body) {
     .map((w) => clean(w?.url).replace(/^https?:\/\//i, '').replace(/\/$/, ''))
     .filter(Boolean);
   const contacts = [clean(personal.email), clean(personal.phone), location, ...websites].filter(Boolean);
+  const contactsOnly = [clean(personal.email), clean(personal.phone), ...websites].filter(Boolean);
+  const address = [clean(personal.streetAddress), [clean(personal.city), clean(personal.province), clean(personal.postalCode)].filter(Boolean).join(', ')].filter(Boolean);
 
   return {
     name,
     profession: clean(personal.profession),
     contacts,
+    contactsOnly,
+    address,
     dateText: formatLetterDate(letter?.dateOverride || todayISO()),
     recipient: [manager, clean(letter?.company), ...addressLines(letter?.companyAddress)].filter(Boolean),
     salutation: manager ? `Dear ${manager},` : 'Dear Hiring Manager,',

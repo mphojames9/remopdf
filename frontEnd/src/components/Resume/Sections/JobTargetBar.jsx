@@ -62,9 +62,12 @@ const STYLE = `
 @media (min-width:1024px){.jm-panel{animation-name:jm-in-right}}
 .jm-fade{animation:jm-fade .25s ease both}
 .jm-delta{animation:jm-delta 2.2s ease both}
+.jm-hero{display:grid;transition:grid-template-rows .32s ${EASE}}
+.jm-hero>div{min-height:0;overflow:hidden}
+.jm-close-float{animation:jm-fade .25s ease both}
 .jm-root{font-family:${FONT};letter-spacing:0;-webkit-font-smoothing:antialiased}
 .jm-root *{font-family:inherit}
-@media (prefers-reduced-motion:reduce){.jm-panel,.jm-fade,.jm-delta{animation:none}}
+@media (prefers-reduced-motion:reduce){.jm-panel,.jm-fade,.jm-delta,.jm-close-float{animation:none}.jm-hero{transition:none}}
 `;
 
 /* -------------------------------------------------------------------------- */
@@ -567,6 +570,26 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
   const titleId = useId();
   useOutfit();
 
+  // Scrolling the body down folds the dark score header away so the content gets the whole sheet; scrolling back to the
+  // very top brings it back. The header only folds when there is enough left to scroll afterwards (otherwise the body
+  // would stop being scrollable, jump back to the top and open the header again in a loop).
+  const heroRef = useRef(null);
+  const [folded, setFolded] = useState(false);
+  const FOLD_AFTER = 40; // px scrolled before the header folds
+  const onBodyScroll = (event) => {
+    const body = event.currentTarget;
+    if (!folded) {
+      const headerHeight = heroRef.current ? heroRef.current.offsetHeight : 0;
+      if (body.scrollTop > FOLD_AFTER && body.scrollHeight - body.clientHeight > headerHeight + 80) setFolded(true);
+    } else if (body.scrollTop <= 0) {
+      setFolded(false);
+    }
+  };
+  // A folded header is out of sight, so it must be out of the tab order and the screen reader too.
+  useEffect(() => {
+    if (heroRef.current) heroRef.current.inert = folded;
+  }, [folded]);
+
   // Focus moves into the panel, Tab stays inside it, Escape closes it, and focus goes back to where it was.
   useEffect(() => {
     const before = document.activeElement;
@@ -576,7 +599,7 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
         event.stopPropagation();
         onClose();
       } else if (event.key === 'Tab' && panelRef.current) {
-        const items = panelRef.current.querySelectorAll('button:not([disabled]),[href],[tabindex]:not([tabindex="-1"])');
+        const items = Array.from(panelRef.current.querySelectorAll('button:not([disabled]),[href],[tabindex]:not([tabindex="-1"])')).filter((el) => !el.closest('[inert]'));
         if (!items.length) return;
         const first = items[0];
         const last = items[items.length - 1];
@@ -616,8 +639,10 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
         aria-labelledby={titleId}
         className="jm-panel absolute inset-x-0 bottom-0 flex max-h-[90vh] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl lg:inset-x-auto lg:bottom-3 lg:right-3 lg:top-3 lg:max-h-none lg:w-[450px] lg:rounded-[28px]"
       >
-        {/* Header: the dark half. The score is the one loud thing here. */}
-        <div className="relative shrink-0 overflow-hidden px-5 pb-4 pt-5 text-white sm:px-6 sm:pb-6 sm:pt-6" style={{ background: 'linear-gradient(165deg,#0b1220 0%,#16213a 58%,#222f4d 100%)' }}>
+        {/* Header: the dark half. The score is the one loud thing here. It folds away while the body is scrolled down. */}
+        <div className="jm-hero shrink-0" style={{ gridTemplateRows: folded ? '0fr' : '1fr' }} aria-hidden={folded || undefined}>
+        <div ref={heroRef}>
+        <div className="relative overflow-hidden px-5 pb-4 pt-5 text-white sm:px-6 sm:pb-6 sm:pt-6" style={{ background: 'linear-gradient(165deg,#0b1220 0%,#16213a 58%,#222f4d 100%)' }}>
           <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full opacity-30 blur-3xl" style={{ background: ACCENT }} aria-hidden="true" />
           <span className="pointer-events-none absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/25 lg:hidden" aria-hidden="true" />
 
@@ -658,9 +683,23 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
             <TierMeter score={result.score} ready={ready} />
           </div>
         </div>
+        </div>
+        </div>
+
+        {/* While the header is folded away, a small close button stays in the corner. */}
+        {folded && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="jm-close-float absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-[0_6px_18px_-6px_rgba(11,18,32,.45)] ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+          >
+            <Icon d={ICON.close} className="h-[18px] w-[18px]" />
+          </button>
+        )}
 
         {/* Body */}
-        <div className="pro-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
+        <div onScroll={onBodyScroll} className="pro-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
           <NextMove move={insight(result, false)} />
 
           {review && (

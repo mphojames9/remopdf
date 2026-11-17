@@ -11,7 +11,8 @@
 
   Two designs (options.template): 'banner' (the default: a tinted banner that touches the page edges, with the name
   set large in a serif, a thin divider and the contact details beside it, then an airy letter) and 'classic' (the plain letterhead with a thin
-  line). By default the tint, divider and signature take their colour from the resume's colour. The person can also pick a
+  line, then the employer's address on the left and the applicant's own address, with the date under it, on the right
+  like a traditional business letter). By default the tint, divider and signature take their colour from the resume's colour. The person can also pick a
   light colour for the letter (options.pastel): the banner becomes a soft tint of that colour and the name, divider
   and signature a deep shade of it.
 
@@ -138,6 +139,8 @@ export function sanitizeModel(model, fonts) {
     name: fix(model.name),
     profession: fix(model.profession),
     contacts: model.contacts.map(fix).filter(Boolean),
+    contactsOnly: (model.contactsOnly || model.contacts).map(fix).filter(Boolean),
+    address: (model.address || []).map(fix).filter(Boolean),
     dateText: fix(model.dateText),
     recipient: model.recipient.map(fix).filter(Boolean),
     salutation: fix(model.salutation),
@@ -316,15 +319,19 @@ export function layoutLetter(model, fonts, { accent, pastel = false, watermark =
   const hasHeader = hasName || hasProfession || hasContacts;
 
   if (design === 'classic') {
-    /* Name, profession, contact details, a thin line in the resume's colour. */
+    /* Name, profession, contact details, a thin line in the resume's colour. The applicant's address is not part of
+       the contact line here: it is set on the right of the page, opposite the employer (see "Date and recipient"). */
+    const headContacts = model.contactsOnly;
+    const headHasContacts = headContacts.length > 0;
+    const headShown = hasName || hasProfession || headHasContacts;
     if (hasName) wrapText(model.name, fonts.bold, 22, contentW).forEach((t) => line(t, { size: 22, leading: 27, bold: true }));
     const professionColor = pastel ? mix(accentRgb, [0, 0, 0], 0.3) : accentRgb; // a picked light colour is deepened for reading
     if (hasProfession) wrapText(model.profession, fonts.regular, 11.5, contentW).forEach((t) => line(t, { size: 11.5, leading: 17, color: professionColor }));
-    if (hasContacts) {
+    if (headHasContacts) {
       y += hasName || hasProfession ? 3 : 0;
-      wrapContacts(model.contacts, fonts.regular, 9.5, contentW).forEach((t) => line(t, { size: 9.5, leading: 14, color: MUTED }));
+      wrapContacts(headContacts, fonts.regular, 9.5, contentW).forEach((t) => line(t, { size: 9.5, leading: 14, color: MUTED }));
     }
-    if (hasHeader) {
+    if (headShown) {
       y += 9;
       page.items.push({ type: 'rect', x: MX, top: y, width: contentW, height: 1.4, color: accentRgb });
       y += 1.4 + 28;
@@ -400,17 +407,45 @@ export function layoutLetter(model, fonts, { accent, pastel = false, watermark =
 
   /* Date and recipient. */
   const airy = design === 'banner';
-  if (model.dateText) {
-    line(model.dateText);
-    y += airy ? 22 : 14;
-  }
-  if (model.recipient.length > 0) {
-    let first = true;
-    model.recipient.forEach((t) => {
-      wrapText(t, fonts.regular, BODY, contentW).forEach((l) => line(l, { bold: airy && first }));
-      first = false;
-    });
-    y += airy ? 22 : 14;
+  if (design === 'classic' && model.address.length > 0) {
+    /* Classic, like a traditional business letter: the employer on the left, the applicant's address on the right
+       (each line ending at the right margin) with the date under it. Both blocks start on the same line. */
+    const SIDE_GAP = 24; // space kept between the two blocks
+    const rightW = Math.min(contentW * 0.4, 200);
+    const leftW = contentW - rightW - SIDE_GAP;
+    const left = [];
+    model.recipient.forEach((t) => wrapText(t, fonts.regular, BODY, leftW).forEach((l) => left.push(l)));
+    const right = [];
+    model.address.forEach((t) => wrapText(t, fonts.regular, BODY, rightW).forEach((l) => right.push(l)));
+    const DATE_GAP = 10; // between the address and the date
+    const rightHeight = right.length * LEADING + (model.dateText ? (right.length > 0 ? DATE_GAP : 0) + LEADING : 0);
+    need(Math.max(left.length * LEADING, rightHeight));
+
+    const top = y;
+    left.forEach((t) => line(t));
+    const leftEnd = y;
+    y = top;
+    const rightEdge = MX + contentW;
+    const rightLine = (t) => line(t, { x: rightEdge - fonts.regular.widthOfTextAtSize(t, BODY) });
+    right.forEach(rightLine);
+    if (model.dateText) {
+      if (right.length > 0) y += DATE_GAP;
+      rightLine(model.dateText);
+    }
+    y = Math.max(y, leftEnd) + 14;
+  } else {
+    if (model.dateText) {
+      line(model.dateText);
+      y += airy ? 22 : 14;
+    }
+    if (model.recipient.length > 0) {
+      let first = true;
+      model.recipient.forEach((t) => {
+        wrapText(t, fonts.regular, BODY, contentW).forEach((l) => line(l, { bold: airy && first }));
+        first = false;
+      });
+      y += airy ? 22 : 14;
+    }
   }
 
   /* Salutation. */
