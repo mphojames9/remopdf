@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
-import brandLogo from '../assets/logo.webp'; // same logo the Home footer uses; adjust the path if needed
+import brandLogo from '../assets/logo.webp'; // white and red logo for dark backgrounds (the footer); adjust the path if needed
+import navLogo from '../assets/logo1.webp'; // navy and red logo for light backgrounds (the top bar), same one the main Navbar uses
 
 const EMAILJS_SERVICE_ID = 'service_a7c5ag9';
 const EMAILJS_TEMPLATE_ID = 'template_5bc1mt5';
@@ -341,10 +342,8 @@ export default function Contact() {
         }`}
       >
         <div className="nav-logo shrink-0 relative z-50">
-          <Link to="/" className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b] rounded-lg">
-            <span className="font-black text-[1.25rem] text-slate-800 tracking-tight">
-                Remo<span className="text-red-600">PDF</span>
-              </span>
+          <Link to="/" aria-label={BRAND} className="flex items-center rounded-lg outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-[#d9856b]">
+            <img src={navLogo} alt={BRAND} width="480" height="160" draggable={false} className="h-9 w-auto max-w-[55vw] select-none object-contain object-left" />
           </Link>
         </div>
   
@@ -365,7 +364,7 @@ export default function Contact() {
           
           {/* ULTRA PREMIUM Desktop Build Resume Button */}
           <Link 
-            to="/resume-builder" 
+            to="/ResumeBuilder" 
             className="hidden lg:flex group relative items-center justify-center gap-2.5 px-6 py-2.5 rounded-full bg-[#d9856b] text-[#0e1726] text-[14px] font-bold tracking-wide shadow-[0_8px_20px_-6px_rgba(217,133,107,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(217,133,107,0.8)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden isolate"
           >
             {/* Inverse gradient on hover */}
@@ -482,7 +481,7 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 mb-1">Email Us directly</h3>
-                <p className="text-sm text-slate-500">remopdf@outlook.com</p>
+                <p className="text-sm text-slate-500">support@remopdf.site</p>
               </div>
             </div>
             
