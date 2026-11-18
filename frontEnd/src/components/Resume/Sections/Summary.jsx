@@ -100,7 +100,7 @@ const SummarySection = ({ data, updateSummary }) => {
       <p className="text-sm text-slate-500 mb-6">Write a few sentences about your experience and strengths.</p>
 
       {/* Auto-write: the summary, written from the work history and skills */}
-      <section aria-label="Write my summary" aria-busy={loading} className="mb-6 rounded-md border border-[#d9856b]/30 bg-[#d9856b]/5 px-4 py-4">
+      <section aria-label="Write my summary" aria-busy={loading} className="mb-6 rounded-md border border-[#d9856b]/30 bg-[#d9856b]/5 px-3 py-3.5 sm:px-4 sm:py-4">
         {/* A grid, not a wrapping row: on a narrow phone the button drops under the text instead of squeezing it to one word a line. */}
         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
           <span className="mt-0.5 self-start"><Sparkle /></span>
@@ -140,7 +140,7 @@ const SummarySection = ({ data, updateSummary }) => {
         {ready && !loading && (
           <div className="mt-3 overflow-hidden rounded-md border border-slate-200 bg-white">
             <style>{STYLE}</style>
-            <p className="px-4 pb-3 pt-3.5 text-sm leading-relaxed text-slate-800">
+            <p className="px-3 sm:px-4 pb-3 pt-3.5 text-sm leading-relaxed text-slate-800">
               {sentencesOf(state.text).map((line, i) => (
                 <span key={`${i}-${line.slice(0, 12)}`} className="sm-line" style={{ animationDelay: `${i * 140}ms` }}>
                   {line}{' '}
@@ -149,7 +149,7 @@ const SummarySection = ({ data, updateSummary }) => {
             </p>
 
             {(state.checked.length > 0 || state.uses.length > 0) && (
-              <details className="group border-t border-slate-100 bg-slate-50/70 px-4 py-2.5">
+              <details className="group border-t border-slate-100 bg-slate-50/70 px-3 sm:px-4 py-2.5">
                 <summary className={`flex cursor-pointer list-none items-center gap-2 rounded text-xs font-semibold text-slate-700 ${FOCUS}`}>
                   <svg className="h-3.5 w-3.5 shrink-0 text-[#b8573b]" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M4.5 10.5l3.5 3.5 7.5-8" />
@@ -176,7 +176,7 @@ const SummarySection = ({ data, updateSummary }) => {
               </details>
             )}
 
-            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-3 sm:px-4 py-3">
               <button
                 type="button"
                 onClick={useIt}

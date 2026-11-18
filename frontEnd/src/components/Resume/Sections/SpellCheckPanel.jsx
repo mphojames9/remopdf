@@ -153,9 +153,9 @@ const Sparkle = () => (
 
 // Three placeholder cards while the first review is on its way.
 const Skeleton = () => (
-  <div className="px-3 py-3 flex flex-col gap-2.5 animate-pulse" aria-hidden="true">
+  <div className="px-1.5 py-3 sm:px-3 flex flex-col gap-2.5 animate-pulse" aria-hidden="true">
     {[0, 1, 2].map((i) => (
-      <div key={i} className="flex flex-col gap-2 rounded-md border border-slate-100 px-3 py-2.5">
+      <div key={i} className="flex flex-col gap-2 rounded-md border border-slate-100 px-2.5 py-2.5 sm:px-3">
         <div className="h-3 w-1/3 rounded bg-slate-200" />
         <div className="h-3 w-full rounded bg-slate-100" />
         <div className="h-3 w-4/5 rounded bg-slate-100" />
@@ -356,7 +356,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
       {open && (
         <div id={bodyId.current}>
           {signedOut && (
-            <div className="px-3 py-3 flex flex-col gap-2">
+            <div className="px-2.5 py-3 sm:px-3 flex flex-col gap-2">
               <p className="text-xs leading-relaxed text-slate-600">
                 Sign in to get started. AI suggestions are part of Premium: three polished versions of your text to choose from.
               </p>
@@ -369,7 +369,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
           )}
 
           {needsPremium && (
-            <div className="px-3 py-3 flex flex-col gap-2">
+            <div className="px-2.5 py-3 sm:px-3 flex flex-col gap-2">
               <p className="text-xs leading-relaxed text-slate-600">
                 AI suggestions are part of Premium: three polished versions of what you wrote, tailored to the job you are applying for,
                 on our strongest AI. Pay once for 7, 14 or 30 days. Nothing renews on its own.
@@ -382,12 +382,12 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
             </div>
           )}
 
-          {message && <p className="px-3 py-2.5 text-xs text-slate-500">{message}</p>}
+          {message && <p className="px-2.5 py-2.5 sm:px-3 text-xs text-slate-500">{message}</p>}
 
           {hasText && loading && rewrites.length === 0 && <Skeleton />}
 
           {state.status === 'error' && !locked && (
-            <div className="px-3 py-3 flex flex-col gap-2 border-b border-slate-100">
+            <div className="px-2.5 py-3 sm:px-3 flex flex-col gap-2 border-b border-slate-100">
               <p className="text-xs leading-relaxed text-amber-700">
                 {state.error && state.error.code === 'quota'
                   ? state.error.message || ERROR_TEXT.quota
@@ -408,9 +408,9 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
           )}
 
           {rewrites.length > 0 && (
-            <div className={`px-3 py-3 bg-[#d9856b]/5 flex flex-col gap-2.5 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+            <div className={`px-1.5 py-3 sm:px-3 bg-[#d9856b]/5 flex flex-col gap-2.5 transition-opacity ${loading ? 'opacity-60' : ''}`}>
               {rewrites.map((r, i) => (
-                <div key={r.id} className="flex flex-col gap-2 bg-white border border-[#d9856b]/25 rounded-md px-3 py-2.5">
+                <div key={r.id} className="flex flex-col gap-2 bg-white border border-[#d9856b]/25 rounded-md px-2.5 py-2.5 sm:px-3">
                   <div className="flex items-center justify-between gap-3">
                     <span className="inline-flex items-center gap-1.5 min-w-0 text-xs font-semibold text-[#8f4631]">
                       <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#d9856b]/15 text-[11px] shrink-0">
@@ -435,14 +435,14 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
           )}
 
           {needs.length > 0 && (
-            <div className={`px-3 py-3 border-t border-slate-100 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+            <div className={`px-1.5 py-3 sm:px-3 border-t border-slate-100 transition-opacity ${loading ? 'opacity-60' : ''}`}>
               <p className="text-xs font-semibold text-slate-700">Make it stronger</p>
               <p className="mt-0.5 text-xs leading-snug text-slate-500">
                 Employers notice real numbers. If you know the answer to one of these, add it to that line yourself.
               </p>
               <ul className="mt-2 flex flex-col gap-2">
                 {needs.map((n) => (
-                  <li key={n.line} className="rounded-md border border-slate-100 bg-slate-50 px-3 py-2">
+                  <li key={n.line} className="rounded-md border border-slate-100 bg-slate-50 px-2.5 py-2 sm:px-3">
                     <p className="text-xs italic leading-snug text-slate-500 break-words">“{n.line}”</p>
                     <p className="mt-0.5 text-sm leading-snug text-slate-700">{n.ask}</p>
                   </li>

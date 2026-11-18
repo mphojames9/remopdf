@@ -2826,7 +2826,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
           </div>
         </header>
 
-        <div className="pro-scroll flex-1 overflow-y-auto p-5 sm:p-8 lg:p-12 lg:pt-6 pb-36 sm:pb-32">
+        <div className="pro-scroll flex-1 overflow-y-auto px-2 pt-4 sm:p-8 lg:p-12 lg:pt-6 pb-36 sm:pb-32">
           {premium && hasJobTarget(jobTarget) && ActiveComponent !== PersonalInfo && (
             <JobTargetBar
               target={jobTarget}
