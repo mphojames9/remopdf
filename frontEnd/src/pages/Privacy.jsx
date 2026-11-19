@@ -723,7 +723,7 @@ export default function Privacy() {
             </Sec>
 
             <Sec id="ai">
-              <p>These features use artificial intelligence: summary suggestions, writing checks, skill suggestions, study-detail suggestions, achievement ideas, job targeting and matching, and cover letters.</p>
+              <p>These features use artificial intelligence: summary suggestions, writing checks, study-detail suggestions, achievement ideas, job targeting and matching, and cover letters.</p>
               <Ul>
                 <li>
                   <strong>What is sent:</strong> when you use one, the text you are working on is sent through our server to Groq, whose AI models write the answer. How Groq handles that text is set by Groq’s own

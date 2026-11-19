@@ -1,22 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { suggestSkillIdeas, suggestEducationIdeas, suggestAchievementIdeas, hasJobTarget } from './jobMatchAI';
+import { suggestEducationIdeas, suggestAchievementIdeas, hasJobTarget } from './jobMatchAI';
 import { hasAchievement } from './aiSuggestions';
 import { usePremiumAccess, useSignedIn, requestUpgrade, requestSignIn, setPremiumAccess } from '../../../hooks/premiumAccess';
 
 /*
-  The AI ideas for three steps of the builder. They replace the O*NET suggestions there (O*NET is now only used for job
-  titles). All of them are Premium: the free plan has no AI suggestions, so a free or signed-out person sees a short note
-  and a button instead. Every request goes through jobMatchAI.js (the signed AI pass, one AI action each).
+  The AI ideas for two steps of the builder. They replace the O*NET suggestions there (O*NET is now only used for job
+  titles). Both are Premium: the free plan has no AI suggestions, so a free or signed-out person sees a short note and a
+  button instead. Nothing runs until the person presses a button. Every request goes through jobMatchAI.js (the signed AI
+  pass, one AI action each).
 
-    <SkillIdeas data selectedTexts onAdd pending />      Skills step: skills from the qualification, the work history
-                                                          and the job being targeted. Loads once when the step opens.
     <EducationIdeas entry resumeData onAdd />            Education step: lines for the Details box of one qualification.
     <AchievementIdeas job skills jobTarget onAdd pending />
-                                                          Work history step: one achievement for the job title, in two
-                                                          versions (with numbers, without), plus an ask box.
+                                                          Work history step: five or more different achievement ideas for
+                                                          the job title, an ask box to steer them, and "Load more ideas".
 
-  Nothing is added to the resume until the person presses the add button. Skills the person's own words do not show are
-  marked, and a figure the person never wrote is always a [placeholder] to fill in.
+  Nothing is added to the resume until the person presses the add button. A figure the person never wrote is always a
+  [placeholder] to fill in.
 */
 
 const PRIMARY =
@@ -174,143 +173,6 @@ const withPlaceholders = (text) =>
     );
 
 /* -------------------------------------------------------------------------- */
-/*                                   Skills                                    */
-/* -------------------------------------------------------------------------- */
-
-const BASIS = {
-  work: { label: 'From your work', tone: 'bg-emerald-50 text-emerald-800 border-emerald-100' },
-  education: { label: 'From your education', tone: 'bg-sky-50 text-sky-800 border-sky-100' },
-  job: { label: 'Job asks for it', tone: 'bg-amber-50 text-amber-800 border-amber-100' },
-  role: { label: 'Common for your roles', tone: 'bg-slate-100 text-slate-600 border-slate-200' },
-};
-
-export function SkillIdeas({ data, selectedTexts, onAdd, pending = [] }) {
-  const lock = useLock();
-  const [state, run] = useIdeaRequest();
-  const [prompt, setPrompt] = useState('');
-  const shownRef = useRef([]); // every skill shown so far, so "Show new ideas" brings others
-  const startedRef = useRef(false);
-  const target = data && data.jobTarget;
-  const targeted = hasJobTarget(target);
-  const loading = state.status === 'loading';
-
-  const ask = (more) =>
-    run(async (signal) => {
-      const result = await suggestSkillIdeas({ resumeData: data, target, prompt, avoid: more ? shownRef.current : [], signal });
-      const names = result.skills.map((s) => s.skill);
-      shownRef.current = more ? [...shownRef.current, ...names].slice(-40) : names;
-      return result;
-    });
-
-  // Opens with suggestions already there, like the list it replaces (one request; the same request again is free).
-  useEffect(() => {
-    if (lock || startedRef.current) return;
-    startedRef.current = true;
-    ask(false);
-  }, [lock]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (lock) {
-    return (
-      <Locked
-        lock={lock}
-        title="AI skill suggestions"
-        note="AI skill suggestions are part of Premium: skills drawn from your qualification, your work history and the job you are applying for. You can still type your own skills on the right."
-        className="lg:h-[360px]"
-      />
-    );
-  }
-
-  const taken = new Set((selectedTexts || []).map((t) => String(t || '').trim().toLowerCase()));
-  const skills = (state.data && state.data.skills) || [];
-  const items = skills.filter((s) => pending.includes(s.skill) || !taken.has(s.skill.toLowerCase()));
-  const needsHistory = Boolean(state.data && state.data.needsHistory);
-
-  return (
-    <div className="border border-slate-200 rounded-sm bg-white h-[360px] flex flex-col">
-      <div className="p-3 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide inline-flex items-center gap-1.5">
-            <span className="text-[#d9856b]">
-              <SparkleIcon />
-            </span>
-            AI skill suggestions
-          </span>
-          {skills.length > 0 && (
-            <button type="button" onClick={() => ask(true)} disabled={loading} className={SECONDARY}>
-              Show new ideas
-            </button>
-          )}
-        </div>
-        <AskBox
-          value={prompt}
-          onChange={setPrompt}
-          onSubmit={() => ask(false)}
-          placeholder="Ask for something, e.g. technical skills"
-          busy={loading}
-          label="Suggest"
-          ariaLabel="Tell the AI which skills you want"
-        />
-        <span className="text-[11px] text-slate-500">
-          {targeted ? `Based on your education, work history and the job you target (${target.title || 'your target job'})` : 'Based on your education and work history'}
-        </span>
-      </div>
-
-      <div className="overflow-y-auto flex-1 p-2 flex flex-col">
-        {loading && items.length === 0 && <Skeleton rows={5} />}
-
-        {state.status === 'error' && <ErrorLine error={state.error} />}
-
-        {needsHistory && !loading && (
-          <p className="p-2 text-xs text-slate-500">Add your work history or education first, and the AI will suggest skills from them. You can also type what you want in the box above.</p>
-        )}
-
-        {items.map((item) => {
-          const sending = pending.includes(item.skill); // sliding into the list
-          const basis = BASIS[item.basis] || BASIS.role;
-          return (
-            <div
-              key={item.skill}
-              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${sending ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}
-            >
-              <div className="min-h-0 overflow-hidden">
-                <div className="mb-1 flex items-start gap-3 p-2 rounded-sm hover:bg-slate-50 border border-transparent transition-colors group" title={item.evidence || item.why || undefined}>
-                  <button
-                    type="button"
-                    onClick={(e) => onAdd(item.skill, e.currentTarget.parentElement.querySelector('[data-skill-text]'))}
-                    disabled={sending}
-                    className={`mt-0.5 w-6 h-6 rounded-sm border flex items-center justify-center shrink-0 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
-                      sending ? 'bg-slate-700 border-slate-700 text-white cursor-default' : 'bg-white border-slate-200 text-slate-500 group-hover:border-slate-400 group-hover:text-slate-800'
-                    }`}
-                    aria-label={sending ? `Added ${item.skill}` : `Add ${item.skill}`}
-                  >
-                    <PlusIcon done={sending} />
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <span data-skill-text className="text-sm text-slate-700">
-                      {item.skill}
-                    </span>
-                    <span className={`ml-2 inline-block align-middle rounded-full border px-1.5 py-px text-[10px] font-medium leading-4 ${basis.tone}`}>{basis.label}</span>
-                    {item.why && <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{item.why}</p>}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {!loading && state.status === 'ready' && !needsHistory && items.length === 0 && (
-          <p className="p-2 text-xs text-slate-500">{skills.length > 0 ? 'You have added all of these. Tap “Show new ideas” for more.' : 'No suggestions this time. Try asking for something specific above.'}</p>
-        )}
-
-        {items.some((i) => i.confirm) && (
-          <p className="mt-auto px-2 pt-2 text-[11px] leading-snug text-slate-500">Add “Job asks for it” and “Common for your roles” skills only if they are true for you.</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
 /*                                  Education                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -405,36 +267,39 @@ export function EducationIdeas({ entry, resumeData, onAdd }) {
 /*                                Achievements                                 */
 /* -------------------------------------------------------------------------- */
 
-const VersionCard = ({ kind, version, added, sending, onUse }) => {
+// One idea: the line, the job keywords it honestly contains, and a button to add it to the achievements above.
+const IdeaRow = ({ idea, added, sending, onUse }) => {
   const textRef = useRef(null); // where the added line slides in from
+  const done = added || sending;
   return (
-  <div className="rounded-sm border border-slate-200 bg-white p-3">
-    <div className="flex items-center justify-between gap-2">
-      <span
-        className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-          kind === 'numbers' ? 'bg-amber-50 text-amber-800 border-amber-100' : 'bg-slate-100 text-slate-600 border-slate-200'
+    <li className="flex items-start gap-3 rounded-sm border border-slate-200 bg-white p-3">
+      <button
+        type="button"
+        onClick={() => onUse(textRef.current)}
+        disabled={done}
+        aria-label={done ? 'Added' : `Use this idea: ${idea.text}`}
+        className={`mt-0.5 w-6 h-6 shrink-0 rounded-sm border flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b] ${
+          done ? 'bg-[#d9856b] border-[#d9856b] text-white cursor-default' : 'bg-white border-slate-200 text-slate-500 hover:border-[#d9856b] hover:text-[#d9856b]'
         }`}
       >
-        {kind === 'numbers' ? 'With numbers' : 'Without numbers'}
-      </span>
-      <button type="button" onClick={() => onUse(textRef.current)} disabled={added || sending} className={added || sending ? SECONDARY : PRIMARY}>
-        {added || sending ? 'Added' : 'Use this version'}
+        <PlusIcon done={done} />
       </button>
-    </div>
-    <p ref={textRef} data-idea-text className="mt-2 text-xs leading-relaxed text-slate-700">
-      {withPlaceholders(version.text)}
-    </p>
-    {version.uses.length > 0 && (
-      <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-        Matches the job:
-        {version.uses.map((word) => (
-          <span key={word} className="rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-px text-[10px] font-medium text-emerald-800">
-            {word}
-          </span>
-        ))}
-      </p>
-    )}
-  </div>
+      <div className="min-w-0 flex-1">
+        <p ref={textRef} data-idea-text className="text-xs leading-relaxed text-slate-700">
+          {withPlaceholders(idea.text)}
+        </p>
+        {idea.uses.length > 0 && (
+          <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+            Matches the job:
+            {idea.uses.map((word) => (
+              <span key={word} className="rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-px text-[10px] font-medium text-emerald-800">
+                {word}
+              </span>
+            ))}
+          </p>
+        )}
+      </div>
+    </li>
   );
 };
 
@@ -442,17 +307,20 @@ export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending =
   const lock = useLock();
   const [state, run] = useIdeaRequest();
   const [prompt, setPrompt] = useState('');
-  const shownRef = useRef([]); // the versions shown so far, so "Show new ideas" brings a different achievement
+  const ideasRef = useRef([]); // everything shown so far; "Load more ideas" adds to it
   const title = String(job.title || '').trim();
   const targeted = hasJobTarget(jobTarget);
   const loading = state.status === 'loading';
 
+  // `more` = add different ideas to the list (what is shown is sent along so none comes back); otherwise start the list
+  // again, which is what the ask box does ("add numbers", "focus on safety").
   const ask = (more) =>
     run(async (signal) => {
-      const result = await suggestAchievementIdeas({ job, skills, target: jobTarget, prompt, avoid: more ? shownRef.current : [], signal });
-      const texts = [result.withNumbers, result.withoutNumbers].filter(Boolean).map((v) => v.text);
-      shownRef.current = more ? [...shownRef.current, ...texts].slice(-12) : texts;
-      return result;
+      const avoid = more ? ideasRef.current.map((i) => i.text) : [];
+      const result = await suggestAchievementIdeas({ job, skills, target: jobTarget, prompt, avoid, signal });
+      const merged = more ? [...ideasRef.current, ...result.ideas.filter((i) => !ideasRef.current.some((o) => o.text === i.text))] : result.ideas;
+      ideasRef.current = merged;
+      return { ideas: merged };
     });
 
   if (lock) {
@@ -460,39 +328,30 @@ export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending =
       <Locked
         lock={lock}
         title="AI achievement ideas"
-        note="AI achievement ideas are part of Premium: an achievement for your job title in two versions, one with numbers and one without, matched to the keywords of the job you target. Tell the AI what to improve and it rewrites it."
+        note="AI achievement ideas are part of Premium: several achievements for your job title, matched to the keywords of the job you target, with numbers where they fit. Tell the AI what to improve and it rewrites them."
       />
     );
   }
 
-  const data = state.data;
-  const versions = data ? [data.withNumbers && { kind: 'numbers', version: data.withNumbers }, data.withoutNumbers && { kind: 'plain', version: data.withoutNumbers }].filter(Boolean) : [];
-  const anyPlaceholder = versions.some((v) => /\[[^\]]+\]/.test(v.version.text));
+  const ideas = (state.data && state.data.ideas) || [];
+  const anyPlaceholder = ideas.some((i) => /\[[^\]]+\]/.test(i.text));
 
   return (
     <div className="border border-slate-200 rounded-sm bg-slate-50/60 p-3 flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-slate-800 inline-flex items-center gap-1.5">
-            <span className="text-[#d9856b]">
-              <SparkleIcon />
-            </span>
-            AI achievement ideas
-          </p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
-            {!title
-              ? 'Add a job title to get ideas.'
-              : targeted
-                ? `Written for ${title}, matched to the job you target${jobTarget.title ? ` (${jobTarget.title})` : ''}.`
-                : `Written for ${title}. Use “Target a job” (top bar) to match the keywords of the job you want.`}
-          </p>
-        </div>
-        {versions.length > 0 && (
-          <button type="button" onClick={() => ask(true)} disabled={loading} className={`${SECONDARY} shrink-0`}>
-            <SparkleIcon className="w-3 h-3" />
-            Show new ideas
-          </button>
-        )}
+      <div className="min-w-0">
+        <p className="text-xs font-bold text-slate-800 inline-flex items-center gap-1.5">
+          <span className="text-[#d9856b]">
+            <SparkleIcon />
+          </span>
+          AI achievement ideas
+        </p>
+        <p className="mt-0.5 text-[11px] text-slate-500">
+          {!title
+            ? 'Add a job title to get ideas.'
+            : targeted
+              ? `Written for ${title}, matched to the job you target${jobTarget.title ? ` (${jobTarget.title})` : ''}.`
+              : `Written for ${title}. Use “Target a job” (top bar) to match the keywords of the job you want.`}
+        </p>
       </div>
 
       <AskBox
@@ -502,30 +361,35 @@ export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending =
         placeholder="Tell the AI what to improve or add, e.g. add numbers, focus on safety"
         disabled={!title}
         busy={loading}
-        label={versions.length > 0 ? 'Update' : 'Suggest'}
+        label={ideas.length > 0 ? 'Update ideas' : 'Suggest ideas'}
         ariaLabel="Tell the AI what kind of achievement you want"
       />
 
-      {loading && versions.length === 0 && <Skeleton rows={2} />}
+      {loading && ideas.length === 0 && <Skeleton rows={4} />}
       {state.status === 'error' && <ErrorLine error={state.error} />}
 
-      {versions.length > 0 && (
-        <div className={`flex flex-col gap-2 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-          {versions.map(({ kind, version }) => (
-            <VersionCard
-              key={kind}
-              kind={kind}
-              version={version}
-              added={hasAchievement(job.achievements, version.text)}
-              sending={pending.includes(version.text)}
-              onUse={(el) => onAdd(version.text, el)}
-            />
-          ))}
-          {versions.length === 1 && <p className="text-[11px] text-slate-500">Only one version could be written this time. Tap “Update” to try for both.</p>}
+      {ideas.length > 0 && (
+        <>
+          <ul className={`flex flex-col gap-2 transition-opacity ${loading ? 'opacity-70' : ''}`}>
+            {ideas.map((idea) => (
+              <IdeaRow
+                key={idea.text}
+                idea={idea}
+                added={hasAchievement(job.achievements, idea.text)}
+                sending={pending.includes(idea.text)}
+                onUse={(el) => onAdd(idea.text, el)}
+              />
+            ))}
+          </ul>
+          {loading && <Skeleton rows={2} />}
+          <button type="button" onClick={() => ask(true)} disabled={loading} className={`${SECONDARY} w-full`}>
+            <SparkleIcon className="w-3 h-3" />
+            {loading ? 'Working...' : 'Load more ideas'}
+          </button>
           <p className="text-[11px] leading-snug text-slate-500">
             {anyPlaceholder ? 'Replace each [X] with your real number before you download. ' : ''}Add only what you really did. Tell the AI your real figures in the box above and it will use them.
           </p>
-        </div>
+        </>
       )}
     </div>
   );

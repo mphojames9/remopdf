@@ -168,6 +168,19 @@ const Skeleton = () => (
 /*                                   Panel                                    */
 /* -------------------------------------------------------------------------- */
 
+// The assistant runs only when the person taps the small AI button in its header, so no AI action is spent on text they
+// are still typing. Set this to true to bring back the old behaviour: a review a moment after typing stops.
+const AUTO_RUN = false;
+
+const AI_BUTTON =
+  'shrink-0 inline-flex items-center gap-1 h-8 sm:h-7 px-2.5 rounded-full bg-[#d9856b] text-white text-xs font-bold hover:bg-[#c97558] active:bg-[#bd6b4f] disabled:opacity-45 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50';
+
+const SparkleWhite = () => (
+  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zm7 11l.9 2.6 2.6.9-2.6.9L19 20l-.9-2.6-2.6-.9 2.6-.9L19 13z" />
+  </svg>
+);
+
 const QUOTA_PAUSE_MS = 10 * 60 * 1000; // after "allowance used up", do not ask again for this long (unless the plan changes)
 
 const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTarget: askedTarget = null }) => {
@@ -189,29 +202,36 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
   const analyzedRef = useRef(null); // the exact text the current result was made for
   const abortRef = useRef(null);
   const immediateRef = useRef(false); // true right after "Try again": no typing pause
+  const runRequestedRef = useRef(false); // true after the AI button (or "Try again") is tapped, until that review starts
   const bodyId = useRef(null);
   if (bodyId.current === null) {
     panelCount += 1;
     bodyId.current = `writing-assistant-${panelCount}`;
   }
 
-  // Review the text a moment after the last keystroke. Typing again cancels a review in flight.
+  // A review starts when the AI button is tapped (or, with AUTO_RUN, a moment after the last keystroke). Typing while one
+  // is in flight cancels it.
   useEffect(() => {
     if (locked) {
       // Signed out, or on the free plan: no review, and nothing from an earlier one stays on screen. Signing in or
       // paying flips `locked` and this runs again.
+      runRequestedRef.current = false;
       analyzedRef.current = null;
       setApplied(false);
       setState((s) => (s.status === 'idle' && !s.result && !s.error ? s : { status: 'idle', result: null, error: null }));
       return undefined;
     }
     if (value.trim().length < MIN_CHARS) {
+      runRequestedRef.current = false;
       analyzedRef.current = null;
       setApplied(false);
       setState((s) => (s.status === 'idle' && !s.result && !s.error ? s : { status: 'idle', result: null, error: null }));
       return undefined;
     }
-    if (Date.now() - quotaHitRef.current < QUOTA_PAUSE_MS) return undefined; // allowance used up: the notice stays, nothing is sent
+    if (Date.now() - quotaHitRef.current < QUOTA_PAUSE_MS) {
+      runRequestedRef.current = false;
+      return undefined; // allowance used up: the notice stays, nothing is sent
+    }
     if (analyzedRef.current === value) {
       // Nothing new to review (a version was just chosen). Clear a stale "reviewing" state.
       setState((s) => (s.status === 'loading' ? { ...s, status: s.result ? 'ready' : 'idle' } : s));
@@ -219,6 +239,13 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
     }
 
     setApplied(false);
+    if (!AUTO_RUN && !runRequestedRef.current) {
+      // Nothing was asked for: typing only hides versions that no longer fit the text. A review the typing cut off
+      // must not leave "Reviewing" on screen.
+      setState((s) => (s.status === 'loading' ? { ...s, status: s.result ? 'ready' : 'idle' } : s));
+      return undefined;
+    }
+    runRequestedRef.current = false;
     const delay = immediateRef.current ? 0 : TYPING_PAUSE_MS;
     const timer = setTimeout(() => {
       immediateRef.current = false;
@@ -251,6 +278,11 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
     if (!quotaHitRef.current) return;
     quotaHitRef.current = 0;
     analyzedRef.current = null;
+    if (!AUTO_RUN) {
+      // The limit is lifted: clear the notice and let the person tap the AI button when they want a review.
+      setState((s) => (s.status === 'error' ? { status: s.result ? 'ready' : 'idle', result: s.result, error: null } : s));
+      return;
+    }
     immediateRef.current = true;
     setRecheck((n) => n + 1);
   }, [tier]);
@@ -261,6 +293,11 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
     if (targetSeenRef.current === targetKey) return;
     targetSeenRef.current = targetKey;
     analyzedRef.current = null;
+    if (!AUTO_RUN) {
+      // The versions shown were written for the old job: drop them. The AI button makes new ones.
+      setState((s) => (s.result ? { status: 'idle', result: null, error: null } : s));
+      return;
+    }
     immediateRef.current = true;
     setRecheck((n) => n + 1);
   }, [targetKey]);
@@ -268,6 +305,7 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
   const checkAgain = () => {
     analyzedRef.current = null;
     immediateRef.current = true;
+    runRequestedRef.current = true;
     setRecheck((n) => n + 1);
   };
 
@@ -284,6 +322,16 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
   const hasText = value.trim().length >= MIN_CHARS;
   const loading = state.status === 'loading';
 
+  // The small AI button: review this text now, and open the panel so the versions are in view.
+  const runNow = () => {
+    if (locked || !hasText || loading) return;
+    analyzedRef.current = null;
+    immediateRef.current = true;
+    runRequestedRef.current = true;
+    if (!openStore.get()) openStore.set(true);
+    setRecheck((n) => n + 1);
+  };
+
   // The versions describe the text as it was reviewed: once it changes they are hidden until the next review.
   const rewrites = !locked && result && result.forText === value
     ? (result.rewrites || []).filter((r) => r.text.trim() !== value.trim())
@@ -292,23 +340,28 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
   // Questions about lines with no scale or result. Like the versions, they describe the text as it was reviewed.
   const needs = !locked && result && result.forText === value && Array.isArray(result.needs) ? result.needs : [];
 
+  const reviewedThisText = state.status === 'ready' && result && result.forText === value;
   let message = null;
   if (!hasText) message = tailored
-    ? 'Write a sentence or two and the AI will suggest three versions tailored to this job.'
-    : 'Write a sentence or two and the AI will suggest three polished versions to choose from.';
-  else if (applied) message = 'Version applied. Edit the text any time and new versions will appear.';
-  else if (state.status === 'ready' && rewrites.length === 0) message = 'Nicely written. No changes needed.';
+    ? 'Write a sentence or two, then tap AI for three versions tailored to this job.'
+    : 'Write a sentence or two, then tap AI for three polished versions to choose from.';
+  else if (applied) message = AUTO_RUN ? 'Version applied. Edit the text any time and new versions will appear.' : 'Version applied. Edit the text, then tap AI for new versions.';
+  else if (reviewedThisText && rewrites.length === 0) message = 'Nicely written. No changes needed.';
+  else if (!AUTO_RUN && !loading && state.status !== 'error' && rewrites.length === 0) {
+    message = result ? 'You changed the text. Tap AI for new versions.' : 'Tap AI to get three polished versions of this text.';
+  }
   if (locked) message = null; // the upgrade note below takes its place
 
   return (
     <div role="region" aria-label="Writing assistant" className="border border-slate-200 rounded-md bg-white overflow-hidden">
-      {/* The whole header is the hide/show button, so it is an easy target on a phone. */}
+      {/* The header is the hide/show button (an easy target on a phone) with the small AI button beside it. */}
+      <div className={`flex items-stretch bg-slate-50 ${open ? 'border-b border-slate-200' : ''}`}>
       <button
         type="button"
         onClick={toggleOpen}
         aria-expanded={open}
         aria-controls={bodyId.current}
-        className={`w-full min-h-[44px] px-3 py-2 flex items-center gap-2.5 text-left bg-slate-50 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#d9856b] ${open ? 'border-b border-slate-200' : ''}`}
+        className={`min-w-0 flex-1 min-h-[44px] px-3 py-2 flex items-center gap-2.5 text-left hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#d9856b]`}
       >
         <Sparkle />
         <span className="truncate text-xs font-semibold text-slate-700 uppercase tracking-wide">Writing assistant</span>
@@ -352,6 +405,22 @@ const SpellCheckPanel = ({ text, onChange, field = 'other', jobTitle = '', jobTa
           <Chevron open={open} />
         </span>
       </button>
+        {!locked && (
+          <div className="flex items-center pl-1 pr-2 sm:pr-3">
+            <button
+              type="button"
+              onClick={runNow}
+              disabled={!hasText || loading}
+              aria-label="Improve this text with AI"
+              title={hasText ? 'Improve this text with AI' : 'Write a sentence or two first'}
+              className={AI_BUTTON}
+            >
+              <SparkleWhite />
+              AI
+            </button>
+          </div>
+        )}
+      </div>
 
       {open && (
         <div id={bodyId.current}>

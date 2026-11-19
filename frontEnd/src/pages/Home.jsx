@@ -325,59 +325,95 @@ function MiniSheet({ className = '', children }) {
 function ToolArt({ type }) {
   if (type === 'text')
     return (
-      <div className="absolute inset-0 flex items-start justify-center gap-6 px-6 pt-8">
-        <span className="hidden w-52 shrink-0 flex-col gap-2.5 pt-8 sm:flex lg:hidden xl:flex">
+      <div className="absolute inset-0 flex items-start justify-center gap-7 px-6 pt-9">
+        {/* Slim progress list: plain text on a connecting line, no heavy boxes */}
+        <span className="relative hidden w-40 shrink-0 flex-col gap-4 pl-6 pt-6 sm:flex lg:hidden xl:flex">
+          <span className="absolute bottom-3 left-[9px] top-8 w-px bg-white/15" aria-hidden="true" />
           {['Work history', 'Education', 'Skills'].map((label) => (
-            <span key={label} className="flex items-center gap-2.5 rounded-xl bg-white/[.07] px-3 py-2.5 text-[13px] font-medium text-white/85 ring-1 ring-white/10">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#5ed6c1] text-[#0e1726]">
-                <Icon name="check" className="h-3 w-3" />
+            <span key={label} className="relative flex items-center text-[13px] font-medium text-white/75">
+              <span className="absolute -left-6 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#5ed6c1] text-[#0e1726]">
+                <Icon name="check" className="h-2.5 w-2.5" />
               </span>
               {label}
             </span>
           ))}
-          <span className="bt-pulse flex items-center gap-2.5 rounded-xl bg-[#d9856b]/15 px-3 py-2.5 text-[13px] font-semibold text-white ring-1 ring-[#d9856b]/70">
-            <Icon name="spark" className="h-5 w-5 shrink-0 text-[#f2a98f]" />
+          <span className="relative flex items-center text-[13px] font-semibold text-white">
+            <span className="bt-pulse absolute -left-6 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#d9856b]/30 ring-1 ring-[#d9856b]">
+              <Icon name="spark" className="h-2.5 w-2.5 text-[#f2a98f]" />
+            </span>
             Writing your summary
           </span>
         </span>
 
-        <span className="relative block min-h-[40rem] w-[17.5rem] max-w-full shrink-0 rounded-t-lg bg-white p-5 shadow-[0_-10px_70px_-10px_rgba(217,133,107,.55)] sm:w-[19rem]">
-          <span className="bt-ready absolute -right-3 -top-4 flex items-center gap-1.5 rounded-full bg-[#5ed6c1] py-1.5 pl-2 pr-3 text-xs font-bold text-[#0e1726] shadow-lg">
-            <Icon name="check" className="h-3.5 w-3.5" />
-            Draft ready
-          </span>
-          <span className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0e1726] font-display text-sm font-bold text-white">AN</span>
-            <span className="flex-1">
-              <span className="block h-2.5 w-3/5 rounded-full bg-[#0e1726]" />
-              <span className="mt-2 block h-2 w-2/5 rounded-full bg-slate-300" />
+        {/* Compact modern resume: navy header band, accent rules, timeline, tinted AI summary. Square corners, text kept crisp. */}
+        <span className="relative block w-[19rem] max-w-full shrink-0 self-stretch overflow-visible bg-white antialiased shadow-[0_-10px_60px_-10px_rgba(217,133,107,.55)]">
+          <span className="bt-ready absolute -right-3 top-[4.6rem] z-10 flex items-stretch bg-[#0e1726] text-[11px] font-semibold uppercase tracking-[0.1em] text-white shadow-lg ring-1 ring-white/15">
+            <span className="flex items-center bg-[#5ed6c1] px-1.5 text-[#0e1726]">
+              <Icon name="check" className="h-3 w-3" />
             </span>
+            <span className="px-2.5 py-1.5">Draft ready</span>
           </span>
-          <span className="mt-6 block h-1.5 w-12 rounded-full bg-[#d9856b]" />
-          <span className="mt-3 block space-y-2">
-            {[100, 94, 62].map((w, k) => (
-              <span key={w} className={`${LINE} relative`} style={{ width: `${w}%` }}>
-                <span className="bt-type absolute inset-0 rounded-full bg-[#0e1726]/80" style={{ '--k': k }} />
+
+          {/* header band */}
+          <span className="relative block overflow-hidden bg-[#0e1726] px-5 pb-4 pt-5">
+            <span className="absolute inset-y-0 left-0 w-1 bg-[#d9856b]" aria-hidden="true" />
+            <span className="absolute -right-6 -top-10 h-24 w-24 rotate-45 bg-[#d9856b]/15" aria-hidden="true" />
+            <span className="relative block font-display text-[21px] font-bold leading-none tracking-tight text-white">Amara Nkosi</span>
+            <span className="relative mt-2 block text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#f2a98f]">Warehouse Operations Supervisor</span>
+            <span className="relative mt-2.5 block text-[11px] text-white/65">Johannesburg  ·  amara.nkosi@email.com</span>
+          </span>
+
+          <span className="block px-5 pb-4 pt-4">
+            {/* summary, tinted as the AI-written block */}
+            <span className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#0e1726]">
+              <span className="h-1.5 w-1.5 bg-[#d9856b]" aria-hidden="true" />
+              Summary
+              <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+            </span>
+            <span className="mt-2 block border-l-2 border-[#d9856b] bg-[#fbf3ee] py-1.5 pl-3 pr-2 text-[12px] leading-[1.5] text-slate-700">
+              {['Operations supervisor with 6 years in', 'warehouse logistics. Led a team of 12 and', 'cut late deliveries by 18% in one year.'].map((t, k) => (
+                <span key={k} className="bt-line block whitespace-nowrap" style={{ '--k': k }}>{t}</span>
+              ))}
+            </span>
+
+            {/* experience as a timeline */}
+            <span className="mt-4 flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#0e1726]">
+              <span className="h-1.5 w-1.5 bg-[#d9856b]" aria-hidden="true" />
+              Experience
+              <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+            </span>
+            <span className="relative mt-2.5 block pl-4 text-[12px] leading-snug">
+              <span className="absolute bottom-1 left-[3px] top-1.5 w-px bg-slate-300" aria-hidden="true" />
+              <span className="relative block">
+                <span className="absolute -left-4 top-[5px] h-[7px] w-[7px] bg-[#0e1726]" aria-hidden="true" />
+                <span className="flex items-baseline justify-between gap-2">
+                  <b className="min-w-0 font-semibold text-slate-900">Shift Supervisor</b>
+                  <span className="shrink-0 text-[11px] font-medium text-[#c2674a]">2021 – Now</span>
+                </span>
+                <span className="block text-[11px] text-slate-500">Linkway Freight</span>
+                <span className="mt-0.5 block text-slate-600">Scheduling, dispatch and staff training.</span>
               </span>
-            ))}
-          </span>
-          <span className="mt-6 block h-1.5 w-16 rounded-full bg-[#d9856b]" />
-          <span className="mt-3 block space-y-2">
-            <span className="block h-2.5 w-1/2 rounded-full bg-slate-400/70" />
-            <span className={`${LINE} w-full`} />
-            <span className={`${LINE} w-5/6`} />
-            <span className="block h-2.5 w-2/5 rounded-full bg-slate-400/70 !mt-4" />
-            <span className={`${LINE} w-full`} />
-            <span className={`${LINE} w-3/4`} />
-            <span className="block h-2.5 w-3/5 rounded-full bg-slate-400/70 !mt-4" />
-            <span className={`${LINE} w-full`} />
-            <span className={`${LINE} w-2/3`} />
-          </span>
-          <span className="mt-6 block h-1.5 w-10 rounded-full bg-[#d9856b]" />
-          <span className="mt-3 flex flex-wrap gap-1.5">
-            {[11, 14, 9, 12, 10, 13].map((w, k) => (
-              <span key={k} className="block h-5 rounded-full bg-[#eef1f9]" style={{ width: `${w * 0.25}rem` }} />
-            ))}
+              <span className="relative mt-2.5 block">
+                <span className="absolute -left-4 top-[5px] h-[7px] w-[7px] border border-slate-400 bg-white" aria-hidden="true" />
+                <span className="flex items-baseline justify-between gap-2">
+                  <b className="min-w-0 font-semibold text-slate-900">Stock Controller</b>
+                  <span className="shrink-0 text-[11px] font-medium text-slate-500">2018 – 21</span>
+                </span>
+                <span className="block text-[11px] text-slate-500">Metro Stores</span>
+              </span>
+            </span>
+
+            {/* skills */}
+            <span className="mt-4 flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#0e1726]">
+              <span className="h-1.5 w-1.5 bg-[#d9856b]" aria-hidden="true" />
+              Skills
+              <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+            </span>
+            <span className="mt-2 flex flex-wrap gap-1.5">
+              {['Inventory', 'Team lead', 'Dispatch', 'Excel'].map((t) => (
+                <span key={t} className="bg-[#eef1f9] px-2 py-0.5 text-[11px] font-medium text-[#0e1726]">{t}</span>
+              ))}
+            </span>
           </span>
         </span>
       </div>
@@ -413,7 +449,7 @@ function ToolArt({ type }) {
             Reported daily to the{' '}
             <span className="underline decoration-red-500 decoration-wavy underline-offset-4">Maneger</span> on site.
           </span>
-          <span className="ta-pop mt-3.5 flex items-center justify-between gap-3 rounded-lg bg-[#0e1726] py-2 pl-3 pr-2 text-[12.5px] font-semibold text-white">
+          <span className="ta-pop mt-3.5 flex items-center justify-between gap-3 rounded-lg bg-[#0e1726] py-2 pl-3 pr-2 text-[13px] font-semibold text-white">
             <span className="flex items-center gap-1.5">
               <Icon name="check" className="h-3.5 w-3.5 text-[#5ed6c1]" />
               Manager
@@ -480,7 +516,7 @@ function ToolArt({ type }) {
         </span>
         <span className="block min-w-0 flex-1 rounded-xl bg-[#0e1726] p-4 text-white shadow-[0_20px_40px_-20px_rgba(14,23,38,.7)]">
           <span className="flex items-baseline justify-between">
-            <span className="text-[12.5px] font-medium text-white/70">Match score</span>
+            <span className="text-[13px] font-medium text-white/75">Match score</span>
             <span className="font-display text-2xl font-extrabold">82%</span>
           </span>
           <span className="mt-2 block h-2 overflow-hidden rounded-full bg-white/15">
@@ -602,14 +638,14 @@ function PdfArt({ type }) {
 // How each feature sits in the bento grid. `tile` picks the colours (the .bt-* rules below),
 // `h` is the least height the scene gets.
 const TILES = {
-  text: { tile: 'ink', h: '17rem', title: 'text-[1.75rem] leading-[1.08] tracking-[-0.025em] sm:text-4xl' },
-  assist: { tile: 'coral', h: '12.5rem', hr: '21rem', title: 'text-xl sm:text-2xl' },
-  spell: { tile: 'sky', h: '9.5rem', title: 'text-xl' },
-  ats: { tile: 'mint', h: '10rem', title: 'text-xl' },
-  letter: { tile: 'peach', h: '10.5rem', title: 'text-xl' },
-  keywords: { tile: 'paper', h: '11.5rem', title: 'text-xl sm:text-2xl' },
-  import: { tile: 'sky', h: '10.5rem', title: 'text-xl' },
-  convert: { tile: 'ink', h: '13rem', hr: '14.5rem', title: 'text-xl sm:text-2xl' },
+  text: { tile: 'ink', h: '15rem', title: 'text-[1.75rem] leading-[1.08] tracking-[-0.025em] sm:text-4xl' },
+  assist: { tile: 'coral', h: '12.5rem', hr: '17.5rem', title: 'text-xl sm:text-2xl' },
+  spell: { tile: 'sky', h: '8.5rem', title: 'text-xl' },
+  ats: { tile: 'mint', h: '8.5rem', title: 'text-xl' },
+  letter: { tile: 'peach', h: '9rem', title: 'text-xl' },
+  keywords: { tile: 'paper', h: '10rem', title: 'text-xl sm:text-2xl' },
+  import: { tile: 'sky', h: '9rem', title: 'text-xl' },
+  convert: { tile: 'ink', h: '11rem', hr: '12.5rem', title: 'text-xl sm:text-2xl' },
 };
 
 // The resume feature list. From lg up it is a bento grid; on a phone each item becomes a card that sticks
@@ -1247,6 +1283,8 @@ export default function Home() {
         @media (prefers-reduced-motion: no-preference) {
           .bt-type { animation: bt-type 7s steps(16, end) infinite both; animation-delay: calc(var(--k, 0) * .9s); }
           @keyframes bt-type { 0% { clip-path: inset(0 100% 0 0); } 24%, 90% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 100% 0 0); } }
+          .bt-line { animation: bt-line 7s ease-out infinite both; animation-delay: calc(var(--k, 0) * .5s); }
+          @keyframes bt-line { 0% { opacity: 0; } 20%, 90% { opacity: 1; } 100% { opacity: 0; } }
           .bt-ready { animation: bt-ready 7s ease-in-out infinite; }
           @keyframes bt-ready { 0%, 44% { opacity: 0; translate: 0 8px; scale: .8; } 52%, 90% { opacity: 1; translate: 0 0; scale: 1; } 98%, 100% { opacity: 0; translate: 0 8px; scale: .8; } }
           .bt-pulse { animation: bt-pulse 2.4s ease-in-out infinite; }
@@ -1326,7 +1364,7 @@ export default function Home() {
           .bt-cell[data-tile="assist"] .bt, .bt-cell[data-tile="convert"] .bt { flex-direction: row; }
           .bt-cell[data-tile="assist"] .bt-copy, .bt-cell[data-tile="convert"] .bt-copy { flex: 0 0 42%; align-self: center; }
           .bt-cell[data-tile="assist"] .bt-art, .bt-cell[data-tile="convert"] .bt-art { margin: calc(var(--p) * -1) calc(var(--p) * -1) calc(var(--p) * -1) 0; min-height: var(--hr, var(--h)); }
-          .bt-cell[data-tile="text"] .bt-art { min-height: 24rem; }
+          .bt-cell[data-tile="text"] .bt-art { min-height: 20rem; }
         }
         @media (max-width: 639px) {
           /* --ec-top = how far below the top of the screen the first card sticks (raise it if the navbar is taller) */
