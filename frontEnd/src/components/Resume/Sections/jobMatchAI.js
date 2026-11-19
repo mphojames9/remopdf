@@ -8,6 +8,11 @@
                                                                  a professional summary written from the work history, each strength traced to the resume
     rewriteForJob({ text, field, jobTitle, target, signal })  -> { rewrites: [{ id, label, text, why, adds }], needs: [{ line, ask }] }
 
+  And the ideas for the builder's steps (routers/suggest.py), which replace the O*NET suggestions there:
+    suggestSkillIdeas({ resumeData, target, prompt, avoid, signal })       -> { skills: [{ skill, basis, why, evidence, confirm }], needsHistory }
+    suggestEducationIdeas({ entry, resumeData, target, prompt, avoid, signal }) -> { ideas: [text] }
+    suggestAchievementIdeas({ job, skills, target, prompt, avoid, signal }) -> { withNumbers: { text, uses } | null, withoutNumbers: { text, uses } | null }
+
   Plus the small helpers the rest of the app needs: sanitizeJobTarget (anything read back from a saved resume is
   cleaned before it is used) and hasJobTarget.
 
@@ -31,11 +36,15 @@ const URLS = {
   skills: `${API_ORIGIN}/api/jobmatch/skills`,
   rewrite: `${API_ORIGIN}/api/jobmatch/rewrite`,
   summary: `${API_ORIGIN}/api/jobmatch/summary`,
+  ideasSkills: `${API_ORIGIN}/api/suggest/skills`,
+  ideasEducation: `${API_ORIGIN}/api/suggest/education`,
+  ideasAchievements: `${API_ORIGIN}/api/suggest/achievements`,
 };
 
 // Reading a page, asking Groq and looking up the role happen one after the other, and Render's free tier can need
 // 30-50 s to wake up, so the first target of a session gets a long timeout.
-const TIMEOUT_MS = { target: 75000, skills: 45000, rewrite: 45000, summary: 45000 };
+// The ideas can take a second try on the server (an achievement version that broke a rule), so they wait longer.
+const TIMEOUT_MS = { target: 75000, skills: 45000, rewrite: 45000, summary: 45000, ideasSkills: 60000, ideasEducation: 60000, ideasAchievements: 60000 };
 const CACHE_MAX = 40;
 
 export class JobMatchError extends Error {
@@ -220,7 +229,7 @@ async function post(kind, body, signal) {
     }
     if (!res.ok) {
       const { code, message } = await readDetail(res);
-      if ((res.status === 400 || res.status === 422) && ['badlink', 'unreadable', 'nodetails', 'needhistory'].includes(code)) {
+      if ((res.status === 400 || res.status === 422) && ['badlink', 'unreadable', 'nodetails', 'needhistory', 'needtitle', 'needdegree'].includes(code)) {
         throw new JobMatchError(code, message || 'That job could not be read.');
       }
       console.warn(`[jobMatch] ${res.status} from ${URLS[kind]}${message ? `: ${message}` : ''}`);
@@ -238,7 +247,7 @@ async function post(kind, body, signal) {
 }
 
 const cacheOf = () => new Map();
-const caches = { skills: cacheOf(), rewrite: cacheOf() };
+const caches = { skills: cacheOf(), rewrite: cacheOf(), ideasSkills: cacheOf(), ideasEducation: cacheOf(), ideasAchievements: cacheOf() };
 const remember = (cache, key, value) => {
   if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);
   cache.set(key, value);
@@ -335,8 +344,83 @@ export async function rewriteForJob({ text, field = 'experience', jobTitle = '',
   return remember(cache, key, { rewrites, needs: cleanNeeds(data.needs) });
 }
 
+/* -------------------------------------------------------------------------- */
+/*                       Ideas for the builder's steps                         */
+/* -------------------------------------------------------------------------- */
+
+const BASES = new Set(['work', 'education', 'job', 'role']);
+const jobPayload = (target) => (hasJobTarget(target) ? targetPayload(target) : null);
+
+// Skills from the qualification, the work history and (when there is one) the job's requirements.
+//   basis: 'work' | 'education' (their own words show it) | 'job' (the job asks for it) | 'role' (common for their roles)
+//   confirm: true when the person should add it only if it is true for them (basis 'job' or 'role')
+// `avoid` is what was shown before, so "Show new ideas" brings others.
+export async function suggestSkillIdeas({ resumeData, target, prompt = '', avoid = [], signal } = {}) {
+  const body = { resume: resumePayload(resumeData || {}), target: jobPayload(target), prompt: str(prompt, 300), avoid: strList(avoid, 40, 60) };
+  const key = JSON.stringify(body);
+  const cache = caches.ideasSkills;
+  if (cache.has(key)) return cache.get(key);
+
+  const data = await post('ideasSkills', body, signal);
+  const skills = (Array.isArray(data.skills) ? data.skills : [])
+    .filter((s) => s && typeof s.skill === 'string' && isSkillTerm(s.skill))
+    .map((s) => {
+      const basis = BASES.has(s.basis) ? s.basis : 'role';
+      return { skill: s.skill.trim(), basis, why: str(s.why, 120), evidence: str(s.evidence, 160), confirm: s.confirm === true || basis === 'job' || basis === 'role' };
+    });
+  const result = { skills, needsHistory: data.needs === 'history' };
+  return result.needsHistory ? result : remember(cache, key, result); // "add some history first" is not kept
+}
+
+// Lines for the Details box of one qualification: what that degree or field of study covers.
+export async function suggestEducationIdeas({ entry, resumeData, target, prompt = '', avoid = [], signal } = {}) {
+  const e = entry || {};
+  const body = {
+    degree: str(e.degree, 120),
+    field: str(e.field, 120),
+    institution: str(e.institution, 120),
+    year: str(e.gradYear, 12),
+    existing: stripMarkup(e.achievements).slice(0, 4000),
+    job_titles: (Array.isArray(resumeData && resumeData.experiences) ? resumeData.experiences : []).map((j) => str(j && j.title, 120)).filter(Boolean).slice(0, 6),
+    target: jobPayload(target),
+    prompt: str(prompt, 300),
+    avoid: strList(avoid, 40, 170),
+  };
+  const key = JSON.stringify(body);
+  const cache = caches.ideasEducation;
+  if (cache.has(key)) return cache.get(key);
+
+  const data = await post('ideasEducation', body, signal);
+  const ideas = strList((Array.isArray(data.ideas) ? data.ideas : []).map((i) => (i && typeof i === 'object' ? i.text : i)), 6, 170);
+  return remember(cache, key, { ideas });
+}
+
+// One achievement for one job, written two ways: with numbers (every figure the person did not write is a [placeholder]
+// to fill in) and without. Each comes with the job's keywords it honestly contains. Either may be null.
+export async function suggestAchievementIdeas({ job, skills = [], target, prompt = '', avoid = [], signal } = {}) {
+  const j = job || {};
+  const body = {
+    title: str(j.title, 120),
+    employer: str(j.employer, 120),
+    current: Boolean(j.current),
+    existing: stripMarkup(j.achievements).slice(0, 4000),
+    skills: strList(skills, 30, 60),
+    target: jobPayload(target),
+    prompt: str(prompt, 300),
+    avoid: strList(avoid, 12, 360),
+  };
+  const key = JSON.stringify(body);
+  const cache = caches.ideasAchievements;
+  if (cache.has(key)) return cache.get(key);
+
+  const data = await post('ideasAchievements', body, signal);
+  const version = (v) => (v && typeof v.text === 'string' && v.text.trim() ? { text: v.text.trim(), uses: strList(v.uses, 6, 40) } : null);
+  const result = { withNumbers: version(data.with_numbers), withoutNumbers: version(data.without_numbers) };
+  if (!result.withNumbers && !result.withoutNumbers) throw new JobMatchError('unavailable', 'AI suggestions are unavailable right now.');
+  return remember(cache, key, result);
+}
+
 // Cleared when Premium ends or the account changes, so nothing from before is shown to the next person.
 export const forgetJobMatchCache = () => {
-  caches.skills.clear();
-  caches.rewrite.clear();
+  Object.values(caches).forEach((cache) => cache.clear());
 };

@@ -1,8 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { suggestSkills } from './onetSuggestions';
-import useSuggestions from './useSuggestions';
+import React, { useEffect, useRef, useState } from 'react';
 import JobSkillMatch from './JobSkillMatch';
-import { hasJobTarget } from './atsScore';
+import { SkillIdeas } from './AIIdeas';
 
 // Skill levels. The chosen `value` is stored on each skill as `rating` (1-5);
 // 0 / missing means "not chosen yet" (older saved skills). New skills start at Novice.
@@ -142,219 +140,23 @@ const flashRow = (row) => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                         Skill input with suggestions                       */
+/*                                 Skill input                                */
 /* -------------------------------------------------------------------------- */
 
-const NO_SKILLS = { suggestions: [], personalised: false, source: '' };
-
-// Text input that suggests skills while you type. With nothing typed it suggests skills for the
-// job titles from the Work History step: from O*NET first, from the dataset when O*NET does not
-// know those titles.
-const SkillInput = ({ value, onChange, placeholder, invalid, exclude, jobTitles }) => {
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(-1);
-  const wrapRef = useRef(null);
-  const listId = useRef(`skill-suggestions-${Math.random().toString(36).slice(2, 7)}`).current;
-  const excludeKey = exclude.join('|');
-  const titlesKey = jobTitles.join('|');
-
-  const { data: found } = useSuggestions(
-    () => suggestSkills({ query: value, exclude, jobTitles, limit: 7 }),
-    [value, excludeKey, titlesKey],
-    { enabled: open, initial: NO_SKILLS }
-  );
-
-  const { items, personalised } = useMemo(() => {
-    if (!open) return { items: [], personalised: false };
-    const typed = (value || '').trim().toLowerCase();
-    return {
-      items: found.suggestions.filter((s) => s.toLowerCase() !== typed).slice(0, 6),
-      personalised: found.personalised,
-    };
-  }, [open, value, found]);
-
-  const showList = open && items.length > 0;
-  const heading = (value || '').trim() ? 'Matching skills' : personalised ? 'Suggested for your job titles' : 'Popular skills';
-
-  const pick = (text) => {
-    onChange(text);
-    setOpen(false);
-    setActive(-1);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'ArrowDown' && items.length) {
-      e.preventDefault();
-      setOpen(true);
-      setActive((i) => (i + 1) % items.length);
-    } else if (e.key === 'ArrowUp' && items.length) {
-      e.preventDefault();
-      setOpen(true);
-      setActive((i) => (i < 0 ? items.length - 1 : (i - 1 + items.length) % items.length));
-    } else if (e.key === 'Enter' && showList && active >= 0 && items[active]) {
-      e.preventDefault();
-      pick(items[active]);
-    } else if (e.key === 'Escape') {
-      setOpen(false);
-    }
-  };
-
-  return (
-    <div
-      ref={wrapRef}
-      className="relative w-full"
-      onBlur={(e) => {
-        if (!wrapRef.current || !wrapRef.current.contains(e.relatedTarget)) setOpen(false);
-      }}
-    >
-      <input
-        type="text"
-        role="combobox"
-        aria-expanded={showList}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        aria-activedescendant={showList && active >= 0 ? `${listId}-opt-${active}` : undefined}
-        autoComplete="off"
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setActive(-1);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        className={`w-full bg-white border text-slate-800 focus:border-slate-500 rounded-sm py-1.5 px-2.5 text-sm focus:outline-none transition-all ${
-          invalid ? 'border-red-300' : 'border-slate-200'
-        }`}
-      />
-
-      {showList && (
-        <div
-          id={listId}
-          role="listbox"
-          aria-label="Suggested skills"
-          className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-sm max-h-56 overflow-y-auto"
-        >
-          <p className="px-2.5 py-1.5 text-[11px] font-medium text-slate-400 border-b border-slate-100">{heading}</p>
-          {items.map((text, i) => (
-            <button
-              key={text}
-              id={`${listId}-opt-${i}`}
-              type="button"
-              role="option"
-              aria-selected={i === active}
-              tabIndex={-1}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => pick(text)}
-              onMouseEnter={() => setActive(i)}
-              className={`block w-full text-left px-2.5 py-1.5 text-sm transition-colors ${
-                i === active ? 'bg-slate-50 text-slate-900 font-medium' : 'text-slate-700'
-              }`}
-            >
-              {text}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/* -------------------------------------------------------------------------- */
-/*                             Suggested skills list                          */
-/* -------------------------------------------------------------------------- */
-
-// Left column: skills for the user's job titles (O*NET first, the dataset when O*NET does not know
-// them, popular skills when there are no titles yet), with a search box. Skills already added drop out of the list.
-const SuggestedSkills = ({ selectedTexts, jobTitles, onAdd, pending = [] }) => {
-  const [search, setSearch] = useState('');
-  const selectedKey = selectedTexts.join('|');
-  const titlesKey = jobTitles.join('|');
-
-  const { data: found, loading } = useSuggestions(
-    () => suggestSkills({ query: search, exclude: selectedTexts, jobTitles, limit: 40 }),
-    [search, selectedKey, titlesKey],
-    { initial: NO_SKILLS }
-  );
-  const { personalised, source } = found;
-
-  // A skill leaves the list the moment it is added, without waiting for the next lookup.
-  const taken = new Set(selectedTexts.map((t) => String(t || '').trim().toLowerCase()));
-  const suggestions = found.suggestions.filter((t) => pending.includes(t) || !taken.has(t.toLowerCase()));
-
-  const searching = !!search.trim();
-  const caption = searching
-    ? 'Matching skills'
-    : personalised
-      ? 'Suggested for your roles'
-      : 'Popular skills';
-
-  return (
-    <div className="border border-slate-200 rounded-sm bg-white h-[360px] flex flex-col">
-      <div className="p-3 border-b border-slate-100 bg-slate-50 flex flex-col gap-2">
-        <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Suggested skills</span>
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search skills"
-          aria-label="Search suggested skills"
-          className="w-full bg-white border border-slate-200 text-slate-800 focus:border-slate-500 rounded-sm py-1.5 px-2.5 text-sm focus:outline-none transition-all"
-        />
-        <span className="text-[11px] text-slate-500">{caption}</span>
-      </div>
-      <div className="overflow-y-auto flex-1 p-2 flex flex-col">
-        {/* Each row is a one-row grid that folds to 0 height when its skill is picked, so the skills
-            below glide up. The spacing between rows (mb-1) lives inside the row so it folds too. */}
-        {suggestions.map((text) => {
-          const sending = pending.includes(text); // sliding into the list
-          return (
-            <div
-              key={text}
-              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
-                sending ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
-              }`}
-            >
-              <div className="min-h-0 overflow-hidden">
-                <div className="mb-1 flex items-center gap-3 p-2 rounded-sm hover:bg-slate-50 border border-transparent transition-colors group">
-                  <button
-                    type="button"
-                    onClick={(e) => onAdd(text, e.currentTarget.parentElement.querySelector('[data-skill-text]'))}
-                    disabled={sending}
-                    className={`w-6 h-6 rounded-sm border flex items-center justify-center shrink-0 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
-                      sending
-                        ? 'bg-slate-700 border-slate-700 text-white cursor-default'
-                        : 'bg-white border-slate-200 text-slate-500 group-hover:border-slate-400 group-hover:text-slate-800'
-                    }`}
-                    aria-label={sending ? `Added ${text}` : `Add ${text}`}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d={sending ? 'M5 13l4 4L19 7' : 'M12 4v16m8-8H4'}
-                      />
-                    </svg>
-                  </button>
-                  <span data-skill-text className="text-sm text-slate-700">
-                    {text}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        {suggestions.length === 0 && (
-          <p className="p-2 text-xs text-slate-500">
-            {loading ? 'Loading suggestions...' : searching ? 'No matching skills. Type your own on the right.' : 'No more suggestions.'}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
+// A plain text input. Skills are suggested by the AI panel on the left (components/Resume/Sections/AIIdeas.jsx), so
+// there is no dropdown under the box any more.
+const SkillInput = ({ value, onChange, placeholder, invalid }) => (
+  <input
+    type="text"
+    autoComplete="off"
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    placeholder={placeholder}
+    className={`w-full bg-white border text-slate-800 focus:border-slate-500 rounded-sm py-1.5 px-2.5 text-sm focus:outline-none transition-all ${
+      invalid ? 'border-red-300' : 'border-slate-200'
+    }`}
+  />
+);
 
 /* -------------------------------------------------------------------------- */
 /*                                  Skills step                               */
@@ -383,14 +185,6 @@ const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
   if (!data) return null;
   const selectedSkills = data.skills;
   const selectedTexts = selectedSkills.map((skill) => skill.text);
-
-  // Job titles from the Work History step, most recent first. They drive the suggestions. When the person has said
-  // which job they are applying for, that job's title comes first, so the O*NET suggestions follow the advertised role.
-  const targetTitle = hasJobTarget(data.jobTarget) ? String(data.jobTarget.title || '').trim() : '';
-  const jobTitles = [
-    ...(targetTitle ? [targetTitle] : []),
-    ...(Array.isArray(data.experiences) ? data.experiences : []).map((job) => ((job && job.title) || '').trim()),
-  ].filter(Boolean);
 
   const hasLevel = (skill) => Number(skill.rating) >= 1;
   const isMissingLevel = (skill) => !!(skill.text && skill.text.trim()) && !hasLevel(skill);
@@ -455,9 +249,9 @@ const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
       <JobSkillMatch data={data} onAdd={handleAddJobSkill} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
-        {/* Left Column: Suggested skills from the dataset */}
+        {/* Left Column: skills suggested by the AI from the qualification, the work history and the target job */}
         <div className="flex flex-col gap-4">
-          <SuggestedSkills selectedTexts={selectedTexts} jobTitles={jobTitles} onAdd={handleAddSkill} pending={pending} />
+          <SkillIdeas data={data} selectedTexts={selectedTexts} onAdd={handleAddSkill} pending={pending} />
         </div>
 
         {/* Right Column: Selected Skills */}
@@ -499,8 +293,6 @@ const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
                       onChange={(text) => handleUpdateSkillText(skill.id, text)}
                       placeholder="e.g. Project Management"
                       invalid={showSkillErrors && missing}
-                      exclude={selectedSkills.filter((s) => s.id !== skill.id).map((s) => s.text)}
-                      jobTitles={jobTitles}
                     />
 
                     <div className="flex items-center justify-between gap-3">

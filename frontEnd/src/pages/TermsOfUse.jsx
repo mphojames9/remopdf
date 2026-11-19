@@ -197,7 +197,7 @@ function SiteFooter() {
 // The contents list drives the numbering, so adding, removing or moving an entry renumbers the
 // sections and every “section N” reference on the page. Keep each id in sync with its <Sec id=...>.
 
-const LAST_UPDATED = '16 November 2026';
+const LAST_UPDATED = '18 November 2026';
 const CONTACT_EMAIL = 'support@remopdf.site';
 
 const TOC = [
@@ -742,8 +742,9 @@ export default function Terms() {
 
             <Sec id="ai">
               <p>
-                The summary suggestions, writing analysis, job target and cover letter tools are part of Premium and use artificial intelligence. When you use one, the text you are working on, such as
-                your resume content or a job advert, is sent to an AI provider so it can produce a response. Do not include information you do not want processed this way.
+                The summary suggestions, writing analysis, skill suggestions, study-detail suggestions, achievement ideas, job target and cover letter tools are part of Premium and use artificial
+                intelligence. When you use one, the text you are working on, such as your job titles, work history, qualifications and skills, what you type in the box that tells the AI what to
+                improve, or a job advert, is sent to an AI provider so it can produce a response. Do not include information you do not want processed this way.
               </p>
               <p>If you add a job advert by web address, our server fetches that public page to read it.</p>
               <p>

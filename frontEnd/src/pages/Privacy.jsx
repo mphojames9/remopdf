@@ -201,7 +201,7 @@ function SiteFooter() {
 // AI provider, an analytics tool, another ad network), add it to “Who else handles your information”
 // and change LAST_UPDATED before it ships.
 
-const LAST_UPDATED = '14 November 2026';
+const LAST_UPDATED = '18 November 2026';
 const CONTACT_EMAIL = 'support@remopdf.site';
 const DELETE_REQUEST = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Delete my RemoPDF account')}`;
 
@@ -642,7 +642,7 @@ export default function Privacy() {
                 />
                 <DataRow
                   title="When you use an AI feature"
-                  what="The text you are working on, such as parts of your resume, a job advert or a job title. Your account number and plan are used to count how much AI you use each day."
+                  what="The text you are working on, such as parts of your resume, a job advert or a job title, and anything you type in the box that tells the AI what to improve. Your account number and plan are used to count how much AI you use each day."
                   why="To produce the answer you asked for and to apply your plan’s daily limit."
                   kept="We do not save the text once the answer is sent back. The daily count is held in memory and resets every day."
                 />
@@ -723,7 +723,7 @@ export default function Privacy() {
             </Sec>
 
             <Sec id="ai">
-              <p>These features use artificial intelligence: summary suggestions, writing checks, job targeting and matching, and cover letters.</p>
+              <p>These features use artificial intelligence: summary suggestions, writing checks, skill suggestions, study-detail suggestions, achievement ideas, job targeting and matching, and cover letters.</p>
               <Ul>
                 <li>
                   <strong>What is sent:</strong> when you use one, the text you are working on is sent through our server to Groq, whose AI models write the answer. How Groq handles that text is set by Groq’s own

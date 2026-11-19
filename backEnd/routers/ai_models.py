@@ -94,6 +94,8 @@ TASKS = {
     # reading a job advert: position, requirements, duties, keywords
     "posting": Task("low", 3500, 22, 0.1),
     "target": Task("low", 4000, 22, 0.1),
+    # ideas for the builder's steps: skills, the Details of a study field, achievement lines (routers/suggest.py)
+    "ideas": Task("medium", 3500, 22, 0.55),
 }
 
 # The lowest plan that may use each kind of call. The free plan has no AI suggestions at all, so every kind of call
@@ -106,6 +108,7 @@ MIN_TIER = {
     "skills": "premium",
     "posting": "premium",
     "target": "premium",
+    "ideas": "premium",
 }
 
 # What one model request costs against the daily allowance. A letter reads the whole resume and the advert and is

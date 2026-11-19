@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AchievementsField from './AchievementsField';
 import SpellCheckPanel from './SpellCheckPanel';
 import MonthYearPicker from './MonthYearPicker';
-import { skillNames, achievementLines, hasAchievement, appendAchievement } from './aiSuggestions';
-import { suggestTitles, suggestAchievements } from './onetSuggestions';
+import { skillNames, appendAchievement } from './aiSuggestions';
+import { suggestTitles } from './onetSuggestions'; // O*NET is only used to suggest job titles now
+import { AchievementIdeas } from './AIIdeas';
 import useSuggestions from './useSuggestions';
 
 /* -------------------------------------------------------------------------- */
@@ -644,148 +645,6 @@ const LocationSuggestField = ({ label, value, onChange, placeholder, disabled })
   );
 };
 
-const IDEAS_PER_PAGE = 5;
-const NO_IDEAS = { suggestions: [], total: 0, roleLabel: '', forTitle: '' };
-
-// Achievement ideas for one job, taken from the O*NET occupation that matches the job title (or
-// from the dataset role when O*NET does not have it). They appear as soon as a title is entered. Each idea has an add button that puts it into the
-// achievements field; ideas already in the field show a check instead.
-const AchievementSuggestions = ({ job, skills, onAdd, pending = [] }) => {
-  const [round, setRound] = useState(0);
-  const [result, setResult] = useState(NO_IDEAS);
-  const achievementsRef = useRef(job.achievements);
-  achievementsRef.current = job.achievements;
-  const title = (job.title || '').trim();
-  const skillsKey = skills.join('|');
-
-  // Back to the first batch of ideas when the title or skills change.
-  useEffect(() => {
-    setRound(0);
-  }, [title, skillsKey]);
-
-  // Look the ideas up (short delay so it does not run on every keystroke).
-  useEffect(() => {
-    if (!title) {
-      setResult(NO_IDEAS);
-      return undefined;
-    }
-    let alive = true;
-    const timer = setTimeout(() => {
-      suggestAchievements({
-        title,
-        skills,
-        existing: achievementLines(achievementsRef.current),
-        round,
-        limit: IDEAS_PER_PAGE,
-      })
-        .then((found) => {
-          if (alive) setResult({ ...found, forTitle: title });
-        })
-        .catch(() => {
-          if (alive) setResult({ ...NO_IDEAS, forTitle: title });
-        });
-    }, 250);
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [title, skillsKey, round]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const { suggestions: items, total, roleLabel } = result;
-  const settled = result.forTitle === title;
-  // An idea leaves the list once it is in the field (it comes back if that line is deleted).
-  // Ideas still sliding in stay mounted so their row can fold away smoothly.
-  const visible = items.filter((text) => pending.includes(text) || !hasAchievement(job.achievements, text));
-
-  return (
-    <div className="border border-slate-200 rounded-sm bg-slate-50/60 p-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-slate-800">Achievement ideas</p>
-          {!(title && roleLabel) && (
-            <p className="text-[11px] text-slate-500">Add a job title to see ready-made ideas.</p>
-          )}
-        </div>
-        {total > IDEAS_PER_PAGE && (
-          <button
-            type="button"
-            onClick={() => setRound((r) => r + 1)}
-            className="shrink-0 inline-flex items-center gap-1.5 min-h-[32px] px-3 rounded-sm border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-[#d9856b] hover:text-[#d9856b] transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b]"
-          >
-            <SparkleIcon />
-            Show new ideas
-          </button>
-        )}
-      </div>
-
-      {title && settled && items.length === 0 && (
-        <p className="mt-3 text-xs text-slate-500">
-          No ready-made ideas for this title yet. Try a more common title, such as "Project Manager".
-        </p>
-      )}
-
-      {title && settled && items.length > 0 && visible.length === 0 && (
-        <p className="mt-3 text-xs text-slate-500">
-          You've added all of these ideas.{total > IDEAS_PER_PAGE ? ' Tap "Show new ideas" for more.' : ''}
-        </p>
-      )}
-
-      {visible.length > 0 && (
-        <>
-          {/* Each row is a one-row grid that folds to 0 height when its idea is picked, so the
-              ideas below glide up. The bottom spacing lives inside the row (pb-2) so it folds too. */}
-          <ul className="mt-3 -mb-2 flex flex-col">
-            {visible.map((text) => {
-              const sending = pending.includes(text); // sliding into the field
-              return (
-                <li
-                  key={text}
-                  className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
-                    sending ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
-                  }`}
-                >
-                  <div className="min-h-0 overflow-hidden -mx-1 px-1">
-                    <div className="flex items-start gap-2.5 pb-2">
-                      <button
-                        type="button"
-                        onClick={(e) => onAdd(text, e.currentTarget.closest('li').querySelector('[data-idea-text]'))}
-                        disabled={sending}
-                        aria-label={sending ? 'Added' : `Add: ${text}`}
-                        className={`mt-0.5 w-6 h-6 shrink-0 rounded-sm border flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b] ${
-                          sending
-                            ? 'bg-[#d9856b] border-[#d9856b] text-white cursor-default'
-                            : 'bg-white border-slate-200 text-slate-500 hover:border-[#d9856b] hover:text-[#d9856b]'
-                        }`}
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2.5"
-                            d={sending ? 'M5 13l4 4L19 7' : 'M12 5v14M5 12h14'}
-                          />
-                        </svg>
-                      </button>
-                      <span data-idea-text className="text-xs text-slate-700 leading-relaxed pt-1">
-                        {text}
-                      </span>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          {visible.some((t) => /\[[^\]]+\]/.test(t)) && (
-            <p className="mt-3 text-[11px] text-slate-500">
-              Replace the [brackets] with your real numbers and details before you download.
-            </p>
-          )}
-        </>
-      )}
-    </div>
-  );
-};
-
 /* A rich-text field with the live spelling and grammar panel underneath it.
    The panel stays mounted but hidden while the field is empty, so it keeps its state and does not
    flash a "loading" notice when the first character is typed. */
@@ -917,7 +776,7 @@ const JobFields = ({ job, onChange, skills, previousTitles, jobTarget }) => {
         value={job.achievements}
         onChange={(v) => onChange('achievements', v)}
       />
-      <AchievementSuggestions job={job} skills={skills} onAdd={addAchievement} pending={pending} />
+      <AchievementIdeas job={job} skills={skills} jobTarget={jobTarget} onAdd={addAchievement} pending={pending} />
     </div>
   );
 };

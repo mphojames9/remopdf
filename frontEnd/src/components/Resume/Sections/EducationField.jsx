@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MonthYearPicker from './MonthYearPicker';
 import AchievementsField from './AchievementsField';
+import { EducationIdeas } from './AIIdeas';
+import { appendAchievement } from './aiSuggestions';
 import SpellCheckPanel from './SpellCheckPanel';
 
 /* -------------------------------------------------------------------------- */
@@ -705,7 +707,7 @@ const CheckedField = ({ value, onChange, ...fieldProps }) => {
 /*                             One qualification                              */
 /* -------------------------------------------------------------------------- */
 
-const QualificationFields = ({ entry, onChange }) => {
+const QualificationFields = ({ entry, onChange, resumeData }) => {
   const [isCourseworkOpen, setIsCourseworkOpen] = useState(true);
 
   const handleChange = (field) => (e) => onChange({ [field]: e.target.value });
@@ -782,6 +784,12 @@ const QualificationFields = ({ entry, onChange }) => {
               placeholder={'- Dean\'s List, 2023\n- Relevant coursework: Data Structures, Algorithms'}
               value={entry.achievements}
               onChange={(v) => onChange({ achievements: v })}
+            />
+            {/* AI ideas for what this field of study covers (Premium); a picked line is added to the Details above. */}
+            <EducationIdeas
+              entry={entry}
+              resumeData={resumeData}
+              onAdd={(text) => onChange({ achievements: appendAchievement(entry.achievements, text) })}
             />
           </div>
         )}
@@ -878,7 +886,7 @@ const EducationSection = ({ data, updateEducation }) => {
 
               {open && (
                 <div id={`qualification-body-${entry.id}`} className="border-t border-slate-100 px-3 py-4 sm:px-4 sm:py-5 bg-white">
-                  <QualificationFields entry={entry} onChange={(patch) => updateEntry(entry.id, patch)} />
+                  <QualificationFields entry={entry} onChange={(patch) => updateEntry(entry.id, patch)} resumeData={data} />
                 </div>
               )}
             </div>

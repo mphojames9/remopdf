@@ -38,7 +38,7 @@ export const PLAN_COPY = {
     features: [
       'The strongest AI model, thinking hardest, for every suggestion',
       `${AI_PER_DAY} AI actions a day`,
-      'AI writing assistant, summaries, cover letters and job matching',
+      'AI writing assistant, skill, study and achievement ideas, summaries, cover letters and job matching',
       'Import an existing resume (PDF or Word)',
       'Clean PDFs with no RemoPDF label',
       'Unlimited downloads',
