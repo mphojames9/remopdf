@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { scoreResume, scoreLabel } from './atsScore';
+import { scoreResume, scoreLabel, norm } from './atsScore';
 import { reviewResume } from './resumeReview';
 import { isQualification } from './skillFilter';
+import { analyseRequirements, formatMonths } from './qualificationCheck';
 
 /*
   The live ATS match for the job the person is applying to.
@@ -22,6 +23,11 @@ import { isQualification } from './skillFilter';
   person types and never waits for the server. The panel shows where the points come from, which of the job's
   keywords the resume already has, and which are still missing, with qualifications kept apart from skills because
   a qualification is only worth adding when the person really holds it.
+
+  Under "Qualifications the job lists" every years-of-experience and education-level requirement of the advert gets a card:
+  what the job asks for, what the resume shows, how far short it is, and what to do (qualificationCheck.js). The years are
+  counted from the dates in the work history and the level is read from the Education step, so the cards work whether or
+  not the advert reader tagged the line as a qualification.
 
   Premium also gets a written review in the panel (resumeReview.js): what is missing big time and what needs improving,
   each with the reason it matters for this job and what to do about it, plus what already works. It is worked out on
@@ -364,6 +370,119 @@ const Group = ({ title, note, shortNote, count = 0, aside, children }) => (
   </div>
 );
 
+const REQ_TONE = {
+  met: { pill: 'bg-emerald-50 text-emerald-800', ring: 'rgba(15,23,42,.09)', bar: 'linear-gradient(90deg,#6ee7b7,#10b981)' },
+  gap: { pill: 'bg-[#fdece5] text-[#8c3d27]', ring: 'rgba(217,133,107,.38)', bar: `linear-gradient(90deg,#f0b6a3,${ACCENT})` },
+  soft: { pill: 'bg-slate-100 text-slate-600', ring: 'rgba(15,23,42,.09)', bar: 'linear-gradient(90deg,#cbd5e1,#94a3b8)' },
+};
+
+// One job the years were counted from: green dot when it counted, grey when it did not.
+const JobLine = ({ job }) => (
+  <li className="flex items-start gap-2 text-[12.5px] leading-snug text-slate-600">
+    <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${job.counted ? 'bg-emerald-500' : 'bg-slate-300'}`} aria-hidden="true" />
+    <span className="min-w-0 flex-1 break-words">{job.name}</span>
+    <span className="shrink-0 text-right tabular-nums text-slate-500">
+      {!job.dated ? 'no dates' : `${formatMonths(job.months)}${job.counted ? (job.via === 'lines' ? ', from its lines' : '') : ', not counted'}`}
+    </span>
+  </li>
+);
+
+// One requirement of the advert (a length of experience or an education level) against the resume.
+const RequirementCard = ({ item, ready, index }) => {
+  const tone = REQ_TONE[item.tone] || REQ_TONE.soft;
+  const pct = Math.round((item.ratio || 0) * 100);
+  return (
+    <li className="rounded-2xl bg-white p-4" style={{ boxShadow: `inset 0 0 0 1px ${tone.ring}` }}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-x-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            {item.kind === 'experience' ? 'Experience' : 'Education'}
+            {item.must && (
+              <span className="flex items-center gap-1 normal-case tracking-normal text-[#8c3d27]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#d9856b]" aria-hidden="true" />
+                Must-have
+              </span>
+            )}
+          </p>
+          <p className="mt-0.5 break-words text-[14.5px] font-semibold leading-snug text-slate-900">{item.title}</p>
+        </div>
+        <span className={`mt-0.5 shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${tone.pill}`}>{item.pill}</span>
+      </div>
+
+      {item.kind === 'experience' && (
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${pct}% of the time the job asks for`}>
+          <div
+            className="h-full rounded-full"
+            style={{ width: ready ? `${pct}%` : '0%', background: tone.bar, transition: reducedMotion() ? 'none' : `width .9s ${EASE} ${240 + index * 90}ms` }}
+          />
+        </div>
+      )}
+
+      <dl className="mt-3 grid grid-cols-2 gap-x-4 text-[13px]">
+        <div className="min-w-0">
+          <dt className="text-slate-500">The job asks for</dt>
+          <dd className="mt-0.5 break-words font-medium leading-snug text-slate-900">{item.need}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-slate-500">Your resume shows</dt>
+          <dd className="mt-0.5 break-words font-medium leading-snug text-slate-900">{item.have}</dd>
+        </div>
+      </dl>
+
+      <p className="mt-3 text-[13.5px] leading-relaxed text-slate-700">{item.detail}</p>
+
+      {item.jobs && item.jobs.length > 0 && item.status !== 'empty' && (
+        <ul className="mt-3 space-y-1.5 border-t border-slate-100 pt-3" aria-label="Jobs checked">
+          {item.jobs.map((job, i) => (
+            <JobLine key={`${job.name}-${i}`} job={job} />
+          ))}
+        </ul>
+      )}
+
+      {item.fix && (
+        <div className="mt-3.5 rounded-xl px-3.5 py-3" style={{ background: '#fff6f2', boxShadow: 'inset 0 0 0 1px rgba(217,133,107,.2)' }}>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8c3d27]">What to do</p>
+          <p className="mt-1 text-[13.5px] leading-relaxed text-slate-700">{item.fix}</p>
+        </div>
+      )}
+    </li>
+  );
+};
+
+// "Qualifications the job lists": a card for every years-of-experience and education-level requirement, then plain chips
+// for any other qualification the advert names (a licence, a registration) that the cards do not cover.
+const Requirements = ({ check, leftovers, ready }) => (
+  <div className="mt-5 first:mt-0 sm:mt-7 sm:first:mt-0">
+    <h3 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+      Qualifications the job lists
+      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{check.items.length + leftovers.length}</span>
+    </h3>
+    <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
+      Checked against the dates in your work history and your Education step. They count only if you really hold them.
+    </p>
+
+    {check.items.length > 0 && (
+      <ul className="mt-3 space-y-2.5">
+        {check.items.map((item, i) => (
+          <RequirementCard key={item.id} item={item} ready={ready} index={i} />
+        ))}
+      </ul>
+    )}
+
+    {leftovers.length > 0 && (
+      <div className={check.items.length > 0 ? 'mt-4' : 'mt-3'}>
+        {check.items.length > 0 && <p className="text-[13px] font-medium text-slate-600">Also listed</p>}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {leftovers.map((kw) => (
+            <Chip key={kw.term} tone="qual">{kw.term}</Chip>
+          ))}
+        </div>
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-500">If you hold one, add it under Education or Certificates.</p>
+      </div>
+    )}
+  </div>
+);
+
 const MAX_CHIPS = 18;
 
 // One row per scoring check: label and points, a bar that grows when the panel opens, then the hint.
@@ -621,7 +740,10 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
 
   const { covered, missing } = result.keywords;
   const missingSkills = missing.filter((k) => !isQual(k)).sort(byImportance);
-  const missingQuals = missing.filter(isQual);
+  // Years of experience and education level get a card each (qualificationCheck.js); only qualifications the cards do not
+  // read (a licence, a registration) stay as chips.
+  const check = useMemo(() => analyseRequirements(target, data), [target, data]);
+  const missingQuals = missing.filter(isQual).filter((kw) => !check.handled.has(norm(kw.term)));
   const index = tierIndex(result.score);
   const next = TIERS[index + 1];
   const tone = tierTone(index);
@@ -748,15 +870,9 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
               </Group>
             )}
 
-            {missingQuals.length > 0 && (
-              <Group title="Qualifications the job lists" count={missingQuals.length} note="These count only if you hold them. If you do, add them under Education." shortNote="Add under Education only if you hold them.">
-                {missingQuals.map((kw) => (
-                  <Chip key={kw.term} tone="qual">{kw.term}</Chip>
-                ))}
-              </Group>
-            )}
+            {(check.items.length > 0 || missingQuals.length > 0) && <Requirements check={check} leftovers={missingQuals} ready={ready} />}
 
-            {missing.length === 0 && <p className="text-sm text-slate-700">Every keyword from the job is on your resume.</p>}
+            {missing.length === 0 && check.items.every((item) => item.status === 'met') && <p className="text-sm text-slate-700">Every keyword from the job is on your resume.</p>}
           </div>
 
           <p className="mt-8 hidden items-start gap-2 text-[13px] leading-relaxed text-slate-500 sm:flex">

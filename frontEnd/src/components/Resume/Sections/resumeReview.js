@@ -27,11 +27,14 @@
     - every "fix" says to add something only where it is true for the person, and never suggests a figure;
     - "examples" ask a question ("How many people did this cover?"), they never write the answer;
     - a keyword that is a qualification (degree, licence, years of experience) is never presented as a skill
-      to "work in": it is only ever "add it under Education if you hold it".
+      to "work in": it is only ever "add it under Education if you hold it";
+    - the years of experience and the education level the job asks for are compared with the resume by
+      qualificationCheck.js, and what it finds becomes findings here, so the panel's cards and this review always agree.
 */
 
 import { scoreResume, norm, hasTerm, stripMarkup, collectStrings, resumeText } from './atsScore';
 import { isQualification } from './skillFilter';
+import { analyseRequirements } from './qualificationCheck';
 
 const asList = (value) => (Array.isArray(value) ? value : []);
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -388,17 +391,23 @@ export function reviewResume(target, data, precomputed) {
 
   /* -------------------------------- education ---------------------------------- */
 
-  // Qualifications that belong under Education (a degree, diploma, certificate, licence...). "5 years of experience" is
-  // also a "qualification" to the skill filter, but it is not something to add under Education, so it is left out here.
+  // What the advert asks for in years and in education level, compared with the work history and the Education step.
+  // Each unmet requirement becomes its own finding below; the card in the panel shows the very same result.
+  const check = analyseRequirements(target, d);
+
+  // Qualifications that belong under Education (a degree, diploma, certificate, licence...) which qualificationCheck.js
+  // did not read as a level (a licence, a registration, a named certificate). "5 years of experience" is not one of them.
   const EDU_LIKE = /\b(degree|diploma|certificate|certification|bachelor|honou?rs|master|mba|ph\.?d|matric|nqf|qualification|licen[cs]e)/i;
   // Checked against the resume and not on it:
-  const qualKeywords = [...new Set(kw.missing.filter(isQual).map((k) => k.term))].filter((t) => EDU_LIKE.test(t)).slice(0, 4);
+  const qualKeywords = [...new Set(kw.missing.filter(isQual).filter((k) => !check.handled.has(norm(k.term))).map((k) => k.term))].filter((t) => EDU_LIKE.test(t)).slice(0, 4);
   // What the advert lists as requirements: only used where Education is empty, so nothing has to be checked against it.
   const qualRequirements = asList(target.requirements)
     .filter((r) => typeof r === 'string' && EDU_LIKE.test(r))
     .map((r) => clip(r.trim(), 70))
     .slice(0, 3);
-  const listed = (qualKeywords.length ? qualKeywords : qualRequirements).slice(0, 3);
+  const eduAsked = check.items.filter((item) => item.kind === 'education').map((item) => item.title);
+  const listed = [...new Set([...eduAsked, ...qualKeywords])].slice(0, 3);
+  if (listed.length === 0) listed.push(...qualRequirements);
   if (education.length === 0) {
     add('missing', 66, {
       id: 'education',
@@ -420,6 +429,27 @@ export function reviewResume(target, data, precomputed) {
       });
     }
   }
+
+  // Years of experience and education level, one finding per requirement that is not met.
+  check.items.forEach((item) => {
+    if (item.status === 'met') {
+      good.push(`You meet the ${item.title} the job asks for.`);
+      return;
+    }
+    // An empty Education section or work history already has a finding of its own above.
+    if (item.status === 'empty' || (item.kind === 'education' && item.status === 'none')) return;
+    const experience = item.kind === 'experience';
+    const severe = experience
+      ? Boolean(item.must) && (item.status === 'none' || (item.status === 'short' && item.ratio < 0.5))
+      : Boolean(item.must) && item.status === 'below';
+    add(severe ? 'missing' : 'improve', severe ? (experience ? 88 : 86) : experience ? 59 : 47, {
+      id: `req-${item.id}`,
+      title: item.headline,
+      body: item.detail,
+      fix: item.fix,
+      where: experience ? STEP.work : STEP.education,
+    });
+  });
 
   /* ---------------------------------- overall ---------------------------------- */
 
