@@ -1,18 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { suggestEducationIdeas, suggestAchievementIdeas, hasJobTarget } from './jobMatchAI';
+import { suggestEducationIdeas, suggestAchievementIdeas, hasJobTarget, shownIdeas } from './jobMatchAI';
 import { hasAchievement } from './aiSuggestions';
 import { usePremiumAccess, useSignedIn, requestUpgrade, requestSignIn, setPremiumAccess } from '../../../hooks/premiumAccess';
 
 /*
   The AI ideas for two steps of the builder. They replace the O*NET suggestions there (O*NET is now only used for job
   titles). Both are Premium: the free plan has no AI suggestions, so a free or signed-out person sees a short note and a
-  button instead. Nothing runs until the person presses a button. Every request goes through jobMatchAI.js (the signed AI
-  pass, one AI action each).
+  button instead. Every request goes through jobMatchAI.js (the signed AI pass, one AI action each).
 
     <EducationIdeas entry resumeData onAdd />            Education step: lines for the Details box of one qualification.
+                                                          Runs when the person presses the button.
     <AchievementIdeas job skills jobTarget onAdd pending />
                                                           Work history step: five or more different achievement ideas for
                                                           the job title, an ask box to steer them, and "Load more ideas".
+                                                          They appear by themselves for the job that is open, as soon as it
+                                                          has a title (see AUTO_IDEAS below).
+
+  Showing the achievement ideas by themselves costs one AI action per job title (and per target job), so it is careful:
+    - only for the job that is open (a closed job's panel is not mounted), once the title has stopped changing;
+    - once per job + title + target: the ideas are kept (jobMatchAI.js shownIdeas), so closing and re-opening the job, or
+      adding an idea to the achievements, never asks again;
+    - only when Premium is known to be running, never for a free or signed-out person;
+    - never again after a failure (quota, busy, offline): the error shows and the button tries again when the person asks.
+  Set AUTO_IDEAS to false to go back to waiting for the button.
 
   Nothing is added to the resume until the person presses the add button. A figure the person never wrote is always a
   [placeholder] to fill in.
@@ -22,6 +32,12 @@ const PRIMARY =
   'inline-flex items-center justify-center gap-1.5 min-h-[32px] px-3 rounded-sm bg-[#d9856b] text-white text-xs font-bold hover:bg-[#c97558] disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50';
 const SECONDARY =
   'inline-flex items-center justify-center gap-1.5 min-h-[32px] px-3 rounded-sm border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-[#d9856b] hover:text-[#d9856b] disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50';
+
+// Show the achievement ideas without waiting for the button, and how long the job title must stay unchanged first (so
+// typing "Quality Control Officer" asks once, not once per pause).
+const AUTO_IDEAS = true;
+const AUTO_DELAY_MS = 1200;
+const MAX_SHELF = 40;
 
 const ERROR_TEXT = {
   signin: 'Sign in to get AI suggestions.',
@@ -305,12 +321,24 @@ const IdeaRow = ({ idea, added, sending, onUse }) => {
 
 export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending = [] }) {
   const lock = useLock();
+  const premium = usePremiumAccess();
   const [state, run] = useIdeaRequest();
   const [prompt, setPrompt] = useState('');
   const ideasRef = useRef([]); // everything shown so far; "Load more ideas" adds to it
+  const triedRef = useRef(new Set()); // keys already asked for automatically, so a failure is never retried in a loop
   const title = String(job.title || '').trim();
   const targeted = hasJobTarget(jobTarget);
   const loading = state.status === 'loading';
+
+  // Which ideas belong to this job as it reads now: the same job, title and target job give the same ideas.
+  const targetKey = targeted ? [jobTarget.title, ...(Array.isArray(jobTarget.keywords) ? jobTarget.keywords.map((k) => k && k.term) : [])].join('|') : '';
+  const shelfKey = `${job.id}|${title.toLowerCase()}|${targetKey}`;
+
+  const shelve = (ideas) => {
+    shownIdeas.delete(shelfKey);
+    shownIdeas.set(shelfKey, ideas);
+    while (shownIdeas.size > MAX_SHELF) shownIdeas.delete(shownIdeas.keys().next().value);
+  };
 
   // `more` = add different ideas to the list (what is shown is sent along so none comes back); otherwise start the list
   // again, which is what the ask box does ("add numbers", "focus on safety").
@@ -320,8 +348,30 @@ export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending =
       const result = await suggestAchievementIdeas({ job, skills, target: jobTarget, prompt, avoid, signal });
       const merged = more ? [...ideasRef.current, ...result.ideas.filter((i) => !ideasRef.current.some((o) => o.text === i.text))] : result.ideas;
       ideasRef.current = merged;
+      shelve(merged);
       return { ideas: merged };
     });
+
+  // The ideas show by themselves. Ideas already shown for this job come straight back (no AI action); otherwise one request
+  // goes out once the title has stopped changing. A key that failed is not asked for again until the title or the target
+  // job changes, or the person presses the button.
+  const canAuto = AUTO_IDEAS && !lock && premium === true && title.length >= 3;
+  useEffect(() => {
+    if (!canAuto || triedRef.current.has(shelfKey)) return undefined;
+    const kept = shownIdeas.get(shelfKey);
+    if (kept) {
+      triedRef.current.add(shelfKey);
+      ideasRef.current = kept;
+      run(async () => ({ ideas: kept }));
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      triedRef.current.add(shelfKey);
+      ask(false);
+    }, AUTO_DELAY_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAuto, shelfKey]);
 
   if (lock) {
     return (
@@ -335,6 +385,9 @@ export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending =
 
   const ideas = (state.data && state.data.ideas) || [];
   const anyPlaceholder = ideas.some((i) => /\[[^\]]+\]/.test(i.text));
+  // About to load by itself (the title is in, the short wait is running): show the box as busy, not empty.
+  const waiting = canAuto && state.status === 'idle' && ideas.length === 0 && !triedRef.current.has(shelfKey);
+  const writing = ideas.length === 0 && (loading || waiting);
 
   return (
     <div className="border border-slate-200 rounded-sm bg-slate-50/60 p-3 flex flex-col gap-3">
@@ -365,7 +418,14 @@ export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending =
         ariaLabel="Tell the AI what kind of achievement you want"
       />
 
-      {loading && ideas.length === 0 && <Skeleton rows={4} />}
+      {writing && (
+        <>
+          <p className="text-[11px] text-slate-500" role="status">
+            Writing ideas for {title || 'this job'}...
+          </p>
+          <Skeleton rows={4} />
+        </>
+      )}
       {state.status === 'error' && <ErrorLine error={state.error} />}
 
       {ideas.length > 0 && (

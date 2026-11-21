@@ -1,7 +1,8 @@
 /*
   Does the resume meet the experience and education the job asks for?
 
-    analyseRequirements(target, resumeData, now?) -> { items: [item], handled: Set<string> }
+    analyseRequirements(target, resumeData, now?) -> { items: [item], handled: Set<string>, outcomes: Map<string, boolean> }
+    (handled = the keywords it read; outcomes = for each, whether the resume meets what it names. The score uses outcomes.)
 
   Why this exists: the Job match panel used to show "5 years' sales experience" and "Matric" as grey chips and say
   nothing more. Years of experience were never compared with the work history at all, and an education level was only
@@ -521,11 +522,16 @@ export function analyseRequirements(target, data, now = new Date()) {
   const nowIndex = now.getFullYear() * 12 + now.getMonth();
   const reqs = new Map();
   const handled = new Set();
+  const idsByKeyword = new Map(); // norm(keyword term) -> the requirement ids that keyword names
 
   collectLines(target).forEach(({ raw, kw }) => {
     const found = [...parseExperience(raw), ...parseEducation(raw)];
     if (!found.length) return;
-    if (kw) handled.add(norm(kw.term));
+    if (kw) {
+      const key = norm(kw.term);
+      handled.add(key);
+      idsByKeyword.set(key, [...(idsByKeyword.get(key) || []), ...found.map((req) => req.id)]);
+    }
     const must = kw ? kw.must === true : !PREFERRED_RE.test(raw);
     found.forEach((req) => {
       const prior = reqs.get(req.id);
@@ -538,7 +544,7 @@ export function analyseRequirements(target, data, now = new Date()) {
     });
   });
 
-  if (!reqs.size) return { items: [], handled };
+  if (!reqs.size) return { items: [], handled, outcomes: new Map() };
 
   const work = workOf(data, nowIndex);
   const edu = educationOf(data);
@@ -549,6 +555,12 @@ export function analyseRequirements(target, data, now = new Date()) {
     .sort((a, b) => STATUS_RANK[a.item.tone] - STATUS_RANK[b.item.tone] || Number(Boolean(b.item.must)) - Number(Boolean(a.item.must)) || a.index - b.index)
     .map(({ item }) => item);
 
-  return { items, handled };
+  // For the score: a keyword that names a requirement is earned only when every requirement it names is met.
+  const outcomes = new Map();
+  idsByKeyword.forEach((ids, key) => {
+    outcomes.set(key, ids.every((id) => (items.find((item) => item.id === id) || {}).status === 'met'));
+  });
+
+  return { items, handled, outcomes };
 }
 

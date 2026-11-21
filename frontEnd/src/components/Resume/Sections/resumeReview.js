@@ -4,6 +4,7 @@
     reviewResume(target, resumeData, result?) -> null (no job target yet) or
       {
         verdict,                 one short paragraph: where the resume stands and what to do first
+        summary,                 one short sentence for the top of the panel
         missing: [finding],      "Missing big time": gaps that cost the most points (or make the resume unreadable)
         improve: [finding],      "Needs improving": real, fixable weaknesses that are not gaps
         good:    [string],       what already works, so the person knows what to leave alone
@@ -32,7 +33,8 @@
       qualificationCheck.js, and what it finds becomes findings here, so the panel's cards and this review always agree.
 */
 
-import { scoreResume, norm, hasTerm, stripMarkup, collectStrings, resumeText } from './atsScore';
+import { norm, hasTerm, matchTerm, labelFor, stripMarkup, collectStrings, resumeText } from './atsScore';
+import { scoreMatch } from './scoreMatch';
 import { isQualification } from './skillFilter';
 import { analyseRequirements } from './qualificationCheck';
 
@@ -89,7 +91,7 @@ const STEP = {
 };
 
 export function reviewResume(target, data, precomputed) {
-  const result = precomputed || scoreResume(target, data);
+  const result = precomputed || scoreMatch(target, data);
   if (!result) return null;
 
   const d = data || {};
@@ -213,7 +215,7 @@ export function reviewResume(target, data, precomputed) {
         : `Yours has ${kw.covered.length} of the ${total}.`,
       lost > 0 && `Keywords are worth ${keywordPart.weight} of the 100 points, and about ${lost} of them are still on the table.`,
       mustMissing.length &&
-        `The must-haves count three times as much as the rest, and you are missing ${quoted(mustMissing.slice(0, 6).map((k) => k.term))}${mustMissing.length > 6 ? ` and ${mustMissing.length - 6} more` : ''}.`,
+        `The must-haves count three times as much as the rest, and you are missing ${quoted(mustMissing.slice(0, 6).map((k) => labelFor(k.term)))}${mustMissing.length > 6 ? ` and ${mustMissing.length - 6} more` : ''}.`,
     ].filter(Boolean);
     add(big ? 'missing' : 'improve', big ? 94 : 60, {
       id: 'keywords',
@@ -222,7 +224,7 @@ export function reviewResume(target, data, precomputed) {
       fix: 'Take the missing words one at a time. Where you really do, or have done, the thing, add it to the work-history line that shows it, or to your summary, in the job’s own wording. Where you haven’t, leave it out: a keyword you cannot talk about in an interview costs you more than it gains.',
       where: `${STEP.work}, ${STEP.summary}`,
       points: lost,
-      terms: missingSkills.slice(0, 10).map((k) => ({ term: k.term, must: Boolean(k.must) })),
+      terms: missingSkills.slice(0, 10).map((k) => ({ term: labelFor(k.term), must: Boolean(k.must) })),
     });
   } else if (total > 0) {
     good.push(`Every skill keyword the job lists is on your resume (${skillsCovered} of ${skillsCovered}).`);
@@ -232,7 +234,7 @@ export function reviewResume(target, data, precomputed) {
   // Keywords that only sit in the Skills list: listed, but never shown at work.
   const evidenceText = norm([summary, ...perJob.map((entry) => flat(entry.job.achievements)), ...perJob.map((entry) => text(entry.job.title))].join('\n'));
   const skillsText = norm(skills.join('\n'));
-  const claimed = kw.covered.filter((k) => !isQual(k) && !hasTerm(evidenceText, k.term) && hasTerm(skillsText, k.term));
+  const claimed = kw.covered.filter((k) => !isQual(k) && matchTerm(k.term, evidenceText) !== 'full' && hasTerm(skillsText, k.term));
   if (claimed.length >= 2) {
     add('improve', 58, {
       id: 'claimed',
@@ -241,6 +243,20 @@ export function reviewResume(target, data, precomputed) {
       fix: 'For each one you really have used, add a line, or half a line, that shows it at work: what you did with it and for whom.',
       where: STEP.work,
       terms: claimed.slice(0, 8).map((k) => ({ term: k.term, must: Boolean(k.must) })),
+    });
+  }
+
+  // "Microsoft Office" is listed, the job names the programs: half credit, and the fix is to name the ones really used.
+  const suiteOnly = kw.missing.filter((k) => k.partial);
+  if (suiteOnly.length) {
+    add('improve', 61, {
+      id: 'office-suite',
+      title: `The job names ${join(suiteOnly.slice(0, 4).map((k) => k.term))}, and you list Microsoft Office`,
+      body: 'Your resume lists Microsoft Office, which a reader takes to mean the usual programs, but a scan looks for each program by name and gives only half credit for the suite.',
+      fix: 'Name the programs you really use, in your Skills or in the line of work that shows them (for example, \u201CBuilt weekly reports in Excel\u201D). Leave out any you do not use.',
+      where: `${STEP.skills}, ${STEP.work}`,
+      points: Math.max(1, Math.round(suiteOnly.reduce((sum, k) => sum + (k.must ? 3 : 1), 0) * 0.5 * (keywordPart.weight / Math.max(1, kw.covered.length + kw.missing.length)))),
+      terms: suiteOnly.slice(0, 6).map((k) => ({ term: labelFor(k.term), must: Boolean(k.must) })),
     });
   }
 
@@ -483,5 +499,15 @@ export function reviewResume(target, data, precomputed) {
     verdict = `As it stands, this resume would struggle to get through a scan for “${jobTitle}”. ${missing.length ? `${gaps} ${missing.length === 1 ? 'is' : 'are'} holding it back the most, and ${missing.length === 1 ? 'it is' : 'they are'} listed first below.` : 'The fixes are below, most valuable first.'} Everything here is something you can fix in the builder, and none of it needs you to claim anything that is not true.`;
   }
 
-  return { verdict, missing, improve, good: good.slice(0, 6) };
+  // One short sentence for the top of the panel; `verdict` above is the longer one.
+  const oneLine =
+    result.score >= 85
+      ? 'This resume speaks the language of the job.'
+      : result.score >= 70
+        ? `A strong match, with ${left} points still to win.`
+        : result.score >= 45
+          ? `Partway there, with ${left} points still to win.`
+          : 'As it stands, this resume would struggle to get through a scan for this job.';
+
+  return { verdict, summary: oneLine, missing, improve, good: good.slice(0, 6) };
 }

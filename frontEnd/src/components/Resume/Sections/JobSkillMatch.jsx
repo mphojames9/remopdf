@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { suggestJobSkills } from './jobMatchAI';
-import { hasJobTarget, norm, scoreResume } from './atsScore';
+import { hasJobTarget, norm } from './atsScore';
+import { scoreMatch } from './scoreMatch';
 import { isSkillTerm } from './skillFilter';
 import { usePremiumAccess, requestUpgrade, setPremiumAccess } from '../../../hooks/premiumAccess';
 
@@ -108,7 +109,7 @@ const JobSkillMatch = ({ data, onAdd }) => {
 
   // No AI answer: the job's own keywords the resume is still missing.
   const fallback = useMemo(() => {
-    const result = scoreResume(target, data);
+    const result = scoreMatch(target, data);
     return result
       ? result.keywords.missing.filter((k) => k.kind !== 'soft' && k.kind !== 'credential' && isSkillTerm(k.term) && notHave(k.term)).slice(0, 8).map((k) => k.term)
       : [];

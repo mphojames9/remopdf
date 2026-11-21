@@ -398,7 +398,12 @@ export async function suggestAchievementIdeas({ job, skills = [], target, prompt
   return remember(cache, key, { ideas });
 }
 
+// The achievement ideas already shown for a job (key: job + title + target), kept so that closing and re-opening a job, or
+// adding one of the ideas to the achievements, never asks the AI again. AIIdeas.jsx reads and fills it.
+export const shownIdeas = new Map();
+
 // Cleared when Premium ends or the account changes, so nothing from before is shown to the next person.
 export const forgetJobMatchCache = () => {
   Object.values(caches).forEach((cache) => cache.clear());
+  shownIdeas.clear();
 };

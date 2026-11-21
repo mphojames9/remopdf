@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { scoreResume, scoreLabel, norm } from './atsScore';
+import { scoreLabel, norm, labelFor } from './atsScore';
+import { scoreMatch } from './scoreMatch';
 import { reviewResume } from './resumeReview';
 import { isQualification } from './skillFilter';
 import { analyseRequirements, formatMonths } from './qualificationCheck';
@@ -24,7 +25,11 @@ import { analyseRequirements, formatMonths } from './qualificationCheck';
   keywords the resume already has, and which are still missing, with qualifications kept apart from skills because
   a qualification is only worth adding when the person really holds it.
 
-  Under "Qualifications the job lists" every years-of-experience and education-level requirement of the advert gets a card:
+  The panel has four pages under the score, so nothing is a long scroll: Overview (the next move, three numbers that open the
+  other pages, where the points come from), To fix (the written review as a closed to-do list), Keywords (still missing, then
+  found) and Requirements. Each fact lives on one page only.
+
+  On the Requirements page every years-of-experience and education-level requirement of the advert gets a card:
   what the job asks for, what the resume shows, how far short it is, and what to do (qualificationCheck.js). The years are
   counted from the dates in the work history and the level is read from the Education step, so the cards work whether or
   not the advert reader tagged the line as a qualification.
@@ -71,6 +76,10 @@ const STYLE = `
 .jm-hero{display:grid;transition:grid-template-rows .32s ${EASE}}
 .jm-hero>div{min-height:0;overflow:hidden}
 .jm-close-float{animation:jm-fade .25s ease both}
+.jm-tabs{scrollbar-width:none}
+.jm-tabs::-webkit-scrollbar{display:none}
+.jm-root summary{list-style:none}
+.jm-root summary::-webkit-details-marker{display:none}
 .jm-root{font-family:${FONT};letter-spacing:0;-webkit-font-smoothing:antialiased}
 .jm-root *{font-family:inherit}
 @media (prefers-reduced-motion:reduce){.jm-panel,.jm-fade,.jm-delta,.jm-close-float{animation:none}.jm-hero{transition:none}}
@@ -142,6 +151,18 @@ const isQual = (kw) => kw.kind === 'credential' || isQualification(kw.term);
 
 const byImportance = (a, b) => Number(Boolean(b.must)) - Number(Boolean(a.must));
 
+// Adverts often shout the title ("PRODUCTION MANAGER / PLANT MANAGER"). On screen it reads as normal words; short acronyms stay.
+const SMALL_WORDS = new Set(['and', 'or', 'of', 'the', 'for', 'to', 'in', 'at', 'a', 'an']);
+const tidyTitle = (title) => {
+  const t = String(title || '').trim();
+  if (!t || t !== t.toUpperCase() || !/[A-Z]/.test(t)) return t;
+  return t.replace(/[A-Za-z][A-Za-z'’]*/g, (word, offset) => {
+    if (word.length <= 3 && word.length > 1 && !SMALL_WORDS.has(word.toLowerCase())) return word;
+    const lower = word.toLowerCase();
+    return offset > 0 && SMALL_WORDS.has(lower) ? lower : lower[0].toUpperCase() + lower.slice(1);
+  });
+};
+
 // { title, term?, text }: the one thing worth doing next, written for the person.
 const insight = (result, short = false) => {
   const { score, keywords, parts } = result;
@@ -156,8 +177,12 @@ const insight = (result, short = false) => {
   if (skills.length && skills[0].must) {
     return {
       title: 'Biggest gap:',
-      term: skills[0].term,
-      text: short ? '' : 'Add it where it’s true for you, in your work history or summary.',
+      term: labelFor(skills[0].term),
+      text: short
+        ? ''
+        : skills[0].partial
+          ? 'You list Microsoft Office, but the job names this one. Name it where it’s true for you, in your work history or skills.'
+          : 'Add it where it’s true for you, in your work history or summary.',
     };
   }
   if (skills.length) {
@@ -355,21 +380,6 @@ const Chip = ({ children, tone }) => {
   );
 };
 
-const Group = ({ title, note, shortNote, count = 0, aside, children }) => (
-  <div className="mt-5 first:mt-0 sm:mt-7 sm:first:mt-0">
-    <div className="flex items-center justify-between gap-3">
-      <h3 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-        {title}
-        {count > 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{count}</span>}
-      </h3>
-      {aside}
-    </div>
-    {shortNote && <p className="mt-1 text-[13px] leading-snug text-slate-500 sm:hidden">{shortNote}</p>}
-    {note && <p className="mt-1 hidden text-[13px] leading-relaxed text-slate-500 sm:block">{note}</p>}
-    <div className="mt-3 flex flex-wrap gap-2">{children}</div>
-  </div>
-);
-
 const REQ_TONE = {
   met: { pill: 'bg-emerald-50 text-emerald-800', ring: 'rgba(15,23,42,.09)', bar: 'linear-gradient(90deg,#6ee7b7,#10b981)' },
   gap: { pill: 'bg-[#fdece5] text-[#8c3d27]', ring: 'rgba(217,133,107,.38)', bar: `linear-gradient(90deg,#f0b6a3,${ACCENT})` },
@@ -387,8 +397,9 @@ const JobLine = ({ job }) => (
   </li>
 );
 
-// One requirement of the advert (a length of experience or an education level) against the resume.
-const RequirementCard = ({ item, ready, index }) => {
+// One requirement of the advert (a length of experience or an education level) against the resume. Only the facts are here;
+// the explanation and the advice are in the "To fix" list, one tap away.
+const RequirementCard = ({ item, ready, index, onFix }) => {
   const tone = REQ_TONE[item.tone] || REQ_TONE.soft;
   const pct = Math.round((item.ratio || 0) * 100);
   return (
@@ -429,50 +440,50 @@ const RequirementCard = ({ item, ready, index }) => {
         </div>
       </dl>
 
-      <p className="mt-3 text-[13.5px] leading-relaxed text-slate-700">{item.detail}</p>
-
       {item.jobs && item.jobs.length > 0 && item.status !== 'empty' && (
-        <ul className="mt-3 space-y-1.5 border-t border-slate-100 pt-3" aria-label="Jobs checked">
-          {item.jobs.map((job, i) => (
-            <JobLine key={`${job.name}-${i}`} job={job} />
-          ))}
-        </ul>
+        <details className="group mt-3 border-t border-slate-100 pt-2">
+          <summary className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg py-1.5 text-[13px] font-medium text-slate-600 ${FOCUS}`}>
+            Jobs checked ({item.jobs.length})
+            <Icon d={ICON.chevron} className="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none" stroke={2.2} />
+          </summary>
+          <ul className="mt-1.5 space-y-1.5" aria-label="Jobs checked">
+            {item.jobs.map((job, i) => (
+              <JobLine key={`${job.name}-${i}`} job={job} />
+            ))}
+          </ul>
+        </details>
       )}
 
-      {item.fix && (
-        <div className="mt-3.5 rounded-xl px-3.5 py-3" style={{ background: '#fff6f2', boxShadow: 'inset 0 0 0 1px rgba(217,133,107,.2)' }}>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8c3d27]">What to do</p>
-          <p className="mt-1 text-[13.5px] leading-relaxed text-slate-700">{item.fix}</p>
-        </div>
+      {onFix && item.status !== 'met' && (
+        <button type="button" onClick={onFix} className={`mt-3 inline-flex items-center gap-1 rounded-md text-[13px] font-semibold text-[#8c3d27] hover:underline ${FOCUS}`}>
+          How to fix this
+          <Icon d={ICON.chevron} className="h-3.5 w-3.5" stroke={2.4} />
+        </button>
       )}
     </li>
   );
 };
 
-// "Qualifications the job lists": a card for every years-of-experience and education-level requirement, then plain chips
-// for any other qualification the advert names (a licence, a registration) that the cards do not cover.
-const Requirements = ({ check, leftovers, ready }) => (
-  <div className="mt-5 first:mt-0 sm:mt-7 sm:first:mt-0">
-    <h3 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
-      Qualifications the job lists
-      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{check.items.length + leftovers.length}</span>
-    </h3>
-    <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
-      Checked against the dates in your work history and your Education step. They count only if you really hold them.
+// The "Requirements" tab: a card for every years-of-experience and education-level requirement, then plain chips for any
+// other qualification the advert names (a licence, a registration) that the cards do not cover.
+const RequirementsTab = ({ check, leftovers, ready, onFix }) => (
+  <div>
+    <p className="text-[13.5px] leading-relaxed text-slate-600">
+      What the job asks for in experience and education, checked against your work history and Education step. They count only if you really hold them.
     </p>
 
     {check.items.length > 0 && (
-      <ul className="mt-3 space-y-2.5">
+      <ul className="mt-4 space-y-2.5">
         {check.items.map((item, i) => (
-          <RequirementCard key={item.id} item={item} ready={ready} index={i} />
+          <RequirementCard key={item.id} item={item} ready={ready} index={i} onFix={onFix ? () => onFix(item) : undefined} />
         ))}
       </ul>
     )}
 
     {leftovers.length > 0 && (
-      <div className={check.items.length > 0 ? 'mt-4' : 'mt-3'}>
-        {check.items.length > 0 && <p className="text-[13px] font-medium text-slate-600">Also listed</p>}
-        <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-6">
+        <h3 className="text-[15px] font-semibold text-slate-900">Also listed</h3>
+        <div className="mt-2.5 flex flex-wrap gap-2">
           {leftovers.map((kw) => (
             <Chip key={kw.term} tone="qual">{kw.term}</Chip>
           ))}
@@ -483,7 +494,6 @@ const Requirements = ({ check, leftovers, ready }) => (
   </div>
 );
 
-const MAX_CHIPS = 18;
 
 // One row per scoring check: label and points, a bar that grows when the panel opens, then the hint.
 const Breakdown = ({ parts, ready }) => (
@@ -549,11 +559,11 @@ const NextMove = ({ move }) => (
 const fmtPoints = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
 // One finding: the title row is always shown, the explanation opens under it.
-const FindingCard = ({ item, number, open, onToggle }) => {
+const FindingCard = ({ item, number, open, onToggle, register }) => {
   const bodyId = useId();
   const big = item.level === 'missing';
   return (
-    <li className="overflow-hidden rounded-2xl bg-white" style={{ boxShadow: `inset 0 0 0 1px ${big ? 'rgba(217,133,107,.38)' : 'rgba(15,23,42,.09)'}` }}>
+    <li ref={register} className="overflow-hidden rounded-2xl bg-white scroll-mt-4" style={{ boxShadow: `inset 0 0 0 1px ${big ? 'rgba(217,133,107,.38)' : 'rgba(15,23,42,.09)'}` }}>
       <button
         type="button"
         onClick={onToggle}
@@ -612,26 +622,33 @@ const FindingCard = ({ item, number, open, onToggle }) => {
   );
 };
 
-const ReviewGroup = ({ title, note, items, offset, openIds, onToggle }) =>
+const ReviewGroup = ({ title, note, items, offset, openIds, onToggle, register }) =>
   items.length === 0 ? null : (
-    <div className="mt-6">
+    <div className="mt-5 first:mt-0">
       <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
         {title}
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{items.length}</span>
       </h4>
       <p className="mt-1 text-[13px] leading-snug text-slate-500">{note}</p>
-      <ul className="mt-3 space-y-2.5">
+      <ul className="mt-3 space-y-2">
         {items.map((item, i) => (
-          <FindingCard key={item.id} item={item} number={offset + i + 1} open={openIds.has(item.id)} onToggle={() => onToggle(item.id)} />
+          <FindingCard key={item.id} item={item} number={offset + i + 1} open={openIds.has(item.id)} onToggle={() => onToggle(item.id)} register={(el) => register(item.id, el)} />
         ))}
       </ul>
     </div>
   );
 
-const Review = ({ review }) => {
+// The "To fix" tab: the written review as a to-do list. Every row is closed (title, step and points only) until it is tapped;
+// `focusId` opens one and scrolls to it, which is what "How to fix this" on a requirement card does.
+const FixList = ({ review, focusId, onFocused }) => {
   const all = useMemo(() => [...review.missing, ...review.improve], [review]);
-  // The first three open by themselves, so the most important advice is already readable; the rest open on a tap.
-  const [openIds, setOpenIds] = useState(() => new Set(all.slice(0, 3).map((f) => f.id)));
+  const [openIds, setOpenIds] = useState(() => new Set());
+  const [showGood, setShowGood] = useState(false);
+  const rows = useRef({});
+  const register = useCallback((id, el) => {
+    if (el) rows.current[id] = el;
+    else delete rows.current[id];
+  }, []);
   const toggle = useCallback((id) => {
     setOpenIds((previous) => {
       const next = new Set(previous);
@@ -642,42 +659,218 @@ const Review = ({ review }) => {
   }, []);
   const allOpen = all.length > 0 && all.every((f) => openIds.has(f.id));
 
+  useEffect(() => {
+    if (!focusId) return undefined;
+    setOpenIds((previous) => new Set(previous).add(focusId));
+    const frame = requestAnimationFrame(() => {
+      const row = rows.current[focusId];
+      if (row) row.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
+      if (onFocused) onFocused();
+    });
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
+
   return (
     <section aria-label="Written review">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[13px] font-medium text-slate-500">Written review</p>
-          <h3 className="mt-0.5 text-[18px] font-semibold leading-snug text-slate-900">What’s missing and what to improve</h3>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="min-w-0 text-[13.5px] leading-snug text-slate-600">
+          {review.missing.length ? `${review.missing.length} big gap${review.missing.length === 1 ? '' : 's'} to fix first` : 'No big gaps'}
+          {review.improve.length ? `, ${review.improve.length} to improve` : ''}
+        </p>
         {all.length > 1 && (
           <button
             type="button"
             onClick={() => setOpenIds(allOpen ? new Set() : new Set(all.map((f) => f.id)))}
-            className={`mt-1 shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 ${FOCUS}`}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 ${FOCUS}`}
           >
             {allOpen ? 'Collapse all' : 'Expand all'}
           </button>
         )}
       </div>
-      <p className="mt-2 text-[13.5px] leading-relaxed text-slate-600">{review.verdict}</p>
 
-      <ReviewGroup title="Missing big time" note="These hold your resume back the most. Fix them first." items={review.missing} offset={0} openIds={openIds} onToggle={toggle} />
-      <ReviewGroup title="Needs improving" note="Not gaps, but a recruiter or a scan will notice them." items={review.improve} offset={review.missing.length} openIds={openIds} onToggle={toggle} />
+      <div className="mt-4">
+        <ReviewGroup title="Fix first" note="These hold your resume back the most." items={review.missing} offset={0} openIds={openIds} onToggle={toggle} register={register} />
+        <ReviewGroup title="Then improve" note="A recruiter or a scan will notice these." items={review.improve} offset={review.missing.length} openIds={openIds} onToggle={toggle} register={register} />
+      </div>
 
       {review.good.length > 0 && (
-        <div className="mt-6">
-          <h4 className="text-[15px] font-semibold text-slate-900">Already working</h4>
-          <ul className="mt-2.5 space-y-2">
-            {review.good.map((line) => (
-              <li key={line} className="flex items-start gap-2 text-[13px] leading-snug text-slate-600">
-                <Icon d={ICON.check} className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" stroke={2.6} />
-                {line}
-              </li>
-            ))}
-          </ul>
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            onClick={() => setShowGood((v) => !v)}
+            aria-expanded={showGood}
+            className={`flex w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-[15px] font-semibold text-slate-900 ${FOCUS}`}
+          >
+            <span className="flex items-center gap-2">
+              Already working
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium tabular-nums text-emerald-800">{review.good.length}</span>
+            </span>
+            <Icon d={ICON.chevron} className={`h-4 w-4 text-slate-400 transition-transform duration-200 motion-reduce:transition-none ${showGood ? 'rotate-90' : ''}`} stroke={2.2} />
+          </button>
+          {showGood && (
+            <ul className="mt-2.5 space-y-2">
+              {review.good.map((line) => (
+                <li key={line} className="flex items-start gap-2 text-[13px] leading-snug text-slate-600">
+                  <Icon d={ICON.check} className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" stroke={2.6} />
+                  {line}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
+
+      <p className="mt-5 text-[12.5px] leading-relaxed text-slate-500">Everything here is something you can fix in the builder, and none of it needs you to claim anything that is not true.</p>
     </section>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/*                               tabs and their pages                         */
+/* -------------------------------------------------------------------------- */
+
+const Tabs = ({ tabs, value, onChange }) => {
+  const refs = useRef({});
+  const onKey = (event) => {
+    const at = tabs.findIndex((t) => t.id === value);
+    let next = null;
+    if (event.key === 'ArrowRight') next = tabs[(at + 1) % tabs.length];
+    else if (event.key === 'ArrowLeft') next = tabs[(at - 1 + tabs.length) % tabs.length];
+    else if (event.key === 'Home') next = tabs[0];
+    else if (event.key === 'End') next = tabs[tabs.length - 1];
+    if (!next) return;
+    event.preventDefault();
+    onChange(next.id);
+    if (refs.current[next.id]) refs.current[next.id].focus();
+  };
+  return (
+    <div className="shrink-0 border-b border-slate-100 bg-white">
+      <div role="tablist" aria-label="Job match sections" onKeyDown={onKey} className="jm-tabs flex overflow-x-auto px-2.5 sm:px-4">
+        {tabs.map((tab) => {
+          const active = tab.id === value;
+          return (
+            <button
+              key={tab.id}
+              ref={(el) => {
+                refs.current[tab.id] = el;
+              }}
+              id={`jm-tab-${tab.id}`}
+              role="tab"
+              type="button"
+              aria-selected={active}
+              aria-controls="jm-tabpanel"
+              tabIndex={active ? 0 : -1}
+              onClick={() => onChange(tab.id)}
+              className={`relative flex shrink-0 items-center gap-1.5 px-3 py-3 text-[14px] font-semibold transition-colors ${FOCUS} ${active ? 'text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              {tab.label}
+              {tab.badge != null && (
+                <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${tab.alert ? 'bg-[#fdece5] text-[#8c3d27]' : 'bg-slate-100 text-slate-500'}`}>{tab.badge}</span>
+              )}
+              {active && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full" style={{ background: ACCENT }} aria-hidden="true" />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// A number you can tap: it opens the tab that explains it.
+const Tile = ({ value, label, alert, onClick }) => (
+  <button type="button" onClick={onClick} className={`flex flex-col items-start rounded-2xl bg-slate-50 px-3.5 py-3 text-left transition-colors hover:bg-slate-100 ${FOCUS}`}>
+    <span className={`text-[22px] font-semibold leading-none tabular-nums ${alert ? 'text-[#8c3d27]' : 'text-slate-900'}`}>{value}</span>
+    <span className="mt-1.5 text-[12.5px] leading-snug text-slate-500">{label}</span>
+  </button>
+);
+
+const OverviewTab = ({ result, review, tiles, ready }) => (
+  <div className="space-y-6">
+    <NextMove move={insight(result, false)} />
+    {review && review.summary && <p className="text-[14px] leading-relaxed text-slate-600">{review.summary}</p>}
+    <div className="grid gap-2.5" style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}>
+      {tiles.map((tile) => (
+        <Tile key={tile.label} {...tile} />
+      ))}
+    </div>
+    <section>
+      <h3 className="text-[15px] font-semibold text-slate-900">Where your points come from</h3>
+      <div className="mt-3">
+        <Breakdown parts={result.parts} ready={ready} />
+      </div>
+    </section>
+    <p className="hidden items-start gap-2 text-[13px] leading-relaxed text-slate-500 sm:flex">
+      <Icon d={ICON.shield} className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+      Scored on your device as you type. Keywords are worth 70 points, the other three checks 10 each.
+    </p>
+  </div>
+);
+
+const CHIP_LIMIT = 12;
+
+const ChipGroup = ({ title, items, tone, aside, note }) => {
+  const [all, setAll] = useState(false);
+  const shown = all ? items : items.slice(0, CHIP_LIMIT);
+  return (
+    <section>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+          {title}
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{items.length}</span>
+        </h3>
+        {aside}
+      </div>
+      {note && <p className="mt-1 text-[13px] leading-snug text-slate-500">{note}</p>}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {shown.map((kw) => (
+          <Chip key={kw.term} tone={tone(kw)}>
+            {kw.term}
+            {kw.partial && <span className="font-normal text-slate-400">via Office</span>}
+          </Chip>
+        ))}
+      </div>
+      {items.length > CHIP_LIMIT && (
+        <button type="button" onClick={() => setAll((v) => !v)} className={`mt-2.5 rounded-md text-[13px] font-semibold text-slate-600 hover:text-slate-900 ${FOCUS}`}>
+          {all ? 'Show fewer' : `Show all ${items.length}`}
+        </button>
+      )}
+    </section>
+  );
+};
+
+const KeywordsTab = ({ covered, missingSkills, hasMust, total }) => {
+  const pct = total ? Math.round((covered.length / total) * 100) : 0;
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-[13.5px] leading-snug text-slate-600">
+          <span className="font-semibold text-slate-900">{covered.length} of {total}</span> keywords from the job are on your resume.
+        </p>
+        <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${pct}% of the job's keywords found`}>
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: `linear-gradient(90deg,#f0b6a3,${ACCENT})` }} />
+        </div>
+      </div>
+
+      {missingSkills.length > 0 && (
+        <ChipGroup
+          title="Still missing"
+          items={missingSkills}
+          tone={(kw) => (kw.must ? 'must' : 'missing')}
+          note="Work them in only where they’re true for you."
+          aside={
+            hasMust ? (
+              <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#d9856b]" aria-hidden="true" />
+                Must-have
+              </span>
+            ) : null
+          }
+        />
+      )}
+      {covered.length > 0 && <ChipGroup title="On your resume" items={covered} tone={() => 'found'} />}
+      {missingSkills.length === 0 && <p className="text-sm text-slate-700">No skill or tool from the job is missing.</p>}
+    </div>
   );
 };
 
@@ -688,6 +881,15 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
   const ready = useReveal();
   const titleId = useId();
   useOutfit();
+
+  // The panel has four pages instead of one long scroll: Overview, To fix, Keywords, Requirements.
+  const [tab, setTab] = useState('overview');
+  const [focusId, setFocusId] = useState(null); // a finding the To fix page should open and scroll to
+  const bodyRef = useRef(null);
+  const openTab = useCallback((id) => {
+    setTab(id);
+    if (bodyRef.current) bodyRef.current.scrollTop = 0;
+  }, []);
 
   // Scrolling the body down folds the dark score header away so the content gets the whole sheet; scrolling back to the
   // very top brings it back. The header only folds when there is enough left to scroll afterwards (otherwise the body
@@ -750,6 +952,33 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
   const hasMust = missingSkills.some((k) => k.must);
   const review = useMemo(() => reviewResume(target, data, result), [target, data, result]);
 
+  const totalKeywords = covered.length + missing.length;
+  const unmet = check.items.filter((item) => item.status !== 'met').length;
+  const hasRequirements = check.items.length > 0 || missingQuals.length > 0;
+  const fixCount = review ? review.missing.length + review.improve.length : 0;
+  const tabs = [
+    { id: 'overview', label: 'Overview' },
+    ...(review ? [{ id: 'fix', label: 'To fix', badge: fixCount || null, alert: review.missing.length > 0 }] : []),
+    { id: 'keywords', label: 'Keywords', badge: missingSkills.length || null, alert: hasMust },
+    ...(hasRequirements ? [{ id: 'requirements', label: 'Requirements', badge: unmet || null, alert: true }] : []),
+  ];
+  const page = tabs.some((t) => t.id === tab) ? tab : 'overview';
+  const tiles = [
+    { value: `${covered.length}/${totalKeywords}`, label: 'keywords found', onClick: () => openTab('keywords') },
+    ...(review ? [{ value: fixCount, label: fixCount === 1 ? 'thing to fix' : 'things to fix', alert: review.missing.length > 0, onClick: () => openTab('fix') }] : []),
+    ...(check.items.length > 0 ? [{ value: `${check.items.length - unmet}/${check.items.length}`, label: 'requirements met', alert: unmet > 0, onClick: () => openTab('requirements') }] : []),
+  ];
+
+  // "How to fix this" on a requirement card: the To fix page, with that finding open.
+  const fixFor = (item) => {
+    if (!review) return;
+    const ids = new Set([...review.missing, ...review.improve].map((f) => f.id));
+    const id = [`req-${item.id}`, item.kind === 'education' ? 'education' : 'work-empty'].find((candidate) => ids.has(candidate));
+    if (!id) return;
+    setFocusId(id);
+    openTab('fix');
+  };
+
   return createPortal(
     <div className="jm-root fixed inset-0 z-[58]" style={{ fontFamily: FONT }}>
       <style>{STYLE}</style>
@@ -764,14 +993,14 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
         {/* Header: the dark half. The score is the one loud thing here. It folds away while the body is scrolled down. */}
         <div className="jm-hero shrink-0" style={{ gridTemplateRows: folded ? '0fr' : '1fr' }} aria-hidden={folded || undefined}>
         <div ref={heroRef}>
-        <div className="relative overflow-hidden px-5 pb-4 pt-5 text-white sm:px-6 sm:pb-6 sm:pt-6" style={{ background: 'linear-gradient(165deg,#0b1220 0%,#16213a 58%,#222f4d 100%)' }}>
+        <div className="relative overflow-hidden px-5 pb-3.5 pt-4 text-white sm:px-6 sm:pb-6 sm:pt-6" style={{ background: 'linear-gradient(165deg,#0b1220 0%,#16213a 58%,#222f4d 100%)' }}>
           <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full opacity-30 blur-3xl" style={{ background: ACCENT }} aria-hidden="true" />
           <span className="pointer-events-none absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/25 lg:hidden" aria-hidden="true" />
 
           <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[13px] font-medium text-white/55">Job match</p>
-              <h2 id={titleId} className="mt-0.5 truncate text-xl font-semibold leading-snug sm:text-[22px]">{target.title || 'Your target job'}</h2>
+              <h2 id={titleId} className="mt-0.5 line-clamp-2 text-lg font-semibold leading-snug sm:text-[22px]">{tidyTitle(target.title) || 'Your target job'}</h2>
               {target.company && <p className="truncate text-sm text-white/60">{target.company}</p>}
             </div>
             <button
@@ -785,9 +1014,9 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
             </button>
           </div>
 
-          <div className="relative mt-4 flex items-end justify-between gap-4 sm:mt-7">
+          <div className="relative mt-3 flex items-end justify-between gap-4 sm:mt-7">
             <p className="flex items-baseline leading-none" aria-hidden="true">
-              <span className="text-[52px] font-semibold tabular-nums tracking-[-0.04em] sm:text-[76px]">{shown}</span>
+              <span className="text-[44px] font-semibold tabular-nums tracking-[-0.04em] sm:text-[76px]">{shown}</span>
               <span className="ml-1.5 text-base font-medium text-white/45 sm:text-lg">/100</span>
             </p>
             <div className="pb-1 text-right">
@@ -801,7 +1030,7 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
             </div>
           </div>
 
-          <div className="relative mt-4 sm:mt-6">
+          <div className="relative mt-3 sm:mt-6">
             <TierMeter score={result.score} ready={ready} />
           </div>
         </div>
@@ -820,65 +1049,20 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
           </button>
         )}
 
-        {/* Body */}
-        <div onScroll={onBodyScroll} className="pro-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
-          <NextMove move={insight(result, false)} />
-
-          {review && (
-            <div className="mt-7">
-              <Review review={review} />
-            </div>
-          )}
-
-          <div className="mt-7">
-            <Group title="Where your points come from">
-              <div className="w-full">
-                <Breakdown parts={result.parts} ready={ready} />
-              </div>
-            </Group>
-          </div>
-
-          <div className="mt-7 border-t border-slate-100 pt-7">
-            {covered.length > 0 && (
-              <Group title="Already on your resume" count={covered.length}>
-                {covered.slice(0, MAX_CHIPS).map((kw) => (
-                  <Chip key={kw.term} tone="found">{kw.term}</Chip>
-                ))}
-                {covered.length > MAX_CHIPS && <span className="px-1 py-1.5 text-[13px] text-slate-500">+{covered.length - MAX_CHIPS} more</span>}
-              </Group>
-            )}
-
-            {missingSkills.length > 0 && (
-              <Group
-                title="Still missing"
-                count={missingSkills.length}
-                note="Work them in only where they’re true for you."
-                shortNote="Work them in only where they’re true for you."
-                aside={
-                  hasMust ? (
-                    <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#d9856b]" aria-hidden="true" />
-                      Must-have for this job
-                    </span>
-                  ) : null
-                }
-              >
-                {missingSkills.slice(0, MAX_CHIPS).map((kw) => (
-                  <Chip key={kw.term} tone={kw.must ? 'must' : 'missing'}>{kw.term}</Chip>
-                ))}
-                {missingSkills.length > MAX_CHIPS && <span className="px-1 py-1.5 text-[13px] text-slate-500">+{missingSkills.length - MAX_CHIPS} more</span>}
-              </Group>
-            )}
-
-            {(check.items.length > 0 || missingQuals.length > 0) && <Requirements check={check} leftovers={missingQuals} ready={ready} />}
-
-            {missing.length === 0 && check.items.every((item) => item.status === 'met') && <p className="text-sm text-slate-700">Every keyword from the job is on your resume.</p>}
-          </div>
-
-          <p className="mt-8 hidden items-start gap-2 text-[13px] leading-relaxed text-slate-500 sm:flex">
-            <Icon d={ICON.shield} className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-            Scored on your device as you type. Keywords are worth 70 points, the other three checks 10 each.
-          </p>
+        {/* Pages */}
+        <Tabs tabs={tabs} value={page} onChange={openTab} />
+        <div
+          ref={bodyRef}
+          onScroll={onBodyScroll}
+          role="tabpanel"
+          id="jm-tabpanel"
+          aria-labelledby={`jm-tab-${page}`}
+          className="pro-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6"
+        >
+          {page === 'overview' && <OverviewTab result={result} review={review} tiles={tiles} ready={ready} />}
+          {page === 'fix' && review && <FixList review={review} focusId={focusId} onFocused={() => setFocusId(null)} />}
+          {page === 'keywords' && <KeywordsTab covered={covered} missingSkills={missingSkills} hasMust={hasMust} total={totalKeywords} />}
+          {page === 'requirements' && <RequirementsTab check={check} leftovers={missingQuals} ready={ready} onFix={review ? fixFor : undefined} />}
         </div>
 
         {/* Footer */}
@@ -915,7 +1099,7 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
 
 const JobTargetBar = ({ target, data, onEdit, sheet = false, onSheetClose, card = false, dockClassName }) => {
   const [open, setOpen] = useState(false);
-  const result = useMemo(() => scoreResume(target, data), [target, data]);
+  const result = useMemo(() => scoreMatch(target, data), [target, data]);
   const close = useCallback(() => setOpen(false), []);
   const show = useCallback(() => setOpen(true), []);
   if (!result) return null;
