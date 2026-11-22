@@ -54,7 +54,8 @@ test('years of experience: counted only from jobs that mention the field, overla
   assert.equal(exp.status, 'short');
   // Jan 2022 to Jun 2025 = 42 months (3 years 6 months); needs 60
   assert.equal(exp.have, '3 years 6 months in sales');
-  assert.equal(exp.pill, '1 year 6 months short');
+  assert.equal(exp.pill, '1 yr 6 mo short');
+  assert.deepEqual(exp.bar, { have: '3 yrs 6 mo', need: '5 yrs' });
   assert.ok(exp.ratio > 0.69 && exp.ratio < 0.71);
   assert.deepEqual(exp.jobs.map((j) => j.counted), [true, true, false]);
 });
@@ -99,7 +100,8 @@ test('empty work history', () => {
 test('a ranged or worded length reads the lower figure; months are fractions of a year', () => {
   const a = analyseRequirements(target(['3-5 years in retail']), resume([], []), NOW).items[0];
   assert.equal(a.title, '3 years in retail');
-  assert.match(a.need, /3 years to 5 years in retail/);
+  assert.equal(a.need, '3\u20135 years in retail');
+  assert.equal(a.bar.need, '3\u20135 yrs');
   const b = analyseRequirements(target(['five (5) years of experience as a store manager']), resume([], []), NOW).items[0];
   assert.equal(b.title, '5 years in store manager');
   const c = analyseRequirements(target(['18 months experience']), resume([], []), NOW).items[0];
@@ -211,6 +213,8 @@ test('nothing parseable gives no items and never throws, whatever the resume hol
 });
 
 test('formatMonths', () => {
+  assert.equal(formatMonths(25, true), '2 yrs 1 mo');
+  assert.equal(formatMonths(12, true), '1 yr');
   assert.equal(formatMonths(0), '0 months');
   assert.equal(formatMonths(1), '1 month');
   assert.equal(formatMonths(12), '1 year');

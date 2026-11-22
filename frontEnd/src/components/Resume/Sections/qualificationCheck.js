@@ -358,12 +358,21 @@ const educationOf = (data) => {
 /*                                 the answers                                */
 /* -------------------------------------------------------------------------- */
 
-export const formatMonths = (months) => {
+// "1 year 11 months", or compact for a badge: "1 yr 11 mo".
+export const formatMonths = (months, compact = false) => {
   const total = Math.round(months);
-  if (total <= 0) return '0 months';
+  if (total <= 0) return compact ? '0 mo' : '0 months';
   const years = Math.floor(total / 12);
   const rest = total % 12;
+  if (compact) return [years && `${years} yr${years === 1 ? '' : 's'}`, rest && `${rest} mo`].filter(Boolean).join(' ');
   return [years && plural(years, 'year'), rest && plural(rest, 'month')].filter(Boolean).join(' ');
+};
+
+// A length asked for as one short phrase: "8 yrs", "8\u201312 yrs", "18 mo".
+const askedShort = (years, maxYears) => {
+  const whole = Number.isInteger(years) && (!maxYears || Number.isInteger(maxYears));
+  if (!whole) return formatMonths(Math.round(years * 12), true);
+  return maxYears && maxYears > years ? `${years}\u2013${maxYears} yrs` : `${years} yr${years === 1 ? '' : 's'}`;
 };
 
 const DONT_STRETCH = 'Do not stretch your dates to close the gap: employers check them.';
@@ -373,7 +382,9 @@ const checkExperience = (req, work) => {
   const asked = formatMonths(needMonths);
   const field = req.field;
   const title = field ? `${asked} in ${field}` : `${asked} of experience`;
-  const needText = req.maxYears && req.maxYears > req.years ? `${asked} to ${formatMonths(Math.round(req.maxYears * 12))}${field ? ` in ${field}` : ''}` : title;
+  const ranged = req.maxYears && req.maxYears > req.years;
+  const rangeLabel = Number.isInteger(req.years) && Number.isInteger(req.maxYears) ? `${req.years}\u2013${req.maxYears} years` : `${asked} to ${formatMonths(Math.round((req.maxYears || 0) * 12))}`;
+  const needText = ranged ? `${rangeLabel}${field ? ` in ${field}` : ' of experience'}` : title;
 
   const counted = (job) => {
     if (!job.span) return { counted: false, via: null };
@@ -391,7 +402,7 @@ const checkExperience = (req, work) => {
   const hits = work.dated.filter((job) => counted(job).counted);
   const months = field ? mergeMonths(hits.map((job) => job.span)) : work.totalMonths;
   const ratio = needMonths ? Math.max(0, Math.min(1, months / needMonths)) : 1;
-  const base = { id: req.id, kind: 'experience', title, need: needText, ratio, jobs: jobs.slice(0, 5), raw: req.raw, must: req.must };
+  const base = { id: req.id, kind: 'experience', title, need: needText, field, ratio, jobs: jobs.slice(0, 5), raw: req.raw, must: req.must };
 
   let status;
   if (!work.jobs.length) status = 'empty';
@@ -399,6 +410,12 @@ const checkExperience = (req, work) => {
   else if (months >= needMonths) status = 'met';
   else if (field && months === 0) status = work.totalMonths >= needMonths ? 'unproven' : 'none';
   else status = 'short';
+
+  // The two figures under the bar on the card.
+  base.bar = {
+    have: status === 'empty' ? 'No jobs yet' : status === 'unknown' ? 'No dates' : months > 0 ? formatMonths(months, true) : 'None counted',
+    need: askedShort(req.years, req.maxYears),
+  };
 
   const short = formatMonths(needMonths - months);
   const total = formatMonths(work.totalMonths);
@@ -417,7 +434,7 @@ const checkExperience = (req, work) => {
       };
     case 'short':
       return {
-        ...base, status, tone: 'gap', pill: `${short} short`,
+        ...base, status, tone: 'gap', pill: `${formatMonths(needMonths - months, true)} short`,
         have: `${formatMonths(months)}${field ? ` in ${field}` : ''}`,
         headline: `${short} short of the ${title} the job asks for`,
         detail: `The job asks for ${title}. ${field ? `The jobs on your resume that mention ${field} add up to ${formatMonths(months)}` : `The dates in your work history add up to ${formatMonths(months)}`}, so you are ${short} short.${

@@ -73,16 +73,13 @@ const STYLE = `
 @media (min-width:1024px){.jm-panel{animation-name:jm-in-right}}
 .jm-fade{animation:jm-fade .25s ease both}
 .jm-delta{animation:jm-delta 2.2s ease both}
-.jm-hero{display:grid;transition:grid-template-rows .32s ${EASE}}
-.jm-hero>div{min-height:0;overflow:hidden}
-.jm-close-float{animation:jm-fade .25s ease both}
 .jm-tabs{scrollbar-width:none}
 .jm-tabs::-webkit-scrollbar{display:none}
 .jm-root summary{list-style:none}
 .jm-root summary::-webkit-details-marker{display:none}
 .jm-root{font-family:${FONT};letter-spacing:0;-webkit-font-smoothing:antialiased}
 .jm-root *{font-family:inherit}
-@media (prefers-reduced-motion:reduce){.jm-panel,.jm-fade,.jm-delta,.jm-close-float{animation:none}.jm-hero{transition:none}}
+@media (prefers-reduced-motion:reduce){.jm-panel,.jm-fade,.jm-delta{animation:none}}
 `;
 
 /* -------------------------------------------------------------------------- */
@@ -364,17 +361,27 @@ const TierMeter = ({ score, ready }) => (
   </div>
 );
 
+// A keyword tag. 5px corners, a hairline border and one marker that says what it is: a tick when the resume has it, a solid
+// square for a must-have that is missing, a hollow square for a nice-to-have that is missing.
+const Square = ({ hollow, className = '' }) => (
+  <span
+    className={`inline-block h-[7px] w-[7px] shrink-0 ${hollow ? 'border border-slate-400' : 'bg-[#d9856b]'} ${className}`}
+    aria-hidden="true"
+  />
+);
+
 const Chip = ({ children, tone }) => {
   const look = {
-    found: 'border-emerald-100 bg-emerald-50 text-emerald-900',
-    must: 'border-[#d9856b]/30 bg-[#fdece5] text-[#8c3d27]',
-    missing: 'border-dashed border-slate-300 bg-white text-slate-600',
-    qual: 'border-transparent bg-slate-100 text-slate-600',
+    found: 'border-slate-200 bg-white text-slate-800',
+    must: 'border-[#e6b8a7] bg-[#fff6f2] text-[#7a3320]',
+    missing: 'border-slate-300 bg-white text-slate-600',
+    qual: 'border-slate-200 bg-slate-50 text-slate-600',
   }[tone];
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium leading-none ${look}`}>
-      {tone === 'found' && <Icon d={ICON.check} className="h-3 w-3 shrink-0 text-emerald-600" stroke={2.6} />}
-      {tone === 'must' && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#d9856b]" aria-hidden="true" />}
+    <span className={`inline-flex items-center gap-2 rounded-[5px] border px-2.5 py-[7px] text-[13px] font-medium leading-none ${look}`}>
+      {tone === 'found' && <Icon d={ICON.check} className="h-3 w-3 shrink-0 text-emerald-600" stroke={2.8} />}
+      {tone === 'must' && <Square />}
+      {tone === 'missing' && <Square hollow />}
       {children}
     </span>
   );
@@ -386,16 +393,23 @@ const REQ_TONE = {
   soft: { pill: 'bg-slate-100 text-slate-600', ring: 'rgba(15,23,42,.09)', bar: 'linear-gradient(90deg,#cbd5e1,#94a3b8)' },
 };
 
-// One job the years were counted from: green dot when it counted, grey when it did not.
-const JobLine = ({ job }) => (
-  <li className="flex items-start gap-2 text-[12.5px] leading-snug text-slate-600">
-    <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${job.counted ? 'bg-emerald-500' : 'bg-slate-300'}`} aria-hidden="true" />
-    <span className="min-w-0 flex-1 break-words">{job.name}</span>
-    <span className="shrink-0 text-right tabular-nums text-slate-500">
-      {!job.dated ? 'no dates' : `${formatMonths(job.months)}${job.counted ? (job.via === 'lines' ? ', from its lines' : '') : ', not counted'}`}
-    </span>
-  </li>
-);
+// One job the years were counted from. The name gets the whole line; what was done with it is said underneath.
+const JobLine = ({ job, field }) => {
+  const why = !job.dated
+    ? 'No dates, so it cannot be counted'
+    : job.counted
+      ? `${formatMonths(job.months, true)} \u00B7 counted${job.via === 'title' ? ', the title matches' : job.via === 'lines' ? ', its lines mention it' : ''}`
+      : `${formatMonths(job.months, true)} \u00B7 not counted${field ? `, no mention of ${field}` : ''}`;
+  return (
+    <li className="flex items-start gap-2.5">
+      <span className={`mt-[7px] inline-block h-[7px] w-[7px] shrink-0 ${job.counted ? 'bg-emerald-600' : 'border border-slate-400'}`} aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 break-words text-[13px] leading-snug text-slate-800">{job.name}</p>
+        <p className="mt-0.5 text-[12px] leading-snug text-slate-500">{why}</p>
+      </div>
+    </li>
+  );
+};
 
 // One requirement of the advert (a length of experience or an education level) against the resume. Only the facts are here;
 // the explanation and the advice are in the "To fix" list, one tap away.
@@ -405,59 +419,72 @@ const RequirementCard = ({ item, ready, index, onFix }) => {
   return (
     <li className="rounded-2xl bg-white p-4" style={{ boxShadow: `inset 0 0 0 1px ${tone.ring}` }}>
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-x-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            {item.kind === 'experience' ? 'Experience' : 'Education'}
-            {item.must && (
-              <span className="flex items-center gap-1 normal-case tracking-normal text-[#8c3d27]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#d9856b]" aria-hidden="true" />
-                Must-have
-              </span>
-            )}
-          </p>
-          <p className="mt-0.5 break-words text-[14.5px] font-semibold leading-snug text-slate-900">{item.title}</p>
-        </div>
-        <span className={`mt-0.5 shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${tone.pill}`}>{item.pill}</span>
+        <p className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          {item.kind === 'experience' ? 'Experience' : 'Education'}
+          {item.must && (
+            <span className="flex items-center gap-1.5 normal-case tracking-normal text-[#8c3d27]">
+              <Square />
+              Must-have
+            </span>
+          )}
+        </p>
+        <span className={`-mt-0.5 shrink-0 whitespace-nowrap rounded-[5px] px-2 py-1 text-xs font-semibold ${tone.pill}`}>{item.pill}</span>
       </div>
+      <p className="mt-1.5 break-words text-[16px] font-semibold leading-snug text-slate-900">{item.title}</p>
 
-      {item.kind === 'experience' && (
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${pct}% of the time the job asks for`}>
-          <div
-            className="h-full rounded-full"
-            style={{ width: ready ? `${pct}%` : '0%', background: tone.bar, transition: reducedMotion() ? 'none' : `width .9s ${EASE} ${240 + index * 90}ms` }}
-          />
+      {item.kind === 'experience' && item.bar ? (
+        <div className="mt-3.5">
+          <div className="h-1.5 overflow-hidden rounded-[2px] bg-slate-100" role="img" aria-label={`${pct}% of the time the job asks for`}>
+            <div
+              className="h-full"
+              style={{ width: ready ? `${pct}%` : '0%', background: item.tone === 'met' ? '#059669' : ACCENT, transition: reducedMotion() ? 'none' : `width .9s ${EASE} ${240 + index * 90}ms` }}
+            />
+          </div>
+          <p className="mt-2 flex items-baseline justify-between gap-3 text-[13px] text-slate-500">
+            <span>
+              You have <span className="font-semibold text-slate-900">{item.bar.have}</span>
+            </span>
+            <span className="text-right">
+              Job needs <span className="font-semibold text-slate-900">{item.bar.need}</span>
+            </span>
+          </p>
         </div>
+      ) : (
+        <dl className="mt-3.5 grid grid-cols-2 gap-x-4 border-t border-slate-100 pt-3 text-[13px]">
+          <div className="min-w-0">
+            <dt className="text-slate-500">Job asks for</dt>
+            <dd className="mt-0.5 break-words font-semibold leading-snug text-slate-900">{item.need}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-slate-500">Your resume shows</dt>
+            <dd className="mt-0.5 break-words font-semibold leading-snug text-slate-900">{item.have}</dd>
+          </div>
+        </dl>
       )}
 
-      <dl className="mt-3 grid grid-cols-2 gap-x-4 text-[13px]">
-        <div className="min-w-0">
-          <dt className="text-slate-500">The job asks for</dt>
-          <dd className="mt-0.5 break-words font-medium leading-snug text-slate-900">{item.need}</dd>
-        </div>
-        <div className="min-w-0">
-          <dt className="text-slate-500">Your resume shows</dt>
-          <dd className="mt-0.5 break-words font-medium leading-snug text-slate-900">{item.have}</dd>
-        </div>
-      </dl>
-
       {item.jobs && item.jobs.length > 0 && item.status !== 'empty' && (
-        <details className="group mt-3 border-t border-slate-100 pt-2">
-          <summary className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg py-1.5 text-[13px] font-medium text-slate-600 ${FOCUS}`}>
+        <details className="group mt-3.5 border-t border-slate-100 pt-1">
+          <summary className={`flex cursor-pointer items-center justify-between gap-2 rounded-md py-2 text-[13px] font-medium text-slate-600 ${FOCUS}`}>
             Jobs checked ({item.jobs.length})
             <Icon d={ICON.chevron} className="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none" stroke={2.2} />
           </summary>
-          <ul className="mt-1.5 space-y-1.5" aria-label="Jobs checked">
+          <ul className="mt-1 space-y-3 pb-1" aria-label="Jobs checked">
             {item.jobs.map((job, i) => (
-              <JobLine key={`${job.name}-${i}`} job={job} />
+              <JobLine key={`${job.name}-${i}`} job={job} field={item.field} />
             ))}
           </ul>
         </details>
       )}
 
       {onFix && item.status !== 'met' && (
-        <button type="button" onClick={onFix} className={`mt-3 inline-flex items-center gap-1 rounded-md text-[13px] font-semibold text-[#8c3d27] hover:underline ${FOCUS}`}>
+        <button
+          type="button"
+          onClick={onFix}
+          className={`mt-3.5 flex w-full items-center justify-between rounded-[5px] bg-[#fff6f2] px-3.5 py-2.5 text-[13.5px] font-semibold text-[#8c3d27] transition-colors hover:bg-[#fdece5] ${FOCUS}`}
+          style={{ boxShadow: 'inset 0 0 0 1px rgba(217,133,107,.28)' }}
+        >
           How to fix this
-          <Icon d={ICON.chevron} className="h-3.5 w-3.5" stroke={2.4} />
+          <Icon d={ICON.chevron} className="h-4 w-4" stroke={2.4} />
         </button>
       )}
     </li>
@@ -466,33 +493,38 @@ const RequirementCard = ({ item, ready, index, onFix }) => {
 
 // The "Requirements" tab: a card for every years-of-experience and education-level requirement, then plain chips for any
 // other qualification the advert names (a licence, a registration) that the cards do not cover.
-const RequirementsTab = ({ check, leftovers, ready, onFix }) => (
-  <div>
-    <p className="text-[13.5px] leading-relaxed text-slate-600">
-      What the job asks for in experience and education, checked against your work history and Education step. They count only if you really hold them.
-    </p>
+const RequirementsTab = ({ check, leftovers, ready, onFix }) => {
+  const met = check.items.filter((item) => item.status === 'met').length;
+  return (
+    <div>
+      {check.items.length > 0 && (
+        <>
+          <p className="text-[15px] font-semibold text-slate-900">
+            {met} of {check.items.length} met
+          </p>
+          <p className="mt-0.5 text-[13px] leading-snug text-slate-500">Checked against your work history and Education step. They count only if you really hold them.</p>
+          <ul className="mt-4 space-y-3">
+            {check.items.map((item, i) => (
+              <RequirementCard key={item.id} item={item} ready={ready} index={i} onFix={onFix ? () => onFix(item) : undefined} />
+            ))}
+          </ul>
+        </>
+      )}
 
-    {check.items.length > 0 && (
-      <ul className="mt-4 space-y-2.5">
-        {check.items.map((item, i) => (
-          <RequirementCard key={item.id} item={item} ready={ready} index={i} onFix={onFix ? () => onFix(item) : undefined} />
-        ))}
-      </ul>
-    )}
-
-    {leftovers.length > 0 && (
-      <div className="mt-6">
-        <h3 className="text-[15px] font-semibold text-slate-900">Also listed</h3>
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          {leftovers.map((kw) => (
-            <Chip key={kw.term} tone="qual">{kw.term}</Chip>
-          ))}
+      {leftovers.length > 0 && (
+        <div className={check.items.length > 0 ? 'mt-7' : ''}>
+          <h3 className="text-[15px] font-semibold text-slate-900">Also listed</h3>
+          <p className="mt-0.5 text-[13px] leading-snug text-slate-500">If you hold one, add it under Education or Certificates.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {leftovers.map((kw) => (
+              <Chip key={kw.term} tone="qual">{kw.term}</Chip>
+            ))}
+          </div>
         </div>
-        <p className="mt-2 text-[13px] leading-relaxed text-slate-500">If you hold one, add it under Education or Certificates.</p>
-      </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
+};
 
 
 // One row per scoring check: label and points, a bar that grows when the panel opens, then the hint.
@@ -563,7 +595,7 @@ const FindingCard = ({ item, number, open, onToggle, register }) => {
   const bodyId = useId();
   const big = item.level === 'missing';
   return (
-    <li ref={register} className="overflow-hidden rounded-2xl bg-white scroll-mt-4" style={{ boxShadow: `inset 0 0 0 1px ${big ? 'rgba(217,133,107,.38)' : 'rgba(15,23,42,.09)'}` }}>
+    <li ref={register} className="overflow-hidden rounded-2xl bg-white scroll-mt-16" style={{ boxShadow: `inset 0 0 0 1px ${big ? 'rgba(217,133,107,.38)' : 'rgba(15,23,42,.09)'}` }}>
       <button
         type="button"
         onClick={onToggle}
@@ -572,7 +604,7 @@ const FindingCard = ({ item, number, open, onToggle, register }) => {
         className={`flex w-full items-start gap-3 px-4 py-3.5 text-left ${FOCUS}`}
       >
         <span
-          className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold tabular-nums ${big ? 'bg-[#d9856b] text-white' : 'bg-slate-100 text-slate-600'}`}
+          className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px] text-[12px] font-semibold tabular-nums ${big ? 'bg-[#d9856b] text-white' : 'bg-slate-100 text-slate-600'}`}
           aria-hidden="true"
         >
           {number}
@@ -582,7 +614,7 @@ const FindingCard = ({ item, number, open, onToggle, register }) => {
           <span className="mt-0.5 block text-xs text-slate-500">{item.where}</span>
         </span>
         {item.points > 0 && (
-          <span className="mt-0.5 shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-emerald-800" title="Points you can still win">
+          <span className="mt-0.5 shrink-0 rounded-[5px] bg-emerald-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-emerald-800" title="Points you can still win">
             +{fmtPoints(item.points)}
           </span>
         )}
@@ -627,7 +659,7 @@ const ReviewGroup = ({ title, note, items, offset, openIds, onToggle, register }
     <div className="mt-5 first:mt-0">
       <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
         {title}
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{items.length}</span>
+        <span className="rounded-[5px] bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{items.length}</span>
       </h4>
       <p className="mt-1 text-[13px] leading-snug text-slate-500">{note}</p>
       <ul className="mt-3 space-y-2">
@@ -704,7 +736,7 @@ const FixList = ({ review, focusId, onFocused }) => {
           >
             <span className="flex items-center gap-2">
               Already working
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium tabular-nums text-emerald-800">{review.good.length}</span>
+              <span className="rounded-[5px] bg-emerald-50 px-2 py-0.5 text-xs font-medium tabular-nums text-emerald-800">{review.good.length}</span>
             </span>
             <Icon d={ICON.chevron} className={`h-4 w-4 text-slate-400 transition-transform duration-200 motion-reduce:transition-none ${showGood ? 'rotate-90' : ''}`} stroke={2.2} />
           </button>
@@ -730,8 +762,26 @@ const FixList = ({ review, focusId, onFocused }) => {
 /*                               tabs and their pages                         */
 /* -------------------------------------------------------------------------- */
 
+// Four tabs that fit a phone: the label only, and a small square marker where something needs attention (the numbers are on
+// the Overview). If the row is ever wider than the screen it scrolls, fades at the edge, and keeps the open tab in view.
 const Tabs = ({ tabs, value, onChange }) => {
   const refs = useRef({});
+  const listRef = useRef(null);
+  const [more, setMore] = useState(false);
+  const measure = useCallback(() => {
+    const list = listRef.current;
+    if (list) setMore(list.scrollLeft + list.clientWidth < list.scrollWidth - 2);
+  }, []);
+  useEffect(() => {
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure, tabs.length]);
+  useEffect(() => {
+    const open = refs.current[value];
+    if (open && open.scrollIntoView) open.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+  }, [value]);
+
   const onKey = (event) => {
     const at = tabs.findIndex((t) => t.id === value);
     let next = null;
@@ -744,9 +794,18 @@ const Tabs = ({ tabs, value, onChange }) => {
     onChange(next.id);
     if (refs.current[next.id]) refs.current[next.id].focus();
   };
+  const fade = more ? 'linear-gradient(to right,#000 calc(100% - 28px),transparent)' : undefined;
   return (
-    <div className="shrink-0 border-b border-slate-100 bg-white">
-      <div role="tablist" aria-label="Job match sections" onKeyDown={onKey} className="jm-tabs flex overflow-x-auto px-2.5 sm:px-4">
+    <div className="border-b border-slate-200 bg-white">
+      <div
+        ref={listRef}
+        role="tablist"
+        aria-label="Job match sections"
+        onKeyDown={onKey}
+        onScroll={measure}
+        className="jm-tabs flex overflow-x-auto px-1 sm:px-3"
+        style={{ WebkitMaskImage: fade, maskImage: fade }}
+      >
         {tabs.map((tab) => {
           const active = tab.id === value;
           return (
@@ -762,13 +821,12 @@ const Tabs = ({ tabs, value, onChange }) => {
               aria-controls="jm-tabpanel"
               tabIndex={active ? 0 : -1}
               onClick={() => onChange(tab.id)}
-              className={`relative flex shrink-0 items-center gap-1.5 px-3 py-3 text-[14px] font-semibold transition-colors ${FOCUS} ${active ? 'text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`relative shrink-0 px-2 py-3.5 text-[13px] font-semibold transition-colors min-[400px]:px-3 min-[400px]:text-[14px] ${FOCUS} ${active ? 'text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}
             >
               {tab.label}
-              {tab.badge != null && (
-                <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${tab.alert ? 'bg-[#fdece5] text-[#8c3d27]' : 'bg-slate-100 text-slate-500'}`}>{tab.badge}</span>
-              )}
-              {active && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full" style={{ background: ACCENT }} aria-hidden="true" />}
+              {tab.alert && <span className="absolute right-0.5 top-3 h-[6px] w-[6px] bg-[#d9856b]" aria-hidden="true" />}
+              {tab.badge != null && <span className="sr-only">, {tab.badge} to look at</span>}
+              {active && <span className="absolute inset-x-2 bottom-0 h-0.5 min-[400px]:inset-x-3" style={{ background: ACCENT }} aria-hidden="true" />}
             </button>
           );
         })}
@@ -817,7 +875,7 @@ const ChipGroup = ({ title, items, tone, aside, note }) => {
       <div className="flex items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
           {title}
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{items.length}</span>
+          <span className="rounded-[5px] bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500">{items.length}</span>
         </h3>
         {aside}
       </div>
@@ -861,7 +919,7 @@ const KeywordsTab = ({ covered, missingSkills, hasMust, total }) => {
           aside={
             hasMust ? (
               <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#d9856b]" aria-hidden="true" />
+                <Square />
                 Must-have
               </span>
             ) : null
@@ -886,30 +944,35 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
   const [tab, setTab] = useState('overview');
   const [focusId, setFocusId] = useState(null); // a finding the To fix page should open and scroll to
   const bodyRef = useRef(null);
+  const heroRef = useRef(null);
+  // A new tab starts at its top, just under the tabs; if the header is still showing it stays where it is.
   const openTab = useCallback((id) => {
     setTab(id);
-    if (bodyRef.current) bodyRef.current.scrollTop = 0;
+    const body = bodyRef.current;
+    if (body) body.scrollTop = Math.min(body.scrollTop, heroRef.current ? heroRef.current.offsetHeight : 0);
   }, []);
 
-  // Scrolling the body down folds the dark score header away so the content gets the whole sheet; scrolling back to the
-  // very top brings it back. The header only folds when there is enough left to scroll afterwards (otherwise the body
-  // would stop being scrollable, jump back to the top and open the header again in a loop).
-  const heroRef = useRef(null);
-  const [folded, setFolded] = useState(false);
-  const FOLD_AFTER = 40; // px scrolled before the header folds
-  const onBodyScroll = (event) => {
-    const body = event.currentTarget;
-    if (!folded) {
-      const headerHeight = heroRef.current ? heroRef.current.offsetHeight : 0;
-      if (body.scrollTop > FOLD_AFTER && body.scrollHeight - body.clientHeight > headerHeight + 80) setFolded(true);
-    } else if (body.scrollTop <= 0) {
-      setFolded(false);
-    }
-  };
-  // A folded header is out of sight, so it must be out of the tab order and the screen reader too.
+  // The dark score header is the top of the scrolling page, so on every tab it scrolls away like any other content and the tabs
+  // stay at the top. A tab with little in it is padded to the height of the window (panelMin), so the header can always be
+  // scrolled completely out of sight, whichever tab is open.
+  const tabsRef = useRef(null);
+  const [panelMin, setPanelMin] = useState(0);
   useEffect(() => {
-    if (heroRef.current) heroRef.current.inert = folded;
-  }, [folded]);
+    const body = bodyRef.current;
+    if (!body) return undefined;
+    const measure = () => setPanelMin(Math.max(0, body.clientHeight - (tabsRef.current ? tabsRef.current.offsetHeight : 0)));
+    measure();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (observer) {
+      observer.observe(body);
+      if (tabsRef.current) observer.observe(tabsRef.current);
+    }
+    window.addEventListener('resize', measure);
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
 
   // Focus moves into the panel, Tab stays inside it, Escape closes it, and focus goes back to where it was.
   useEffect(() => {
@@ -960,7 +1023,7 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
     { id: 'overview', label: 'Overview' },
     ...(review ? [{ id: 'fix', label: 'To fix', badge: fixCount || null, alert: review.missing.length > 0 }] : []),
     { id: 'keywords', label: 'Keywords', badge: missingSkills.length || null, alert: hasMust },
-    ...(hasRequirements ? [{ id: 'requirements', label: 'Requirements', badge: unmet || null, alert: true }] : []),
+    ...(hasRequirements ? [{ id: 'requirements', label: 'Requirements', badge: unmet || null, alert: unmet > 0 }] : []),
   ];
   const page = tabs.some((t) => t.id === tab) ? tab : 'overview';
   const tiles = [
@@ -988,20 +1051,20 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="jm-panel absolute inset-x-0 bottom-0 flex max-h-[90vh] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl lg:inset-x-auto lg:bottom-3 lg:right-3 lg:top-3 lg:max-h-none lg:w-[450px] lg:rounded-[28px]"
+        className="jm-panel absolute inset-x-0 bottom-0 flex h-[90vh] max-h-[90vh] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl lg:inset-x-auto lg:bottom-3 lg:right-3 lg:top-3 lg:h-auto lg:max-h-none lg:w-[450px] lg:rounded-[28px]"
       >
-        {/* Header: the dark half. The score is the one loud thing here. It folds away while the body is scrolled down. */}
-        <div className="jm-hero shrink-0" style={{ gridTemplateRows: folded ? '0fr' : '1fr' }} aria-hidden={folded || undefined}>
-        <div ref={heroRef}>
-        <div className="relative overflow-hidden px-5 pb-3.5 pt-4 text-white sm:px-6 sm:pb-6 sm:pt-6" style={{ background: 'linear-gradient(165deg,#0b1220 0%,#16213a 58%,#222f4d 100%)' }}>
+        {/* Header: the dark half. The score is the one loud thing here. It is the top of the scrolling page. */}
+        <div ref={bodyRef} className="pro-scroll min-h-0 flex-1 overflow-y-auto">
+        <div ref={heroRef} className="relative overflow-hidden px-5 pb-3.5 pt-4 text-white sm:px-6 sm:pb-6 sm:pt-6" style={{ background: 'linear-gradient(165deg,#0b1220 0%,#16213a 58%,#222f4d 100%)' }}>
           <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full opacity-30 blur-3xl" style={{ background: ACCENT }} aria-hidden="true" />
           <span className="pointer-events-none absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/25 lg:hidden" aria-hidden="true" />
 
           <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[13px] font-medium text-white/55">Job match</p>
+              <p className="truncate text-[13px] font-medium text-white/55">
+                Job match{target.company ? <span className="font-normal text-white/45"> {'\u00B7'} {target.company}</span> : null}
+              </p>
               <h2 id={titleId} className="mt-0.5 line-clamp-2 text-lg font-semibold leading-snug sm:text-[22px]">{tidyTitle(target.title) || 'Your target job'}</h2>
-              {target.company && <p className="truncate text-sm text-white/60">{target.company}</p>}
             </div>
             <button
               ref={closeRef}
@@ -1020,8 +1083,8 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
               <span className="ml-1.5 text-base font-medium text-white/45 sm:text-lg">/100</span>
             </p>
             <div className="pb-1 text-right">
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/10 py-1.5 pl-3 pr-3.5 text-sm font-medium ring-1 ring-white/10">
-                <span className="h-2 w-2 rounded-full" style={{ background: tone, boxShadow: `0 0 10px ${tone}` }} aria-hidden="true" />
+              <p className="inline-flex items-center gap-2 rounded-[5px] bg-white/10 py-1.5 pl-3 pr-3.5 text-sm font-medium ring-1 ring-white/10">
+                <span className="h-2 w-2" style={{ background: tone }} aria-hidden="true" />
                 {scoreLabel(result.score)}
               </p>
               <p className="mt-2 text-[13px] text-white/60">
@@ -1034,35 +1097,22 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
             <TierMeter score={result.score} ready={ready} />
           </div>
         </div>
-        </div>
-        </div>
 
-        {/* While the header is folded away, a small close button stays in the corner. */}
-        {folded && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="jm-close-float absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-[0_6px_18px_-6px_rgba(11,18,32,.45)] ring-1 ring-slate-200 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
-          >
-            <Icon d={ICON.close} className="h-[18px] w-[18px]" />
-          </button>
-        )}
-
-        {/* Pages */}
-        <Tabs tabs={tabs} value={page} onChange={openTab} />
+        <div ref={tabsRef} className="sticky top-0 z-10">
+          <Tabs tabs={tabs} value={page} onChange={openTab} />
+        </div>
         <div
-          ref={bodyRef}
-          onScroll={onBodyScroll}
           role="tabpanel"
           id="jm-tabpanel"
           aria-labelledby={`jm-tab-${page}`}
-          className="pro-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6"
+          className="px-5 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6"
+          style={{ minHeight: panelMin }}
         >
           {page === 'overview' && <OverviewTab result={result} review={review} tiles={tiles} ready={ready} />}
           {page === 'fix' && review && <FixList review={review} focusId={focusId} onFocused={() => setFocusId(null)} />}
           {page === 'keywords' && <KeywordsTab covered={covered} missingSkills={missingSkills} hasMust={hasMust} total={totalKeywords} />}
           {page === 'requirements' && <RequirementsTab check={check} leftovers={missingQuals} ready={ready} onFix={review ? fixFor : undefined} />}
+        </div>
         </div>
 
         {/* Footer */}

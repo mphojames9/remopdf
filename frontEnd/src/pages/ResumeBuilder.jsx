@@ -23,6 +23,8 @@ import ResumePickerDialog from '../components/Auth/ResumePickerDialog';
 import CoverLetterBuilder from '../components/CoverLetter/CoverLetterBuilder';
 import JobTargetStudio from '../components/Resume/Sections/JobTargetStudio';
 import JobTargetBar from '../components/Resume/Sections/JobTargetBar';
+import ResumeCheck from '../components/Resume/Sections/ResumeCheck';
+import { cleanResume } from '../components/Resume/Sections/resumeDoctor';
 import PreviewLoadingOverlay from '../components/Resume/PreviewLoadingOverlay';
 import { usePreviewGuard, PreviewShield, PreviewLockScreen } from '../components/Resume/PreviewGuard';
 import { sanitizeJobTarget, hasJobTarget } from '../components/Resume/Sections/jobMatchAI';
@@ -2526,7 +2528,8 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
   // `experiences` / `educations` (lists) come from the resume parser. The single `experience` /
   // `education` objects are the old format and still work.
   const handleImport = (parsed) => {
-    setResumeData((prev) => ({
+    // cleanResume does only the fixes that lose nothing; anything that needs a decision is left for the Resume check to show.
+    setResumeData((prev) => cleanResume({
       ...prev,
       personal: mergePersonal(prev.personal, parsed.personal),
       experiences: parsed.experiences
@@ -2827,6 +2830,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
         </header>
 
         <div className="pro-scroll flex-1 overflow-y-auto px-2 pt-4 sm:p-8 lg:p-12 lg:pt-6 pb-36 sm:pb-32">
+          <ResumeCheck data={resumeData} step={currentStepIndex} onApply={(fix) => setResumeData(fix)} onGoToStep={setCurrentStepIndex} />
           {premium && hasJobTarget(jobTarget) && ActiveComponent !== PersonalInfo && (
             <JobTargetBar
               target={jobTarget}
