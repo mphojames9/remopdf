@@ -1,7 +1,7 @@
 // Run with:  node --test atsScore.test.js   (from this folder; needs nothing installed)
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { norm, matchTerm, scoreResume, hasResultFigure, labelFor } from './atsScore.js';
+import { norm, matchTerm, scoreResume, hasResultFigure, labelFor, isLicenceTerm, licenceText } from './atsScore.js';
 import { scoreMatch } from './scoreMatch.js';
 
 const kw = (term, extra = {}) => ({ term, kind: 'skill', must: true, ...extra });
@@ -142,4 +142,19 @@ test('qualification keywords are earned by what the resume shows, not by the wor
 test('no job target gives no score', () => {
   assert.equal(scoreMatch(null, resume()), null);
   assert.equal(scoreMatch({ keywords: [] }, resume()), null);
+});
+
+test("a driver's licence is read from Personal details, so a job that asks for it finds it there", () => {
+  const licence = { term: "driver's licence", kind: 'credential', must: true };
+  const without = scoreResume(target([licence]), resume({ personal: { profession: '' } }));
+  assert.equal(without.keywords.covered.length, 0);
+  const withIt = scoreResume(target([licence]), resume({ personal: { profession: '', hasLicence: true, licenceCode: 'C1' } }));
+  assert.equal(withIt.keywords.covered.length, 1);
+  assert.equal(licenceText({ hasLicence: true, licenceCode: 'C1' }), "Driver's licence code C1");
+  assert.equal(licenceText({ hasLicence: false, licenceCode: 'C1' }), '');
+});
+
+test("which job keywords are a driver's licence", () => {
+  for (const term of ["driver's licence", 'Valid drivers license', 'driving licence', 'Code 08 licence code B']) assert.ok(isLicenceTerm(term), term);
+  for (const term of ['forklift licence', 'Diploma in Management', 'Microsoft Office']) assert.equal(isLicenceTerm(term), false, term);
 });

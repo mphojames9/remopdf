@@ -180,10 +180,23 @@ export const collectStrings = (value, out = []) => {
   return out;
 };
 
+// Does this job keyword name a driver's licence ("Valid driver's licence", "Code 08")? One place for the whole app to ask.
+const LICENCE_TERM = /\b(?:driver['’]?s?|driving)\s+licen[cs]e\b|\blicen[cs]e\s+code\b|\bcode\s+(?:a1|a|b|c1|c|eb|ec1|ec)\b/i;
+export const isLicenceTerm = (value) => LICENCE_TERM.test(String(value || ''));
+
+// The driver's licence lives in Personal details (personal.hasLicence, personal.licenceCode), not under Education. It is part
+// of the resume text, so a job that asks for a driver's licence finds it there.
+export const licenceText = (personal) => {
+  if (!personal || !personal.hasLicence) return '';
+  const code = String(personal.licenceCode || '').trim();
+  return `Driver's licence${code ? ` code ${code}` : ''}`;
+};
+
 export const resumeText = (data) => {
   const d = data || {};
   return [
     d.personal?.profession,
+    licenceText(d.personal),
     d.summary,
     ...(Array.isArray(d.skills) ? d.skills.map((s) => s && s.text) : []),
     ...collectStrings(d.experiences),

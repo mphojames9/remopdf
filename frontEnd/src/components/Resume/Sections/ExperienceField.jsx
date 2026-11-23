@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AchievementsField from './AchievementsField';
 import SpellCheckPanel from './SpellCheckPanel';
 import MonthYearPicker from './MonthYearPicker';
-import { skillNames, appendAchievement } from './aiSuggestions';
+import { skillNames, appendAchievement, removeAchievementLine } from './aiSuggestions';
 import { suggestTitles } from './onetSuggestions'; // O*NET is only used to suggest job titles now
 import { AchievementIdeas } from './AIIdeas';
 import useSuggestions from './useSuggestions';
@@ -693,6 +693,12 @@ const JobFields = ({ job, onChange, skills, previousTitles, jobTarget }) => {
     });
   };
 
+  // The ticked idea, pressed again: its line leaves the achievements (whatever the person made of its [X] since).
+  const removeAchievement = (text) => {
+    const next = removeAchievementLine(achievementsRef.current, text);
+    if (next !== achievementsRef.current) onChangeRef.current('achievements', next);
+  };
+
   const handleChange = (field) => (e) => {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     onChange(field, val);
@@ -776,7 +782,7 @@ const JobFields = ({ job, onChange, skills, previousTitles, jobTarget }) => {
         value={job.achievements}
         onChange={(v) => onChange('achievements', v)}
       />
-      <AchievementIdeas job={job} skills={skills} jobTarget={jobTarget} onAdd={addAchievement} pending={pending} />
+      <AchievementIdeas job={job} skills={skills} jobTarget={jobTarget} onAdd={addAchievement} onRemove={removeAchievement} pending={pending} />
     </div>
   );
 };

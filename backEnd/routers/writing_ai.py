@@ -123,7 +123,7 @@ bullets with the same verb. Never open with "responsible for", "helped with", "w
 "duties included" or "tasked with".
 - Shape each line as ACTION + WHAT (and how much, if the text says) + FOR WHOM or WHY, using only what the text gives. \
 Specific nouns beat adjectives: say what was handled, not that it was handled "efficiently".
-- Put the strongest or most relevant line first. Merge two lines that say the same thing. Split a line that holds \
+- Say every point once: never keep two lines, or two sentences, that make the same point in different words (for example "cut waste by 20%" and "reduced waste by a fifth"). Keep the stronger one and drop the other. Put the strongest or most relevant line first. Merge two lines that say the same thing. Split a line that holds \
 two separate achievements. Cut filler and anything an employer cannot verify ("hard-working", "team player", \
 "results-driven", "passionate", "proven track record", "dynamic") unless the sentence proves it.
 - Keep every tool, system, method, standard and job-specific term the text names, spelled exactly as written: they are \

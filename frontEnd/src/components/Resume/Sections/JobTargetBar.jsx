@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { scoreLabel, norm, labelFor } from './atsScore';
+import { scoreLabel, norm, labelFor, isLicenceTerm } from './atsScore';
 import { scoreMatch } from './scoreMatch';
 import { reviewResume } from './resumeReview';
 import { isQualification } from './skillFilter';
@@ -514,12 +514,27 @@ const RequirementsTab = ({ check, leftovers, ready, onFix }) => {
       {leftovers.length > 0 && (
         <div className={check.items.length > 0 ? 'mt-7' : ''}>
           <h3 className="text-[15px] font-semibold text-slate-900">Also listed</h3>
-          <p className="mt-0.5 text-[13px] leading-snug text-slate-500">If you hold one, add it under Education or Certificates.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {leftovers.map((kw) => (
-              <Chip key={kw.term} tone="qual">{kw.term}</Chip>
-            ))}
-          </div>
+          {/* A driver's licence is a personal detail; every other qualification goes under Education or Certificates. */}
+          {leftovers.some((kw) => !isLicenceTerm(kw.term)) && (
+            <>
+              <p className="mt-0.5 text-[13px] leading-snug text-slate-500">If you hold one, add it under Education or Certificates.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {leftovers.filter((kw) => !isLicenceTerm(kw.term)).map((kw) => (
+                  <Chip key={kw.term} tone="qual">{kw.term}</Chip>
+                ))}
+              </div>
+            </>
+          )}
+          {leftovers.some((kw) => isLicenceTerm(kw.term)) && (
+            <>
+              <p className="mt-3 text-[13px] leading-snug text-slate-500">If you hold a driver’s licence, switch it on under your personal details in the Heading step. It does not go under Education.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {leftovers.filter((kw) => isLicenceTerm(kw.term)).map((kw) => (
+                  <Chip key={kw.term} tone="qual">{kw.term}</Chip>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

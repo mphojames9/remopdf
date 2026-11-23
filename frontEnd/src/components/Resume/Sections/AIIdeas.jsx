@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { suggestEducationIdeas, suggestAchievementIdeas, hasJobTarget, shownIdeas } from './jobMatchAI';
-import { hasAchievement } from './aiSuggestions';
+import { sortIdeas } from './aiSuggestions';
+import { stripLabel, dropRepeats } from './similarLines.js';
 import { usePremiumAccess, useSignedIn, requestUpgrade, requestSignIn, setPremiumAccess } from '../../../hooks/premiumAccess';
 
 /*
@@ -26,6 +27,12 @@ import { usePremiumAccess, useSignedIn, requestUpgrade, requestSignIn, setPremiu
 
   Nothing is added to the resume until the person presses the add button. A figure the person never wrote is always a
   [placeholder] to fill in.
+
+  The add button is a toggle. An idea that is in the text shows ticked, and pressing the tick takes its line out again.
+  It stays ticked after the person replaces "[X]" with a number or edits the line a little, because it is matched by what
+  it says and not by its exact characters (similarLines.js), so it can never be added a second time by mistake. An idea
+  that says the same thing as a line already written, or as another idea in the list, is not shown at all: one point,
+  once. Education ideas have no "Relevant coursework:" or "Focus areas:" label in front of them.
 */
 
 const PRIMARY =
@@ -67,6 +74,27 @@ const PlusIcon = ({ done }) => (
   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={done ? 'M5 13l4 4L19 7' : 'M12 5v14M5 12h14'} />
   </svg>
+);
+
+// The add button of an idea. Plus = add it, tick = it is in your text (press to take it out again).
+const ToggleButton = ({ added, sending, label, onAdd, onRemove }) => (
+  <button
+    type="button"
+    onClick={added ? onRemove : onAdd}
+    disabled={sending && !added}
+    aria-pressed={added}
+    aria-label={added ? `Added. Press to remove: ${label}` : `Add: ${label}`}
+    title={added ? 'Added. Press to remove it again.' : 'Add to your resume'}
+    className={`mt-0.5 w-6 h-6 shrink-0 rounded-sm border flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b] disabled:cursor-default ${
+      added
+        ? 'bg-[#d9856b] border-[#d9856b] text-white hover:bg-[#c97558]'
+        : sending
+          ? 'bg-[#d9856b] border-[#d9856b] text-white'
+          : 'bg-white border-slate-200 text-slate-500 hover:border-[#d9856b] hover:text-[#d9856b]'
+    }`}
+  >
+    <PlusIcon done={added || sending} />
+  </button>
 );
 
 /* -------------------------------------------------------------------------- */
@@ -192,7 +220,7 @@ const withPlaceholders = (text) =>
 /*                                  Education                                  */
 /* -------------------------------------------------------------------------- */
 
-export function EducationIdeas({ entry, resumeData, onAdd }) {
+export function EducationIdeas({ entry, resumeData, onAdd, onRemove }) {
   const lock = useLock();
   const [state, run] = useIdeaRequest();
   const [prompt, setPrompt] = useState('');
@@ -218,7 +246,10 @@ export function EducationIdeas({ entry, resumeData, onAdd }) {
     );
   }
 
-  const ideas = (state.data && state.data.ideas) || [];
+  // No label in front of a line, no line that repeats another or one already in the Details box.
+  const rawIdeas = ((state.data && state.data.ideas) || []).map(stripLabel).filter(Boolean);
+  const { shown, hidden } = sortIdeas(rawIdeas, entry.achievements);
+  const ideas = shown;
 
   return (
     <div className="border border-slate-200 rounded-sm bg-white p-3 flex flex-col gap-3">
@@ -253,28 +284,16 @@ export function EducationIdeas({ entry, resumeData, onAdd }) {
 
       {ideas.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {ideas.map((text) => {
-            const added = hasAchievement(entry.achievements, text);
-            return (
-              <li key={text} className={`flex items-start gap-2.5 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-                <button
-                  type="button"
-                  onClick={() => onAdd(text)}
-                  disabled={added}
-                  aria-label={added ? 'Added' : `Add: ${text}`}
-                  className={`mt-0.5 w-6 h-6 shrink-0 rounded-sm border flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b] ${
-                    added ? 'bg-[#d9856b] border-[#d9856b] text-white cursor-default' : 'bg-white border-slate-200 text-slate-500 hover:border-[#d9856b] hover:text-[#d9856b]'
-                  }`}
-                >
-                  <PlusIcon done={added} />
-                </button>
-                <span className="text-xs text-slate-700 leading-relaxed pt-1">{text}</span>
-              </li>
-            );
-          })}
+          {ideas.map(({ idea: text, added }) => (
+            <li key={text} className={`flex items-start gap-2.5 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+              <ToggleButton added={added} label={text} onAdd={() => onAdd(text)} onRemove={() => onRemove && onRemove(text)} />
+              <span className="text-xs text-slate-700 leading-relaxed pt-1">{text}</span>
+            </li>
+          ))}
         </ul>
       )}
       {ideas.length > 0 && <p className="text-[11px] leading-snug text-slate-500">These are ideas for what a qualification like yours covers. Add only what you really studied.</p>}
+      {hidden > 0 && <p className="text-[11px] leading-snug text-slate-500">{hidden === 1 ? '1 idea is' : `${hidden} ideas are`} not shown because your details already say the same thing.</p>}
     </div>
   );
 }
@@ -284,22 +303,11 @@ export function EducationIdeas({ entry, resumeData, onAdd }) {
 /* -------------------------------------------------------------------------- */
 
 // One idea: the line, the job keywords it honestly contains, and a button to add it to the achievements above.
-const IdeaRow = ({ idea, added, sending, onUse }) => {
+const IdeaRow = ({ idea, added, sending, onUse, onRemove }) => {
   const textRef = useRef(null); // where the added line slides in from
-  const done = added || sending;
   return (
     <li className="flex items-start gap-3 rounded-sm border border-slate-200 bg-white p-3">
-      <button
-        type="button"
-        onClick={() => onUse(textRef.current)}
-        disabled={done}
-        aria-label={done ? 'Added' : `Use this idea: ${idea.text}`}
-        className={`mt-0.5 w-6 h-6 shrink-0 rounded-sm border flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d9856b] ${
-          done ? 'bg-[#d9856b] border-[#d9856b] text-white cursor-default' : 'bg-white border-slate-200 text-slate-500 hover:border-[#d9856b] hover:text-[#d9856b]'
-        }`}
-      >
-        <PlusIcon done={done} />
-      </button>
+      <ToggleButton added={added} sending={sending} label={idea.text} onAdd={() => onUse(textRef.current)} onRemove={onRemove} />
       <div className="min-w-0 flex-1">
         <p ref={textRef} data-idea-text className="text-xs leading-relaxed text-slate-700">
           {withPlaceholders(idea.text)}
@@ -319,7 +327,7 @@ const IdeaRow = ({ idea, added, sending, onUse }) => {
   );
 };
 
-export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending = [] }) {
+export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, onRemove, pending = [] }) {
   const lock = useLock();
   const premium = usePremiumAccess();
   const [state, run] = useIdeaRequest();
@@ -346,7 +354,9 @@ export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending =
     run(async (signal) => {
       const avoid = more ? ideasRef.current.map((i) => i.text) : [];
       const result = await suggestAchievementIdeas({ job, skills, target: jobTarget, prompt, avoid, signal });
-      const merged = more ? [...ideasRef.current, ...result.ideas.filter((i) => !ideasRef.current.some((o) => o.text === i.text))] : result.ideas;
+      // An idea that says what another one already says, in other words, is dropped here, so one point is offered once.
+      const fresh = dropRepeats(result.ideas, more ? ideasRef.current.map((i) => i.text) : [], (i) => i.text).kept;
+      const merged = more ? [...ideasRef.current, ...fresh] : fresh;
       ideasRef.current = merged;
       shelve(merged);
       return { ideas: merged };
@@ -384,7 +394,9 @@ export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending =
   }
 
   const ideas = (state.data && state.data.ideas) || [];
-  const anyPlaceholder = ideas.some((i) => /\[[^\]]+\]/.test(i.text));
+  // What is shown: ideas already in the achievements stay (ticked), repeats of a line already written are left out.
+  const { shown, hidden } = sortIdeas(ideas, job.achievements, (i) => i.text);
+  const anyPlaceholder = shown.some(({ idea, added }) => !added && /\[[^\]]+\]/.test(idea.text));
   // About to load by itself (the title is in, the short wait is running): show the box as busy, not empty.
   const waiting = canAuto && state.status === 'idle' && ideas.length === 0 && !triedRef.current.has(shelfKey);
   const writing = ideas.length === 0 && (loading || waiting);
@@ -431,16 +443,22 @@ export function AchievementIdeas({ job, skills = [], jobTarget, onAdd, pending =
       {ideas.length > 0 && (
         <>
           <ul className={`flex flex-col gap-2 transition-opacity ${loading ? 'opacity-70' : ''}`}>
-            {ideas.map((idea) => (
+            {shown.map(({ idea, added }) => (
               <IdeaRow
                 key={idea.text}
                 idea={idea}
-                added={hasAchievement(job.achievements, idea.text)}
+                added={added}
                 sending={pending.includes(idea.text)}
                 onUse={(el) => onAdd(idea.text, el)}
+                onRemove={() => onRemove && onRemove(idea.text)}
               />
             ))}
           </ul>
+          {hidden > 0 && (
+            <p className="text-[11px] leading-snug text-slate-500">
+              {hidden === 1 ? '1 idea is' : `${hidden} ideas are`} not shown because your achievements already say the same thing.
+            </p>
+          )}
           {loading && <Skeleton rows={2} />}
           <button type="button" onClick={() => ask(true)} disabled={loading} className={`${SECONDARY} w-full`}>
             <SparkleIcon className="w-3 h-3" />

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import MonthYearPicker from './MonthYearPicker';
 import AchievementsField from './AchievementsField';
 import { EducationIdeas } from './AIIdeas';
-import { appendAchievement } from './aiSuggestions';
+import { appendAchievement, removeAchievementLine } from './aiSuggestions';
 import SpellCheckPanel from './SpellCheckPanel';
 
 /* -------------------------------------------------------------------------- */
@@ -781,7 +781,7 @@ const QualificationFields = ({ entry, onChange, resumeData }) => {
             <CheckedField
               id={`education-details-${entry.id}`}
               label="Details"
-              placeholder={'- Dean\'s List, 2023\n- Relevant coursework: Data Structures, Algorithms'}
+              placeholder={'- Dean\'s List, 2023\n- Data Structures and Algorithms'}
               value={entry.achievements}
               onChange={(v) => onChange({ achievements: v })}
             />
@@ -790,6 +790,7 @@ const QualificationFields = ({ entry, onChange, resumeData }) => {
               entry={entry}
               resumeData={resumeData}
               onAdd={(text) => onChange({ achievements: appendAchievement(entry.achievements, text) })}
+              onRemove={(text) => onChange({ achievements: removeAchievementLine(entry.achievements, text) })}
             />
           </div>
         )}

@@ -2479,7 +2479,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
       (a, b) => sameText(a.institution, b.institution) && sameText(a.degree, b.degree), createEducation, 'import-edu');
 
   // New skills are added after the ones already there, skipping any that exist (case-insensitive).
-  // Like skills added by hand, they start at the first level so the Skills step is never blocked.
+  // Like skills added by hand, they start with no level: the Skills step asks the person to choose one for each.
   const mergeSkills = (existing, found) => {
     if (!found || found.length === 0) return existing;
     const have = existing || [];
@@ -2840,7 +2840,7 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
               dockClassName={`${currentStepIndex > 0 ? 'bottom-[12.25rem]' : 'bottom-[9.75rem]'} sm:bottom-24`}
             />
           )}
-          <ActiveComponent data={resumeData} updateData={updateData} updateSummary={updateSummary} updateSkills={updateSkills} updateExperiences={updateExperiences} updateEducation={updateEducation} updateItems={updateItems} showSkillErrors={showSkillErrors} showLanguageErrors={showLanguageErrors} />
+          <ActiveComponent data={resumeData} updateData={updateData} updateSummary={updateSummary} updateSkills={updateSkills} updateExperiences={updateExperiences} updateEducation={updateEducation} updateItems={updateItems} showSkillErrors={showSkillErrors} showLanguageErrors={showLanguageErrors} selectedTemplate={selectedTemplate} setTemplate={setSelectedTemplate} />
         </div>
 
         {/* Action Bar */}

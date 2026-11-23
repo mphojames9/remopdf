@@ -695,7 +695,7 @@ HOW TO SELL HONESTLY
 - Sentence 1: who they are professionally: the title they held, the length of time printed for it, and the kind of work or workplace the history shows.
 - Next, one or two sentences: the specific things they did, each a verb plus an object taken from their own bullets (for example "scheduling and supervising floor staff"). Specific beats impressive. Put first the ones the job asks for.
 - Close with the plain value that follows from this. Do not promise results.
-- Make every sentence do a job: none may be only a list of skills, and no two may start with the same word. Where the same kind of work appears in more than one job, say it once instead of repeating it. Concrete nouns beat adjectives.
+- Make every sentence do a job: none may be only a list of skills, and no two may start with the same word. Where the same kind of work appears in more than one job, say it once instead of repeating it. Never make the same point twice in different words. Concrete nouns beat adjectives.
 - Plain text, 2 to 4 sentences, 40 to 75 words, no bullets, no markup. No "I", "my" or "me": start with the role. Keep the candidate's spelling (South African and UK English: organise, programme, licence).
 - Never use these, because nobody can verify them: proven, seasoned, extensive, exceptional, outstanding, excellent, expert, dynamic, passionate, results-driven, dedicated, hardworking, motivated, innovative, track record, highly skilled, successful, detail-oriented, team player.
 - If <facts> hold little, write less. A short true summary beats a padded one.
@@ -841,6 +841,7 @@ CRAFT (what separates a premium rewrite from a reworded one)
 - Shape each line as ACTION + WHAT (and how much, if the text says) + FOR WHOM or WHY, using only what the text gives. Specific nouns beat adjectives.
 - Order matters: put the line the job cares about most first, and use the job's wording for it when the text supports it. Merge two lines that say the same thing; split a line that holds two achievements. Cut filler and anything an employer cannot verify ("hard-working", "team player", "results-driven", "passionate", "proven track record") unless the sentence proves it.
 - Keep every tool, system, method and standard the text names, spelled exactly as written.
+- Say every point once: never keep two lines, or two sentences, that make the same point in different words (for example "cut waste by 20%" and "reduced waste by a fifth"). Keep the stronger one and drop the other.
 - The three versions must differ in structure and emphasis, not in synonyms.
 
 HOW TO ANSWER

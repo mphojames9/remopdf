@@ -246,7 +246,7 @@ const AdditionalSections = ({ data, updateData, updateItems }) => {
         {/* Certificates */}
         <SectionCard
           title="Certificates"
-          description="Certifications, licences and courses you've completed."
+          description="Certifications, trade licences and courses you've completed. Your driver's licence goes in your personal details."
           enabled={!!certificates.enabled}
           onToggle={(val) => updateData('certificates', 'enabled', val)}
         >

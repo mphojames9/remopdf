@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import JobSkillMatch from './JobSkillMatch';
+import { skillLevelDisplay, templateName, TEMPLATES_WITHOUT_SKILL_LEVELS } from '../Templates/templateSkillLevels';
 
 // Skill levels. The chosen `value` is stored on each skill as `rating` (1-5);
-// 0 / missing means "not chosen yet" (older saved skills). New skills start at Novice.
+// 0 / missing means "not chosen yet". A new skill (typed, picked from the job-matched list or imported from an old resume)
+// starts with NO level, so the person has to choose one: a level nobody chose must never reach the resume.
 export const SKILL_LEVELS = [
   { value: 1, label: 'Novice' },
   { value: 2, label: 'Beginner' },
@@ -11,8 +13,11 @@ export const SKILL_LEVELS = [
   { value: 5, label: 'Expert' },
 ];
 
-// Level a new skill starts with: Novice.
-export const DEFAULT_SKILL_RATING = SKILL_LEVELS[0].value;
+// Level a new skill starts with: none. (It used to be Novice, and every skill that was never rated printed "Novice" on the
+// resume. To go back to that, set this to SKILL_LEVELS[0].value.)
+export const DEFAULT_SKILL_RATING = 0;
+
+const NOVICE = SKILL_LEVELS[0].value;
 
 export const getSkillLevelLabel = (rating) =>
   SKILL_LEVELS.find((level) => level.value === Number(rating))?.label || '';
@@ -62,10 +67,70 @@ const SkillInput = ({ value, onChange, placeholder, invalid }) => (
 );
 
 /* -------------------------------------------------------------------------- */
+/*                         Advice for a Novice skill                           */
+/* -------------------------------------------------------------------------- */
+
+// Shown when a skill is set to Novice and the chosen template prints levels. On a resume for a manager or any experienced
+// person, "Novice" next to a skill that is used every day reads as a contradiction, and an ATS ignores levels, so the
+// level can only cost. The advice is honest both ways: it never tells anyone to claim a higher level than they have.
+const NoviceAdvice = ({ skills, templateId, onChangeTemplate }) => {
+  const mode = skillLevelDisplay(templateId);
+  const name = templateName(templateId);
+  const names = skills.map((skill) => skill.text.trim());
+  const first = names.slice(0, 3);
+  const shownNames =
+    names.length > 3
+      ? `${first.join(', ')} and ${names.length - 3} more`
+      : first.length > 1
+        ? `${first.slice(0, -1).join(', ')} and ${first[first.length - 1]}`
+        : first.join('');
+
+  return (
+    <div role="note" className="rounded-sm border border-amber-200 bg-amber-50/70 p-3 text-xs leading-relaxed text-slate-700">
+      <p className="font-bold text-slate-900">
+        {names.length === 1 ? '1 skill is set to Novice' : `${names.length} skills are set to Novice`}
+      </p>
+      <p className="mt-1">
+        {mode === 'words'
+          ? `The ${name} template prints each level as a word, so “Novice” will appear on your resume next to ${shownNames}.`
+          : `The ${name} template shows each level as dots or bars, so Novice is the lowest mark on your resume for ${shownNames}.`}{' '}
+        A recruiter reads that as “just starting out”, and the ATS programs that screen resumes ignore levels, so it can only cost you.
+      </p>
+      <ul className="mt-2 list-disc pl-4 space-y-0.5">
+        <li>If you use the skill in your work, choose the level you honestly have. You can be Skillful or Experienced without being an Expert.</li>
+        <li>If you are only starting to learn it, leave it off the resume.</li>
+        <li>If you would rather not show levels at all, switch to a template that lists skills as plain text.</li>
+      </ul>
+      {TEMPLATES_WITHOUT_SKILL_LEVELS.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <span className="text-slate-600">Templates without levels:</span>
+          {TEMPLATES_WITHOUT_SKILL_LEVELS.map((template) =>
+            onChangeTemplate ? (
+              <button
+                key={template.id}
+                type="button"
+                onClick={() => onChangeTemplate(template.id)}
+                className="rounded-sm border border-amber-300 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 hover:border-[#d9856b] hover:text-[#d9856b] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/50"
+              >
+                {template.name}
+              </button>
+            ) : (
+              <span key={template.id} className="rounded-sm border border-amber-300 bg-white px-2 py-1 text-[11px] font-bold text-slate-700">
+                {template.name}
+              </span>
+            )
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
 /*                                  Skills step                               */
 /* -------------------------------------------------------------------------- */
 
-const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
+const SkillsSection = ({ data, updateSkills, showSkillErrors = false, selectedTemplate, setTemplate }) => {
   const [freshId, setFreshId] = useState(null); // the skill row that just landed
   // Refs keep the landing step on the latest values, since it runs ~half a second after the click.
   const skillsRef = useRef([]);
@@ -89,6 +154,8 @@ const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
   const hasLevel = (skill) => Number(skill.rating) >= 1;
   const isMissingLevel = (skill) => !!(skill.text && skill.text.trim()) && !hasLevel(skill);
   const missingCount = selectedSkills.filter(isMissingLevel).length;
+  const levelsShown = skillLevelDisplay(selectedTemplate) !== 'none';
+  const noviceSkills = levelsShown ? selectedSkills.filter((skill) => skill.text && skill.text.trim() && Number(skill.rating) === NOVICE) : [];
 
   // A skill picked from the job-matched list: added straight away, and its row flashes like a suggestion that landed.
   const handleAddJobSkill = (text) => {
@@ -138,9 +205,13 @@ const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
             </p>
           ) : (
             <p className="text-xs font-medium text-slate-500 pb-1">
-              Rate each skill from Novice to Expert. The level is shown on your resume.
+              {levelsShown
+                ? 'Rate each skill from Novice to Expert. The level is shown on your resume.'
+                : 'Rate each skill from Novice to Expert. Your template does not show levels, but they are kept if you switch to one that does.'}
             </p>
           )}
+
+          {noviceSkills.length > 0 && <NoviceAdvice skills={noviceSkills} templateId={selectedTemplate} onChangeTemplate={setTemplate} />}
 
           <div className="flex flex-col gap-4">
             {selectedSkills.map((skill) => {
@@ -201,7 +272,7 @@ const SkillsSection = ({ data, updateSkills, showSkillErrors = false }) => {
                       </div>
                       <span
                         className={`shrink-0 text-right text-xs font-medium ${
-                          label ? 'text-slate-600' : showSkillErrors && missing ? 'text-red-500' : 'text-slate-400'
+                          label ? (levelsShown && Number(skill.rating) === NOVICE ? 'text-amber-700' : 'text-slate-600') : showSkillErrors && missing ? 'text-red-500' : 'text-slate-400'
                         }`}
                       >
                         {label || (showSkillErrors && missing ? 'Level required' : 'Select a level')}

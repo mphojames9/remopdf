@@ -30,6 +30,7 @@ import { getToken } from '../../../api/auth';
 import { getAiPass, forgetAiPass, readQuota, PaymentApiError } from '../../../api/payments';
 import { rewriteForJob, cleanNeeds, cleanWhy } from './jobMatchAI';
 import { hasJobTarget } from './atsScore';
+import { dedupeSimilarLines } from './similarLines.js';
 
 // Same address onetSuggestions.js uses. Set VITE_API_URL to override it.
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://remopdf-backend.onrender.com').replace(/\/$/, '');
@@ -174,12 +175,13 @@ export async function analyzeWriting({ text, field = 'other', jobTitle = '', job
       .map((r, i) => ({
         id: r.id || `rw${i + 1}`,
         label: typeof r.label === 'string' && r.label.trim() ? r.label.trim() : `Option ${i + 1}`,
-        text: r.text,
+        // A version that says one thing twice in different words keeps it once (similarLines.js).
+        text: dedupeSimilarLines(r.text),
         why: cleanWhy(r.why),
       }));
     // A server that still answers with one "improved" text counts as a single option.
     if (rewrites.length === 0 && typeof data.improved === 'string' && data.improved.trim()) {
-      rewrites.push({ id: 'rw1', label: 'Polished version', text: data.improved, why: '' });
+      rewrites.push({ id: 'rw1', label: 'Polished version', text: dedupeSimilarLines(data.improved), why: '' });
     }
     const result = { rewrites, needs: cleanNeeds(data.needs) };
     if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);

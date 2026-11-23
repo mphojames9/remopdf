@@ -15,6 +15,8 @@
   below, so the form never breaks.
 */
 
+import { sameLine, sameThing, normLine, stripLabel } from './similarLines.js';
+
 export const AI_ENDPOINT = '/api/ai/resume-suggest';
 const REQUEST_TIMEOUT_MS = 12000;
 const TITLE_COUNT = 6;
@@ -52,7 +54,65 @@ export const achievementLines = (value) =>
     .map((l) => l.replace(/^[\s•\-–*]+/, '').trim())
     .filter(Boolean);
 
-export const hasAchievement = (value, text) => achievementLines(value).some((l) => norm(l) === norm(text));
+// The idea is in the achievements: the same words, or the same words with its [X] placeholders filled in or edited. An
+// idea therefore stays ticked after the person replaces "[X]" with a number.
+// A saved Education line may still start with a label ("Relevant coursework: ..."): it is compared with and without it.
+const lineIs = (line, text) => sameLine(line, text) || sameLine(stripLabel(line), text);
+const lineSays = (line, text) => sameThing(line, text) || sameThing(stripLabel(line), text);
+
+export const hasAchievement = (value, text) => achievementLines(value).some((l) => lineIs(l, text));
+
+// Splits a list of ideas into the ones to show and a count of the ones left out. An idea that is already in the text stays
+// (ticked). An idea that says the same thing, in other words, as a line already written or as an idea shown before it is
+// left out, so one point is never offered twice.
+export const sortIdeas = (ideas, value, getText = (idea) => idea) => {
+  const lines = achievementLines(value);
+  const shown = [];
+  const said = [];
+  let hidden = 0;
+  (Array.isArray(ideas) ? ideas : []).forEach((idea) => {
+    const text = getText(idea);
+    if (lines.some((l) => lineIs(l, text))) {
+      shown.push({ idea, added: true });
+      said.push(text);
+      return;
+    }
+    if (lines.some((l) => lineSays(l, text)) || said.some((s) => sameThing(s, text))) {
+      hidden += 1;
+      return;
+    }
+    shown.push({ idea, added: false });
+    said.push(text);
+  });
+  return { shown, hidden };
+};
+
+// Takes the line of an idea out of the text again (the ticked button, pressed once more). Works on the plain text the
+// achievements box stores and on the HTML older saved resumes may hold. Nothing else in the text changes.
+export const removeAchievementLine = (value, text) => {
+  const current = String(value || '');
+  if (!current) return current;
+
+  if (/<(li|p|div)[\s>]/i.test(current)) {
+    let removed = false;
+    const next = current.replace(/<(li|p|div)(\s[^>]*)?>([\s\S]*?)<\/\1>/gi, (match, _tag, _attrs, inner) => {
+      if (removed) return match;
+      const line = stripHtml(inner).trim();
+      if (line && lineIs(line, text)) {
+        removed = true;
+        return '';
+      }
+      return match;
+    });
+    if (removed) return next.replace(/<(ul|ol)(\s[^>]*)?>\s*<\/\1>/gi, '');
+  }
+
+  const lines = current.split(/\r?\n/);
+  const at = lines.findIndex((l) => normLine(l) && lineIs(l, text));
+  if (at === -1) return current;
+  lines.splice(at, 1);
+  return lines.join('\n').replace(/^\s*\n+/, '').replace(/\s+$/, '');
+};
 
 export const appendAchievement = (value, text) => {
   const current = String(value || '');

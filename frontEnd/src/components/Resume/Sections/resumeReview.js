@@ -28,12 +28,13 @@
     - every "fix" says to add something only where it is true for the person, and never suggests a figure;
     - "examples" ask a question ("How many people did this cover?"), they never write the answer;
     - a keyword that is a qualification (degree, licence, years of experience) is never presented as a skill
-      to "work in": it is only ever "add it under Education if you hold it";
+      to "work in": it is only ever "add it if you hold it", under Education (a degree, a diploma), under Certificates
+      (a trade licence, a short course) or under Personal details (a driver's licence);
     - the years of experience and the education level the job asks for are compared with the resume by
       qualificationCheck.js, and what it finds becomes findings here, so the panel's cards and this review always agree.
 */
 
-import { norm, hasTerm, matchTerm, labelFor, stripMarkup, collectStrings, resumeText } from './atsScore';
+import { norm, hasTerm, matchTerm, labelFor, stripMarkup, collectStrings, resumeText, isLicenceTerm } from './atsScore';
 import { scoreMatch } from './scoreMatch';
 import { isQualification } from './skillFilter';
 import { analyseRequirements } from './qualificationCheck';
@@ -82,8 +83,9 @@ const WEAK_OPENER = /^(?:was |were )?(?:responsible for|duties (?:included|inclu
 const FIRST_PERSON = /\bI(?:[’']m|[’']ve|[’']ll)?\s+[a-z]|\b(?:my|me)\b/;
 const FILLER = /\b(hard[- ]?working|team player|results[- ]driven|passionate|proven track record|self[- ]starter|go[- ]getter|detail[- ]oriented|dynamic)\b/gi;
 
+// A driver's licence is a personal detail (the Heading step), never an Education entry (isLicenceTerm, atsScore.js).
 const STEP = {
-  heading: 'Heading step',
+  heading: 'Heading step (personal details)',
   work: 'Work history step',
   education: 'Education step',
   skills: 'Skills step',
@@ -405,6 +407,19 @@ export function reviewResume(target, data, precomputed) {
     good.push(`You list ${skills.length} skills.`);
   }
 
+  // Skills set to Novice. A template that shows levels prints it, and a recruiter reads "Novice" next to a skill used at work
+  // as a contradiction. The ATS ignores the level, so it only costs. The advice never suggests claiming a higher level.
+  const novice = asList(d.skills).filter((s) => s && text(s.text) && Number(s.rating) === 1).map((s) => text(s.text));
+  if (novice.length) {
+    add('improve', 41, {
+      id: 'novice',
+      title: novice.length === 1 ? 'A skill is set to Novice' : `${novice.length} skills are set to Novice`,
+      body: `${quoted(novice.slice(0, 4))}${novice.length > 4 ? ` and ${novice.length - 4} more` : ''} ${novice.length === 1 ? 'is' : 'are'} marked Novice. In a template that shows skill levels, a recruiter reads that as “just starting out”, which clashes with the jobs you list. An ATS ignores the level, so it gains you nothing.`,
+      fix: 'Set each one to the level you honestly have, take off any you are only starting to learn, or choose a template that lists skills without levels.',
+      where: STEP.skills,
+    });
+  }
+
   /* -------------------------------- education ---------------------------------- */
 
   // What the advert asks for in years and in education level, compared with the work history and the Education step.
@@ -415,10 +430,12 @@ export function reviewResume(target, data, precomputed) {
   // did not read as a level (a licence, a registration, a named certificate). "5 years of experience" is not one of them.
   const EDU_LIKE = /\b(degree|diploma|certificate|certification|bachelor|honou?rs|master|mba|ph\.?d|matric|nqf|qualification|licen[cs]e)/i;
   // Checked against the resume and not on it:
-  const qualKeywords = [...new Set(kw.missing.filter(isQual).filter((k) => !check.handled.has(norm(k.term))).map((k) => k.term))].filter((t) => EDU_LIKE.test(t)).slice(0, 4);
+  const qualKeywords = [...new Set(kw.missing.filter(isQual).filter((k) => !check.handled.has(norm(k.term))).map((k) => k.term))].filter((t) => EDU_LIKE.test(t) && !isLicenceTerm(t)).slice(0, 4);
+  // A driver's licence the job asks for is checked against Personal details, and answered there, never under Education.
+  const licenceAsked = [...kw.covered, ...kw.missing].some((k) => isLicenceTerm(k.term)) || asList(target.requirements).some((r) => typeof r === 'string' && isLicenceTerm(r));
   // What the advert lists as requirements: only used where Education is empty, so nothing has to be checked against it.
   const qualRequirements = asList(target.requirements)
-    .filter((r) => typeof r === 'string' && EDU_LIKE.test(r))
+    .filter((r) => typeof r === 'string' && EDU_LIKE.test(r) && !isLicenceTerm(r))
     .map((r) => clip(r.trim(), 70))
     .slice(0, 3);
   const eduAsked = check.items.filter((item) => item.kind === 'education').map((item) => item.title);
@@ -440,8 +457,23 @@ export function reviewResume(target, data, precomputed) {
         id: 'quals',
         title: 'Qualifications the job lists are not on your resume',
         body: `The job asks for ${quoted(qualKeywords)}. ${qualKeywords.length === 1 ? 'It is' : 'They are'} not found anywhere on your resume, and ${qualKeywords.length === 1 ? 'it counts' : 'they count'} only if you hold ${qualKeywords.length === 1 ? 'it' : 'them'}.`,
-        fix: 'If you do hold one, add it under Education with the year. If you do not, leave it out and let your experience make the case.',
+        fix: 'If you do hold one, add it with the year: a degree, diploma or school certificate under Education, a trade licence or short course under Certificates. If you do not, leave it out and let your experience make the case.',
         where: STEP.education,
+      });
+    }
+  }
+
+  // The driver's licence: on the resume only when it is switched on in Personal details.
+  if (licenceAsked) {
+    if (personal.hasLicence) {
+      good.push(`Your driver’s licence${text(personal.licenceCode) ? ` (code ${text(personal.licenceCode)})` : ''} is listed in your personal details.`);
+    } else {
+      add('improve', 46, {
+        id: 'licence',
+        title: 'The job asks for a driver’s licence',
+        body: 'The job lists a driver’s licence and your personal details do not show one. A recruiter looks for it next to your contact details, and an ATS reads it there as well.',
+        fix: 'If you hold one, switch on “Driver’s licence” under your personal details in the Heading step and pick your code. It goes there, not under Education. If you do not hold one, leave it out.',
+        where: STEP.heading,
       });
     }
   }

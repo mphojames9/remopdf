@@ -26,6 +26,7 @@ import { getToken } from '../../../api/auth';
 import { getAiPass, forgetAiPass, readQuota, PaymentApiError } from '../../../api/payments';
 import { collectStrings, hasJobTarget, stripMarkup, norm } from './atsScore';
 import { isSkillTerm } from './skillFilter';
+import { dedupeSimilarLines } from './similarLines.js';
 
 export { hasJobTarget };
 
@@ -306,7 +307,7 @@ export async function writeSummary({ target, resumeData, variant = 0, signal } =
     variant: Math.max(0, Math.min(5, Number(variant) || 0)),
   };
   const data = await post('summary', body, signal);
-  const summary = data && typeof data.summary === 'string' ? data.summary.trim() : '';
+  const summary = data && typeof data.summary === 'string' ? dedupeSimilarLines(data.summary.trim()) : '';
   if (!summary) throw new JobMatchError('unavailable', 'Job matching is unavailable right now.');
   // checked: the strengths the summary rests on, each with the words from the resume that prove it.
   // uses: the job's own keywords the summary honestly covers.
@@ -335,7 +336,8 @@ export async function rewriteForJob({ text, field = 'experience', jobTitle = '',
     .map((r, i) => ({
       id: r.id || `rw${i + 1}`,
       label: str(r.label, 32) || `Option ${i + 1}`,
-      text: r.text,
+      // A version that says one thing twice in different words keeps it once (similarLines.js).
+      text: dedupeSimilarLines(r.text),
       why: cleanWhy(r.why),
       adds: strList(r.adds, 5, 40),
     }));
