@@ -50,7 +50,15 @@ function LazyOnView({ children, minHeight = 720, rootMargin = '1200px' }) {
 }
 
 const BRAND = 'RemoPDF';
-const HERO_TITLE = 'A resume that gets you noticed.';
+// What the hero types out after "A resume that": short lines that explain what the builder does.
+const HERO_LINES = [
+  'gets you noticed',
+  'writes with you using AI',
+  'passes ATS scans',
+  'fixes typos as you type',
+  'comes with a cover letter',
+  'exports a clean PDF',
+];
 const PDF_EDITOR_ROUTE = '/Workspace';
 
 /* ------------------------------------------------------------------ */
@@ -114,16 +122,19 @@ function Icon({ name, className = 'h-5 w-5' }) {
 /*  Content                                                            */
 /* ------------------------------------------------------------------ */
 
-// The resume builder's main features, drawn as cards in the #tools section. `art` picks the little scene in ToolArt.
-const resumePoints = [
-  { art: 'text', title: 'Your first draft in about 10 minutes', desc: 'Add your work history and the AI builder writes your summary for you. You edit and approve it, instead of starting from nothing.' },
-  { art: 'assist', title: 'Say it better, on every line', desc: 'Stuck on the wording? Get stronger rewrites for your summary or any job description, each with a short reason it works. You decide what goes in.' },
-  { art: 'spell', title: 'Catch typos before recruiters do', desc: 'Spelling and grammar are checked as you type, so a small slip does not cost you a keyword or a first impression.' },
-  { art: 'ats', title: '30 templates that ATS can read', desc: 'Every layout has clear headings and plain, readable text, so applicant tracking systems pick up your details in the right place.' },
-  { art: 'letter', title: 'A cover letter that matches', desc: 'Turn the same details into a cover letter shaped for the job you are applying for, then sign it on screen.' },
-  { art: 'keywords', title: 'Tailored to every job', desc: 'Paste a job advert or link. See the keywords it asks for, which of your skills already match, and a score that updates as you write.' },
-  { art: 'import', title: 'Already have a resume? Bring it', desc: 'Upload your current resume and improve it in the builder. No retyping.' },
-  { art: 'convert', title: 'A PDF you are proud to send', desc: 'Preview it, switch template or colour, then download a clean A4 PDF that is ready to email or upload.' },
+// The resume builder's features, shown in the #tools section: four short cards, then a list of rows that open one at a time.
+const benefitCards = [
+  { icon: 'spark', title: 'A draft in 10 minutes', desc: 'Add your work history and the AI writes your first summary. You edit it.' },
+  { icon: 'sign', title: 'Better wording', desc: 'Get stronger rewrites for any line, with a short reason why.' },
+  { icon: 'spellcheck', title: 'No typos', desc: 'Spelling and grammar are checked as you type.' },
+  { icon: 'layout', title: 'ATS-ready templates', desc: '30 layouts that applicant tracking systems can read.' },
+];
+
+const toolRows = [
+  { icon: 'mail', title: 'A matching cover letter', desc: 'Turn the same details into a cover letter for the job you are applying for, then sign it on screen.' },
+  { icon: 'target', title: 'Tailored to every job', desc: 'Paste a job advert to see the keywords it asks for and which of your skills already match.' },
+  { icon: 'fileUp', title: 'Bring your old resume', desc: 'Upload your current resume and improve it in the builder. No retyping.' },
+  { icon: 'download', title: 'A clean PDF to send', desc: 'Preview it, switch template or colour, then download an A4 PDF ready to email or upload.' },
 ];
 
 // The PDF editor's tools. The first two get a larger tile with a small scene (`feat`); the rest are compact links.
@@ -144,36 +155,14 @@ const atsPoints = [
   { title: 'Typos caught as you type', desc: 'A misspelled skill is easy to skip. The spell check helps you fix it before you send.' },
 ];
 
-// top = where the chip appears down the page; the scanner reveals each one as the beam passes it.
+// Where the scan finds each section, as a box over the resume picture (all values are % of the picture).
 const atsFound = [
-  { label: 'Name and contact', top: '10%', left: true },
-  { label: 'Work history', top: '33%' },
-  { label: 'Skills', top: '48%', left: true },
-  { label: 'Education', top: '62%' },
+  { label: 'Name and contact', left: 3, top: 1.5, w: 94, h: 12.5 },
+  { label: 'Skills', left: 2, top: 20, w: 29, h: 41 },
+  { label: 'Work history', left: 33.5, top: 35, w: 64, h: 15 },
+  { label: 'Education', left: 2, top: 62.5, w: 29, h: 12.5 },
 ];
 
-// Everything the app does, as one thin scrolling row under the hero. Each pill opens its tool;
-// `tone` picks the colour of its small icon.
-const CAP_TONES = { pdf: '#e8967c', resume: '#a5b1ff', zip: '#5ed6c1', invoice: '#f2c14e' };
-const capItems = [
-  { icon: 'spark', label: 'AI writes your first draft', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'layout', label: '30 ATS-friendly templates', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'fileText', label: 'Matching cover letters', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'spellcheck', label: 'Typos caught as you type', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'target', label: 'Match any job advert', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'fileUp', label: 'Import your old resume', to: '/ResumeBuilder', tone: 'resume' },
-  { icon: 'edit', label: 'Edit PDF text', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'highlighter', label: 'Highlight text', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'sign', label: 'Sign and add images', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'rotate', label: 'Add, remove and rotate pages', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'scissors', label: 'Split a PDF', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'lock', label: 'Lock and unlock', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'convert', label: 'Convert file types', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'compress', label: 'Compress', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'droplet', label: 'Watermark and page numbers', to: PDF_EDITOR_ROUTE, tone: 'pdf' },
-  { icon: 'archive', label: 'Zip and unzip files', to: '/ZipTool', tone: 'zip' },
-  { icon: 'receipt', label: 'Invoices as PDF', to: '/InvoiceBuilder', tone: 'invoice' },
-];
 
 const steps = [
   { title: 'Start with what you have', desc: 'Pick a template, or import the resume you already have. Then add your work history, education and skills.' },
@@ -219,55 +208,6 @@ const spot = (e) => {
   e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
 };
 
-// The capability band under the hero: one thin row of small pills drifting left, one per feature, each
-// linking to its tool. Hover or keyboard focus pauses it. With reduced motion it stops and becomes a
-// row you scroll sideways, so every feature stays reachable.
-function Capabilities() {
-  const row = (dup) => (
-    <ul className={`${dup ? 'cap-dup ' : ''}flex shrink-0 gap-2 pr-2`} aria-hidden={dup || undefined}>
-      {capItems.map((it) => (
-        <li key={it.label} className="shrink-0">
-          <Link
-            to={it.to}
-            tabIndex={dup ? -1 : undefined}
-            className="group flex items-center gap-2 rounded-full bg-white/[0.06] py-1 pl-1.5 pr-3.5 ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/[0.12] hover:ring-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e8967c]"
-          >
-            <span
-              className="grid h-6 w-6 shrink-0 place-items-center rounded-full"
-              style={{ backgroundColor: `${CAP_TONES[it.tone]}26`, color: CAP_TONES[it.tone] }}
-            >
-              <Icon name={it.icon} className="h-3.5 w-3.5" />
-            </span>
-            <span className="whitespace-nowrap text-[0.8125rem] font-medium text-slate-100">{it.label}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-  return (
-    <section aria-label="Everything RemoPDF can do" className="bg-[#0e1726] py-2.5">
-      <style>{`
-        .cap-row { display: flex; width: max-content; }
-        @media (prefers-reduced-motion: no-preference) {
-          .cap-row { animation: cap-left 70s linear infinite; }
-          .cap-wrap:hover .cap-row, .cap-wrap:focus-within .cap-row { animation-play-state: paused; }
-          @keyframes cap-left { to { transform: translateX(-50%); } }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .cap-wrap { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
-          .cap-dup { display: none; }
-        }
-      `}</style>
-      <div className="cap-wrap overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_6%,#000_94%,transparent)]">
-        <div className="cap-row">
-          {row(false)}
-          {row(true)}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // The real resume image on a scanner glass. A light beam sweeps down it and each section chip
 // is revealed as the beam passes. Without motion, the beam is hidden and all chips show.
 function ScanStage() {
@@ -275,33 +215,35 @@ function ScanStage() {
     <div className="rounded-3xl bg-[#e3e8f6] p-5 sm:p-8">
       <div className="mx-auto max-w-md rounded-2xl bg-[#0e1726] p-3 shadow-xl sm:p-4 lg:max-w-lg">
         <div className="relative rounded-lg bg-[#1b2a42] px-[12%] py-6 ring-1 ring-white/10 sm:py-8">
-          <img
-            src={image1}
-            alt="Sample resume being read by an ATS scan: name and contact, work history, skills and education are all picked up."
-            width="800"
-            height="1200"
-            loading="lazy"
-            decoding="async"
-            className="block h-auto w-full rounded-sm bg-white shadow-lg"
-          />
+          <div className="relative">
+            <img
+              src={image1}
+              alt="Sample resume being read by an ATS scan: name and contact, work history, skills and education are all picked up."
+              width="800"
+              height="1200"
+              loading="lazy"
+              decoding="async"
+              className="block h-auto w-full rounded-sm bg-white shadow-lg"
+            />
+            <div aria-hidden="true" className="ats-found pointer-events-none absolute inset-0">
+              {atsFound.map((c) => (
+                <span
+                  key={c.label}
+                  style={{ left: `${c.left}%`, top: `${c.top}%`, width: `${c.w}%`, height: `${c.h}%` }}
+                  className="absolute rounded-[3px] border border-[#d9856b] bg-[#d9856b]/10"
+                >
+                  <span className="absolute -left-px -top-px flex items-center gap-1 whitespace-nowrap rounded-br-[5px] rounded-tl-[3px] bg-[#d9856b] px-1.5 py-[3px] text-[9px] font-medium leading-none text-[#0e1726] sm:gap-1.5 sm:px-2 sm:py-1 sm:text-[11px]">
+                    <Icon name="check" className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    {c.label}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
             <span className="ats-bar absolute inset-x-0 top-0 h-0.5 bg-[#f4b19c] shadow-[0_0_18px_4px_rgba(217,133,107,.7)]">
               <span className="absolute inset-x-0 bottom-full h-20 bg-gradient-to-t from-[#d9856b]/30 to-transparent" />
             </span>
-          </div>
-          <div aria-hidden="true" className="ats-found pointer-events-none absolute inset-0">
-            {atsFound.map((c) => (
-              <span
-                key={c.label}
-                style={{ top: c.top }}
-                className={`absolute flex items-center gap-2 rounded-full bg-white py-1.5 pl-2 pr-3 text-xs font-medium text-[#0e1726] shadow-lg ring-1 ring-black/5 sm:py-2 sm:pl-2.5 sm:pr-4 sm:text-sm ${c.left ? '-left-3 sm:-left-6' : '-right-3 sm:-right-6'}`}
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#d9856b] text-[#0e1726] sm:h-6 sm:w-6">
-                  <Icon name="check" className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                </span>
-                {c.label}
-              </span>
-            ))}
           </div>
         </div>
       </div>
@@ -309,290 +251,12 @@ function ScanStage() {
   );
 }
 
-// The resume tiles: one small scene per feature, drawn in HTML so it stays sharp and can move.
-// Each scene sits in a .bt-art box that runs to the edge of its tile, so the pages and cards in it are cropped
-// by the tile instead of floating in a panel. Scenes are anchored to the top and left of the box, so a narrow
-// phone crops the right and bottom edges rather than squeezing anything.
-// All motion lives in the bt-* and ta-* CSS rules, which only run when motion is allowed; with reduced motion
-// every scene simply shows its finished state.
+// Small page and line shapes that the scenes below (hero, ATS scan, PDF editor) are drawn with.
 const SHEET_SHADOW = 'shadow-[0_26px_50px_-18px_rgba(14,23,38,.6)]';
 const LINE = 'block h-2 rounded-full bg-slate-200';
 
 function MiniSheet({ className = '', children }) {
   return <span className={`block rounded-[5px] bg-white p-3.5 ring-1 ring-black/10 ${SHEET_SHADOW} ${className}`}>{children}</span>;
-}
-
-function ToolArt({ type }) {
-  if (type === 'text')
-    return (
-      <div className="absolute inset-0 flex items-start justify-center gap-7 px-6 pt-9">
-        {/* Slim progress list: plain text on a connecting line, no heavy boxes */}
-        <span className="relative hidden w-40 shrink-0 flex-col gap-4 pl-6 pt-6 sm:flex lg:hidden xl:flex">
-          <span className="absolute bottom-3 left-[9px] top-8 w-px bg-white/15" aria-hidden="true" />
-          {['Work history', 'Education', 'Skills'].map((label) => (
-            <span key={label} className="relative flex items-center text-[13px] font-medium text-white/75">
-              <span className="absolute -left-6 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#5ed6c1] text-[#0e1726]">
-                <Icon name="check" className="h-2.5 w-2.5" />
-              </span>
-              {label}
-            </span>
-          ))}
-          <span className="relative flex items-center text-[13px] font-semibold text-white">
-            <span className="bt-pulse absolute -left-6 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#d9856b]/30 ring-1 ring-[#d9856b]">
-              <Icon name="spark" className="h-2.5 w-2.5 text-[#f2a98f]" />
-            </span>
-            Writing your summary
-          </span>
-        </span>
-
-        {/* Compact modern resume: navy header band, accent rules, timeline, tinted AI summary. Square corners, text kept crisp. */}
-        <span className="relative block w-[19rem] max-w-full shrink-0 self-stretch overflow-visible bg-white antialiased shadow-[0_-10px_60px_-10px_rgba(217,133,107,.55)]">
-          <span className="bt-ready absolute -right-3 top-[4.6rem] z-10 flex items-stretch bg-[#0e1726] text-[11px] font-semibold uppercase tracking-[0.1em] text-white shadow-lg ring-1 ring-white/15">
-            <span className="flex items-center bg-[#5ed6c1] px-1.5 text-[#0e1726]">
-              <Icon name="check" className="h-3 w-3" />
-            </span>
-            <span className="px-2.5 py-1.5">Draft ready</span>
-          </span>
-
-          {/* header band */}
-          <span className="relative block overflow-hidden bg-[#0e1726] px-5 pb-4 pt-5">
-            <span className="absolute inset-y-0 left-0 w-1 bg-[#d9856b]" aria-hidden="true" />
-            <span className="absolute -right-6 -top-10 h-24 w-24 rotate-45 bg-[#d9856b]/15" aria-hidden="true" />
-            <span className="relative block font-display text-[21px] font-bold leading-none tracking-tight text-white">Amara Nkosi</span>
-            <span className="relative mt-2 block text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#f2a98f]">Warehouse Operations Supervisor</span>
-            <span className="relative mt-2.5 block text-[11px] text-white/65">Johannesburg  ·  amara.nkosi@email.com</span>
-          </span>
-
-          <span className="block px-5 pb-4 pt-4">
-            {/* summary, tinted as the AI-written block */}
-            <span className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#0e1726]">
-              <span className="h-1.5 w-1.5 bg-[#d9856b]" aria-hidden="true" />
-              Summary
-              <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
-            </span>
-            <span className="mt-2 block border-l-2 border-[#d9856b] bg-[#fbf3ee] py-1.5 pl-3 pr-2 text-[12px] leading-[1.5] text-slate-700">
-              {['Operations supervisor with 6 years in', 'warehouse logistics. Led a team of 12 and', 'cut late deliveries by 18% in one year.'].map((t, k) => (
-                <span key={k} className="bt-line block whitespace-nowrap" style={{ '--k': k }}>{t}</span>
-              ))}
-            </span>
-
-            {/* experience as a timeline */}
-            <span className="mt-4 flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#0e1726]">
-              <span className="h-1.5 w-1.5 bg-[#d9856b]" aria-hidden="true" />
-              Experience
-              <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
-            </span>
-            <span className="relative mt-2.5 block pl-4 text-[12px] leading-snug">
-              <span className="absolute bottom-1 left-[3px] top-1.5 w-px bg-slate-300" aria-hidden="true" />
-              <span className="relative block">
-                <span className="absolute -left-4 top-[5px] h-[7px] w-[7px] bg-[#0e1726]" aria-hidden="true" />
-                <span className="flex items-baseline justify-between gap-2">
-                  <b className="min-w-0 font-semibold text-slate-900">Shift Supervisor</b>
-                  <span className="shrink-0 text-[11px] font-medium text-[#c2674a]">2021 – Now</span>
-                </span>
-                <span className="block text-[11px] text-slate-500">Linkway Freight</span>
-                <span className="mt-0.5 block text-slate-600">Scheduling, dispatch and staff training.</span>
-              </span>
-              <span className="relative mt-2.5 block">
-                <span className="absolute -left-4 top-[5px] h-[7px] w-[7px] border border-slate-400 bg-white" aria-hidden="true" />
-                <span className="flex items-baseline justify-between gap-2">
-                  <b className="min-w-0 font-semibold text-slate-900">Stock Controller</b>
-                  <span className="shrink-0 text-[11px] font-medium text-slate-500">2018 – 21</span>
-                </span>
-                <span className="block text-[11px] text-slate-500">Metro Stores</span>
-              </span>
-            </span>
-
-            {/* skills */}
-            <span className="mt-4 flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#0e1726]">
-              <span className="h-1.5 w-1.5 bg-[#d9856b]" aria-hidden="true" />
-              Skills
-              <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
-            </span>
-            <span className="mt-2 flex flex-wrap gap-1.5">
-              {['Inventory', 'Team lead', 'Dispatch', 'Excel'].map((t) => (
-                <span key={t} className="bg-[#eef1f9] px-2 py-0.5 text-[11px] font-medium text-[#0e1726]">{t}</span>
-              ))}
-            </span>
-          </span>
-        </span>
-      </div>
-    );
-
-  if (type === 'assist')
-    return (
-      <div className="absolute inset-0 flex flex-col gap-2.5 px-5 pt-5 sm:px-6 lg:pl-3 lg:pr-6 lg:pt-7">
-        <span className="block max-w-[27rem] rounded-xl bg-white/45 px-3.5 py-2.5 text-[13px] leading-snug text-[#0e1726]/70 line-through decoration-[#0e1726]/30">
-          Responsible for managing a team of warehouse staff.
-        </span>
-        <span className="block max-w-[27rem] rounded-xl bg-white p-3.5 shadow-[0_20px_40px_-16px_rgba(14,23,38,.6)] ring-2 ring-[#0e1726]">
-          <span className="flex items-start gap-2 text-[13.5px] font-semibold leading-snug text-[#0e1726]">
-            <Icon name="spark" className="mt-px h-4 w-4 shrink-0 text-[#d9856b]" />
-            Led a team of 12 and cut late deliveries by 18%.
-          </span>
-          <span className="mt-2.5 block rounded-lg bg-[#fbece5] px-2.5 py-1.5 text-[11.5px] leading-snug text-slate-600">
-            <b className="font-semibold text-slate-800">Why it works:</b> it opens with a verb and shows a result.
-          </span>
-          <span className="mt-2.5 inline-block rounded-full bg-[#0e1726] px-3.5 py-1 text-[11.5px] font-semibold text-white">Use this</span>
-        </span>
-        <span className="block max-w-[27rem] rounded-xl bg-white/70 px-3.5 py-2.5 text-[13px] font-medium leading-snug text-[#0e1726]">
-          Ran a 12-person warehouse team and cut late deliveries by 18%.
-        </span>
-      </div>
-    );
-
-  if (type === 'spell')
-    return (
-      <div className="absolute inset-0 px-5 pt-5">
-        <span className="block w-full max-w-[19rem] rounded-xl bg-white p-4 shadow-[0_22px_40px_-18px_rgba(40,56,130,.55)] ring-1 ring-black/5">
-          <span className="block text-[13.5px] leading-snug text-slate-700">
-            Reported daily to the{' '}
-            <span className="underline decoration-red-500 decoration-wavy underline-offset-4">Maneger</span> on site.
-          </span>
-          <span className="ta-pop mt-3.5 flex items-center justify-between gap-3 rounded-lg bg-[#0e1726] py-2 pl-3 pr-2 text-[13px] font-semibold text-white">
-            <span className="flex items-center gap-1.5">
-              <Icon name="check" className="h-3.5 w-3.5 text-[#5ed6c1]" />
-              Manager
-            </span>
-            <span className="rounded-md bg-[#d9856b] px-2 py-0.5 text-[11px] font-bold text-[#0e1726]">Replace</span>
-          </span>
-        </span>
-      </div>
-    );
-
-  if (type === 'ats')
-    return (
-      <div className="absolute inset-0 pl-6 pt-6">
-        <MiniSheet className="h-56 w-40 !p-3.5">
-          <span className="block h-2.5 w-3/5 rounded-full bg-[#0e1726]" />
-          <span className="mt-1.5 block h-1.5 w-2/5 rounded-full bg-slate-300" />
-          <span className="mt-4 block h-1.5 w-10 rounded-full bg-[#d9856b]" />
-          <span className={`${LINE} mt-2.5 w-full`} />
-          <span className={`${LINE} mt-2 w-4/5`} />
-          <span className="mt-4 block h-1.5 w-12 rounded-full bg-[#d9856b]" />
-          <span className={`${LINE} mt-2.5 w-full`} />
-          <span className={`${LINE} mt-2 w-3/4`} />
-        </MiniSheet>
-        <span className="absolute right-4 top-9 flex flex-col gap-2.5">
-          {['Contact', 'Work history', 'Skills'].map((label) => (
-            <span key={label} className="flex items-center gap-2 whitespace-nowrap rounded-full bg-white py-1.5 pl-1.5 pr-3.5 text-xs font-semibold text-[#0e1726] shadow-[0_10px_24px_-10px_rgba(14,23,38,.5)] ring-1 ring-black/5">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#5ed6c1]">
-                <Icon name="check" className="h-3 w-3" />
-              </span>
-              {label}
-            </span>
-          ))}
-        </span>
-      </div>
-    );
-
-  if (type === 'letter')
-    return (
-      <div className="absolute inset-0 flex justify-center pt-6">
-        <span className={`block h-60 w-44 -rotate-3 rounded-[5px] bg-white p-4 ring-1 ring-black/10 ${SHEET_SHADOW}`}>
-          <span className="block text-[11px] font-bold text-[#0e1726]">Dear Hiring Manager,</span>
-          <span className={`${LINE} mt-3 w-full`} />
-          <span className={`${LINE} mt-2 w-11/12`} />
-          <span className={`${LINE} mt-2 w-full`} />
-          <span className={`${LINE} mt-2 w-2/3`} />
-          <svg viewBox="0 0 60 16" className="mt-3 h-6 w-24" aria-hidden="true">
-            <path className="ta-sig" d="M2 12c6-12 8-12 6-2s6 4 9-4 4 10 9 2 6-6 9-1 7 3 11-3" pathLength="1" fill="none" stroke="#b5563a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
-      </div>
-    );
-
-  if (type === 'keywords')
-    return (
-      <div className="absolute inset-0 flex items-center gap-4 px-5 sm:px-8">
-        <span className="hidden w-[44%] shrink-0 rounded-xl bg-white p-4 shadow-[0_20px_40px_-20px_rgba(14,23,38,.35)] ring-1 ring-black/10 sm:block">
-          <span className="block text-[12.5px] font-bold text-[#0e1726]">Warehouse Supervisor</span>
-          <span className="mt-2 block text-[12px] leading-relaxed text-slate-500">
-            Looking for someone confident in{' '}
-            <mark className="rounded bg-[#d9856b]/30 px-1 text-[#7a3b28]">Excel</mark>, weekly{' '}
-            <mark className="rounded bg-[#d9856b]/30 px-1 text-[#7a3b28]">reporting</mark> and{' '}
-            <mark className="rounded bg-[#d9856b]/30 px-1 text-[#7a3b28]">budgeting</mark>.
-          </span>
-        </span>
-        <span className="block min-w-0 flex-1 rounded-xl bg-[#0e1726] p-4 text-white shadow-[0_20px_40px_-20px_rgba(14,23,38,.7)]">
-          <span className="flex items-baseline justify-between">
-            <span className="text-[13px] font-medium text-white/75">Match score</span>
-            <span className="font-display text-2xl font-extrabold">82%</span>
-          </span>
-          <span className="mt-2 block h-2 overflow-hidden rounded-full bg-white/15">
-            <span className="bt-fill block h-full w-[82%] origin-left rounded-full bg-gradient-to-r from-[#d9856b] to-[#5ed6c1]" />
-          </span>
-          <span className="mt-3.5 flex flex-wrap gap-1.5">
-            {[['Excel', true], ['Reporting', true], ['Budgeting', true], ['Scheduling', false]].map(([word, hit]) => (
-              <span
-                key={word}
-                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${hit ? 'bg-[#5ed6c1]/15 text-[#8ae8d6] ring-1 ring-[#5ed6c1]/40' : 'text-white/55 ring-1 ring-dashed ring-white/30'}`}
-              >
-                {hit ? <Icon name="check" className="h-3 w-3" /> : null}
-                {word}
-              </span>
-            ))}
-          </span>
-        </span>
-      </div>
-    );
-
-  if (type === 'import')
-    return (
-      <div className="absolute inset-0 flex items-start justify-center gap-2.5 px-3 pt-6">
-        <span className="mt-3 block h-28 w-14 shrink-0 -rotate-6 rounded-[5px] bg-white/70 p-2.5 ring-1 ring-black/10">
-          <span className="flex items-center gap-1 text-[#d9856b]">
-            <Icon name="fileUp" className="h-4 w-4" />
-          </span>
-          <span className="mt-2 block h-1.5 w-full rounded-full bg-slate-300" />
-          <span className="mt-1.5 block h-1.5 w-3/4 rounded-full bg-slate-300" />
-          <span className="mt-1.5 block h-1.5 w-full rounded-full bg-slate-300" />
-        </span>
-        <span className="relative mt-[3.75rem] block h-px w-5 shrink-0 bg-[#0e1726]/30">
-          <span className="ta-dot absolute -top-[3px] left-[calc(100%-6px)] block h-1.5 w-1.5 rounded-full bg-[#d9856b]" />
-        </span>
-        <span className="block w-28 shrink-0 rounded-xl bg-white p-3 shadow-[0_22px_40px_-18px_rgba(40,56,130,.6)] ring-1 ring-black/5">
-          {['Name', 'Job title', 'Summary'].map((label, k) => (
-            <span key={label} className={k ? 'mt-2.5 block' : 'block'}>
-              <span className="block text-[10px] font-semibold text-slate-400">{label}</span>
-              <span className={`mt-1 block h-5 rounded-md bg-[#eef1f9] ring-1 ${k === 2 ? 'ring-[#d9856b]' : 'ring-transparent'}`} />
-            </span>
-          ))}
-        </span>
-      </div>
-    );
-
-  if (type === 'convert')
-    return (
-      <div className="absolute inset-0 flex items-start justify-center gap-5 px-5 pt-7 sm:gap-8">
-        <span className="relative mt-1 block h-56 w-44 shrink-0 sm:w-48">
-          <span className="absolute inset-0 translate-x-6 rotate-6 rounded-[5px] bg-[#a5b1ff]/90 ring-1 ring-white/20" />
-          <span className="absolute inset-0 block rounded-[5px] bg-white p-3.5 shadow-[0_24px_50px_-16px_rgba(0,0,0,.7)]">
-            <span className="bt-tint flex h-9 items-center rounded-md bg-[#d9856b] px-2.5">
-              <span className="block h-2 w-1/2 rounded-full bg-white/90" />
-            </span>
-            <span className="bt-tint mt-4 block h-1.5 w-12 rounded-full bg-[#d9856b]" />
-            <span className={`${LINE} mt-2.5 w-full`} />
-            <span className={`${LINE} mt-2 w-4/5`} />
-            <span className="bt-tint mt-4 block h-1.5 w-14 rounded-full bg-[#d9856b]" />
-            <span className={`${LINE} mt-2.5 w-full`} />
-            <span className={`${LINE} mt-2 w-2/3`} />
-          </span>
-        </span>
-        <span className="mt-12 hidden shrink-0 items-center gap-3 rounded-2xl bg-white p-3 pr-4 shadow-[0_24px_50px_-16px_rgba(0,0,0,.7)] lg:flex">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0e1726] font-display text-xs font-extrabold text-white">PDF</span>
-          <span>
-            <span className="block text-[13px] font-bold text-[#0e1726]">resume.pdf</span>
-            <span className="block text-[11.5px] text-slate-500">A4, ready to send</span>
-          </span>
-          <span className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-[#d9856b] text-[#0e1726]">
-            <Icon name="download" className="h-[18px] w-[18px]" />
-          </span>
-        </span>
-      </div>
-    );
-
-  return null;
 }
 
 // Small scenes for the two larger PDF tiles. They reuse the .bt tile and .bt-art box from the resume tiles.
@@ -635,105 +299,108 @@ function PdfArt({ type }) {
   );
 }
 
-// How each feature sits in the bento grid. `tile` picks the colours (the .bt-* rules below),
-// `h` is the least height the scene gets.
-const TILES = {
-  text: { tile: 'ink', h: '15rem', title: 'text-[1.75rem] leading-[1.08] tracking-[-0.025em] sm:text-4xl' },
-  assist: { tile: 'coral', h: '12.5rem', hr: '17.5rem', title: 'text-xl sm:text-2xl' },
-  spell: { tile: 'sky', h: '8.5rem', title: 'text-xl' },
-  ats: { tile: 'mint', h: '8.5rem', title: 'text-xl' },
-  letter: { tile: 'peach', h: '9rem', title: 'text-xl' },
-  keywords: { tile: 'paper', h: '10rem', title: 'text-xl sm:text-2xl' },
-  import: { tile: 'sky', h: '9rem', title: 'text-xl' },
-  convert: { tile: 'ink', h: '11rem', hr: '12.5rem', title: 'text-xl sm:text-2xl' },
-};
-
-// The resume feature list. From lg up it is a bento grid; on a phone each item becomes a card that sticks
-// near the top while the next one slides up over it, so the cards pile onto each other one by one. The sticky
-// part is pure CSS (.ec-* rules below); this effect only measures how far each card has been covered and
-// sets --sc (scale) and --dim (shade) so the older cards sink back as the stack grows.
-function FeatureCards() {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const list = ref.current;
-    if (!list) return undefined;
-    const small = window.matchMedia('(max-width: 639px)');
-    const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const items = Array.from(list.children);
-    let raf = 0;
-
-    const clear = () =>
-      items.forEach((el) => {
-        el.style.removeProperty('--sc');
-        el.style.removeProperty('--dim');
-      });
-
-    const update = () => {
-      raf = 0;
-      if (!small.matches || calm.matches) {
-        clear();
-        return;
-      }
-      const box = list.getBoundingClientRect();
-      if (box.bottom < -200 || box.top > window.innerHeight + 200) return;
-
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      const peek = rem * 0.625; // keep in step with the .625rem sticky offset in the CSS
-      const gap = rem; // margin between cards
-
-      // progress[i] = 0 while card i + 1 is still below it, 1 once card i + 1 has settled on top of it
-      const progress = items.map((el, i) => {
-        const next = items[i + 1];
-        if (!next) return 0;
-        const rest = el.offsetHeight + gap;
-        const now = next.getBoundingClientRect().top - el.getBoundingClientRect().top;
-        return Math.min(1, Math.max(0, (rest - now) / (rest - peek)));
-      });
-
-      // a card sinks back for every card stacked on top of it, not just the one right above
-      let depth = 0;
-      for (let i = items.length - 1; i >= 0; i -= 1) {
-        depth += progress[i];
-        items[i].style.setProperty('--sc', (1 - Math.min(depth * 0.035, 0.14)).toFixed(4));
-        items[i].style.setProperty('--dim', Math.min(depth * 0.07, 0.35).toFixed(3));
-      }
-    };
-
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    onScroll();
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (raf) cancelAnimationFrame(raf);
-      clear();
-    };
-  }, []);
+// Four plain cards, then the remaining tools as rows that open one at a time.
+// Nothing sticks, stacks or overlaps, so it reads the same on a phone and on a desktop.
+function ResumeFeatures() {
+  const [open, setOpen] = useState(0);
 
   return (
-    <ul ref={ref} className="ec-list bt-grid mt-12 sm:mt-14">
-      {resumePoints.map((pt, i) => {
-        const t = TILES[pt.art];
-        return (
-          <li key={pt.title} data-tile={pt.art} style={{ '--i': i % 4, '--n': i }} className="ec-item bt-cell reveal">
-            <article className={`ec-card bt bt-${t.tile}`}>
-              <div className="bt-copy">
-                <h3 className={`font-display font-bold [text-wrap:balance] ${t.title}`}>{pt.title}</h3>
-                <p className="bt-desc mt-2 text-[15px] leading-relaxed">{pt.desc}</p>
-              </div>
-              <div className="bt-art" aria-hidden="true" style={{ '--h': t.h, '--hr': t.hr }}>
-                <ToolArt type={pt.art} />
-              </div>
-            </article>
+    <>
+      <ul className="mt-12 grid grid-cols-2 gap-3 sm:mt-14 sm:gap-4 lg:grid-cols-4">
+        {benefitCards.map((card, i) => (
+          <li key={card.title} style={{ '--i': i }} className="reveal rounded-2xl border border-[#0e1726]/[0.08] bg-[#f6f7fb] p-4 sm:p-6">
+            <Icon name={card.icon} className="h-9 w-9 text-[#0e1726] sm:h-10 sm:w-10" />
+            <h3 className="mt-5 min-h-[3.1rem] font-display text-lg font-semibold leading-snug [text-wrap:balance] sm:mt-6 sm:min-h-0 sm:text-xl">{card.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500 [text-wrap:pretty] sm:text-[15px]">{card.desc}</p>
           </li>
-        );
-      })}
-    </ul>
+        ))}
+      </ul>
+
+      <div className="mt-14 sm:mt-16 lg:mt-20 lg:grid lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+        <h3 className="reveal text-center font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl lg:text-left">
+          Everything else you need is here.
+        </h3>
+        <ul className="mt-8 space-y-3 lg:mt-0">
+          {toolRows.map((row, i) => {
+            const isOpen = open === i;
+            return (
+              <li key={row.title} data-open={isOpen} className="tool-row rounded-2xl border border-[#0e1726]/10 bg-white">
+                <h4>
+                  <button
+                    type="button"
+                    id={`tool-btn-${i}`}
+                    aria-expanded={isOpen}
+                    aria-controls={`tool-panel-${i}`}
+                    onClick={() => setOpen(isOpen ? -1 : i)}
+                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e1726] sm:gap-4 sm:px-5"
+                  >
+                    <Icon name={row.icon} className="h-7 w-7 shrink-0 text-[#0e1726]" />
+                    <span className="flex-1 font-display text-lg font-semibold leading-snug">{row.title}</span>
+                    <span className="tool-toggle flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[#d9856b] text-[#b45a40]" aria-hidden="true">
+                      <Icon name="plus" className="h-4 w-4" />
+                    </span>
+                  </button>
+                </h4>
+                <div id={`tool-panel-${i}`} role="region" aria-labelledby={`tool-btn-${i}`} className="tool-panel">
+                  <div className="overflow-hidden">
+                    <p className="pb-5 pl-14 pr-4 text-[15px] leading-relaxed text-slate-600 sm:pl-16 sm:pr-5">{row.desc}</p>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Hero typewriter                                                    */
+/* ------------------------------------------------------------------ */
+
+function Typewriter({ lines }) {
+  const [text, setText] = useState(lines[0]);
+
+  useEffect(() => {
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    let i = 0;
+    let n = 0;
+    let deleting = false;
+    let t;
+    const tick = () => {
+      const full = lines[i];
+      if (!deleting) {
+        n += 1;
+        setText(full.slice(0, n));
+        if (n === full.length) {
+          deleting = true;
+          t = setTimeout(tick, 1700);
+          return;
+        }
+        t = setTimeout(tick, 55);
+      } else {
+        n -= 1;
+        setText(full.slice(0, n));
+        if (n === 0) {
+          deleting = false;
+          i = (i + 1) % lines.length;
+          t = setTimeout(tick, 350);
+          return;
+        }
+        t = setTimeout(tick, 26);
+      }
+    };
+    setText('');
+    t = setTimeout(tick, 700);
+    return () => clearTimeout(t);
+  }, [lines]);
+
+  return (
+    <span aria-hidden="true" className="block min-h-[2.3em] text-[#c4694b]">
+      <span className="tw-mark">{text}</span>
+      <span className="tw-caret" />
+    </span>
   );
 }
 
@@ -819,7 +486,7 @@ function ResumeStack() {
 // Closing statement before the final call to action. Row one is the PDF editor's main actions with
 // a small icon pill after each; row two is the rest of the toolset (pages, convert, resumes) in a
 // quieter weight, running the other way. Both loop seamlessly and pause on hover. Without motion
-// they wrap and stay centred. Words come from the `tools`, `atsPoints` and `capItems` lists above.
+// they wrap and stay centred. Words come from the `tools` and `atsPoints` lists above.
 const KIN_VERBS = [
   { word: 'Edit text', icon: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></> },
   { word: 'Highlight', icon: <><path d="m9 11-6 6v3h9l3-3" /><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" /></> },
@@ -1200,6 +867,9 @@ export default function Home() {
         @keyframes rise { from { opacity: 0; translate: 0 18px; } }
         .rise { animation: rise .8s cubic-bezier(.16,1,.3,1) both; animation-delay: var(--d, 0s); }
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: .625rem; padding: .8rem 1.4rem; font-size: .9375rem; font-weight: 600; line-height: 1.2; transition: background-color .2s, border-color .2s, transform .15s; }
+        .tw-mark { background-image: linear-gradient(transparent 64%, rgba(217,133,107,.2) 64%); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+        .tw-caret { display: inline-block; width: 2px; height: .85em; margin-left: .12em; vertical-align: -.05em; background: #d9856b; animation: tw-blink 1s steps(2, start) infinite; }
+        @keyframes tw-blink { to { visibility: hidden; } }
         .btn:active { transform: translateY(1px); }
         .btn:focus-visible { outline: 2px solid #0e1726; outline-offset: 3px; }
         .dark-sec .btn:focus-visible { outline-color: #fff; }
@@ -1281,20 +951,6 @@ export default function Home() {
           }
         }
         @media (prefers-reduced-motion: no-preference) {
-          .bt-type { animation: bt-type 7s steps(16, end) infinite both; animation-delay: calc(var(--k, 0) * .9s); }
-          @keyframes bt-type { 0% { clip-path: inset(0 100% 0 0); } 24%, 90% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 100% 0 0); } }
-          .bt-line { animation: bt-line 7s ease-out infinite both; animation-delay: calc(var(--k, 0) * .5s); }
-          @keyframes bt-line { 0% { opacity: 0; } 20%, 90% { opacity: 1; } 100% { opacity: 0; } }
-          .bt-ready { animation: bt-ready 7s ease-in-out infinite; }
-          @keyframes bt-ready { 0%, 44% { opacity: 0; translate: 0 8px; scale: .8; } 52%, 90% { opacity: 1; translate: 0 0; scale: 1; } 98%, 100% { opacity: 0; translate: 0 8px; scale: .8; } }
-          .bt-pulse { animation: bt-pulse 2.4s ease-in-out infinite; }
-          @keyframes bt-pulse { 0%, 100% { background-color: rgba(217,133,107,.14); } 50% { background-color: rgba(217,133,107,.32); } }
-          .bt-tint { animation: bt-tint 9s ease-in-out infinite; }
-          @keyframes bt-tint { 0%, 26% { background-color: #d9856b; } 36%, 60% { background-color: #8c9bff; } 70%, 94% { background-color: #3fc6ae; } 100% { background-color: #d9856b; } }
-          @supports (animation-timeline: view()) {
-            .bt-fill { animation: bt-fill linear both; animation-timeline: view(); animation-range: entry 25% cover 45%; }
-            @keyframes bt-fill { from { transform: scaleX(.12); } }
-          }
           .ta-sig { animation: ta-sig 4.2s ease-in-out infinite; }
           @keyframes ta-sig { 0%, 32% { stroke-dashoffset: 1.05; } 70%, 92% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 1.05; } }
           .ta-dot { animation: ta-dot 3s ease-in-out infinite; }
@@ -1325,65 +981,29 @@ export default function Home() {
             .layer { animation: layer-scroll linear both; animation-timeline: scroll(root); animation-range: 0 100vh; }
           }
         }
-        /* Resume tiles: a bento grid from lg up, two columns on sm, and a sticky stack of cards on phones. */
-        .bt-grid { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); }
-        .bt-cell { display: flex; }
+        /* Feature tiles, shared with the PDF tools below. */
         .bt { --p: 1.25rem; position: relative; isolation: isolate; display: flex; flex: 1 1 auto; min-width: 0; flex-direction: column; overflow: hidden; border-radius: 1.5rem; padding: var(--p); color: #0e1726; }
         .bt-copy { position: relative; z-index: 1; }
         .bt-desc { text-wrap: pretty; }
         .bt-art { position: relative; flex: 1 1 auto; min-height: var(--h, 9rem); margin: 1.25rem calc(var(--p) * -1) calc(var(--p) * -1); overflow: hidden; }
-        .bt-ink { color: #fff; background: radial-gradient(70% 55% at 100% 0%, rgba(217,133,107,.4), transparent 70%), radial-gradient(60% 50% at 0% 100%, rgba(165,177,255,.22), transparent 70%), #0e1726; box-shadow: inset 0 0 0 1px rgba(255,255,255,.09); }
-        .bt-ink::before { content: ''; position: absolute; inset: 0; z-index: -1; background-image: radial-gradient(rgba(255,255,255,.1) 1px, transparent 1px); background-size: 20px 20px; -webkit-mask-image: linear-gradient(180deg, transparent 5%, #000 60%); mask-image: linear-gradient(180deg, transparent 5%, #000 60%); }
-        .bt-ink .bt-desc { color: rgba(255,255,255,.74); }
-        .bt-coral { background: linear-gradient(140deg, #f0a891 0%, #d9856b 55%, #cc6f54 100%); }
-        .bt-coral .bt-desc { color: rgba(14,23,38,.86); }
-        .bt-sky { background: linear-gradient(160deg, #eaeeff 0%, #cbd5fb 100%); }
-        .bt-sky .bt-desc { color: #34425e; }
-        .bt-peach { background: linear-gradient(160deg, #fdf0e9 0%, #f4d5c6 100%); }
-        .bt-peach .bt-desc { color: #4b3a35; }
-        .bt-mint { background: linear-gradient(160deg, #f0fcf8 0%, #cff1e7 100%); }
-        .bt-mint .bt-desc { color: #2c4a43; }
-        .bt-paper { background: linear-gradient(180deg, #fff 0%, #f3f5fc 100%); box-shadow: inset 0 0 0 1px rgba(14,23,38,.1); }
-        .bt-paper .bt-desc { color: #475569; }
+        .bt-sky, .bt-peach { background: #f5f6f8; box-shadow: inset 0 0 0 1px rgba(14,23,38,.06); }
+        .bt-sky .bt-desc, .bt-peach .bt-desc { color: #5b6573; }
         @media (min-width: 640px) {
-          .bt-grid { gap: 1.25rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .bt { --p: 1.5rem; border-radius: 1.75rem; }
-          .bt-cell[data-tile="text"], .bt-cell[data-tile="keywords"] { grid-column: 1 / -1; }
         }
-        @media (min-width: 1024px) {
-          .bt-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-          .bt-cell[data-tile="text"] { grid-column: 1 / 3; grid-row: 1 / 3; }
-          .bt-cell[data-tile="assist"] { grid-column: 3 / 5; grid-row: 1; }
-          .bt-cell[data-tile="spell"] { grid-column: 3; grid-row: 2; }
-          .bt-cell[data-tile="ats"] { grid-column: 4; grid-row: 2; }
-          .bt-cell[data-tile="letter"] { grid-column: 1; grid-row: 3; }
-          .bt-cell[data-tile="keywords"] { grid-column: 2 / 4; grid-row: 3; }
-          .bt-cell[data-tile="import"] { grid-column: 4; grid-row: 3; }
-          .bt-cell[data-tile="convert"] { grid-column: 1 / -1; grid-row: 4; }
-          /* the two wide tiles put the words on the left and the scene on the right */
-          .bt-cell[data-tile="assist"] .bt, .bt-cell[data-tile="convert"] .bt { flex-direction: row; }
-          .bt-cell[data-tile="assist"] .bt-copy, .bt-cell[data-tile="convert"] .bt-copy { flex: 0 0 42%; align-self: center; }
-          .bt-cell[data-tile="assist"] .bt-art, .bt-cell[data-tile="convert"] .bt-art { margin: calc(var(--p) * -1) calc(var(--p) * -1) calc(var(--p) * -1) 0; min-height: var(--hr, var(--h)); }
-          .bt-cell[data-tile="text"] .bt-art { min-height: 20rem; }
-        }
-        @media (max-width: 639px) {
-          /* --ec-top = how far below the top of the screen the first card sticks (raise it if the navbar is taller) */
-          ul.ec-list { display: block; --ec-top: 5rem; }
-          .ec-item { position: sticky; top: calc(var(--ec-top) + var(--n, 0) * .625rem); margin-bottom: 1rem; }
-          .ec-item:last-child { margin-bottom: 0; }
-          .ec-item.reveal { animation: none; }
-          .ec-card { transform: scale(var(--sc, 1)); transform-origin: 50% 0; will-change: transform; }
-          .ec-card::after { content: ''; position: absolute; inset: 0; z-index: 5; pointer-events: none; background: #0e1726; opacity: var(--dim, 0); }
-        }
-        @media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
-          @supports (animation-timeline: view()) {
-            @keyframes ec-in { from { opacity: 0; translate: 0 56px; scale: .96; } }
-            .ec-card { animation: ec-in linear both; animation-timeline: view(); animation-range: entry 0% entry 75%; }
-          }
+        /* Resume features: plain cards, then rows that open one at a time. */
+        .tool-row { transition: background-color .25s, border-color .25s; }
+        .tool-row[data-open="true"] { background: #fdf0e9; border-color: transparent; }
+        .tool-toggle { transition: transform .25s, background-color .25s, color .25s; }
+        .tool-row[data-open="true"] .tool-toggle { transform: rotate(45deg); background: #d9856b; color: #0e1726; }
+        .tool-panel { display: grid; grid-template-rows: 0fr; visibility: hidden; }
+        .tool-row[data-open="true"] .tool-panel { grid-template-rows: 1fr; visibility: visible; }
+        @media (prefers-reduced-motion: no-preference) {
+          .tool-panel { transition: grid-template-rows .3s ease, visibility 0s .3s; }
+          .tool-row[data-open="true"] .tool-panel { transition: grid-template-rows .3s ease, visibility 0s; }
         }
         /* PDF editor section: a soft two-colour stage behind the screenshot, and tool tiles that are links. */
-        .pdf-stage { background: radial-gradient(60% 80% at 0% 0%, rgba(165,177,255,.4), transparent 70%), radial-gradient(60% 80% at 100% 0%, rgba(217,133,107,.5), transparent 70%), #0e1726; box-shadow: inset 0 0 0 1px rgba(255,255,255,.09); }
-        .pdf-stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(255,255,255,.11) 1px, transparent 1px); background-size: 22px 22px; -webkit-mask-image: linear-gradient(180deg, #000, transparent 75%); mask-image: linear-gradient(180deg, #000, transparent 75%); }
+        .pdf-stage { background: #f3f4f7; box-shadow: inset 0 0 0 1px rgba(14,23,38,.06); }
         .pdf-sig { stroke-dasharray: 1; }
         .pdf-grid { display: grid; gap: .75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .pdf-grid > li { min-width: 0; }
@@ -1394,14 +1014,11 @@ export default function Home() {
           .pdf-grid > li:not(.pdf-feat) { grid-column: span 2; }
         }
         .pdf-link { flex: 1 1 auto; }
-        .pdf-tool { background-color: #fff; background-image: linear-gradient(180deg, rgba(255,255,255,0), rgba(14,23,38,.025)); box-shadow: inset 0 0 0 1px rgba(14,23,38,.1); color: #0e1726; }
-        .pdf-tool[data-tone="coral"] { background-image: linear-gradient(135deg, rgba(247,192,173,.5), rgba(255,255,255,0) 62%); }
-        .pdf-tool[data-tone="sky"] { background-image: linear-gradient(135deg, rgba(190,200,255,.55), rgba(255,255,255,0) 62%); }
-        .pdf-tool[data-tone="mint"] { background-image: linear-gradient(135deg, rgba(168,236,220,.55), rgba(255,255,255,0) 62%); }
-        .pdf-tool[data-tone="sun"] { background-image: linear-gradient(135deg, rgba(252,226,140,.6), rgba(255,255,255,0) 62%); }
+        .pdf-tool { background: #fff; box-shadow: inset 0 0 0 1px rgba(14,23,38,.08); color: #0e1726; }
+        .pt-coral, .pt-sky, .pt-mint, .pt-sun { background: #f1f3f6; }
         .pdf-tool-go { transition: color .2s, translate .25s cubic-bezier(.16,1,.3,1); }
         .pdf-tool:hover .pdf-tool-go, .pdf-link:hover .pdf-tool-go { color: #0e1726; translate: 2px -2px; }
-        .pdf-tool:hover { box-shadow: inset 0 0 0 1px rgba(14,23,38,.28), 0 16px 30px -18px rgba(14,23,38,.45); }
+        .pdf-tool:hover { box-shadow: inset 0 0 0 1px rgba(14,23,38,.2), 0 12px 24px -16px rgba(14,23,38,.3); }
         @media (prefers-reduced-motion: no-preference) {
           .pdf-tool, .pdf-link { transition: box-shadow .25s, translate .25s cubic-bezier(.16,1,.3,1); }
           .pdf-tool:hover, .pdf-link:hover { translate: 0 -3px; }
@@ -1414,10 +1031,6 @@ export default function Home() {
           .pdf-caret { animation: pdf-caret 1.1s steps(1) infinite; }
           @keyframes pdf-caret { 50% { opacity: 0; } }
         }
-        .pt-coral { background: linear-gradient(140deg, #f7c0ad, #e08e73); box-shadow: inset 0 1px 0 rgba(255,255,255,.55); }
-        .pt-sky { background: linear-gradient(140deg, #d3dbff, #9aa9ff); box-shadow: inset 0 1px 0 rgba(255,255,255,.55); }
-        .pt-mint { background: linear-gradient(140deg, #b4f1e3, #4fcfb7); box-shadow: inset 0 1px 0 rgba(255,255,255,.55); }
-        .pt-sun { background: linear-gradient(140deg, #fce7a0, #f2c14e); box-shadow: inset 0 1px 0 rgba(255,255,255,.55); }
         /* Paper-sheet look (folded corner + shadow) only from sm up; on phones each question is its own card. */
         @media (min-width: 640px) {
           .faq-sheet-wrap { filter: drop-shadow(0 18px 28px rgba(14,23,38,.14)); }
@@ -1486,42 +1099,42 @@ export default function Home() {
           <div aria-hidden="true" className="blob-a pointer-events-none absolute -right-24 -top-24 -z-10 h-[30rem] w-[30rem] rounded-full bg-[#f3b9a5]/50 blur-3xl" />
           <div aria-hidden="true" className="blob-b pointer-events-none absolute -left-32 top-1/2 -z-10 h-[26rem] w-[26rem] rounded-full bg-[#c9d4f2]/60 blur-3xl" />
           <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-8 lg:pb-24 lg:pt-16">
-            <div className="hero-out">
-              <h1 className="font-display text-[2.75rem] font-extrabold leading-[1.02] tracking-[-0.035em] [text-wrap:balance] sm:text-6xl lg:text-[4.5rem]">
-                {HERO_TITLE.split(' ').map((w, i, all) => (
-                  <span key={i}>
-                    <span className={`word relative ${i >= 2 ? 'grad-text' : ''}`} style={{ '--i': i }}>
-                      {w}
-                      {i === all.length - 1 && (
-                        <svg className="squiggle absolute -bottom-1.5 left-0 h-3 w-full overflow-visible" viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true">
-                          <path d="M3 8c30-7 60 5 95-1s60-4 99-1" pathLength="1" fill="none" stroke="#d9856b" strokeWidth="5" strokeLinecap="round" />
-                        </svg>
-                      )}
-                    </span>{' '}
-                  </span>
-                ))}
+            <div className="hero-out text-center lg:text-left">
+              <h1 className="font-display text-[2.6rem] font-light leading-[1.08] tracking-[-0.03em] text-[#0e1726] sm:text-[4rem] lg:text-[4.75rem]">
+                <span className="word" style={{ '--i': 0 }}>A resume that</span>
+                <span className="sr-only"> gets you noticed</span>
+                <Typewriter lines={HERO_LINES} />
               </h1>
-              <p className="rise mt-6 max-w-lg text-lg leading-relaxed text-slate-600" style={{ '--d': '.1s' }}>
-                Skip the blank page. Add your details and AI smart assist drafts it, polishes every line and checks your spelling. Choose an ATS-friendly template, add a cover letter to match, and download a clean PDF.
+              <p className="rise mx-auto mt-4 max-w-md text-lg font-light leading-relaxed text-slate-600 sm:text-xl lg:mx-0" style={{ '--d': '.1s' }}>
+                Pick a template, let AI help you write, download a clean PDF.
               </p>
-              <div className="rise mt-9 flex flex-col gap-3 sm:flex-row" style={{ '--d': '.2s' }}>
-                <Link to="/ResumeBuilder" onPointerMove={magnet} onPointerLeave={unmagnet} className="btn btn-primary magnet">
+              <div className="rise mx-auto mt-9 flex max-w-xs flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center lg:justify-start" style={{ '--d': '.2s' }}>
+                <Link to="/ResumeBuilder" onPointerMove={magnet} onPointerLeave={unmagnet} className="btn btn-primary magnet group !gap-3 !rounded-full !py-4 !pl-7 !pr-3 !text-[1.0625rem] shadow-[0_14px_30px_-10px_rgba(217,133,107,.9)] transition-shadow hover:shadow-[0_18px_36px_-10px_rgba(217,133,107,1)]">
                   Build my resume
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-[#0e1726] text-white transition-transform duration-300 group-hover:rotate-45">
+                    <Icon name="arrowUpRight" className="h-4 w-4" />
+                  </span>
                 </Link>
-                <Link to={PDF_EDITOR_ROUTE} className="btn btn-line">
+                <Link to={PDF_EDITOR_ROUTE} className="btn !rounded-full !border !border-[#0e1726]/10 !bg-white/70 !px-7 !py-4 !text-[1.0625rem] !text-[#0e1726] shadow-sm backdrop-blur hover:!border-[#0e1726]/30 hover:!bg-white">
+                  <Icon name="fileText" className="h-5 w-5 text-[#b5563a]" />
                   Edit a PDF
                 </Link>
               </div>
-              <p className="rise mt-5 max-w-md text-sm leading-relaxed text-slate-500" style={{ '--d': '.3s' }}>
-                30 ATS-friendly templates, a cover letter builder and a PDF editor, all in one place.
-              </p>
+              <ul className="rise mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-light text-slate-600 lg:justify-start" style={{ '--d': '.3s' }}>
+                {['30 ATS templates', 'AI writing help', 'Clean PDF'].map((t) => (
+                  <li key={t} className="flex items-center gap-1.5">
+                    <span className="grid h-5 w-5 place-items-center rounded-full bg-[#d9856b]/20 text-[#b5563a]">
+                      <Icon name="check" className="h-3 w-3" />
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
 
             <ResumeStack />
           </div>
         </section>
-
-        <Capabilities />
 
         {/* Resume builder: what you get */}
         <section id="tools" className="scroll-mt-20 border-t border-[#0e1726]/10 bg-white">
@@ -1542,7 +1155,7 @@ export default function Home() {
               </div>
             </div>
 
-            <FeatureCards />
+            <ResumeFeatures />
           </div>
         </section>
 
@@ -1614,16 +1227,16 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="shot-in relative mt-10 sm:mt-12">
-              <div className="pdf-stage relative overflow-hidden rounded-[1.75rem] px-3 pt-10 sm:rounded-[2rem] sm:px-8 sm:pt-14 lg:px-14 lg:pt-[4.5rem]">
+            <div className="shot-in relative -mx-4 mt-10 sm:mx-0 sm:mt-12">
+              <div className="pdf-stage relative overflow-hidden rounded-none px-0 pt-0 sm:rounded-[2rem] sm:px-8 sm:pt-14 lg:px-14 lg:pt-[4.5rem]">
                 {/* The shot runs off the bottom of the stage. On a phone it is zoomed in on the toolbar and page, so the tools are readable.
                     The marks on top are positioned in percentages of the picture, so they stay on the same spot at every size. */}
-                <div className="relative mx-auto max-h-[16.5rem] max-w-[62rem] overflow-hidden rounded-t-xl bg-white shadow-[0_-30px_90px_-30px_rgba(217,133,107,.6)] ring-1 ring-white/25 sm:max-h-none sm:rounded-t-2xl">
-                  <div className="relative w-[190%] sm:w-full">
+                <div className="relative mx-auto max-w-[62rem] overflow-hidden rounded-none bg-white sm:rounded-t-2xl sm:shadow-[0_-24px_60px_-30px_rgba(14,23,38,.25)] sm:ring-1 sm:ring-[#0e1726]/10">
+                  <div className="relative w-full">
                     <img
                       src={editorShot}
                       srcSet={`${editorShotSmall} 800w, ${editorShot} 1600w`}
-                      sizes="(min-width: 1280px) 992px, (min-width: 640px) 92vw, 190vw"
+                      sizes="(min-width: 1280px) 992px, (min-width: 640px) 92vw, 100vw"
                       alt="The RemoPDF editor with a toolbar for text, highlight, signature and image tools, a page sidebar, and an invoice open on the page."
                       width="1600"
                       height="751"

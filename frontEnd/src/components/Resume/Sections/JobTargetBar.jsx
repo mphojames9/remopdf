@@ -46,13 +46,24 @@ import { analyseRequirements, formatMonths } from './qualificationCheck';
 
 const ACCENT = '#d9856b';
 const ACCENT_SOFT = '#f6c3b2';
-const ACCENT_DEEP = '#b8573b';
-const EMERALD = '#34d399';
-const INK = '#0b1220';
 const FONT = "'Outfit', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif";
-const FOCUS = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d9856b]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent';
+const FOCUS = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1d8ff0]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent';
 const DARK = 'linear-gradient(160deg,#0b1220,#1c2742)';
 const EASE = 'cubic-bezier(.22,1,.36,1)';
+
+// The look of the Job match sheet: a light page, white cards, one blue accent and four rating words in the colours of a
+// traffic light (Excellent green, Good amber, Fair orange, Weak red). The terracotta ACCENT stays for the score dock.
+const PAGE = '#f1f4f9';
+const BLUE = '#1d8ff0';
+const BLUE_SOFT = '#e6f3fd';
+const TRACK = '#eaeff6';
+const RATINGS = {
+  excellent: { word: 'Excellent', color: '#2f9e5e' },
+  good: { word: 'Good', color: '#c97a14' },
+  fair: { word: 'Fair', color: '#d1622b' },
+  weak: { word: 'Weak', color: '#d03c3c' },
+};
+const rateRatio = (ratio) => (ratio >= 0.85 ? RATINGS.excellent : ratio >= 0.6 ? RATINGS.good : ratio >= 0.35 ? RATINGS.fair : RATINGS.weak);
 
 // The same four bands scoreLabel() uses in atsScore.js.
 const TIERS = [
@@ -62,7 +73,8 @@ const TIERS = [
   { name: 'Excellent', from: 85, to: 100 },
 ];
 const tierIndex = (score) => (score >= 85 ? 3 : score >= 70 ? 2 : score >= 45 ? 1 : 0);
-const tierTone = (index) => (index >= 2 ? EMERALD : ACCENT);
+// The same bands on a light page: green from Strong up, amber below.
+const tierInk = (index) => (index >= 2 ? RATINGS.excellent.color : RATINGS.good.color);
 
 const STYLE = `
 @keyframes jm-in-right{from{opacity:0;transform:translateX(28px) scale(.985)}to{opacity:1;transform:none}}
@@ -251,6 +263,7 @@ const ICON = {
   close: 'M5 5l10 10M15 5L5 15',
   check: 'M4.5 10.5l3.5 3.5 7.5-8',
   chevron: 'M8 5l5 5-5 5',
+  up: 'M5 12.5l5-5 5 5',
   pencil: 'M12.5 4.5l3 3L7 16H4v-3l8.5-8.5z',
   bulb: 'M7.5 15.5h5M8 18h4M10 2.5a5 5 0 0 0-2.9 9.1c.5.4.9 1 .9 1.7v.7h4v-.7c0-.7.4-1.3.9-1.7A5 5 0 0 0 10 2.5z',
   shield: 'M10 2.5l6 2.2v4.6c0 3.6-2.5 6.3-6 7.7-3.5-1.4-6-4.1-6-7.7V4.7l6-2.2zM7.5 10l2 2 3.5-4',
@@ -337,20 +350,19 @@ const TierMeter = ({ score, ready }) => (
       {TIERS.map((tier, i) => {
         const fill = Math.max(0, Math.min(1, (score - tier.from) / (tier.to - tier.from)));
         const last = i === TIERS.length - 1;
-        const tone = tierTone(i);
         return (
           <div key={tier.name} className="min-w-0" style={{ flex: `${tier.to - tier.from} 1 0%` }}>
-            <div className="h-2 overflow-hidden rounded-full bg-white/[.12]">
+            <div className="h-2 overflow-hidden rounded-full" style={{ background: TRACK }}>
               <div
                 className="h-full rounded-full"
                 style={{
                   width: ready ? `${fill * 100}%` : '0%',
-                  background: i >= 2 ? 'linear-gradient(90deg,#a7f3d0,#34d399)' : `linear-gradient(90deg,${ACCENT_SOFT},${tone})`,
+                  background: i >= 2 ? 'linear-gradient(90deg,#7fd6a3,#2f9e5e)' : 'linear-gradient(90deg,#f1c27d,#e09a2e)',
                   transition: reducedMotion() ? 'none' : `width .9s ${EASE} ${180 + i * 140}ms`,
                 }}
               />
             </div>
-            <div className="mt-1.5 flex justify-between text-[11px] font-medium tabular-nums text-white/45">
+            <div className="mt-1.5 flex justify-between text-[11px] font-medium tabular-nums text-slate-400">
               <span>{tier.from}</span>
               {last && <span>100</span>}
             </div>
@@ -566,7 +578,7 @@ const Breakdown = ({ parts, ready }) => (
               className="h-full rounded-full"
               style={{
                 width: ready ? `${pct}%` : '0%',
-                background: done ? 'linear-gradient(90deg,#6ee7b7,#10b981)' : `linear-gradient(90deg,#f0b6a3,${ACCENT})`,
+                background: done ? 'linear-gradient(90deg,#6ee7b7,#10b981)' : `linear-gradient(90deg,#8cc9f7,${BLUE})`,
                 transition: reducedMotion() ? 'none' : `width .9s ${EASE} ${240 + i * 90}ms`,
               }}
             />
@@ -580,8 +592,8 @@ const Breakdown = ({ parts, ready }) => (
 );
 
 const NextMove = ({ move }) => (
-  <div className="flex gap-3.5 rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,#fff3ed,#fff9f6)', boxShadow: 'inset 0 0 0 1px rgba(217,133,107,.22)' }}>
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: `linear-gradient(135deg,${ACCENT},${ACCENT_DEEP})` }}>
+  <div className="flex gap-3.5 rounded-2xl p-4" style={{ background: '#f3f8fe' }}>
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: BLUE }}>
       <Icon d={ICON.bulb} className="h-[18px] w-[18px]" />
     </span>
     <div className="min-w-0">
@@ -590,7 +602,7 @@ const NextMove = ({ move }) => (
         {move.term && (
           <>
             {' '}
-            <span className="rounded-md bg-[#d9856b]/15 px-1.5 py-0.5 text-[#8c3d27]">“{move.term}”</span>
+            <span className="rounded-md px-1.5 py-0.5" style={{ background: BLUE_SOFT, color: '#0f6cbd' }}>“{move.term}”</span>
           </>
         )}
       </p>
@@ -811,15 +823,15 @@ const Tabs = ({ tabs, value, onChange }) => {
   };
   const fade = more ? 'linear-gradient(to right,#000 calc(100% - 28px),transparent)' : undefined;
   return (
-    <div className="border-b border-slate-200 bg-white">
+    <div className="rounded-2xl bg-white p-2">
       <div
         ref={listRef}
         role="tablist"
         aria-label="Job match sections"
         onKeyDown={onKey}
         onScroll={measure}
-        className="jm-tabs flex overflow-x-auto px-1 sm:px-3"
-        style={{ WebkitMaskImage: fade, maskImage: fade }}
+        className="jm-tabs flex gap-1 overflow-x-auto rounded-xl p-1"
+        style={{ background: TRACK, WebkitMaskImage: fade, maskImage: fade }}
       >
         {tabs.map((tab) => {
           const active = tab.id === value;
@@ -836,12 +848,13 @@ const Tabs = ({ tabs, value, onChange }) => {
               aria-controls="jm-tabpanel"
               tabIndex={active ? 0 : -1}
               onClick={() => onChange(tab.id)}
-              className={`relative shrink-0 px-2 py-3.5 text-[13px] font-semibold transition-colors min-[400px]:px-3 min-[400px]:text-[14px] ${FOCUS} ${active ? 'text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`relative flex-1 shrink-0 whitespace-nowrap rounded-lg px-1.5 py-2.5 text-[12.5px] font-semibold transition-[background-color,color,box-shadow] min-[400px]:px-3.5 min-[400px]:text-[14px] ${FOCUS} ${
+                active ? 'bg-white text-slate-900 shadow-[0_1px_4px_rgba(15,23,42,.16)]' : 'text-[#7b8497] hover:text-slate-800'
+              }`}
             >
               {tab.label}
-              {tab.alert && <span className="absolute right-0.5 top-3 h-[6px] w-[6px] bg-[#d9856b]" aria-hidden="true" />}
+              {tab.alert && <span className="absolute right-1 top-1.5 h-[6px] w-[6px] rounded-full bg-[#d1622b]" aria-hidden="true" />}
               {tab.badge != null && <span className="sr-only">, {tab.badge} to look at</span>}
-              {active && <span className="absolute inset-x-2 bottom-0 h-0.5 min-[400px]:inset-x-3" style={{ background: ACCENT }} aria-hidden="true" />}
             </button>
           );
         })}
@@ -850,35 +863,121 @@ const Tabs = ({ tabs, value, onChange }) => {
   );
 };
 
-// A number you can tap: it opens the tab that explains it.
-const Tile = ({ value, label, alert, onClick }) => (
-  <button type="button" onClick={onClick} className={`flex flex-col items-start rounded-2xl bg-slate-50 px-3.5 py-3 text-left transition-colors hover:bg-slate-100 ${FOCUS}`}>
-    <span className={`text-[22px] font-semibold leading-none tabular-nums ${alert ? 'text-[#8c3d27]' : 'text-slate-900'}`}>{value}</span>
-    <span className="mt-1.5 text-[12.5px] leading-snug text-slate-500">{label}</span>
+// One of the three ratings at the top of the Overview. Tap it and the tab that explains it opens.
+const RatingTile = ({ title, rating, detail, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex min-h-[128px] min-w-0 flex-col items-start justify-between rounded-2xl bg-white p-2.5 text-left transition-shadow min-[400px]:p-3.5 hover:shadow-[0_4px_14px_rgba(15,23,42,.08)] ${FOCUS}`}
+  >
+    <span className="max-w-full text-[13px] font-medium leading-snug text-slate-900 [overflow-wrap:anywhere] min-[400px]:text-[15px]">{title}</span>
+    <span>
+      <span className="block text-[19px] font-semibold leading-none min-[400px]:text-[21px]" style={{ color: rating.color }}>{rating.word}</span>
+      <span className="mt-1.5 block text-[12px] leading-tight text-slate-500">{detail}</span>
+    </span>
   </button>
 );
 
-const OverviewTab = ({ result, review, tiles, ready }) => (
-  <div className="space-y-6">
-    <NextMove move={insight(result, false)} />
-    {review && review.summary && <p className="text-[14px] leading-relaxed text-slate-600">{review.summary}</p>}
-    <div className="grid gap-2.5" style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}>
-      {tiles.map((tile) => (
-        <Tile key={tile.label} {...tile} />
-      ))}
-    </div>
-    <section>
-      <h3 className="text-[15px] font-semibold text-slate-900">Where your points come from</h3>
-      <div className="mt-3">
-        <Breakdown parts={result.parts} ready={ready} />
-      </div>
+// A white card with a title and a chevron that folds it away.
+const Fold = ({ title, defaultOpen = true, children }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  const bodyId = useId();
+  return (
+    <section className="rounded-2xl bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={bodyId}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl px-5 py-4 text-left ${FOCUS}`}
+      >
+        <span className="text-[17px] font-semibold text-slate-900">{title}</span>
+        <Icon d={ICON.up} className={`h-5 w-5 text-slate-500 transition-transform duration-200 motion-reduce:transition-none ${open ? '' : 'rotate-180'}`} stroke={2} />
+      </button>
+      {open && (
+        <div id={bodyId} className="px-5 pb-5">
+          {children}
+        </div>
+      )}
     </section>
-    <p className="hidden items-start gap-2 text-[13px] leading-relaxed text-slate-500 sm:flex">
-      <Icon d={ICON.shield} className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-      Scored on your device as you type. Keywords are worth 70 points, the other three checks 10 each.
-    </p>
+  );
+};
+
+// One written part of the Overview: "Keywords & skills · Good", what it means in a sentence, and what to improve.
+const OverviewSection = ({ section }) => (
+  <div className="border-t border-slate-100 pt-5 first:border-0 first:pt-0">
+    <h3 className="text-[16px] font-semibold leading-snug text-slate-900">
+      {section.title}
+      <span className="mx-1.5 text-slate-300">{'\u00B7'}</span>
+      <span style={{ color: section.rating.color }}>{section.rating.word}</span>
+    </h3>
+    <p className="mt-2 text-[14.5px] leading-relaxed text-slate-700">{section.text}</p>
+    {section.items.length > 0 && (
+      <>
+        <p className="mt-3 text-[14.5px] font-semibold text-slate-900">To improve:</p>
+        <ul className="mt-1.5 space-y-1">
+          {section.items.map((item) => (
+            <li key={item.label}>
+              <button type="button" onClick={item.onClick} className={`flex w-full items-start gap-2.5 rounded-md py-1 text-left text-[14px] leading-snug text-slate-700 transition-colors hover:text-[#0f6cbd] ${FOCUS}`}>
+                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: BLUE }} aria-hidden="true" />
+                <span className="min-w-0">
+                  {item.label}
+                  {item.must && <span className="ml-1.5 text-[12px] font-semibold text-[#d03c3c]">required</span>}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
   </div>
 );
+
+const OverviewTab = ({ result, tiles, sections, shown, ready }) => {
+  const index = tierIndex(result.score);
+  const next = TIERS[index + 1];
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}>
+        {tiles.map((tile) => (
+          <RatingTile key={tile.title} {...tile} />
+        ))}
+      </div>
+
+      <Fold title="Overview">
+        <div className="flex items-end justify-between gap-4">
+          <p className="flex items-baseline leading-none" aria-hidden="true">
+            <span className="text-[44px] font-semibold tabular-nums tracking-[-0.03em] text-slate-900">{shown}</span>
+            <span className="ml-1.5 text-base font-medium text-slate-400">/100</span>
+          </p>
+          <div className="pb-0.5 text-right">
+            <p className="text-[16px] font-semibold" style={{ color: tierInk(index) }}>{scoreLabel(result.score)}</p>
+            <p className="mt-0.5 text-[13px] text-slate-500">
+              {next ? `${next.from - result.score} point${next.from - result.score === 1 ? '' : 's'} to ${next.name}` : 'Top band reached'}
+            </p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <TierMeter score={result.score} ready={ready} />
+        </div>
+
+        <div className="mt-5">
+          <NextMove move={insight(result, false)} />
+        </div>
+
+        <div className="mt-6 space-y-5">
+          {sections.map((section) => (
+            <OverviewSection key={section.title} section={section} />
+          ))}
+        </div>
+      </Fold>
+
+      <Fold title="Where your points come from" defaultOpen={false}>
+        <Breakdown parts={result.parts} ready={ready} />
+      </Fold>
+    </div>
+  );
+};
 
 const CHIP_LIMIT = 12;
 
@@ -953,6 +1052,8 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
   const shown = useCountUp(result.score, { ms: 1000, initial: 0 });
   const ready = useReveal();
   const titleId = useId();
+  const helpId = useId();
+  const [helpOpen, setHelpOpen] = useState(false);
   useOutfit();
 
   // The panel has four pages instead of one long scroll: Overview, To fix, Keywords, Requirements.
@@ -1024,9 +1125,6 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
   // read (a licence, a registration) stay as chips.
   const check = useMemo(() => analyseRequirements(target, data), [target, data]);
   const missingQuals = missing.filter(isQual).filter((kw) => !check.handled.has(norm(kw.term)));
-  const index = tierIndex(result.score);
-  const next = TIERS[index + 1];
-  const tone = tierTone(index);
   const hasMust = missingSkills.some((k) => k.must);
   const review = useMemo(() => reviewResume(target, data, result), [target, data, result]);
 
@@ -1041,11 +1139,69 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
     ...(hasRequirements ? [{ id: 'requirements', label: 'Requirements', badge: unmet || null, alert: unmet > 0 }] : []),
   ];
   const page = tabs.some((t) => t.id === tab) ? tab : 'overview';
-  const tiles = [
-    { value: `${covered.length}/${totalKeywords}`, label: 'keywords found', onClick: () => openTab('keywords') },
-    ...(review ? [{ value: fixCount, label: fixCount === 1 ? 'thing to fix' : 'things to fix', alert: review.missing.length > 0, onClick: () => openTab('fix') }] : []),
-    ...(check.items.length > 0 ? [{ value: `${check.items.length - unmet}/${check.items.length}`, label: 'requirements met', alert: unmet > 0, onClick: () => openTab('requirements') }] : []),
-  ];
+  // Three ratings, each on the same words as the page they open: Keywords & skills, Resume content, Requirements. A big gap
+  // (a must-have keyword missing, a finding under "Fix first") keeps a rating from reading Excellent.
+  const metCount = check.items.length - unmet;
+  const keywordRatio = totalKeywords ? Math.min(covered.length / totalKeywords, hasMust ? 0.84 : 1) : null;
+  const contentRatio = review ? Math.min(Math.max(0, 1 - (review.missing.length * 2 + review.improve.length) / 8), review.missing.length > 0 ? 0.84 : 1) : null;
+  const requirementRatio = check.items.length > 0 ? metCount / check.items.length : null;
+  const fixes = review ? [...review.missing, ...review.improve] : [];
+
+  const parts = [];
+  if (keywordRatio !== null) {
+    parts.push({
+      id: 'keywords',
+      title: 'Keywords & skills',
+      rating: rateRatio(keywordRatio),
+      detail: `${covered.length}/${totalKeywords} found`,
+      onClick: () => openTab('keywords'),
+      text: (
+        <>
+          <strong className="font-semibold text-slate-900">{covered.length} of {totalKeywords}</strong> keywords from the job are on your resume.
+          {missingSkills.length > 0 ? ' Add only the ones you really do.' : ' No skill or tool from the job is missing.'}
+        </>
+      ),
+      items: missingSkills.slice(0, 3).map((kw) => ({ label: labelFor(kw.term), must: Boolean(kw.must), onClick: () => openTab('keywords') })),
+    });
+  }
+  if (contentRatio !== null) {
+    parts.push({
+      id: 'fix',
+      title: 'Resume content',
+      rating: rateRatio(contentRatio),
+      detail: fixCount === 0 ? 'nothing to fix' : `${fixCount} to fix`,
+      onClick: () => openTab('fix'),
+      // Said from the findings themselves, so the sentence never disagrees with the rating next to it.
+      text:
+        fixCount === 0
+          ? 'Nothing big is holding your resume back for this job.'
+          : `${review.missing.length ? `${review.missing.length} big gap${review.missing.length === 1 ? '' : 's'} to fix first` : 'No big gaps'}${review.improve.length ? `, ${review.improve.length} to improve` : ''}.`,
+      items: fixes.slice(0, 3).map((finding) => ({
+        label: finding.title,
+        onClick: () => {
+          setFocusId(finding.id);
+          openTab('fix');
+        },
+      })),
+    });
+  }
+  if (requirementRatio !== null) {
+    parts.push({
+      id: 'requirements',
+      title: 'Requirements',
+      rating: rateRatio(requirementRatio),
+      detail: `${metCount}/${check.items.length} met`,
+      onClick: () => openTab('requirements'),
+      text: (
+        <>
+          <strong className="font-semibold text-slate-900">{metCount} of {check.items.length}</strong> requirements from the job are met.
+        </>
+      ),
+      items: check.items.filter((item) => item.status !== 'met').slice(0, 3).map((item) => ({ label: item.title, onClick: () => openTab('requirements') })),
+    });
+  }
+  const tiles = parts.map(({ title, rating, detail, onClick }) => ({ title, rating, detail, onClick }));
+  const sections = parts.map(({ title, rating, text, items }) => ({ title, rating, text, items }));
 
   // "How to fix this" on a requirement card: the To fix page, with that finding open.
   const fixFor = (item) => {
@@ -1066,88 +1222,102 @@ const Panel = ({ result, target, data, onClose, onEdit }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="jm-panel absolute inset-x-0 bottom-0 flex h-[90vh] max-h-[90vh] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl lg:inset-x-auto lg:bottom-3 lg:right-3 lg:top-3 lg:h-auto lg:max-h-none lg:w-[450px] lg:rounded-[28px]"
+        className="jm-panel absolute inset-x-0 bottom-0 flex h-[90vh] max-h-[90vh] flex-col overflow-hidden rounded-t-[28px] shadow-2xl lg:inset-x-auto lg:bottom-3 lg:right-3 lg:top-3 lg:h-auto lg:max-h-none lg:w-[450px] lg:rounded-[28px]"
+        style={{ background: PAGE }}
       >
-        {/* Header: the dark half. The score is the one loud thing here. It is the top of the scrolling page. */}
         <div ref={bodyRef} className="pro-scroll min-h-0 flex-1 overflow-y-auto">
-        <div ref={heroRef} className="relative overflow-hidden px-5 pb-3.5 pt-4 text-white sm:px-6 sm:pb-6 sm:pt-6" style={{ background: 'linear-gradient(165deg,#0b1220 0%,#16213a 58%,#222f4d 100%)' }}>
-          <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full opacity-30 blur-3xl" style={{ background: ACCENT }} aria-hidden="true" />
-          <span className="pointer-events-none absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/25 lg:hidden" aria-hidden="true" />
-
-          <div className="relative flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-medium text-white/55">
-                Job match{target.company ? <span className="font-normal text-white/45"> {'\u00B7'} {target.company}</span> : null}
-              </p>
-              <h2 id={titleId} className="mt-0.5 line-clamp-2 text-lg font-semibold leading-snug sm:text-[22px]">{tidyTitle(target.title) || 'Your target job'}</h2>
+          {/* Header: which job this is for. It is the top of the scrolling page; the tabs stay. */}
+          <div ref={heroRef} className="px-3 pb-2 pt-3 sm:px-4 sm:pt-4">
+            <span className="mx-auto mb-3 block h-1 w-10 rounded-full bg-slate-300 lg:hidden" aria-hidden="true" />
+            <div className="rounded-2xl bg-white px-4 py-4 sm:px-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="min-w-0 truncate text-[14px] text-slate-500">
+                  Job match for{target.company ? <span> {'\u00B7'} {target.company}</span> : null}
+                </p>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setHelpOpen((v) => !v)}
+                    aria-expanded={helpOpen}
+                    aria-controls={helpId}
+                    aria-label="How this score works"
+                    className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-[15px] font-bold leading-none ${FOCUS}`}
+                    style={{ borderColor: BLUE, color: BLUE }}
+                  >
+                    ?
+                  </button>
+                  <button
+                    ref={closeRef}
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Close"
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-200 ${FOCUS}`}
+                    style={{ background: TRACK }}
+                  >
+                    <Icon d={ICON.close} className="h-4 w-4" stroke={2.2} />
+                  </button>
+                </div>
+              </div>
+              <div className="mt-1.5 flex items-start gap-2">
+                <h2 id={titleId} className="line-clamp-2 min-w-0 text-[20px] font-semibold leading-snug sm:text-[22px]" style={{ color: BLUE }}>
+                  {tidyTitle(target.title) || 'Your target job'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onEdit();
+                  }}
+                  aria-label="Edit job"
+                  className={`mt-1 shrink-0 rounded-md p-0.5 text-slate-500 transition-colors hover:text-[#0f6cbd] ${FOCUS}`}
+                >
+                  <Icon d={ICON.pencil} className="h-[18px] w-[18px]" stroke={2} />
+                </button>
+              </div>
+              {helpOpen && (
+                <p id={helpId} className="mt-3 rounded-xl p-3 text-[13px] leading-relaxed text-slate-600" style={{ background: '#f3f8fe' }}>
+                  <Icon d={ICON.shield} className="mr-1.5 -mt-0.5 inline h-4 w-4 text-slate-400" />
+                  Scored on your device as you type, nothing is sent anywhere. Keywords are worth 70 points, the other three checks 10 each.
+                </p>
+              )}
             </div>
-            <button
-              ref={closeRef}
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-            >
-              <Icon d={ICON.close} className="h-[18px] w-[18px]" />
-            </button>
           </div>
 
-          <div className="relative mt-3 flex items-end justify-between gap-4 sm:mt-7">
-            <p className="flex items-baseline leading-none" aria-hidden="true">
-              <span className="text-[44px] font-semibold tabular-nums tracking-[-0.04em] sm:text-[76px]">{shown}</span>
-              <span className="ml-1.5 text-base font-medium text-white/45 sm:text-lg">/100</span>
-            </p>
-            <div className="pb-1 text-right">
-              <p className="inline-flex items-center gap-2 rounded-[5px] bg-white/10 py-1.5 pl-3 pr-3.5 text-sm font-medium ring-1 ring-white/10">
-                <span className="h-2 w-2" style={{ background: tone }} aria-hidden="true" />
-                {scoreLabel(result.score)}
-              </p>
-              <p className="mt-2 text-[13px] text-white/60">
-                {next ? `${next.from - result.score} point${next.from - result.score === 1 ? '' : 's'} to ${next.name}` : 'Top band reached'}
-              </p>
-            </div>
+          <div ref={tabsRef} className="sticky top-0 z-10 px-3 pb-2 pt-1 sm:px-4" style={{ background: PAGE }}>
+            <Tabs tabs={tabs} value={page} onChange={openTab} />
           </div>
 
-          <div className="relative mt-3 sm:mt-6">
-            <TierMeter score={result.score} ready={ready} />
+          <div role="tabpanel" id="jm-tabpanel" aria-labelledby={`jm-tab-${page}`} className="px-3 pb-4 pt-1 sm:px-4" style={{ minHeight: panelMin }}>
+            {page === 'overview' && <OverviewTab result={result} tiles={tiles} sections={sections} shown={shown} ready={ready} />}
+            {page !== 'overview' && (
+              <div className="rounded-2xl bg-white p-4 sm:p-5">
+                {page === 'fix' && review && <FixList review={review} focusId={focusId} onFocused={() => setFocusId(null)} />}
+                {page === 'keywords' && <KeywordsTab covered={covered} missingSkills={missingSkills} hasMust={hasMust} total={totalKeywords} />}
+                {page === 'requirements' && <RequirementsTab check={check} leftovers={missingQuals} ready={ready} onFix={review ? fixFor : undefined} />}
+              </div>
+            )}
           </div>
-        </div>
-
-        <div ref={tabsRef} className="sticky top-0 z-10">
-          <Tabs tabs={tabs} value={page} onChange={openTab} />
-        </div>
-        <div
-          role="tabpanel"
-          id="jm-tabpanel"
-          aria-labelledby={`jm-tab-${page}`}
-          className="px-5 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6"
-          style={{ minHeight: panelMin }}
-        >
-          {page === 'overview' && <OverviewTab result={result} review={review} tiles={tiles} ready={ready} />}
-          {page === 'fix' && review && <FixList review={review} focusId={focusId} onFocused={() => setFocusId(null)} />}
-          {page === 'keywords' && <KeywordsTab covered={covered} missingSkills={missingSkills} hasMust={hasMust} total={totalKeywords} />}
-          {page === 'requirements' && <RequirementsTab check={check} leftovers={missingQuals} ready={ready} onFix={review ? fixFor : undefined} />}
-        </div>
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 items-center gap-3 border-t border-slate-100 bg-white/90 px-5 py-3.5 backdrop-blur sm:px-6 sm:py-4" style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex shrink-0 items-center gap-2.5 bg-white px-4 py-3 sm:px-5" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))', boxShadow: '0 -1px 0 rgba(15,23,42,.06)' }}>
           <button
             type="button"
             onClick={() => {
               onClose();
               onEdit();
             }}
-            className={`flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 ${FOCUS}`}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-[15px] font-semibold transition-colors hover:brightness-95 ${FOCUS}`}
+            style={{ background: BLUE_SOFT, color: BLUE }}
           >
-            <Icon d={ICON.pencil} className="h-4 w-4" />
+            <Icon d={ICON.pencil} className="h-[18px] w-[18px]" stroke={2} />
             Edit job
           </button>
           <button
             type="button"
             onClick={onClose}
-            className={`ml-auto rounded-full px-7 py-2.5 text-sm font-semibold text-white transition-[transform,box-shadow] hover:-translate-y-0.5 active:translate-y-0 active:scale-[.98] motion-reduce:transition-none ${FOCUS}`}
-            style={{ background: INK, boxShadow: '0 10px 24px -10px rgba(11,18,32,.7)' }}
+            className={`flex-1 rounded-lg py-3 text-[15px] font-semibold text-white transition-[filter,transform] hover:brightness-105 active:scale-[.98] motion-reduce:transition-none ${FOCUS}`}
+            style={{ background: BLUE }}
           >
             Keep writing
           </button>

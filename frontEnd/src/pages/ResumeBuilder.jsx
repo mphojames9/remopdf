@@ -2836,22 +2836,25 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
               target={jobTarget}
               data={resumeData}
               onEdit={() => setJobStudioOpen(true)}
-              // Small screens: sit just above the stacked action bar (taller when the Back button is showing).
-              dockClassName={`${currentStepIndex > 0 ? 'bottom-[12.25rem]' : 'bottom-[9.75rem]'} sm:bottom-24`}
+              // Small screens: sit just above the action bar (two rows on every step now: Back and Next joined, then Preview).
+              dockClassName="bottom-[9.75rem] sm:bottom-24"
             />
           )}
           <ActiveComponent data={resumeData} updateData={updateData} updateSummary={updateSummary} updateSkills={updateSkills} updateExperiences={updateExperiences} updateEducation={updateEducation} updateItems={updateItems} showSkillErrors={showSkillErrors} showLanguageErrors={showLanguageErrors} selectedTemplate={selectedTemplate} setTemplate={setSelectedTemplate} />
         </div>
 
-        {/* Action Bar */}
-        <div className="absolute bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200/80 p-4 sm:p-5 sm:px-10 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 z-20">
-          <div className="w-full sm:w-auto">
+        {/* Action Bar
+            Small screens: Back and Next sit back to back as one joined pill (Back on the left, Next on the right), with
+            Preview full width under them. On the first step there is no Back, so Next is the whole pill. From the sm
+            breakpoint up it is the usual row: Back on the left, Preview and Next on the right. */}
+        <div className="absolute bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200/80 p-4 sm:p-5 sm:px-10 grid grid-cols-5 gap-y-3 sm:flex sm:flex-row sm:justify-between sm:items-center sm:gap-4 z-20">
+          <div className="contents sm:block">
             {currentStepIndex > 0 && (
               <button 
                 onClick={handleBack}
-                className="w-full sm:w-auto px-7 py-3 rounded-full border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all text-xs focus:outline-none flex items-center justify-center"
+                className="col-span-2 order-1 w-full sm:w-auto px-4 sm:px-7 py-3 rounded-l-full rounded-r-none sm:rounded-full bg-slate-900 text-white border border-slate-900 hover:bg-slate-800 sm:bg-transparent sm:text-slate-700 sm:border-slate-300 sm:hover:bg-slate-50 font-bold transition-all text-xs focus:outline-none flex items-center justify-center"
               >
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
                 Back
@@ -2859,18 +2862,21 @@ export default function ResumeBuilder({ onBuildCoverLetter }) {
             )}
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row w-full sm:w-auto gap-3 sm:gap-4">
+          <div className="contents sm:flex sm:flex-row sm:w-auto sm:gap-4">
             <button
               onClick={openPreview}
-              className="w-full sm:w-auto px-7 py-3 rounded-full border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all text-xs focus:outline-none"
+              className="col-span-5 order-3 sm:order-1 w-full sm:w-auto px-7 py-3 rounded-full border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all text-xs focus:outline-none"
             >
               Preview
             </button>
             <button 
               onClick={handleNext}
-              className="w-full sm:w-auto px-8 py-3 rounded-full bg-[#d9856b] text-white font-bold text-xs shadow-lg shadow-[#d9856b]/25 hover:shadow-xl hover:shadow-[#d9856b]/35 hover:-translate-y-0.5 transition-all focus:outline-none"
+              className={`${currentStepIndex > 0 ? 'col-span-3 rounded-r-full rounded-l-none' : 'col-span-5 rounded-full'} order-2 sm:order-2 w-full sm:w-auto px-4 sm:px-8 py-3 sm:rounded-full bg-[#d9856b] text-white font-bold text-xs shadow-lg shadow-[#d9856b]/25 hover:shadow-xl hover:shadow-[#d9856b]/35 sm:hover:-translate-y-0.5 transition-all focus:outline-none flex items-center justify-center min-w-0`}
             >
-              {currentStepIndex === stepsConfig.length - 1 ? 'Finish Resume' : `Next: ${nextStepLabel}`}
+              <span className="truncate">{currentStepIndex === stepsConfig.length - 1 ? 'Finish Resume' : `Next: ${nextStepLabel}`}</span>
+              <svg className="w-4 h-4 ml-1.5 shrink-0 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>
