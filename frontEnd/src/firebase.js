@@ -5,7 +5,7 @@ import { getAuth } from 'firebase/auth';
 // Analytics is left out on purpose: it is not needed for phone sign-in and does not run inside the Android WebView.
 const firebaseConfig = {
   apiKey: 'AIzaSyD4K57UUFULnUrdQEqyYVFpRdbNNzlFEfs',
-  authDomain: "remopdf.site",
+  authDomain: "www.remopdf.site",
   projectId: 'remopdf-125a',
   storageBucket: 'remopdf-125a.firebasestorage.app',
   messagingSenderId: '66449479206',
