@@ -174,7 +174,7 @@ export default function PricingModal({ open, user, onClose, onChoose }) {
   const features = copy.features.filter((feature) => !/AI actions a day/i.test(feature));
   const tooMany = Boolean(plan) && hasPremium && daysLeft + plan.days > maxBanked;
 
-  const buttonBase = 'inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-[0.9375rem] font-semibold leading-tight transition-colors sm:w-auto sm:min-w-[13rem]';
+  const buttonBase = 'inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-[0.9375rem] font-medium leading-tight transition-colors sm:w-auto sm:min-w-[13rem]';
   let action;
   if (isFree) {
     action = (
@@ -218,7 +218,7 @@ export default function PricingModal({ open, user, onClose, onChoose }) {
         {/* Header: solid, always visible, never overlapping the content. */}
         <div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6 sm:pt-5">
           <div>
-            <h2 id="pricing-title" className="font-display text-xl font-bold tracking-tight sm:text-2xl">
+            <h2 id="pricing-title" className="font-display text-xl font-light tracking-tight sm:text-2xl">
               Choose your plan
             </h2>
             <p className="mt-0.5 text-sm text-slate-500">
@@ -238,7 +238,7 @@ export default function PricingModal({ open, user, onClose, onChoose }) {
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-5 pb-5 pt-3 sm:px-6 md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:items-stretch md:gap-5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-5 pb-5 pt-4 sm:px-6 md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:items-stretch md:gap-5">
           {/* The choices: one row of four tiles on a phone, a list on larger screens. */}
           <div ref={groupRef} role="radiogroup" aria-label="Plans" onKeyDown={onPlanKeyDown} className="grid shrink-0 grid-cols-4 gap-2 md:grid-cols-1">
             {options.map((id) => {
@@ -260,7 +260,7 @@ export default function PricingModal({ open, user, onClose, onChoose }) {
                 >
                   {marker && (
                     <span
-                      className={`absolute -top-2 right-2 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none ring-2 ring-white ${
+                      className={`pointer-events-none absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-1.5 py-[3px] text-[10px] font-medium leading-none ring-2 ring-white sm:px-2 sm:text-[11px] md:left-auto md:right-3 md:translate-x-0 ${
                         id === 'free' ? 'bg-[#f3dbd1] text-[#0e1726]' : 'bg-[#d9856b] text-[#0e1726]'
                       }`}
                     >
@@ -272,11 +272,11 @@ export default function PricingModal({ open, user, onClose, onChoose }) {
                       {isSelected && <span className="h-2 w-2 rounded-full bg-[#d9856b]" />}
                     </span>
                     <span>
-                      <span className="block font-display text-[0.95rem] font-bold leading-tight">{id === 'free' ? 'Free' : dayWord(entry.days)}</span>
+                      <span className="block font-display text-[0.95rem] font-medium leading-tight">{id === 'free' ? 'Free' : dayWord(entry.days)}</span>
                       <span className="hidden text-xs text-slate-500 md:block">{id === 'free' ? 'Build and download' : 'Premium'}</span>
                     </span>
                   </span>
-                  <span className="mt-0.5 font-display text-sm font-semibold tracking-tight text-slate-600 md:mt-0 md:text-base md:text-[#0e1726]">
+                  <span className="mt-0.5 font-display text-sm font-normal tracking-tight text-slate-600 md:mt-0 md:text-base md:text-[#0e1726]">
                     {formatPrice(entry ? entry.amount : 0, currency)}
                   </span>
                 </button>
@@ -289,16 +289,16 @@ export default function PricingModal({ open, user, onClose, onChoose }) {
             <div key={selected} className="pm-swap">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-display text-2xl font-bold leading-none tracking-tight">{copy.name}</h3>
+                  <h3 className="font-display text-2xl font-light leading-none tracking-tight">{copy.name}</h3>
                   <p className="mt-1.5 text-sm text-slate-300">{copy.quality}</p>
                 </div>
                 <p className="text-right">
-                  <span className="font-display text-3xl font-extrabold leading-none tracking-[-0.03em]">{priceText}</span>
+                  <span className="font-display text-3xl font-light leading-none tracking-[-0.03em]">{priceText}</span>
                   <span className="mt-1 block text-xs text-slate-300">{isFree ? 'no payment needed' : `once, for ${dayWord(plan.days)}`}</span>
                 </p>
               </div>
 
-              {!isFree && <p className="mt-5 text-sm font-semibold">{copy.aiPerDay} AI actions a day</p>}
+              {!isFree && <p className="mt-5 text-sm font-medium">{copy.aiPerDay} AI actions a day</p>}
 
               <ul className="mt-5 space-y-2.5">
                 {features.map((feature) => (

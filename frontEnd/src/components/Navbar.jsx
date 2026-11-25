@@ -209,7 +209,7 @@ function ToolsMenu({ pathname }) {
                 <Icon name="upRight" className="h-4 w-4 -translate-x-1 translate-y-1 text-slate-400 opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100" />
               </span>
               <span className="min-w-0">
-                <span className="block font-display text-[0.95rem] font-bold text-[#0e1726]">{t.label}</span>
+                <span className="block font-display text-[0.95rem] font-normal text-[#0e1726]">{t.label}</span>
                 <span className="mt-1 block text-sm leading-snug text-slate-600">{t.desc}</span>
               </span>
             </NavLink>

@@ -310,14 +310,14 @@ function ResumeFeatures() {
         {benefitCards.map((card, i) => (
           <li key={card.title} style={{ '--i': i }} className="reveal rounded-2xl border border-[#0e1726]/[0.08] bg-[#f6f7fb] p-4 sm:p-6">
             <Icon name={card.icon} className="h-9 w-9 text-[#0e1726] sm:h-10 sm:w-10" />
-            <h3 className="mt-5 min-h-[3.1rem] font-display text-lg font-semibold leading-snug [text-wrap:balance] sm:mt-6 sm:min-h-0 sm:text-xl">{card.title}</h3>
+            <h3 className="mt-5 min-h-[3.1rem] font-display text-lg font-light leading-snug [text-wrap:balance] sm:mt-6 sm:min-h-0 sm:text-xl">{card.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-500 [text-wrap:pretty] sm:text-[15px]">{card.desc}</p>
           </li>
         ))}
       </ul>
 
       <div className="mt-14 sm:mt-16 lg:mt-20 lg:grid lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-        <h3 className="reveal text-center font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl lg:text-left">
+        <h3 className="reveal text-center font-display text-3xl font-light leading-tight tracking-tight [text-wrap:balance] sm:text-4xl lg:text-left">
           Everything else you need is here.
         </h3>
         <ul className="mt-8 space-y-3 lg:mt-0">
@@ -335,7 +335,7 @@ function ResumeFeatures() {
                     className="flex w-full items-center gap-3 rounded-2xl px-4 py-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e1726] sm:gap-4 sm:px-5"
                   >
                     <Icon name={row.icon} className="h-7 w-7 shrink-0 text-[#0e1726]" />
-                    <span className="flex-1 font-display text-lg font-semibold leading-snug">{row.title}</span>
+                    <span className="flex-1 font-display text-lg font-light leading-snug">{row.title}</span>
                     <span className="tool-toggle flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[#d9856b] text-[#b45a40]" aria-hidden="true">
                       <Icon name="plus" className="h-4 w-4" />
                     </span>
@@ -682,7 +682,7 @@ function SiteFooter() {
             <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
               {footerCols.map((col, ci) => (
                 <div key={col.title}>
-                  <h2 className="f-rise font-display text-base font-bold text-white" style={{ '--i': 1 + ci }}>{col.title}</h2>
+                  <h2 className="f-rise font-display text-base font-light text-white" style={{ '--i': 1 + ci }}>{col.title}</h2>
                   <ul className="mt-4 space-y-3">
                     {col.links.map((link, li) => (
                       <li key={link.label} className="f-rise" style={{ '--i': 2 + ci + li * 0.6 }}>
@@ -735,7 +735,7 @@ function Faq() {
         <div className="rounded-[1.75rem] px-2.5 pb-2.5 pt-8 sm:rounded-[2rem] sm:p-10 lg:p-14 bg-[#f3dbd1]">
           <div className="grid gap-7 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
             <div className="lg:sticky lg:top-28 lg:self-start">
-              <h2 className="reveal font-display text-[2.5rem] font-extrabold leading-[1.02] tracking-[-0.035em] [text-wrap:balance] sm:text-6xl">
+              <h2 className="reveal font-display text-[2.5rem] font-light leading-[1.02] tracking-[-0.035em] [text-wrap:balance] sm:text-6xl">
                 Questions, answered.
               </h2>
               <p className="reveal mt-4 max-w-sm text-base text-slate-700 sm:mt-5 sm:text-lg" style={{ '--i': 1 }}>
@@ -792,7 +792,7 @@ function Faq() {
                       style={{ '--i': i }}
                       className="faq-row group rounded-2xl bg-white px-4 py-4 shadow-[0_10px_24px_-16px_rgba(14,23,38,.4)] sm:rounded-none sm:bg-transparent sm:px-0 sm:py-6 sm:shadow-none"
                     >
-                      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded font-display text-[1.0625rem] font-semibold leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726] sm:gap-6 sm:text-xl [&::-webkit-details-marker]:hidden">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded font-display text-[1.0625rem] font-light leading-snug focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0e1726] sm:gap-6 sm:text-xl [&::-webkit-details-marker]:hidden">
                         <span className="faq-mark">{q}</span>
                         <span
                           aria-hidden="true"
@@ -856,17 +856,17 @@ export default function Home() {
   return (
     <div
       className="min-h-screen w-full overflow-x-clip bg-[#fafafb] text-[#0e1726] antialiased"
-      style={{ fontFamily: "'Instrument Sans', ui-sans-serif, system-ui, sans-serif" }}
+      style={{ fontFamily: "'Outfit', ui-sans-serif, system-ui, sans-serif" }}
     >
       <style>{`
-        /* Fonts (Bricolage Grotesque, Instrument Sans) are loaded from <head> in index.html, not @import. */
+        /* Font (Outfit, weights 100-900) is loaded from <head> in index.html, not @import. */
         html { scroll-behavior: smooth; }
         .kin-copy { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .2em var(--kin-g, .45em); padding-inline: 1rem; }
         .kin-copy + .kin-copy { display: none; }
-        .font-display { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
+        .font-display { font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif; }
         @keyframes rise { from { opacity: 0; translate: 0 18px; } }
         .rise { animation: rise .8s cubic-bezier(.16,1,.3,1) both; animation-delay: var(--d, 0s); }
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: .625rem; padding: .8rem 1.4rem; font-size: .9375rem; font-weight: 600; line-height: 1.2; transition: background-color .2s, border-color .2s, transform .15s; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: .625rem; padding: .8rem 1.4rem; font-size: .9375rem; font-weight: 500; line-height: 1.2; transition: background-color .2s, border-color .2s, transform .15s; }
         .tw-mark { background-image: linear-gradient(transparent 64%, rgba(217,133,107,.2) 64%); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
         .tw-caret { display: inline-block; width: 2px; height: .85em; margin-left: .12em; vertical-align: -.05em; background: #d9856b; animation: tw-blink 1s steps(2, start) infinite; }
         @keyframes tw-blink { to { visibility: hidden; } }
@@ -1141,7 +1141,7 @@ export default function Home() {
           <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <h2 className="reveal max-w-2xl font-display text-[2.25rem] font-extrabold leading-[1.04] tracking-[-0.03em] [text-wrap:balance] sm:text-5xl">
+                <h2 className="reveal max-w-2xl font-display text-[2.25rem] font-light leading-[1.04] tracking-[-0.03em] [text-wrap:balance] sm:text-5xl">
                   Everything your resume needs to get noticed.
                 </h2>
                 <p className="reveal mt-4 max-w-xl text-slate-600" style={{ '--i': 1 }}>
@@ -1163,7 +1163,7 @@ export default function Home() {
         <section id="ats" className="scroll-mt-20 border-t border-[#0e1726]/10">
           <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 lg:px-8">
             <div>
-              <h2 className="reveal max-w-xl font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
+              <h2 className="reveal max-w-xl font-display text-3xl font-light leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
                 Software reads your resume before a person does.
               </h2>
               <p className="reveal mt-4 max-w-lg text-slate-600" style={{ '--i': 1 }}>
@@ -1176,7 +1176,7 @@ export default function Home() {
                       <Icon name="check" className="h-3.5 w-3.5" />
                     </span>
                     <div>
-                      <h3 className="font-display text-base font-bold">{pt.title}</h3>
+                      <h3 className="font-display text-base font-light">{pt.title}</h3>
                       <p className="mt-0.5 text-slate-600">{pt.desc}</p>
                     </div>
                   </li>
@@ -1213,7 +1213,7 @@ export default function Home() {
           <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <h2 className="reveal max-w-2xl font-display text-[2.25rem] font-extrabold leading-[1.04] tracking-[-0.03em] [text-wrap:balance] sm:text-5xl">
+                <h2 className="reveal max-w-2xl font-display text-[2.25rem] font-light leading-[1.04] tracking-[-0.03em] [text-wrap:balance] sm:text-5xl">
                   Need to fix a PDF? Do it right here.
                 </h2>
                 <p className="reveal mt-4 max-w-xl text-slate-600" style={{ '--i': 1 }}>
@@ -1278,7 +1278,7 @@ export default function Home() {
                       className={`bt ${tool.feat === 'edit' ? 'bt-sky' : 'bt-peach'} pdf-link group focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e1726]`}
                     >
                       <div className="bt-copy pr-8">
-                        <h3 className="font-display text-xl font-bold sm:text-2xl">{tool.label}</h3>
+                        <h3 className="font-display text-xl font-light sm:text-2xl">{tool.label}</h3>
                         <p className="bt-desc mt-2 text-[15px] leading-relaxed">{tool.desc}</p>
                       </div>
                       <Icon name="arrowUpRight" className="pdf-tool-go absolute right-5 top-5 h-5 w-5 text-[#0e1726]/50 sm:right-6 sm:top-6" />
@@ -1297,7 +1297,7 @@ export default function Home() {
                       <span className={`pt-${tool.tone} grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[#0e1726] sm:h-12 sm:w-12`}>
                         <Icon name={tool.icon} className="h-5 w-5" />
                       </span>
-                      <span className="font-display text-[1.0625rem] font-bold leading-snug tracking-[-0.01em] [text-wrap:balance]">{tool.label}</span>
+                      <span className="font-display text-[1.0625rem] font-normal leading-snug tracking-[-0.01em] [text-wrap:balance]">{tool.label}</span>
                       <Icon name="arrowUpRight" className="pdf-tool-go absolute right-4 top-4 h-[1.1rem] w-[1.1rem] text-slate-400 sm:static sm:ml-auto sm:shrink-0" />
                     </Link>
                   </li>
@@ -1311,7 +1311,7 @@ export default function Home() {
         <section id="how-it-works" className="dark-sec bleed scroll-mt-20 bg-[#0e1726] text-white">
           <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20 lg:px-8">
             <div className="reveal lg:sticky lg:top-28 lg:self-start">
-              <h2 className="font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
+              <h2 className="font-display text-3xl font-light leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
                 Three steps to a resume you are proud of.
               </h2>
               <p className="mt-4 max-w-md text-slate-300">Already have a resume? Import it and skip straight to the good part.</p>
@@ -1325,9 +1325,9 @@ export default function Home() {
               </li>
               {steps.map((s, i) => (
                 <li key={s.title} className="reveal relative grid grid-cols-[3rem_1fr] gap-5">
-                  <span className="pop-in relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-[#d9856b] bg-[#0e1726] font-display text-xl font-bold text-[#d9856b]">{i + 1}</span>
+                  <span className="pop-in relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-[#d9856b] bg-[#0e1726] font-display text-xl font-normal text-[#d9856b]">{i + 1}</span>
                   <div>
-                    <h3 className="font-display text-xl font-bold">{s.title}</h3>
+                    <h3 className="font-display text-xl font-light">{s.title}</h3>
                     <p className="mt-1.5 max-w-md text-slate-300">{s.desc}</p>
                   </div>
                 </li>
@@ -1342,7 +1342,7 @@ export default function Home() {
         {/* Final call to action */}
         <section className="cta-band bg-[#d9856b]">
           <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-4 py-14 sm:px-6 sm:py-16 lg:flex-row lg:items-center lg:px-8">
-            <h2 className="reveal max-w-xl font-display text-3xl font-bold leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
+            <h2 className="reveal max-w-xl font-display text-3xl font-light leading-tight tracking-tight [text-wrap:balance] sm:text-4xl">
               Your next opportunity starts with a better resume.
             </h2>
             <div className="reveal flex flex-col gap-3 sm:flex-row" style={{ '--i': 2 }}>
