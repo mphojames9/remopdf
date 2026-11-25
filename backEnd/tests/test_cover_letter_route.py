@@ -144,6 +144,50 @@ class Route(unittest.TestCase):
         self.assertIn("Certificate Administrator", body)
 
 
+INVENTED_TOOL = HONEST.replace("\n\n", " I also logged every complaint in SAP each day.\n\n", 1)
+INVENTED_RESULT = HONEST.replace("\n\n", " My leadership improved the department's results by streamlining schedules.\n\n", 1)
+
+
+class LetterIsGrounded(unittest.TestCase):
+    """A letter can be false without a degree in it: a tool the resume never names, a result it never states."""
+
+    def setUp(self):
+        w._cache.clear()
+        for name, value in (("_bearer_pass", "pass"), ("_rate_limited", False), ("require_access", None)):
+            patcher = mock.patch.object(w, name, return_value=value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def write(self, req, *bodies):
+        with model_says(*bodies) as fake:
+            result = w.cover_letter(req, mock.Mock())
+        return result["body"], fake
+
+    def test_an_invented_tool_is_corrected_and_the_model_is_told_which(self):
+        body, fake = self.write(request(), INVENTED_TOOL, HONEST)
+        self.assertEqual(fake.call_count, 2)
+        self.assertIn('"SAP"', fake.call_args_list[1].args[0][-1]["content"])
+        self.assertNotIn("SAP", body)
+
+    def test_a_model_that_keeps_inventing_cannot_get_it_out(self):
+        for lie, word in ((INVENTED_TOOL, "SAP"), (INVENTED_RESULT, "improved")):
+            w._cache.clear()
+            body, fake = self.write(request(), lie, lie)
+            self.assertNotIn(word, body)
+            self.assertIn("I lead the CRM department", body)  # the true sentences stay
+            self.assertEqual(fake.call_count, 2)
+
+    def test_the_years_the_app_worked_out_may_be_stated_but_no_others(self):
+        ten = HONEST.replace("\n\n", " I bring 10 years of experience.\n\n", 1)
+        body, fake = self.write(request(), ten)
+        self.assertEqual(fake.call_count, 1)
+        self.assertIn("10 years", body)
+        twelve = HONEST.replace("\n\n", " I bring 12 years of experience.\n\n", 1)
+        w._cache.clear()
+        body, _ = self.write(request(), twelve, twelve)
+        self.assertNotIn("12 years", body)
+
+
 class WhatTheModelIsGiven(unittest.TestCase):
     def prompt(self, req):
         return w.build_letter_messages(req)[1]["content"]

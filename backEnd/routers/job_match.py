@@ -48,6 +48,7 @@ O*NET key (ONET_API_KEY) as the routers it reuses. Nothing to install.
 """
 import datetime
 import hashlib
+import json
 import re
 import threading
 import time
@@ -56,7 +57,7 @@ from typing import Dict, List, Literal, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from routers import ai_models, coaching, summary_guard
+from routers import ai_models, coaching, grounding, summary_guard
 from routers.job_posting import PostingError, clean_posting_fields, read_posting_text, read_posting_url
 from routers.onet import OnetError, _cached as _onet_cached, _fetch_detail, _normalize_occupations, _onet_get
 from routers.ai_models import extract_json
@@ -831,6 +832,9 @@ HARD RULES (a version that breaks one is thrown away)
 - Keep every number exactly as the writer wrote it. Never add, round, convert or "improve" a figure.
 - The job is described between <job> tags. Use one of its keywords only where the text already shows the person did that thing, and then write it in the JOB's wording. Never add a keyword as a new claim and never paste a list of keywords. If the text supports none of them, still tighten the writing and add nothing.
 - Keep the writer's meaning, tense, language and spelling variety (US, UK or South African). Do not change a job title, an employer or a date.
+- Keep the level of responsibility the text gives. "Assisted" stays "assisted". The job asking for someone who supervises or leads is never a reason to say the writer did: never say the writer led, managed, supervised, trained or mentored people unless the text says so, and never add a rank (senior, head, chief, principal, director). Keep every qualifier the text uses (acting, trainee, junior, volunteer, part-time, basic).
+- Never add a result or a verdict on quality ("reduced", "increased", "improved", "saved", "boosted", "streamlined", "achieved", "exceeded", "resulting in", "successfully", "significantly", "consistently", "proven") unless the text already says it.
+- Never name a tool, system, standard, employer, place or language that the text does not name, even when the job names it, and keep every one that the text does name.
 - No "I", "my" or "me". Fix every spelling and grammar error.
 - The text may use simple markup: **bold**, *italic*, and lines starting with "- " as bullets. Keep the markup exactly as it is and never add markup the writer did not use.
 - Never mention O*NET, an occupation, keywords, an ATS or the job advert inside the text.
@@ -894,49 +898,61 @@ def rewrite(body: RewriteRequest, request: Request):
 
     model = _plan(access).cache_id  # the cache is filed per plan
     entry_title = _one_line(body.job_title, 120)
-    key = "jm-rewrite-v3:" + _hash(model, body.field, entry_title, _job_block(target, reference=False), text)
+    key = "jm-rewrite-v4:" + _hash(model, body.field, entry_title, _job_block(target, reference=False), text)
     cached = _cache_get(key)
     if cached:
         return cached
 
     entry_line = f"\nThe candidate's own job title for this entry: {entry_title}" if entry_title else ""
     user = f"{REWRITE_FIELD_GUIDE[body.field]}{entry_line}\n\n<job>\n{_job_block(target, reference=False)}\n</job>\n\n<resume_text>\n{text.replace('</resume_text>', '')}\n</resume_text>"
-    data = _ask_groq(
-        [{"role": "system", "content": REWRITE_SYSTEM_PROMPT}, {"role": "user", "content": user}],
-        task="rewrite",
-        label="rewrite",
-        access=access,
-    )
+    messages = [{"role": "system", "content": REWRITE_SYSTEM_PROMPT}, {"role": "user", "content": user}]
+    data = _ask_groq(messages, task="rewrite", label="rewrite", access=access)
 
     original_norm = _norm(text)
     terms = [k.term for k in target.keywords[:40] if k.term.strip()]
     limit = max(len(text) * 2 + 80, 300)  # far longer than the original means the model is making things up
-    seen = {text}
-    out: List[dict] = []
-    for item in data.get("rewrites") if isinstance(data.get("rewrites"), list) else []:
-        if isinstance(item, str):
-            item = {"text": item}
-        if not isinstance(item, dict) or not isinstance(item.get("text"), str):
-            continue
-        new = item["text"].strip()
-        if not new or new in seen or len(new) > limit:
-            continue
-        if coaching.adds_a_figure(text, new):  # a figure the person never wrote
-            continue
-        if summary_guard.leaked_phrase(new) and not summary_guard.leaked_phrase(text):  # "O*NET", "occupation" and the like
-            continue
-        seen.add(new)
-        new_norm = _norm(new)
-        adds = [t for t in terms if _has_term(new_norm, t) and not _has_term(original_norm, t)][:5]
-        out.append({
-            "id": f"rw{len(out) + 1}",
-            "label": _one_line(item.get("label"), 32) or f"Option {len(out) + 1}",
-            "text": new,
-            "why": coaching.clean_why(item.get("why")),
-            "adds": [_one_line(a, 40) for a in adds],
-        })
-        if len(out) >= MAX_REWRITES:
-            break
+
+    def versions(reply: dict) -> List[dict]:
+        """The model's versions as the app expects them. A figure the writer never wrote is NOT dropped here: the
+        grounding check below rejects it with a reason, so the model can be told what to fix."""
+        seen = {text}
+        found: List[dict] = []
+        for item in reply.get("rewrites") if isinstance(reply.get("rewrites"), list) else []:
+            if isinstance(item, str):
+                item = {"text": item}
+            if not isinstance(item, dict) or not isinstance(item.get("text"), str):
+                continue
+            new = item["text"].strip()
+            if not new or new in seen or len(new) > limit:
+                continue
+            if summary_guard.leaked_phrase(new) and not summary_guard.leaked_phrase(text):  # "O*NET", "occupation" and the like
+                continue
+            seen.add(new)
+            new_norm = _norm(new)
+            adds = [t for t in terms if _has_term(new_norm, t) and not _has_term(original_norm, t)][:5]
+            found.append({
+                "id": f"rw{len(found) + 1}",
+                "label": _one_line(item.get("label"), 32) or f"Option {len(found) + 1}",
+                "text": new,
+                "why": coaching.clean_why(item.get("why")),
+                "adds": [_one_line(a, 40) for a in adds],
+            })
+            if len(found) >= MAX_REWRITES:
+                break
+        return found
+
+    def again(instruction: str) -> List[dict]:
+        # One correction round, in the same conversation. It is not charged to the person's allowance: it exists only
+        # because the first answer said something the writer's text does not support.
+        retry = messages + [
+            {"role": "assistant", "content": json.dumps(data, ensure_ascii=False)},
+            {"role": "user", "content": instruction},
+        ]
+        return versions(extract_json(ai_models.complete(_groq_client, retry, task="rewrite", plan=_plan(access))))
+
+    # Every version is checked against the writer's own words (routers/grounding.py): no result, rank, tool or figure
+    # they never stated, however much the job asks for it, and nothing they did state left out.
+    out = grounding.settle_rewrites(text, versions(data), again, context=entry_title)
 
     # Questions that make the text stronger with facts only the writer knows (scale, volume, results).
     needs = coaching.clean_needs(data.get("needs"), text)

@@ -136,6 +136,106 @@ class JobRewriteRoute(unittest.TestCase):
         self.assertEqual(result["rewrites"], [])
 
 
+QC_TEXT = "Assisted with the weekly stock count\nInspected finished panels against the drawing\nRecorded defects in PASTEL"
+PLAIN = {"label": "Plain", "text": "Assisted with the weekly stock count\nChecked finished panels against the drawing\nLogged defects in PASTEL", "why": "Keeps every fact."}
+SHORT = {"label": "Short", "text": "Assisted weekly stock counts\nInspected finished panels against drawings\nRecorded defects in PASTEL", "why": "Tighter lines."}
+BOLD = {"label": "Bold", "text": "Led a team of inspectors, improving product quality\nRecorded defects in PASTEL and SAP\nAssisted with stock counts", "why": "Sounds senior."}
+RANK = {"label": "Rank", "text": "Senior inspector of finished panels\nRecorded defects in PASTEL\nAssisted with stock counts", "why": "Sounds senior."}
+
+
+class AnalyzeIsGrounded(unittest.TestCase):
+    """A rewrite can be false without one invented number: a promotion, a result, a tool. The model is told what, once."""
+
+    def setUp(self):
+        w._cache.clear()
+        for name, value in (("_bearer_pass", "pass"), ("_rate_limited", False), ("require_access", None)):
+            patcher = mock.patch.object(w, name, return_value=value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def analyze(self, reply_for):
+        patcher, calls = fake_model(reply_for)
+        self.addCleanup(patcher.stop)
+        return w.analyze(w.AnalyzeRequest(text=QC_TEXT, field="experience", job_title="Inspector"), mock.Mock()), calls
+
+    def test_invented_results_ranks_and_tools_are_rejected_and_the_model_is_told_exactly_what(self):
+        replies = [{"rewrites": [PLAIN, BOLD, RANK]}, {"rewrites": [PLAIN, SHORT]}]
+        result, calls = self.analyze(lambda task, messages: replies[0] if len(messages) == 2 else replies[1])
+        self.assertEqual(len(calls), 2)
+        told = calls[1]["messages"][-1]["content"]
+        for expected in ('Version "Bold"', "improving", '"SAP"', 'Version "Rank"', "senior"):
+            self.assertIn(expected, told)
+        self.assertEqual(calls[1]["messages"][-2]["role"], "assistant")  # the correction is a reply in the same conversation
+        self.assertEqual([r["text"] for r in result["rewrites"]], [PLAIN["text"], SHORT["text"]])
+        self.assertEqual([r["id"] for r in result["rewrites"]], ["rw1", "rw2"])
+
+    def test_two_honest_versions_cost_one_call(self):
+        result, calls = self.analyze(lambda task, messages: {"rewrites": [PLAIN, SHORT, BOLD]})
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(result["rewrites"]), 2)  # the bold one is gone without a second request
+
+    def test_a_version_with_an_invented_figure_is_corrected_too(self):
+        invented = {"label": "Numbers", "text": "Assisted with the weekly stock count of 400 lines\nInspected finished panels against the drawing\nRecorded defects in PASTEL"}
+        replies = [{"rewrites": [invented]}, {"rewrites": [PLAIN, SHORT]}]
+        result, calls = self.analyze(lambda task, messages: replies[0] if len(messages) == 2 else replies[1])
+        self.assertEqual(len(calls), 2)
+        self.assertIn('"400"', calls[1]["messages"][-1]["content"])
+        self.assertEqual(len(result["rewrites"]), 2)
+
+    def test_a_failed_correction_round_keeps_what_already_passed(self):
+        def reply_for(task, messages):
+            if len(messages) > 2:
+                raise RuntimeError("the model is down")
+            return {"rewrites": [PLAIN, BOLD]}
+
+        result, _ = self.analyze(reply_for)
+        self.assertEqual([r["text"] for r in result["rewrites"]], [PLAIN["text"]])
+
+    def test_the_prompt_forbids_what_the_check_catches(self):
+        for phrase in ('"Assisted" stays "assisted"', "never add a rank", "Never add a result", "Never name a tool"):
+            self.assertIn(phrase, w.SYSTEM_PROMPT.replace("\\\n", ""))
+
+
+class JobRewriteIsGrounded(unittest.TestCase):
+    """The job asking for a supervisor is never a reason to say the writer supervised."""
+
+    TEXT = "Assisted the floor team with stock counts and returns"
+    BAD = {"label": "Match-first", "text": "Supervised floor staff and ran stock control and returns", "why": "Mirrors the job."}
+    GOOD = {"label": "Honest", "text": "Assisted the floor team with stock control and returns", "why": "Uses the job's wording only where true."}
+    GOOD2 = {"label": "Short", "text": "Supported stock control and returns on the shop floor", "why": "Shorter."}
+
+    def setUp(self):
+        jm._cache.clear()
+        patcher = mock.patch.object(jm, "_gate", return_value=None)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def run_rewrite(self, reply_for):
+        patcher, calls = fake_model(reply_for)
+        self.addCleanup(patcher.stop)
+        target = jm.TargetIn(
+            title="Store Supervisor",
+            company="Harbour Hardware",
+            keywords=[jm.KeywordIn(term="stock control", must=True), jm.KeywordIn(term="supervising floor staff", must=True)],
+            requirements=["Experience supervising floor staff"],
+        )
+        body = jm.RewriteRequest(text=self.TEXT, field="experience", job_title="Cashier", target=target)
+        return jm.rewrite(body, mock.Mock()), calls
+
+    def test_a_claim_the_job_wants_but_the_writer_never_made_is_rejected_and_corrected(self):
+        replies = [{"rewrites": [self.BAD, self.GOOD]}, {"rewrites": [self.GOOD, self.GOOD2]}]
+        result, calls = self.run_rewrite(lambda task, messages: replies[0] if len(messages) == 2 else replies[1])
+        self.assertEqual([c["task"] for c in calls], ["rewrite", "rewrite"])
+        self.assertIn("Supervised", calls[1]["messages"][-1]["content"].replace("supervised", "Supervised"))
+        self.assertEqual([r["text"] for r in result["rewrites"]], [self.GOOD["text"], self.GOOD2["text"]])
+        self.assertEqual(result["rewrites"][0]["adds"], ["stock control"])  # the job's word the version genuinely uses
+
+    def test_honest_versions_need_no_second_call(self):
+        result, calls = self.run_rewrite(lambda task, messages: {"rewrites": [self.GOOD, self.GOOD2, self.BAD]})
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(result["rewrites"]), 2)
+
+
 class OtherRoutesPlumbing(unittest.TestCase):
     """Skills, summary and target each ask for a real task and read the reply as before."""
 
