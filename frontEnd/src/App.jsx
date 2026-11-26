@@ -11,6 +11,7 @@ import axios from 'axios'; // Add this line
 import PremiumFooter from './components/PremiumFooter';
 import WhyChooseUs from './components/WhyChooseUs';
 import logo1 from './assets/logo1.webp';
+import Seo from './components/Seo';
 const InvoiceBuilder = React.lazy(() => import('./pages/InvoiceBuilder'));
 
 // High-Performance Lazy Loading for Viewports
@@ -391,6 +392,7 @@ const MainLayout = () => {
       fontFamily: '"Outfit", sans-serif'
     }}>
 
+      <Seo />
       <Suspense fallback={<PageLoader />}>
         <div style={{ flex: '1 0 auto' }}>
           <Routes>

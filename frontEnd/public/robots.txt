@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://remopdf.site/sitemap.xml

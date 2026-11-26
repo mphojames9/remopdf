@@ -2,10 +2,75 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/frontEnd/src/assets/tittleIcon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RemoPDF | ResumeBuilder</title>
-    <link rel="icon" type="image/png" href="/src/assets/remopdf.png" />
+    <title>RemoPDF: Resume Builder, CV Maker & Online PDF Editor</title>
+    <meta name="description" content="Build an ATS-friendly resume or CV with AI help, then edit, sign, split, compress and lock PDFs online. Start free. Made in South Africa." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://remopdf.site/" />
+
+    <!-- Google Search Console: if you verify with the HTML tag method, paste the tag Google gives you here and keep it. -->
+    <!-- <meta name="google-site-verification" content="PASTE-YOUR-CODE" /> -->
+
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RemoPDF" />
+    <meta property="og:url" content="https://remopdf.site/" />
+    <meta property="og:title" content="RemoPDF: Resume Builder, CV Maker & Online PDF Editor" />
+    <meta property="og:description" content="Build an ATS-friendly resume or CV with AI help, then edit, sign, split, compress and lock PDFs online. Start free. Made in South Africa." />
+    <meta property="og:image" content="https://remopdf.site/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RemoPDF: Resume Builder, CV Maker & Online PDF Editor" />
+    <meta name="twitter:description" content="Build an ATS-friendly resume or CV with AI help, then edit, sign, split, compress and lock PDFs online. Start free. Made in South Africa." />
+    <meta name="twitter:image" content="https://remopdf.site/og-image.png" />
+
+    <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://remopdf.site/#org",
+      "name": "RemoPDF",
+      "url": "https://remopdf.site/",
+      "logo": "https://remopdf.site/favicon-192.png",
+      "founder": {
+        "@type": "Person",
+        "name": "Mpho James Matli"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://remopdf.site/#website",
+      "url": "https://remopdf.site/",
+      "name": "RemoPDF",
+      "inLanguage": "en",
+      "publisher": {
+        "@id": "https://remopdf.site/#org"
+      }
+    },
+    {
+      "@type": "WebApplication",
+      "name": "RemoPDF",
+      "url": "https://remopdf.site/",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, Android",
+      "description": "Build an ATS-friendly resume or CV with AI help, then edit, sign, split, compress and lock PDFs online. Start free. Made in South Africa.",
+      "publisher": {
+        "@id": "https://remopdf.site/#org"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "ZAR"
+      }
+    }
+  ]
+}</script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +79,17 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>   
+    <noscript>
+      <h1>RemoPDF: resume builder, CV maker and online PDF editor</h1>
+      <p>Build an ATS-friendly resume or CV with AI help, then edit, sign, split, compress and lock PDFs online. Start free. Made in South Africa.</p>
+      <ul>
+        <li><a href="/ResumeBuilder">Resume and CV builder</a></li>
+        <li><a href="/Workspace">Edit PDF online</a></li>
+        <li><a href="/InvoiceBuilder">Invoice generator</a></li>
+        <li><a href="/ZipTool">Zip and unzip files</a></li>
+        <li><a href="/about">About RemoPDF</a></li>
+      </ul>
+    </noscript>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
