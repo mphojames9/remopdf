@@ -12,12 +12,14 @@ import PremiumFooter from './components/PremiumFooter';
 import WhyChooseUs from './components/WhyChooseUs';
 import logo1 from './assets/logo1.webp';
 import Seo from './components/Seo';
+import { LANDING_PAGES } from './data/landingPages';
 const InvoiceBuilder = React.lazy(() => import('./pages/InvoiceBuilder'));
 
 // High-Performance Lazy Loading for Viewports
 const Home = React.lazy(() => import('./pages/Home'));
 const Editor = React.lazy(() => import('./pages/Workspace'));
 const ZipTool = React.lazy(() => import('./pages/ZipTool'));
+const SeoLanding = React.lazy(() => import('./pages/SeoLanding'));
 
 /* ==========================================================================
    PREMIUM PAGE LOADER
@@ -405,6 +407,9 @@ const MainLayout = () => {
             <Route path="/terms-of-use" element={<Terms />} />
             <Route path="/ZipTool" element={<ZipTool />} />
             <Route path="/InvoiceBuilder" element={<InvoiceBuilder />} />
+            {LANDING_PAGES.map((page) => (
+              <Route key={page.slug} path={`/${page.slug}`} element={<SeoLanding page={page} />} />
+            ))}
 
             {/* Dynamic Fallback Redirection (404 Page) */}
             <Route path="*" element={

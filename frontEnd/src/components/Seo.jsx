@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { LANDING_PAGES } from '../data/landingPages';
 
 // Sets the title, description, canonical link and social tags for the page that is on screen.
 // Google runs the site's JavaScript, so it reads these per-page values. index.html carries the home page's values
@@ -56,6 +57,11 @@ const PAGES = {
     description: 'The terms for using RemoPDF.',
   },
 };
+
+// The landing pages (data/landingPages.js) bring their own title and description.
+LANDING_PAGES.forEach((l) => {
+  PAGES['/' + l.slug] = { path: '/' + l.slug, title: l.title, description: l.description };
+});
 
 const NOT_FOUND = {
   path: null,
