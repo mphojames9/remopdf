@@ -131,11 +131,22 @@ const SHOWCASE_CSS = `
 .ts-bleed { width: 100vw; margin-left: calc(50% - 50vw); }
 .ts-pane[data-active='true'] { opacity: 1; }
 
-/* Colour swatches scale with the screen. On a phone they wrap into two even, centred rows (7 + 6); from 640px up
-   they sit in one row. --s is the swatch size and --g the gap between swatches. */
-.ts-swatches { --s: clamp(1.75rem, 9.5vw, 2.25rem); --g: clamp(.5rem, 2.4vw, .75rem); gap: var(--g); max-width: calc(7 * var(--s) + 6 * var(--g)); }
+/* Colour swatches scale with the width of the box they sit in (not the screen). While the box is narrow they wrap into
+   two even, centred rows (7 + 6) and grow to fill the width, up to 2.5rem; once all 13 fit on one line they sit in one
+   row. --s is the swatch size and --g the gap. The .5rem leaves room for the selected swatch's ring. */
+.ts-sw-wrap { container-type: inline-size; width: 100%; }
+.ts-swatches {
+  --g: clamp(.5rem, 2.6cqw, .875rem);
+  --s: clamp(1.75rem, calc((100cqw - .5rem - 6 * var(--g)) / 7), 2.5rem);
+  gap: var(--g); max-width: calc(7 * var(--s) + 6 * var(--g)); margin-inline: auto;
+}
 .ts-sw { width: var(--s); height: var(--s); }
-@media (min-width: 640px) { .ts-swatches { --s: 2rem; --g: .875rem; max-width: none; } }
+@container (min-width: 37rem) { .ts-swatches { --s: 2rem; --g: .875rem; max-width: none; } }
+/* Browsers without container query units keep the old screen-width sizing. */
+@supports not (width: 1cqw) {
+  .ts-swatches { --s: clamp(1.75rem, 9.5vw, 2.25rem); --g: clamp(.5rem, 2.4vw, .75rem); }
+  @media (min-width: 640px) { .ts-swatches { --s: 2rem; --g: .875rem; max-width: none; } }
+}
 
 /* "Use this template" pill appears on hover or keyboard focus (hidden on touch, where tapping opens the preview) */
 .ts-use { opacity: 0; transform: translateY(8px); pointer-events: none; }
@@ -588,7 +599,7 @@ const ColorBar = ({ color, onChange, className = 'flex-wrap', dark = false, comp
   const base = `${size} ${dark ? SWATCH_DARK : SWATCH}`;
   const ring = dark ? SWATCH_ON_DARK : SWATCH_ON;
 
-  return (
+  const bar = (
     <div
       className={`flex items-center ${
         fluid ? 'ts-swatches flex-wrap justify-center' : compact ? 'gap-x-2.5 gap-y-2' : 'gap-x-2.5 gap-y-3 sm:gap-x-3.5'
@@ -664,6 +675,8 @@ const ColorBar = ({ color, onChange, className = 'flex-wrap', dark = false, comp
       </label>
     </div>
   );
+
+  return fluid ? <div className="ts-sw-wrap">{bar}</div> : bar;
 };
 
 const ARROW_BTN =

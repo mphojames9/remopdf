@@ -1120,16 +1120,6 @@ export default function Home() {
                   Edit a PDF
                 </Link>
               </div>
-              <ul className="rise mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-light text-slate-600 lg:justify-start" style={{ '--d': '.3s' }}>
-                {['30 ATS templates', 'AI writing help', 'Clean PDF'].map((t) => (
-                  <li key={t} className="flex items-center gap-1.5">
-                    <span className="grid h-5 w-5 place-items-center rounded-full bg-[#d9856b]/20 text-[#b5563a]">
-                      <Icon name="check" className="h-3 w-3" />
-                    </span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
             </div>
 
             <ResumeStack />
@@ -1227,7 +1217,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="shot-in relative -mx-4 mt-10 sm:mx-0 sm:mt-12">
+            <div className="shot-in relative hidden sm:mx-0 sm:mt-12 sm:block">
               <div className="pdf-stage relative overflow-hidden rounded-none px-0 pt-0 sm:rounded-[2rem] sm:px-8 sm:pt-14 lg:px-14 lg:pt-[4.5rem]">
                 {/* The shot runs off the bottom of the stage. On a phone it is zoomed in on the toolbar and page, so the tools are readable.
                     The marks on top are positioned in percentages of the picture, so they stay on the same spot at every size. */}
@@ -1269,7 +1259,7 @@ export default function Home() {
               </div>
             </div>
 
-            <ul className="pdf-grid mt-3 sm:mt-4">
+            <ul className="pdf-grid mt-10 sm:mt-4">
               {pdfTools.map((tool) =>
                 tool.feat ? (
                   <li key={tool.label} className="pdf-feat flex">
