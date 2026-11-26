@@ -7,7 +7,7 @@ import { LANDING_PAGES } from '../data/landingPages';
 // for crawlers and link previews that do not run scripts.
 // To add a page: add a line to PAGES (keys are lower-case) and to public/sitemap.xml.
 
-const SITE = 'https://remopdf.site';
+const SITE = 'https://www.remopdf.site';
 const OG_IMAGE = SITE + '/og-image.png';
 
 const PAGES = {
