@@ -34,6 +34,11 @@ import VioletGalleryTemplate from './Resume/Templates/VioletGalleryTemplate';
 import SageSereneTemplate from './Resume/Templates/SageSereneTemplate';
 import DenimEditorialTemplate from './Resume/Templates/DenimEditorialTemplate';
 import OrchidBoutiqueTemplate from './Resume/Templates/OrchidBoutiqueTemplate';
+import BasicClassicTemplate from './Resume/Templates/BasicClassicTemplate';
+import BasicCenteredTemplate from './Resume/Templates/BasicCenteredTemplate';
+import BasicSplitTemplate from './Resume/Templates/BasicSplitTemplate';
+import BasicSidebarTemplate from './Resume/Templates/BasicSidebarTemplate';
+import BasicCompactTemplate from './Resume/Templates/BasicCompactTemplate';
 import { DEFAULT_ACCENT } from './Resume/Templates/templateShared';
 
 const STORAGE_KEY_TEMPLATE = 'resumeBuilder:selectedTemplate';
@@ -512,6 +517,11 @@ const TEMPLATE_CARDS = [
   { id: 'sage-serene', label: 'Serene', note: 'Clean single column with sage accents.', Template: SageSereneTemplate },
   { id: 'denim-editorial', label: 'Editorial', note: 'Clean single column with denim accents.', Template: DenimEditorialTemplate },
   { id: 'orchid-boutique', label: 'Boutique', note: 'Clean single column with orchid accents.', Template: OrchidBoutiqueTemplate },
+  { id: 'basic-classic', label: 'Basic Classic', note: 'Plain left-aligned single column.', Template: BasicClassicTemplate },
+  { id: 'basic-centered', label: 'Basic Centered', note: 'Plain single column with a centred header.', Template: BasicCenteredTemplate },
+  { id: 'basic-split', label: 'Basic Split', note: 'Dates in a left gutter, details on the right.', Template: BasicSplitTemplate },
+  { id: 'basic-sidebar', label: 'Basic Sidebar', note: 'Plain two columns with a light sidebar.', Template: BasicSidebarTemplate },
+  { id: 'basic-compact', label: 'Basic Compact', note: 'Dense single column that fits more on a page.', Template: BasicCompactTemplate },
 ];
 
 const TEMPLATE_IDS = TEMPLATE_CARDS.map((c) => c.id);

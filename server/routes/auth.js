@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { checkGoogleToken } from '../lib/firebaseAdmin.js';
+import { syncAdminRole } from '../lib/admins.js';
 
 /*
  * Accounts. People sign in with Google, and only with a Gmail address. There are no passwords, no verification
@@ -69,6 +70,11 @@ router.post('/google', authLimiter, async (req, res, next) => {
     let user = await User.findOne({ email });
     let isNew = false;
 
+    // An admin can suspend an account from the admin panel; it cannot sign in again until it is reinstated.
+    if (user?.disabled) {
+      return res.status(403).json({ message: 'This account has been suspended. Please contact support.', reason: 'suspended' });
+    }
+
     if (!user) {
       try {
         user = await User.create({
@@ -90,6 +96,8 @@ router.post('/google', authLimiter, async (req, res, next) => {
     if (!isNew) {
       await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date(), emailVerified: true } });
     }
+
+    await syncAdminRole(user); // an address listed in ADMIN_EMAILS is an admin from its first sign-in
 
     return res.status(isNew ? 201 : 200).json({ token: issueToken(user), user, isNew });
   } catch (err) {

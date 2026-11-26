@@ -160,7 +160,9 @@ export const pdfToWord = async (files, onProgress) => {
   const formData = new FormData();
   files.forEach((file) => formData.append('files', file));
 
-  const response = await axios.post(`${API_URL}/tools/pdf-to-word`, formData, {
+  // One PDF: ask the server for the .docx itself. Several: a .zip of .docx files, as before.
+  const single = files.length === 1;
+  const response = await axios.post(`${API_URL}/tools/pdf-to-word${single ? '?single=true' : ''}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     responseType: 'blob',
     onUploadProgress: (progressEvent) => {
@@ -169,7 +171,17 @@ export const pdfToWord = async (files, onProgress) => {
     }
   });
 
-  downloadBlob(new Blob([response.data], { type: 'application/zip' }), 'RemoPDF_Word_Files.zip');
+  // Go by what actually came back, so an older server that always zips still saves correctly.
+  const contentType = String(response.headers?.['content-type'] || '');
+  if (single && !contentType.includes('zip')) {
+    const baseName = (files[0].name || 'document').replace(/\.pdf$/i, '');
+    downloadBlob(
+      new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }),
+      `${baseName}.docx`
+    );
+  } else {
+    downloadBlob(new Blob([response.data], { type: 'application/zip' }), 'RemoPDF_Word_Files.zip');
+  }
   return true;
 };
 
@@ -178,7 +190,9 @@ export const pdfToExcel = async (files, onProgress) => {
   const formData = new FormData();
   files.forEach((file) => formData.append('files', file));
 
-  const response = await axios.post(`${API_URL}/tools/pdf-to-excel`, formData, {
+  // One PDF: ask the server for the .xlsx itself. Several: a .zip of .xlsx files, as before.
+  const single = files.length === 1;
+  const response = await axios.post(`${API_URL}/tools/pdf-to-excel${single ? '?single=true' : ''}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     responseType: 'blob',
     onUploadProgress: (progressEvent) => {
@@ -187,7 +201,17 @@ export const pdfToExcel = async (files, onProgress) => {
     }
   });
 
-  downloadBlob(new Blob([response.data], { type: 'application/zip' }), 'RemoPDF_Excel_Files.zip');
+  // Go by what actually came back, so an older server that always zips still saves correctly.
+  const contentType = String(response.headers?.['content-type'] || '');
+  if (single && !contentType.includes('zip')) {
+    const baseName = (files[0].name || 'document').replace(/\.pdf$/i, '');
+    downloadBlob(
+      new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      `${baseName}.xlsx`
+    );
+  } else {
+    downloadBlob(new Blob([response.data], { type: 'application/zip' }), 'RemoPDF_Excel_Files.zip');
+  }
   return true;
 };
 
@@ -310,8 +334,10 @@ export const pdfToPpt = async (files, onProgress) => {
   const formData = new FormData();
   files.forEach((file) => formData.append('files', file));
 
+  // One PDF: ask the server for the .pptx itself. Several: a .zip of .pptx files, as before.
+  const single = files.length === 1;
   try {
-    const response = await axios.post(`${API_URL}/tools/pdf-to-ppt`, formData, {
+    const response = await axios.post(`${API_URL}/tools/pdf-to-ppt${single ? '?single=true' : ''}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       responseType: 'blob',
       onUploadProgress: (progressEvent) => {
@@ -320,7 +346,17 @@ export const pdfToPpt = async (files, onProgress) => {
       }
     });
 
-    downloadBlob(new Blob([response.data], { type: 'application/zip' }), 'RemoPDF_PowerPoint_Files.zip');
+    // Go by what actually came back, so an older server that always zips still saves correctly.
+    const contentType = String(response.headers?.['content-type'] || '');
+    if (single && !contentType.includes('zip')) {
+      const baseName = (files[0].name || 'document').replace(/\.pdf$/i, '');
+      downloadBlob(
+        new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }),
+        `${baseName}_Presentation.pptx`
+      );
+    } else {
+      downloadBlob(new Blob([response.data], { type: 'application/zip' }), 'RemoPDF_PowerPoint_Files.zip');
+    }
     return true;
   } catch (error) {
     // CRITICAL FIX: If the server rejects the file with a JSON error (like a 403 ENCRYPTED flag), 

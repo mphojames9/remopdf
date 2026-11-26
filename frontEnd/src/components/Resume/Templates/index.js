@@ -28,6 +28,11 @@ import VioletGalleryTemplate from './VioletGalleryTemplate';
 import SageSereneTemplate from './SageSereneTemplate';
 import DenimEditorialTemplate from './DenimEditorialTemplate';
 import OrchidBoutiqueTemplate from './OrchidBoutiqueTemplate';
+import BasicClassicTemplate from './BasicClassicTemplate';
+import BasicCenteredTemplate from './BasicCenteredTemplate';
+import BasicSplitTemplate from './BasicSplitTemplate';
+import BasicSidebarTemplate from './BasicSidebarTemplate';
+import BasicCompactTemplate from './BasicCompactTemplate';
 
 // One entry per template, keyed by the id that ResumeBuilder saves.
 export const TEMPLATE_COMPONENTS = {
@@ -61,6 +66,11 @@ export const TEMPLATE_COMPONENTS = {
   'sage-serene': SageSereneTemplate,
   'denim-editorial': DenimEditorialTemplate,
   'orchid-boutique': OrchidBoutiqueTemplate,
+  'basic-classic': BasicClassicTemplate,
+  'basic-centered': BasicCenteredTemplate,
+  'basic-split': BasicSplitTemplate,
+  'basic-sidebar': BasicSidebarTemplate,
+  'basic-compact': BasicCompactTemplate,
 };
 
 export const TEMPLATE_IDS = Object.keys(TEMPLATE_COMPONENTS);
@@ -86,6 +96,11 @@ export { BlueSidebarTemplate, GreenHeaderTemplate, PinkHeaderTemplate, DarkTopTe
   SageSereneTemplate,
   DenimEditorialTemplate,
   OrchidBoutiqueTemplate,
+  BasicClassicTemplate,
+  BasicCenteredTemplate,
+  BasicSplitTemplate,
+  BasicSidebarTemplate,
+  BasicCompactTemplate,
 };
 export { TemplateThumb, TEMPLATE_CARDS } from './TemplateThumbs';
 export {

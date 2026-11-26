@@ -20,6 +20,7 @@ const Home = React.lazy(() => import('./pages/Home'));
 const Editor = React.lazy(() => import('./pages/Workspace'));
 const ZipTool = React.lazy(() => import('./pages/ZipTool'));
 const SeoLanding = React.lazy(() => import('./pages/SeoLanding'));
+const Admin = React.lazy(() => import('./pages/Admin')); // private: the server checks the admin role on every request
 
 /* ==========================================================================
    PREMIUM PAGE LOADER
@@ -407,6 +408,7 @@ const MainLayout = () => {
             <Route path="/terms-of-use" element={<Terms />} />
             <Route path="/ZipTool" element={<ZipTool />} />
             <Route path="/InvoiceBuilder" element={<InvoiceBuilder />} />
+            <Route path="/admin" element={<Admin />} />
             {LANDING_PAGES.map((page) => (
               <Route key={page.slug} path={`/${page.slug}`} element={<SeoLanding page={page} />} />
             ))}

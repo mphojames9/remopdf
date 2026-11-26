@@ -20,6 +20,10 @@ export const SKILL_LEVEL_DISPLAY = {
   'magenta-vivid': { name: 'Vivid', shows: 'words' },
   'umber-scholar': { name: 'Scholar', shows: 'words' },
   'violet-gallery': { name: 'Gallery', shows: 'words' },
+  'basic-classic': { name: 'Basic Classic', shows: 'words' },
+  'basic-centered': { name: 'Basic Centered', shows: 'words' },
+  'basic-split': { name: 'Basic Split', shows: 'words' },
+  'basic-sidebar': { name: 'Basic Sidebar', shows: 'words' },
 
   'green-header': { name: 'Accent', shows: 'visual' },
   'pink-header': { name: 'Modern', shows: 'visual' },
@@ -46,6 +50,7 @@ export const SKILL_LEVEL_DISPLAY = {
   'gold-prestige': { name: 'Prestige', shows: 'none' },
   'khaki-pioneer': { name: 'Pioneer', shows: 'none' },
   'stone-journal': { name: 'Journal', shows: 'none' },
+  'basic-compact': { name: 'Basic Compact', shows: 'none' },
 };
 
 export const skillLevelDisplay = (templateId) => (SKILL_LEVEL_DISPLAY[templateId] ? SKILL_LEVEL_DISPLAY[templateId].shows : 'visual');

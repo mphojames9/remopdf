@@ -444,6 +444,11 @@ const TEMPLATE_CARDS = [
   { id: 'sage-serene', label: 'Serene' },
   { id: 'denim-editorial', label: 'Editorial' },
   { id: 'orchid-boutique', label: 'Boutique' },
+  { id: 'basic-classic', label: 'Basic Classic' },
+  { id: 'basic-centered', label: 'Basic Centered' },
+  { id: 'basic-split', label: 'Basic Split' },
+  { id: 'basic-sidebar', label: 'Basic Sidebar' },
+  { id: 'basic-compact', label: 'Basic Compact' },
 ];
 
 export { TemplateThumb, TEMPLATE_CARDS, DEMO_RESUME, SidebarThumb, GreenHeaderThumb, PinkHeaderThumb, DarkTopThumb };

@@ -15,6 +15,13 @@ const userSchema = new mongoose.Schema(
     // never be used to prove who someone is. New accounts do not have one. Not part of toJSON below.
     phone: { type: String, trim: true, maxlength: 20 },
     lastLoginAt: { type: Date },
+    // "user" for everyone by default. An admin can open the admin panel (/admin) and manage accounts. The first admin
+    // comes from ADMIN_EMAILS in server/.env (see lib/admins.js); after that, admins can be made from the panel.
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    // A suspended account is signed out everywhere (middleware/requireAuth.js) and cannot sign in again until an admin
+    // reinstates it. Nothing is deleted when an account is suspended.
+    disabled: { type: Boolean, default: false },
+    disabledAt: { type: Date },
     // The person's resume from before multiple resumes existed, stored as one JSON string. routes/profile.js moves it
     // into the Resume collection the first time the account asks for its resumes. A string cannot carry keys like
     // "$set" or "a.b" into MongoDB, and it is left out of queries unless asked for with .select('+resumeJson').
@@ -31,6 +38,7 @@ userSchema.set('toJSON', {
     firstName: ret.firstName,
     lastName: ret.lastName,
     email: ret.email,
+    role: ret.role || 'user',
     createdAt: ret.createdAt,
   }),
 });

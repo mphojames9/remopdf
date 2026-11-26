@@ -8,7 +8,7 @@ import "pdfjs-dist/build/pdf.worker.mjs";
 import { Link } from 'react-router-dom';
 import image1 from '../assets/remopdf.webp';
 import navLogo from '../assets/logo.webp';
-import { addPasswordToPdf, pdfToImages } from "../api/client"; // adjust the path if client.js lives elsewhere
+import { addPasswordToPdf, pdfToImages, pdfToWord, pdfToExcel, pdfToPpt } from "../api/client"; // adjust the path if client.js lives elsewhere
 
 
 const FONT_SIZE_OPTIONS = [10, 12, 14, 16, 20, 24, 32];
@@ -55,6 +55,15 @@ const HELVETICA_DIGIT_HEIGHT = 0.716; // digit height as a fraction of the font 
 const IMAGE_FORMATS = [
   { id: "png", label: "PNG", hint: "Sharpest, larger files" },
   { id: "jpeg", label: "JPG", hint: "Smaller files" },
+];
+
+// --- Convert to Word / Excel / PowerPoint -------------------------------------
+// The finished document as an Office file. `run` is the api/client.js helper that
+// uploads the PDF to the matching server endpoint and saves the file that comes back.
+const CONVERT_TARGETS = [
+  { id: "word", label: "Word", ext: ".docx", hint: "Editable document", Icon: WordExportIcon, run: pdfToWord },
+  { id: "excel", label: "Excel", ext: ".xlsx", hint: "Spreadsheet, best for PDFs with tables", Icon: ExcelExportIcon, run: pdfToExcel },
+  { id: "ppt", label: "PowerPoint", ext: ".pptx", hint: "Slides", Icon: PptExportIcon, run: pdfToPpt },
 ];
 
 // --- Download options ---------------------------------------------------------
@@ -1365,6 +1374,10 @@ function PageNumberIcon() { return (<svg {...ICON}><path d="M6 3h8l5 5v13H6z" />
 function LockIcon() { return (<svg {...ICON}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>); }
 function AddPageIcon() { return (<svg {...ICON}><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /><path d="M12.5 12v6M9.5 15h6" /></svg>); }
 function ImageExportIcon() { return (<svg {...ICON}><rect x="3" y="3" width="18" height="14" rx="2" /><circle cx="8.5" cy="8" r="1.4" /><path d="M21 13l-4-4-4 4-2-2-6 6" /><path d="M12 18.5v3.5M10 20.5l2 1.5 2-1.5" /></svg>); }
+function WordExportIcon() { return (<svg {...ICON}><path d="M14 3H7a2 2 0 00-2 2v9" /><path d="M14 3l5 5v11a2 2 0 01-2 2h-5" /><path d="M14 3v5h5" /><path d="M2 17l1.5 5 2-4 2 4 1.5-5" /></svg>); }
+function ExcelExportIcon() { return (<svg {...ICON}><rect x="3" y="3" width="18" height="14" rx="2" /><path d="M3 8.5h18" /><path d="M3 13h18" /><path d="M9 3v14" /><path d="M15 3v14" /><path d="M12 18.5v3.5M10 20.5l2 1.5 2-1.5" /></svg>); }
+function PptExportIcon() { return (<svg {...ICON}><rect x="3" y="3" width="18" height="13" rx="2" /><path d="M7 12l3-3 3 2 4-4" /><path d="M12 16v3" /><path d="M8 21h8" /></svg>); }
+function ConvertIcon() { return (<svg {...ICON}><path d="M17 3l4 4-4 4" /><path d="M3 7h18" /><path d="M7 21l-4-4 4-4" /><path d="M21 17H3" /></svg>); }
 function GripIcon() { return (<svg {...ICON} fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" /><circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" /><circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" /></svg>); }
 
 // A miniature page with a dot where the number will sit (position picker).
@@ -2221,6 +2234,12 @@ export default function PdfFillerApp() {
   const [showImagePanel, setShowImagePanel] = useState(false);
   const [imageFormat, setImageFormat] = useState(IMAGE_FORMATS[0].id);
   const [isExportingImages, setIsExportingImages] = useState(false);
+
+  // Convert to Word / Excel / PowerPoint: one Convert button in the top bar (or the
+  // More menu on narrow screens) opens a small menu of the three formats.
+  const [showConvertPanel, setShowConvertPanel] = useState(false);
+  const [convertingTo, setConvertingTo] = useState(null); // "word" | "excel" | "ppt" | null
+  const isConverting = convertingTo !== null;
 
   // Download: the Download button opens a small panel where the person picks
   // between one PDF and one PDF per page before anything is saved.
@@ -3753,7 +3772,7 @@ export default function PdfFillerApp() {
   // downloads the .zip that comes back. A password doesn't apply to images, so
   // Protect is ignored here.
   const handleExportImages = async () => {
-    if (!pdfBytes || isExporting || isExportingImages) return;
+    if (!pdfBytes || isExporting || isExportingImages || isConverting) return;
     setIsExportingImages(true);
     setError("");
     try {
@@ -3766,6 +3785,28 @@ export default function PdfFillerApp() {
       setError("Couldn't convert the PDF to images. Check your connection and try again.");
     } finally {
       setIsExportingImages(false);
+    }
+  };
+
+  // --- Download as Word, Excel or PowerPoint ----------------------------------
+  // The same finished document as Download, sent to the server's pdf-to-word,
+  // pdf-to-excel or pdf-to-ppt endpoint; the helper in api/client.js saves what
+  // comes back. A password doesn't apply to these files, so Protect is ignored here.
+  const handleConvert = async (targetId) => {
+    const target = CONVERT_TARGETS.find((t) => t.id === targetId);
+    if (!target || !pdfBytes || isExporting || isExportingImages || isConverting) return;
+    setConvertingTo(target.id);
+    setError("");
+    try {
+      const outBytes = await buildEditedPdfBytes();
+      const pdfFile = new File([outBytes], `${fileName || "document"}.pdf`, { type: "application/pdf" });
+      await target.run([pdfFile]);
+      setShowConvertPanel(false);
+    } catch (err) {
+      console.error(err);
+      setError(`Couldn't convert the PDF to ${target.label}. Check your connection and try again.`);
+    } finally {
+      setConvertingTo(null);
     }
   };
 
@@ -4458,7 +4499,7 @@ export default function PdfFillerApp() {
 
         <button
           onClick={() => setShowDownloadPanel((v) => !v)}
-          disabled={!pdfDoc || isExporting || isExportingImages}
+          disabled={!pdfDoc || isExporting || isExportingImages || isConverting}
           aria-haspopup="dialog"
           aria-expanded={showDownloadPanel}
           className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white text-xs sm:text-sm font-medium px-2.5 sm:px-3.5 py-1.5 rounded-md"
@@ -4614,6 +4655,18 @@ export default function PdfFillerApp() {
           <span className="hidden lg:inline">To images</span>
         </button>
 
+        <button
+          onClick={() => setShowConvertPanel((v) => !v)}
+          disabled={!pdfDoc}
+          aria-haspopup="dialog"
+          aria-expanded={showConvertPanel}
+          className="hidden sm:flex items-center gap-1.5 p-1.5 xl:px-2.5 rounded text-sm hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent"
+          title="Convert to Word, Excel or PowerPoint"
+        >
+          <ConvertIcon />
+          <span className="hidden xl:inline">Convert</span>
+        </button>
+
         <div className="relative">
           <button
             onClick={() => setShowMoreMenu((v) => !v)}
@@ -4676,6 +4729,16 @@ export default function PdfFillerApp() {
                   className="sm:hidden w-full text-left px-3 py-2.5 text-sm hover:bg-neutral-50 disabled:opacity-40"
                 >
                   Convert to images
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    setShowConvertPanel(true);
+                  }}
+                  disabled={!pdfDoc}
+                  className="sm:hidden w-full text-left px-3 py-2.5 text-sm hover:bg-neutral-50 disabled:opacity-40"
+                >
+                  Convert to Word / Excel / PPT
                 </button>
               </div>
             </>
@@ -4951,7 +5014,7 @@ export default function PdfFillerApp() {
               <button
                 type="button"
                 onClick={handleExportImages}
-                disabled={!pdfDoc || visiblePages.length === 0 || isExporting || isExportingImages}
+                disabled={!pdfDoc || visiblePages.length === 0 || isExporting || isExportingImages || isConverting}
                 className="w-full min-h-[44px] flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white text-sm font-medium rounded-md touch-manipulation"
               >
                 <ImageExportIcon />
@@ -4964,6 +5027,44 @@ export default function PdfFillerApp() {
                 One image per page, saved together in a .zip. It matches what you see here: your edits, watermark and
                 page numbers are included and deleted pages are left out. A password isn't applied to images. The PDF is
                 uploaded to our server to be converted.
+              </p>
+            </div>
+          </>
+        )}
+
+        {showConvertPanel && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setShowConvertPanel(false)} />
+            <div
+              role="dialog"
+              aria-label="Convert to Word, Excel or PowerPoint"
+              className="absolute right-2 top-full mt-1 w-72 max-w-[calc(100vw-1rem)] max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-white text-neutral-800 rounded-md shadow-lg border border-neutral-200 p-3 z-40 space-y-3"
+            >
+              <p className="text-sm font-medium">Convert to</p>
+
+              <div className="space-y-2">
+                {CONVERT_TARGETS.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => handleConvert(t.id)}
+                    disabled={!pdfDoc || visiblePages.length === 0 || isExporting || isExportingImages || isConverting}
+                    className="w-full min-h-[44px] flex items-center gap-3 rounded-md border border-neutral-300 px-3 py-1.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-40 disabled:hover:bg-transparent touch-manipulation"
+                  >
+                    <span className="text-blue-600 shrink-0"><t.Icon /></span>
+                    <span className="min-w-0">
+                      <span className="block font-medium">
+                        {convertingTo === t.id ? "Converting…" : `${t.label} (${t.ext})`}
+                      </span>
+                      <span className="block text-[11px] font-normal text-neutral-500">{t.hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-[11px] text-neutral-400">
+                It matches what you see here: your edits, watermark and page numbers are included and deleted pages are
+                left out. A password isn't applied to these files. The PDF is uploaded to our server to be converted.
               </p>
             </div>
           </>
@@ -5055,7 +5156,7 @@ export default function PdfFillerApp() {
                 <button
                   type="button"
                   onClick={handleDownload}
-                  disabled={!pdfDoc || n === 0 || isExporting || isExportingImages}
+                  disabled={!pdfDoc || n === 0 || isExporting || isExportingImages || isConverting}
                   className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.99] disabled:opacity-40 disabled:hover:bg-blue-600 text-white text-sm font-semibold rounded-xl shadow-sm transition touch-manipulation"
                 >
                   <DownloadIcon />

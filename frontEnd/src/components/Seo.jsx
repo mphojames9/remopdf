@@ -63,6 +63,9 @@ LANDING_PAGES.forEach((l) => {
   PAGES['/' + l.slug] = { path: '/' + l.slug, title: l.title, description: l.description };
 });
 
+// The admin panel is private. A page with no path gets a title but is marked noindex and has no canonical link.
+PAGES['/admin'] = { path: null, title: 'Admin | RemoPDF', description: 'Private area.' };
+
 const NOT_FOUND = {
   path: null,
   title: 'Page not found | RemoPDF',

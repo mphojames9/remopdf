@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/auth.js';
 import profileRoutes, { profileMiddleware } from './routes/profile.js';
 import paymentRoutes, { paystackWebhook } from './routes/payments.js';
+import adminRoutes from './routes/admin.js';
 
 const { MONGO_URI, JWT_SECRET, MONGO_DB_NAME } = process.env;
 const PORT = Number(process.env.PORT) || 5000;
@@ -21,6 +22,10 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 
 if (!process.env.PAYSTACK_SECRET_KEY) {
   console.warn('PAYSTACK_SECRET_KEY is missing, so payments are switched off. Add it to server/.env (see .env.example).');
+}
+
+if (!process.env.ADMIN_EMAILS) {
+  console.warn('ADMIN_EMAILS is missing, so the first admin can only be made by hand in the database. Add it to server/.env (comma-separated Gmail addresses).');
 }
 
 const app = express();
@@ -72,6 +77,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found.' });

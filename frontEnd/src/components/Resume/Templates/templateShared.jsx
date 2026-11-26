@@ -193,6 +193,11 @@ const DEFAULT_ACCENT = {
   'sage-serene': '#3d6b57',
   'denim-editorial': '#1f5582',
   'orchid-boutique': '#86198f',
+  'basic-classic': '#1f2937',
+  'basic-centered': '#334155',
+  'basic-split': '#1e3a8a',
+  'basic-sidebar': '#0f766e',
+  'basic-compact': '#1d4ed8',
 };
 
 // Deep, muted tones that read as professional. Each is dark enough to carry white
