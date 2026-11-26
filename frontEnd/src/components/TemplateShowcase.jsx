@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { flushSync } from 'react-dom';
 import ResumePhoto, { PHOTO_DEFAULTS } from './Resume/Sections/ResumePhoto';
 import profile2 from '../assets/profile2.webp';
 
@@ -74,10 +75,12 @@ const AUTOPLAY_MS = 4000; // how long each card stays in the middle before the c
 
 // The carousel only builds live templates for the card in the middle and this many cards either side of it.
 // Every other card is a plain placeholder, so the page never holds more than a handful of full-size resumes.
-// A phone only ever shows the middle card and a sliver of each neighbour, so it builds fewer.
+// A phone only ever shows the middle card and a sliver of each neighbour, so it builds fewer; a wide desktop shows more.
 const LIVE_RANGE = 2;
 const LIVE_RANGE_SMALL = 1;
+const LIVE_RANGE_WIDE = 3;
 const SMALL_MQ = '(max-width: 639px)';
+const WIDE_MQ = '(min-width: 1280px)';
 const DOT_COUNT = 7; // pagination dots shown at once; they slide along as you move through the layouts
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -124,6 +127,8 @@ const SHOWCASE_CSS = `
 @media (min-width: 640px) { .ts-rail { --ts-card: 17.5rem; } }
 @media (min-width: 1024px) { .ts-rail { --ts-card: 19rem; } }
 .ts-pane { flex: 0 0 var(--ts-card); scroll-snap-align: center; opacity: .5; }
+/* The rail breaks out of the page's centred column and spans the whole screen (the page clips any overshoot). */
+.ts-bleed { width: 100vw; margin-left: calc(50% - 50vw); }
 .ts-pane[data-active='true'] { opacity: 1; }
 
 /* Colour swatches scale with the screen. On a phone they wrap into two even, centred rows (7 + 6); from 640px up
@@ -237,23 +242,25 @@ const useNearView = (rootRef, rootMargin = '0px') => {
   return [ref, near];
 };
 
-// How many cards either side of the middle one are built: fewer on a phone.
+// How many cards either side of the middle one are built: fewer on a phone, more on a wide screen.
+const liveRangeNow = () => {
+  if (typeof window === 'undefined' || !window.matchMedia) return LIVE_RANGE;
+  if (window.matchMedia(SMALL_MQ).matches) return LIVE_RANGE_SMALL;
+  if (window.matchMedia(WIDE_MQ).matches) return LIVE_RANGE_WIDE;
+  return LIVE_RANGE;
+};
+
 const useLiveRange = () => {
-  const [range, setRange] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia && window.matchMedia(SMALL_MQ).matches ? LIVE_RANGE_SMALL : LIVE_RANGE,
-  );
+  const [range, setRange] = useState(liveRangeNow);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return undefined;
-    const mq = window.matchMedia(SMALL_MQ);
-    const update = () => setRange(mq.matches ? LIVE_RANGE_SMALL : LIVE_RANGE);
+    const queries = [window.matchMedia(SMALL_MQ), window.matchMedia(WIDE_MQ)];
+    const update = () => setRange(liveRangeNow());
     update();
-    if (mq.addEventListener) mq.addEventListener('change', update);
-    else mq.addListener(update);
-    return () => {
-      if (mq.removeEventListener) mq.removeEventListener('change', update);
-      else mq.removeListener(update);
-    };
+    queries.forEach((mq) => (mq.addEventListener ? mq.addEventListener('change', update) : mq.addListener(update)));
+    return () =>
+      queries.forEach((mq) => (mq.removeEventListener ? mq.removeEventListener('change', update) : mq.removeListener(update)));
   }, []);
 
   return range;
@@ -686,14 +693,14 @@ const TemplateCard = memo(function TemplateCard({
   return (
     <div ref={cardRef} className={`group shrink-0 ${widthClass}`}>
       <div>
-      <div className="ts-card relative rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,.14)] transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_16px_34px_-10px_rgba(15,23,42,.35)] motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
+      <div className="ts-card relative shadow-[0_2px_14px_rgba(15,23,42,.14)] transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_16px_34px_-10px_rgba(15,23,42,.35)] motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
         <button
           type="button"
           onClick={() => onOpen(id)}
           aria-label={`Preview the ${label} layout`}
-          className="ts-open block w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+          className="ts-open block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
         >
-          <TemplateThumb className="w-full rounded-2xl ring-1 ring-black/5">{thumb}</TemplateThumb>
+          <TemplateThumb className="w-full ring-1 ring-black/5">{thumb}</TemplateThumb>
         </button>
 
         {featured && (
@@ -1047,19 +1054,27 @@ const AllTemplatesModal = ({ color, onColorChange, featuredTemplate, featuredLab
   );
 };
 
+// The rail holds three identical copies of the layout list, back to back. It starts on the middle copy, and whenever it
+// comes to rest in the first or last copy it hops to the same card in the middle copy. The copies look the same, so the
+// hop cannot be seen, and there is always another card on both sides: the loop never ends and nothing is ever empty.
+const CARD_COUNT = TEMPLATE_CARDS.length;
+const SLOT_COUNT = CARD_COUNT * 3;
+const SLOTS = Array.from({ length: SLOT_COUNT }, (_, slot) => ({
+  slot,
+  copy: Math.floor(slot / CARD_COUNT),
+  index: slot % CARD_COUNT,
+}));
+
 // Stand-in for a card whose resume is not built: a blank page with the layout's accent bar. Static on purpose.
 const SlideSkeleton = ({ accent }) => (
   <div className="aspect-[1/1.414] w-full bg-white px-[9%] pt-[9%]" aria-hidden="true">
     <div className="h-2 w-2/5 rounded-full" style={{ backgroundColor: accent }} />
     <div className="mt-5 space-y-2.5">
       <div className="h-1.5 w-full rounded-full bg-slate-100" />
-      <div className="h-1.5 w-11/12 rounded-full bg-slate-100" />
       <div className="h-1.5 w-4/5 rounded-full bg-slate-100" />
     </div>
     <div className="mt-8 space-y-2.5">
       <div className="h-1.5 w-1/3 rounded-full bg-slate-200" />
-      <div className="h-1.5 w-full rounded-full bg-slate-100" />
-      <div className="h-1.5 w-10/12 rounded-full bg-slate-100" />
       <div className="h-1.5 w-full rounded-full bg-slate-100" />
     </div>
   </div>
@@ -1077,7 +1092,21 @@ const LiveThumb = memo(function LiveThumb({ Template, accent }) {
 
 // One card in the carousel. Tapping the middle card opens the full preview, tapping a neighbour brings it to the
 // middle, and the dark "Choose template" button on the middle card starts the builder with that layout.
-const CarouselSlide = memo(function CarouselSlide({ card, index, total, active, live, color, featured, featuredLabel, onTap, onUse }) {
+// `slot` is the card's place in the whole rail (all three copies), `index` its place in the list of layouts.
+const CarouselSlide = memo(function CarouselSlide({
+  card,
+  slot,
+  index,
+  total,
+  active,
+  clone,
+  live,
+  color,
+  featured,
+  featuredLabel,
+  onTap,
+  onUse,
+}) {
   const { id, label, Template } = card;
   const accent = color || DEFAULT_ACCENT[id];
 
@@ -1088,11 +1117,13 @@ const CarouselSlide = memo(function CarouselSlide({ card, index, total, active, 
       role="group"
       aria-roledescription="slide"
       aria-label={`${label}, ${index + 1} of ${total}`}
+      aria-hidden={clone ? 'true' : undefined}
     >
-      <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_-10px_rgba(15,23,42,.3)] ring-1 ring-black/5">
+      <div className="relative overflow-hidden bg-white shadow-[0_8px_28px_-10px_rgba(15,23,42,.3)] ring-1 ring-black/5">
         <button
           type="button"
-          onClick={() => onTap(index)}
+          onClick={() => onTap(slot)}
+          tabIndex={clone ? -1 : undefined}
           aria-label={active ? `Preview the ${label} layout` : `Show the ${label} layout`}
           className="block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-900"
         >
@@ -1109,6 +1140,7 @@ const CarouselSlide = memo(function CarouselSlide({ card, index, total, active, 
           <button
             type="button"
             onClick={() => onUse(id)}
+            tabIndex={clone ? -1 : undefined}
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl bg-slate-900 px-5 py-3 text-base font-semibold text-white shadow-lg transition-transform hover:bg-black active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
           >
             {COPY.choose}
@@ -1136,19 +1168,22 @@ export default function TemplateShowcase({
   const [color, setColor] = useState(null);
   const [previewId, setPreviewId] = useState(null);
   const [showAll, setShowAll] = useState(false);
-  const [active, setActive] = useState(0); // the card in the middle of the rail
-  const [liveCenter, setLiveCenter] = useState(0); // the card the live templates are built around (trails `active` while the rail moves)
+  // The card in the middle of the rail, counted across all three copies. It starts on the first card of the middle copy.
+  const [activeSlot, setActiveSlot] = useState(CARD_COUNT);
+  // The card the live templates are built around. It trails `activeSlot` while the rail is moving.
+  const [liveSlot, setLiveSlot] = useState(CARD_COUNT);
   const [playing, setPlaying] = useState(true); // auto-slide; a swipe, sideways scroll or arrow key switches it off for good
   const [hovering, setHovering] = useState(false);
   const [focused, setFocused] = useState(false); // keyboard focus inside the carousel
   const [tick, setTick] = useState(0); // bumps when a tick is skipped (tab in the background) so the clock restarts
   const railRef = useRef(null);
-  const activeRef = useRef(0);
+  const activeRef = useRef(CARD_COUNT);
   const strideRef = useRef(0);
   const frame = useRef(0);
   const settleTimer = useRef(0);
   const idleId = useRef(0);
-  const total = TEMPLATE_CARDS.length;
+  const touching = useRef(false);
+  const activeIndex = activeSlot % CARD_COUNT;
 
   useEffect(() => {
     setColor(readColor());
@@ -1186,13 +1221,19 @@ export default function TemplateShowcase({
     [previewId],
   );
 
-  // The distance between two neighbouring cards, measured once per resize (cards are all the same width).
+  // The distance between two neighbouring cards. The first card of the middle copy starts in the middle of the rail,
+  // and the rail keeps its place (the same card in the middle) when the cards change size.
   useLayoutEffect(() => {
     const el = railRef.current;
     if (!el) return undefined;
     const measure = () => {
       const [a, b] = el.children;
-      strideRef.current = a && b ? b.offsetLeft - a.offsetLeft : 0;
+      if (!a || !b) return;
+      const stride = b.getBoundingClientRect().left - a.getBoundingClientRect().left;
+      if (!stride) return;
+      const prev = strideRef.current;
+      strideRef.current = stride;
+      if (!prev || Math.abs(stride - prev) > 0.01) el.scrollLeft = activeRef.current * stride;
     };
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
@@ -1201,36 +1242,68 @@ export default function TemplateShowcase({
     return () => ro.disconnect();
   }, []);
 
+  // Runs once the rail has been still for a moment (and never while a finger is down). It builds the live templates
+  // around the card in the middle, and if the rail has drifted into the first or last copy it moves it to the same
+  // spot in the middle copy. The state change is flushed before the jump, so the first paint after the jump already
+  // has the middle card marked and its resume built.
+  const settle = useCallback(() => {
+    const el = railRef.current;
+    const stride = strideRef.current;
+    if (!el || !stride || touching.current) return;
+    const slot = clamp(Math.round(el.scrollLeft / stride), 0, SLOT_COUNT - 1);
+    const home = CARD_COUNT + (slot % CARD_COUNT);
+    if (slot === home) {
+      setLiveSlot(slot);
+      return;
+    }
+    activeRef.current = home;
+    flushSync(() => {
+      setActiveSlot(home);
+      setLiveSlot(home);
+    });
+    el.scrollLeft = home * stride;
+  }, []);
+
+  // Restarts the "has it stopped?" timer, then settles in an idle slot, so nothing is built in the middle of a slide.
+  const scheduleSettle = useCallback(() => {
+    clearTimeout(settleTimer.current);
+    if (idleId.current && typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(idleId.current);
+    idleId.current = 0;
+    settleTimer.current = setTimeout(() => {
+      const run = () => {
+        idleId.current = 0;
+        settle();
+      };
+      if (typeof window.requestIdleCallback === 'function') idleId.current = window.requestIdleCallback(run, { timeout: 500 });
+      else run();
+    }, 150);
+  }, [settle]);
+
   // While the rail moves: work out which card is in the middle (one division per frame, and React only hears about
-  // it when the answer changes), and restart the "has it stopped?" timer. Live templates are built only after the
-  // rail has been still for a moment, and then in an idle slot, so no resume is ever built in the middle of a slide.
+  // it when the answer changes).
   const handleScroll = useCallback(() => {
     if (frame.current) return;
     frame.current = requestAnimationFrame(() => {
       frame.current = 0;
-
-      clearTimeout(settleTimer.current);
-      if (idleId.current && typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(idleId.current);
-      idleId.current = 0;
-      settleTimer.current = setTimeout(() => {
-        const build = () => {
-          idleId.current = 0;
-          setLiveCenter(activeRef.current);
-        };
-        if (typeof window.requestIdleCallback === 'function') idleId.current = window.requestIdleCallback(build, { timeout: 500 });
-        else build();
-      }, 150);
-
+      scheduleSettle();
       const el = railRef.current;
       const stride = strideRef.current;
       if (!el || !stride) return;
-      const next = clamp(Math.round(el.scrollLeft / stride), 0, total - 1);
+      const next = clamp(Math.round(el.scrollLeft / stride), 0, SLOT_COUNT - 1);
       if (next !== activeRef.current) {
         activeRef.current = next;
-        setActive(next);
+        setActiveSlot(next);
       }
     });
-  }, [total]);
+  }, [scheduleSettle]);
+
+  const handleTouchStart = useCallback(() => {
+    touching.current = true;
+  }, []);
+  const handleTouchEnd = useCallback(() => {
+    touching.current = false;
+    scheduleSettle();
+  }, [scheduleSettle]);
 
   useEffect(
     () => () => {
@@ -1241,26 +1314,38 @@ export default function TemplateShowcase({
     [],
   );
 
-  // Scroll so that card `index` sits in the middle of the rail.
-  const goTo = useCallback(
-    (index, instant = false) => {
-      const el = railRef.current;
-      const slide = el && el.children[clamp(index, 0, total - 1)];
-      if (!slide) return;
-      el.scrollTo({
-        left: slide.offsetLeft - (el.clientWidth - slide.offsetWidth) / 2,
-        behavior: instant || prefersReducedMotion() ? 'auto' : 'smooth',
+  // Scroll so that card `slot` sits in the middle of the rail. Thanks to the padding on both sides of the rail, that is
+  // always exactly slot * (distance between cards).
+  const goToSlot = useCallback((slot, instant = false) => {
+    const el = railRef.current;
+    const stride = strideRef.current;
+    if (!el || !stride) return;
+    el.scrollTo({
+      left: clamp(slot, 0, SLOT_COUNT - 1) * stride,
+      behavior: instant || prefersReducedMotion() ? 'auto' : 'smooth',
+    });
+  }, []);
+
+  // A dot names a layout, not a place on the rail: go to whichever copy of it is closest.
+  const goToCard = useCallback(
+    (index) => {
+      const here = activeRef.current;
+      const base = Math.floor(here / CARD_COUNT) * CARD_COUNT;
+      let best = base + index;
+      [base - CARD_COUNT + index, base + CARD_COUNT + index].forEach((candidate) => {
+        if (candidate >= 0 && candidate < SLOT_COUNT && Math.abs(candidate - here) < Math.abs(best - here)) best = candidate;
       });
+      goToSlot(best);
     },
-    [total],
+    [goToSlot],
   );
 
   const handleTap = useCallback(
-    (index) => {
-      if (index === activeRef.current) setPreviewId(TEMPLATE_IDS[index]);
-      else goTo(index);
+    (slot) => {
+      if (slot === activeRef.current) setPreviewId(TEMPLATE_IDS[slot % CARD_COUNT]);
+      else goToSlot(slot);
     },
-    [goTo],
+    [goToSlot],
   );
 
   const handleKeyDown = useCallback(
@@ -1269,20 +1354,20 @@ export default function TemplateShowcase({
       if (e.key === 'ArrowRight') {
         e.preventDefault();
         setPlaying(false);
-        goTo(activeRef.current + 1);
+        goToSlot(activeRef.current + 1);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         setPlaying(false);
-        goTo(activeRef.current - 1);
+        goToSlot(activeRef.current - 1);
       }
     },
-    [goTo],
+    [goToSlot],
   );
 
-  // Auto-slide: one card every AUTOPLAY_MS, back to the first card after the last. It holds still while the visitor
-  // hovers or keyboard-focuses the carousel, while the section is off screen or the tab is in the background, while
-  // the gallery or a preview is open, and for reduced-motion visitors. Depending on `active` gives every card, however
-  // it got to the middle, a full interval.
+  // Auto-slide: one card every AUTOPLAY_MS, and because the rail loops it simply keeps going. It holds still while the
+  // visitor hovers or keyboard-focuses the carousel, while the section is off screen or the tab is in the background,
+  // while the gallery or a preview is open, and for reduced-motion visitors. Depending on `activeSlot` gives every
+  // card, however it got to the middle, a full interval.
   useEffect(() => {
     if (!playing || hovering || focused || !onScreen || showAll || previewId || prefersReducedMotion()) return undefined;
     const t = setTimeout(() => {
@@ -1290,12 +1375,10 @@ export default function TemplateShowcase({
         setTick((n) => n + 1);
         return;
       }
-      const next = activeRef.current + 1;
-      if (next >= total) goTo(0, true);
-      else goTo(next);
+      goToSlot(activeRef.current + 1);
     }, AUTOPLAY_MS);
     return () => clearTimeout(t);
-  }, [playing, hovering, focused, onScreen, showAll, previewId, active, tick, total, goTo]);
+  }, [playing, hovering, focused, onScreen, showAll, previewId, activeSlot, tick, goToSlot]);
 
   const handlePointerEnter = useCallback((e) => {
     if (e.pointerType === 'mouse') setHovering(true);
@@ -1324,10 +1407,10 @@ export default function TemplateShowcase({
   const openAll = useCallback(() => setShowAll(true), []);
   const closeAll = useCallback(() => setShowAll(false), []);
 
-  // A short window of dots that slides along with the active card (31 dots would not fit on a phone).
-  const dotCount = Math.min(DOT_COUNT, total);
-  const dotStart = clamp(active - Math.floor(dotCount / 2), 0, total - dotCount);
-  const dots = Array.from({ length: dotCount }, (_, k) => dotStart + k);
+  // A short window of dots around the active layout. The list loops, so the window wraps past the ends too.
+  const dotCount = Math.min(DOT_COUNT, CARD_COUNT);
+  const dotHalf = Math.floor(dotCount / 2);
+  const dots = Array.from({ length: dotCount }, (_, j) => (((activeIndex - dotHalf + j) % CARD_COUNT) + CARD_COUNT) % CARD_COUNT);
 
   return (
     <section ref={sectionRef} className={`py-12 sm:py-20 ${className}`}>
@@ -1337,7 +1420,7 @@ export default function TemplateShowcase({
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <header className="mx-auto max-w-4xl text-center">
           <h2
-            className="ts-display text-3xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
+            className="ts-display text-3xl font-extralight leading-[1.1] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
             style={{ textWrap: 'balance' }}
           >
             {title}
@@ -1346,8 +1429,9 @@ export default function TemplateShowcase({
         </header>
       </div>
 
+      {/* The rail runs the full width of the screen, so the cards reach both edges. */}
       <div
-        className="relative mx-auto mt-8 max-w-6xl sm:mt-10"
+        className="ts-bleed relative mt-8 sm:mt-10"
         role="region"
         aria-roledescription="carousel"
         aria-label={COPY.carousel}
@@ -1358,11 +1442,10 @@ export default function TemplateShowcase({
       >
         <button
           type="button"
-          onClick={() => goTo(active - 1)}
-          disabled={active === 0}
+          onClick={() => goToSlot(activeRef.current - 1)}
           aria-label={COPY.prev}
           title="Previous"
-          className={`${ARROW_BTN} left-2 lg:left-4`}
+          className={`${ARROW_BTN} left-4 lg:left-8`}
         >
           <IconPrev />
         </button>
@@ -1377,50 +1460,57 @@ export default function TemplateShowcase({
           onKeyDown={handleKeyDown}
           onWheel={handleRailWheel}
           onPointerDown={handleRailPointerDown}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
         >
-          {TEMPLATE_CARDS.map((c, i) => (
-            <CarouselSlide
-              key={c.id}
-              card={c}
-              index={i}
-              total={total}
-              active={i === active}
-              live={sectionSeen && Math.abs(i - liveCenter) <= liveRange}
-              color={thumbColor}
-              featured={featuredTemplate === c.id}
-              featuredLabel={featuredLabel}
-              onTap={handleTap}
-              onUse={handleUse}
-            />
-          ))}
+          {SLOTS.map(({ slot, copy, index }) => {
+            const c = TEMPLATE_CARDS[index];
+            return (
+              <CarouselSlide
+                key={`${copy}-${c.id}`}
+                card={c}
+                slot={slot}
+                index={index}
+                total={CARD_COUNT}
+                active={slot === activeSlot}
+                clone={copy !== 1}
+                live={sectionSeen && Math.abs(slot - liveSlot) <= liveRange}
+                color={thumbColor}
+                featured={featuredTemplate === c.id}
+                featuredLabel={featuredLabel}
+                onTap={handleTap}
+                onUse={handleUse}
+              />
+            );
+          })}
         </div>
 
         <button
           type="button"
-          onClick={() => goTo(active + 1)}
-          disabled={active === total - 1}
+          onClick={() => goToSlot(activeRef.current + 1)}
           aria-label={COPY.next}
           title="Next"
-          className={`${ARROW_BTN} right-2 lg:right-4`}
+          className={`${ARROW_BTN} right-4 lg:right-8`}
         >
           <IconNext />
         </button>
       </div>
 
       <p className="sr-only" aria-live={playing ? 'off' : 'polite'}>
-        {TEMPLATE_CARDS[active].label} layout, {active + 1} of {total}
+        {TEMPLATE_CARDS[activeIndex].label} layout, {activeIndex + 1} of {CARD_COUNT}
       </p>
 
-      {/* Pagination: the active dot stretches into a pill; dots at the edge of the window shrink to hint at more. */}
+      {/* Pagination: the active dot stretches into a pill; the dots at both ends of the window shrink to hint at more. */}
       <div className="mt-2 flex items-center justify-center" role="group" aria-label="Choose a layout">
-        {dots.map((i) => {
-          const on = i === active;
-          const edge = !on && ((i === dotStart && dotStart > 0) || (i === dotStart + dotCount - 1 && dotStart + dotCount < total));
+        {dots.map((i, j) => {
+          const on = i === activeIndex;
+          const edge = !on && CARD_COUNT > dotCount && (j === 0 || j === dotCount - 1);
           return (
             <button
               key={i}
               type="button"
-              onClick={() => goTo(i)}
+              onClick={() => goToCard(i)}
               aria-label={`Show the ${TEMPLATE_CARDS[i].label} layout`}
               aria-current={on ? 'true' : undefined}
               className="grid h-7 place-items-center px-[3px] focus:outline-none focus-visible:rounded-full focus-visible:ring-2 focus-visible:ring-slate-900"
