@@ -70,9 +70,14 @@ const ZOOM_FIT = ZOOM_STEPS.indexOf(1);
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const AUTOPLAY_MS = 4000; // how long each card stays in the middle before the carousel slides on
+
 // The carousel only builds live templates for the card in the middle and this many cards either side of it.
 // Every other card is a plain placeholder, so the page never holds more than a handful of full-size resumes.
+// A phone only ever shows the middle card and a sliver of each neighbour, so it builds fewer.
 const LIVE_RANGE = 2;
+const LIVE_RANGE_SMALL = 1;
+const SMALL_MQ = '(max-width: 639px)';
 const DOT_COUNT = 7; // pagination dots shown at once; they slide along as you move through the layouts
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -120,6 +125,12 @@ const SHOWCASE_CSS = `
 @media (min-width: 1024px) { .ts-rail { --ts-card: 19rem; } }
 .ts-pane { flex: 0 0 var(--ts-card); scroll-snap-align: center; opacity: .5; }
 .ts-pane[data-active='true'] { opacity: 1; }
+
+/* Colour swatches scale with the screen. On a phone they wrap into two even, centred rows (7 + 6); from 640px up
+   they sit in one row. --s is the swatch size and --g the gap between swatches. */
+.ts-swatches { --s: clamp(1.75rem, 9.5vw, 2.25rem); --g: clamp(.5rem, 2.4vw, .75rem); gap: var(--g); max-width: calc(7 * var(--s) + 6 * var(--g)); }
+.ts-sw { width: var(--s); height: var(--s); }
+@media (min-width: 640px) { .ts-swatches { --s: 2rem; --g: .875rem; max-width: none; } }
 
 /* "Use this template" pill appears on hover or keyboard focus (hidden on touch, where tapping opens the preview) */
 .ts-use { opacity: 0; transform: translateY(8px); pointer-events: none; }
@@ -183,6 +194,69 @@ const useInView = (threshold = 0.1, { rootRef, rootMargin = '0px', enabled = tru
   }, [threshold, rootRef, rootMargin, enabled, seen]);
 
   return [ref, seen];
+};
+
+// Live visibility (unlike useInView it flips back to false when scrolled away), so autoplay only runs on screen.
+const useOnScreen = (ref, threshold = 0.2) => {
+  const [onScreen, setOnScreen] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setOnScreen(true);
+      return undefined;
+    }
+    const io = new IntersectionObserver((entries) => setOnScreen(entries[entries.length - 1].isIntersecting), { threshold });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, threshold]);
+
+  return onScreen;
+};
+
+// True while the element is within rootMargin of the viewport (or of rootRef's box) and false again once it has
+// scrolled far away, so a long grid only keeps the resumes near the screen built.
+const useNearView = (rootRef, rootMargin = '0px') => {
+  const ref = useRef(null);
+  const [near, setNear] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setNear(true);
+      return undefined;
+    }
+    const io = new IntersectionObserver((entries) => setNear(entries[entries.length - 1].isIntersecting), {
+      root: (rootRef && rootRef.current) || null,
+      rootMargin,
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [rootRef, rootMargin]);
+
+  return [ref, near];
+};
+
+// How many cards either side of the middle one are built: fewer on a phone.
+const useLiveRange = () => {
+  const [range, setRange] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia && window.matchMedia(SMALL_MQ).matches ? LIVE_RANGE_SMALL : LIVE_RANGE,
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mq = window.matchMedia(SMALL_MQ);
+    const update = () => setRange(mq.matches ? LIVE_RANGE_SMALL : LIVE_RANGE);
+    update();
+    if (mq.addEventListener) mq.addEventListener('change', update);
+    else mq.addListener(update);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', update);
+      else mq.removeListener(update);
+    };
+  }, []);
+
+  return range;
 };
 
 const ACCENT_SWATCHES = [
@@ -501,13 +575,20 @@ const SWATCH_ON = 'ring-2 ring-offset-2 ring-slate-900 ts-bounce';
 const SWATCH_ON_DARK = 'ring-2 ring-white ts-bounce';
 const RAINBOW = 'conic-gradient(from 180deg, #ef4444, #f59e0b, #84cc16, #06b6d4, #6366f1, #d946ef, #ef4444)';
 
-const ColorBar = ({ color, onChange, className = 'flex-wrap', dark = false, compact = false }) => {
+const ColorBar = ({ color, onChange, className = 'flex-wrap', dark = false, compact = false, fluid = false }) => {
   const isCustom = !!color && color !== GRAYSCALE && !ACCENT_SWATCHES.some((s) => s.hex === color);
-  const base = `${compact ? 'h-6 w-6' : 'h-7 w-7 sm:h-8 sm:w-8'} ${dark ? SWATCH_DARK : SWATCH}`;
+  const size = fluid ? 'ts-sw' : compact ? 'h-6 w-6' : 'h-7 w-7 sm:h-8 sm:w-8';
+  const base = `${size} ${dark ? SWATCH_DARK : SWATCH}`;
   const ring = dark ? SWATCH_ON_DARK : SWATCH_ON;
 
   return (
-    <div className={`flex items-center ${compact ? 'gap-x-2.5 gap-y-2' : 'gap-x-2.5 gap-y-3 sm:gap-x-3.5'} ${className}`} role="group" aria-label="Resume colour">
+    <div
+      className={`flex items-center ${
+        fluid ? 'ts-swatches flex-wrap justify-center' : compact ? 'gap-x-2.5 gap-y-2' : 'gap-x-2.5 gap-y-3 sm:gap-x-3.5'
+      } ${className}`}
+      role="group"
+      aria-label="Resume colour"
+    >
       {/* Rainbow ring = each layout keeps its own colour */}
       <button
         type="button"
@@ -549,7 +630,7 @@ const ColorBar = ({ color, onChange, className = 'flex-wrap', dark = false, comp
         aria-pressed={color === GRAYSCALE}
         className={`${base} relative border border-slate-300 bg-white ${color === GRAYSCALE ? ring : ''}`}
       >
-        <span className={`absolute h-px rotate-45 bg-slate-400 ${compact ? 'w-[22px]' : 'w-[24px] sm:w-[28px]'}`} />
+        <span className={`absolute h-px rotate-45 bg-slate-400 ${fluid ? 'w-[88%]' : compact ? 'w-[22px]' : 'w-[24px] sm:w-[28px]'}`} />
       </button>
 
       <label
@@ -583,11 +664,10 @@ const ARROW_BTN =
   'absolute top-[44%] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-800 shadow-md ring-1 ring-black/10 transition-colors hover:bg-slate-50 active:scale-95 disabled:pointer-events-none disabled:opacity-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 sm:flex';
 
 // One card in the "All templates" grid. memo + a cached thumbnail element: a colour change re-renders only the
-// cards that have already been built, and cards the visitor hasn't scrolled near yet cost nothing.
+// cards that are built, and cards far from the screen are empty frames that cost nothing.
 const TemplateCard = memo(function TemplateCard({
   card,
   color,
-  active,
   trackRef,
   featured,
   featuredLabel,
@@ -600,8 +680,7 @@ const TemplateCard = memo(function TemplateCard({
   const { id, label, Template } = card;
   const accent = color || DEFAULT_ACCENT[id];
   const props = useMemo(() => getTemplateProps(accent), [accent]);
-  const [cardRef, seen] = useInView(0.01, { rootRef: trackRef, rootMargin, enabled: active });
-  const ready = seen; // built once it has been near the screen
+  const [cardRef, ready] = useNearView(trackRef, rootMargin); // built while near the screen, dropped once far away
   const thumb = useMemo(() => (ready ? <Template {...props} /> : null), [ready, Template, props]);
 
   return (
@@ -936,7 +1015,6 @@ const AllTemplatesModal = ({ color, onColorChange, featuredTemplate, featuredLab
                 key={c.id}
                 card={c}
                 color={color}
-                active
                 trackRef={scrollRef}
                 widthClass="w-full"
                 rootMargin="500px 0px"
@@ -1053,15 +1131,23 @@ export default function TemplateShowcase({
 }) {
   // Nothing is built until the section is near the viewport.
   const [sectionRef, sectionSeen] = useInView(0.01, { rootMargin: '300px 0px' });
+  const onScreen = useOnScreen(sectionRef, 0.25);
+  const liveRange = useLiveRange();
   const [color, setColor] = useState(null);
   const [previewId, setPreviewId] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const [active, setActive] = useState(0); // the card in the middle of the rail
-  const [liveCenter, setLiveCenter] = useState(0); // the card the live templates are built around (trails `active` while swiping)
+  const [liveCenter, setLiveCenter] = useState(0); // the card the live templates are built around (trails `active` while the rail moves)
+  const [playing, setPlaying] = useState(true); // auto-slide; a swipe, sideways scroll or arrow key switches it off for good
+  const [hovering, setHovering] = useState(false);
+  const [focused, setFocused] = useState(false); // keyboard focus inside the carousel
+  const [tick, setTick] = useState(0); // bumps when a tick is skipped (tab in the background) so the clock restarts
   const railRef = useRef(null);
   const activeRef = useRef(0);
   const strideRef = useRef(0);
   const frame = useRef(0);
+  const settleTimer = useRef(0);
+  const idleId = useRef(0);
   const total = TEMPLATE_CARDS.length;
 
   useEffect(() => {
@@ -1115,11 +1201,26 @@ export default function TemplateShowcase({
     return () => ro.disconnect();
   }, []);
 
-  // Which card is in the middle? One division per frame, and React only hears about it when the answer changes.
+  // While the rail moves: work out which card is in the middle (one division per frame, and React only hears about
+  // it when the answer changes), and restart the "has it stopped?" timer. Live templates are built only after the
+  // rail has been still for a moment, and then in an idle slot, so no resume is ever built in the middle of a slide.
   const handleScroll = useCallback(() => {
     if (frame.current) return;
     frame.current = requestAnimationFrame(() => {
       frame.current = 0;
+
+      clearTimeout(settleTimer.current);
+      if (idleId.current && typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(idleId.current);
+      idleId.current = 0;
+      settleTimer.current = setTimeout(() => {
+        const build = () => {
+          idleId.current = 0;
+          setLiveCenter(activeRef.current);
+        };
+        if (typeof window.requestIdleCallback === 'function') idleId.current = window.requestIdleCallback(build, { timeout: 500 });
+        else build();
+      }, 150);
+
       const el = railRef.current;
       const stride = strideRef.current;
       if (!el || !stride) return;
@@ -1131,24 +1232,24 @@ export default function TemplateShowcase({
     });
   }, [total]);
 
-  useEffect(() => () => cancelAnimationFrame(frame.current), []);
-
-  // Live templates are only built once the rail has rested on a card for a moment, so a fast swipe stays smooth.
-  useEffect(() => {
-    if (active === liveCenter) return undefined;
-    const t = setTimeout(() => setLiveCenter(active), 120);
-    return () => clearTimeout(t);
-  }, [active, liveCenter]);
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(frame.current);
+      clearTimeout(settleTimer.current);
+      if (idleId.current && typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(idleId.current);
+    },
+    [],
+  );
 
   // Scroll so that card `index` sits in the middle of the rail.
   const goTo = useCallback(
-    (index) => {
+    (index, instant = false) => {
       const el = railRef.current;
       const slide = el && el.children[clamp(index, 0, total - 1)];
       if (!slide) return;
       el.scrollTo({
         left: slide.offsetLeft - (el.clientWidth - slide.offsetWidth) / 2,
-        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        behavior: instant || prefersReducedMotion() ? 'auto' : 'smooth',
       });
     },
     [total],
@@ -1167,14 +1268,58 @@ export default function TemplateShowcase({
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === 'ArrowRight') {
         e.preventDefault();
+        setPlaying(false);
         goTo(activeRef.current + 1);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
+        setPlaying(false);
         goTo(activeRef.current - 1);
       }
     },
     [goTo],
   );
+
+  // Auto-slide: one card every AUTOPLAY_MS, back to the first card after the last. It holds still while the visitor
+  // hovers or keyboard-focuses the carousel, while the section is off screen or the tab is in the background, while
+  // the gallery or a preview is open, and for reduced-motion visitors. Depending on `active` gives every card, however
+  // it got to the middle, a full interval.
+  useEffect(() => {
+    if (!playing || hovering || focused || !onScreen || showAll || previewId || prefersReducedMotion()) return undefined;
+    const t = setTimeout(() => {
+      if (document.hidden) {
+        setTick((n) => n + 1);
+        return;
+      }
+      const next = activeRef.current + 1;
+      if (next >= total) goTo(0, true);
+      else goTo(next);
+    }, AUTOPLAY_MS);
+    return () => clearTimeout(t);
+  }, [playing, hovering, focused, onScreen, showAll, previewId, active, tick, total, goTo]);
+
+  const handlePointerEnter = useCallback((e) => {
+    if (e.pointerType === 'mouse') setHovering(true);
+  }, []);
+  const handlePointerLeave = useCallback(() => setHovering(false), []);
+  const handleFocus = useCallback((e) => {
+    let keyboard = false;
+    try {
+      keyboard = e.target.matches(':focus-visible');
+    } catch {
+      keyboard = false;
+    }
+    if (keyboard) setFocused(true);
+  }, []);
+  const handleBlur = useCallback((e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
+  }, []);
+  // Swiping or scrolling sideways means the visitor is browsing by hand, so stop auto-sliding for good.
+  const handleRailWheel = useCallback((e) => {
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) setPlaying(false);
+  }, []);
+  const handleRailPointerDown = useCallback((e) => {
+    if (e.pointerType === 'touch') setPlaying(false);
+  }, []);
 
   const openAll = useCallback(() => setShowAll(true), []);
   const closeAll = useCallback(() => setShowAll(false), []);
@@ -1201,7 +1346,16 @@ export default function TemplateShowcase({
         </header>
       </div>
 
-      <div className="relative mx-auto mt-8 max-w-6xl sm:mt-10" role="region" aria-roledescription="carousel" aria-label={COPY.carousel}>
+      <div
+        className="relative mx-auto mt-8 max-w-6xl sm:mt-10"
+        role="region"
+        aria-roledescription="carousel"
+        aria-label={COPY.carousel}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      >
         <button
           type="button"
           onClick={() => goTo(active - 1)}
@@ -1217,9 +1371,12 @@ export default function TemplateShowcase({
           ref={railRef}
           tabIndex={0}
           aria-label={COPY.carousel}
+          aria-live={playing ? 'off' : 'polite'}
           className="ts-track ts-rail relative flex gap-4 overflow-x-auto py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 sm:gap-6"
           onScroll={handleScroll}
           onKeyDown={handleKeyDown}
+          onWheel={handleRailWheel}
+          onPointerDown={handleRailPointerDown}
         >
           {TEMPLATE_CARDS.map((c, i) => (
             <CarouselSlide
@@ -1228,7 +1385,7 @@ export default function TemplateShowcase({
               index={i}
               total={total}
               active={i === active}
-              live={sectionSeen && Math.abs(i - liveCenter) <= LIVE_RANGE}
+              live={sectionSeen && Math.abs(i - liveCenter) <= liveRange}
               color={thumbColor}
               featured={featuredTemplate === c.id}
               featuredLabel={featuredLabel}
@@ -1250,7 +1407,7 @@ export default function TemplateShowcase({
         </button>
       </div>
 
-      <p className="sr-only" aria-live="polite">
+      <p className="sr-only" aria-live={playing ? 'off' : 'polite'}>
         {TEMPLATE_CARDS[active].label} layout, {active + 1} of {total}
       </p>
 
@@ -1279,7 +1436,7 @@ export default function TemplateShowcase({
       </div>
 
       <div className="mx-auto mt-5 flex max-w-6xl flex-col items-center gap-6 px-4 sm:px-6 lg:px-8">
-        <ColorBar color={color} onChange={setColor} className="flex-wrap justify-center" />
+        <ColorBar fluid color={color} onChange={setColor} className="" />
 
         <button
           type="button"
