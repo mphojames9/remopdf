@@ -48,6 +48,7 @@ const COPY = {
   prev: 'Previous layouts',
   next: 'Next layouts',
   useShort: 'Use this template',
+  choose: 'Choose template',
   viewAll: 'View all templates',
   allTitle: 'All templates',
   allHint: 'Select a layout to preview it.',
@@ -66,15 +67,15 @@ const PAGE_HEIGHT_PX = 1123;
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 const ZOOM_FIT = ZOOM_STEPS.indexOf(1);
 
-const AUTOPLAY_MS = 4000; // how long each screenful of cards stays before the carousel slides on
-
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Below this width the carousel becomes a centered "coverflow": one card in the middle, neighbours behind it.
-// Keep in sync with the (max-width) media query in SHOWCASE_CSS and with the `sm:` classes on the track and cards.
-const CENTER_MQ = '(max-width: 639px)';
-const isCentered = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(CENTER_MQ).matches;
+// The carousel only builds live templates for the card in the middle and this many cards either side of it.
+// Every other card is a plain placeholder, so the page never holds more than a handful of full-size resumes.
+const LIVE_RANGE = 2;
+const DOT_COUNT = 7; // pagination dots shown at once; they slide along as you move through the layouts
+
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 
 // Page scroll stays locked until the last open modal (grid or preview) has closed.
 let scrollLocks = 0;
@@ -90,8 +91,8 @@ const useBodyScrollLock = () => {
 };
 
 const SHOWCASE_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap');
-.ts-display { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
+/* Outfit is already loaded from index.html, so this section no longer fetches a second font. */
+.ts-display { font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif; }
 
 /* Full-screen preview: a dark stage tinted with the chosen accent, with a soft light from the top */
 .ts-preview { isolation: isolate; background: #0b0f1a; background: color-mix(in srgb, var(--ts-accent) 26%, #090c14); }
@@ -107,16 +108,18 @@ const SHOWCASE_CSS = `
 .ts-track { scrollbar-width: none; -ms-overflow-style: none; }
 .ts-track::-webkit-scrollbar { display: none; }
 
-/* Small screens: the carousel is a focus strip. The card in the middle is full size; its neighbours sit a little
-   behind it, smaller and faded. JS writes --ts-o (signed distance from the middle, -1..1) and --ts-d (0..1) on each
-   card while scrolling, so the effect follows the finger. The transform lives on an inner element so the card's
-   own box (which snapping and the loop maths measure) never moves. */
-@media (max-width: 639px) {
-  .ts-coverflow .ts-slide {
-    transform: translateX(calc(var(--ts-o, 0) * -14%)) scale(calc(1 - var(--ts-d, 0) * .16));
-    opacity: calc(1 - var(--ts-d, 0) * .58);
-  }
+/* Carousel rail: one card in the middle with its neighbours peeking in on both sides. Plain native scroll-snap, so
+   swiping runs on the browser's own scroller. The side padding lets the first and last card reach the middle. */
+.ts-rail {
+  --ts-card: min(72vw, 18.5rem);
+  padding-inline: calc((100% - var(--ts-card)) / 2);
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
 }
+@media (min-width: 640px) { .ts-rail { --ts-card: 17.5rem; } }
+@media (min-width: 1024px) { .ts-rail { --ts-card: 19rem; } }
+.ts-pane { flex: 0 0 var(--ts-card); scroll-snap-align: center; opacity: .5; }
+.ts-pane[data-active='true'] { opacity: 1; }
 
 /* "Use this template" pill appears on hover or keyboard focus (hidden on touch, where tapping opens the preview) */
 .ts-use { opacity: 0; transform: translateY(8px); pointer-events: none; }
@@ -135,7 +138,7 @@ const SHOWCASE_CSS = `
   .ts-swap { transform-origin: top center; animation: ts-swap .55s cubic-bezier(.45,.05,.2,1) both; }
 
   .ts-preview { transition: background-color .6s ease; }
-  .ts-thumb, .ts-thumb * { transition: background-color .45s ease, color .45s ease, border-color .45s ease; }
+  .ts-pane { transition: opacity .2s ease; }
   .ts-use { transition: opacity .2s ease, transform .2s ease; }
 }
 `;
@@ -180,24 +183,6 @@ const useInView = (threshold = 0.1, { rootRef, rootMargin = '0px', enabled = tru
   }, [threshold, rootRef, rootMargin, enabled, seen]);
 
   return [ref, seen];
-};
-
-// Live visibility (unlike useInView it flips back to false when scrolled away), so autoplay only runs on screen.
-const useOnScreen = (ref, threshold = 0.2) => {
-  const [onScreen, setOnScreen] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === 'undefined') {
-      setOnScreen(true);
-      return undefined;
-    }
-    const io = new IntersectionObserver((entries) => setOnScreen(entries[entries.length - 1].isIntersecting), { threshold });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [ref, threshold]);
-
-  return onScreen;
 };
 
 const ACCENT_SWATCHES = [
@@ -388,7 +373,12 @@ const TemplateThumb = ({ children, className = 'w-full' }) => {
   }, []);
 
   return (
-    <div ref={ref} className={`ts-thumb relative aspect-[1/1.414] overflow-hidden bg-white pointer-events-none select-none ${className}`} aria-hidden="true">
+    <div
+      ref={ref}
+      className={`ts-thumb relative aspect-[1/1.414] overflow-hidden bg-white pointer-events-none select-none ${className}`}
+      style={{ contain: 'layout paint style' }}
+      aria-hidden="true"
+    >
       <div
         className="absolute top-0 left-0 origin-top-left"
         style={{ width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX, transform: `scale(${scale})` }}
@@ -434,30 +424,8 @@ const TEMPLATE_CARDS = [
 
 const TEMPLATE_IDS = TEMPLATE_CARDS.map((c) => c.id);
 
-// Pre-building: once the section is near the screen, the carousel builds its thumbnails in idle moments instead of
-// waiting for each card to scroll into range. The whole middle copy is built, plus the cards on either side of it
-// (WARM_SEAM) so the loop seams are ready too. WARM_RANK gives each card its place in the build order: the card the
-// carousel starts on first, then outwards in both directions.
-const WARM_SEAM = 8;
-const WARM_RANK = (() => {
-  const n = TEMPLATE_CARDS.length;
-  const entries = [];
-  for (let copy = 0; copy < 3; copy += 1) {
-    for (let i = 0; i < n; i += 1) {
-      const nearSeam = (copy === 0 && i >= n - WARM_SEAM) || (copy === 2 && i < WARM_SEAM);
-      if (copy === 1 || nearSeam) {
-        entries.push({ key: `${copy}-${TEMPLATE_CARDS[i].id}`, dist: Math.abs((copy - 1) * n + i) });
-      }
-    }
-  }
-  entries.sort((a, b) => a.dist - b.dist);
-  return new Map(entries.map((entry, index) => [entry.key, index]));
-})();
-const WARM_TOTAL = WARM_RANK.size;
-const WARM_BATCH = 2; // cards built per idle slot
-
-// Colour changes re-render every pre-built thumbnail. Where React can defer that (18+), the swatch updates at once
-// and the thumbnails catch up without blocking the tap; older versions just render straight away.
+// Where React can defer it (18+), the swatch updates at once and the carousel thumbnails catch up without
+// blocking the tap; older versions just render straight away.
 const useDeferred = React.useDeferredValue || ((value) => value);
 
 const readColor = () => {
@@ -610,14 +578,11 @@ const ColorBar = ({ color, onChange, className = 'flex-wrap', dark = false, comp
   );
 };
 
-const CARD_W =
-  'w-[64%] sm:w-[calc((100%_-_1.25rem)/2)] md:w-[calc((100%_-_2.5rem)/3)] lg:w-[calc((100%_-_3.75rem)/4)]';
-
 const ARROW_BTN =
-  // Hidden below 640px: on small screens the carousel is swiped (or autoplays), so the arrows only get in the way.
-  'absolute top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl bg-slate-200/95 text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-300 hover:text-slate-900 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 sm:flex sm:h-12 sm:w-12';
+  // Hidden below 640px: on a phone you swipe, so the arrows would only cover the neighbouring cards.
+  'absolute top-[44%] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-800 shadow-md ring-1 ring-black/10 transition-colors hover:bg-slate-50 active:scale-95 disabled:pointer-events-none disabled:opacity-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 sm:flex';
 
-// One card in the carousel. memo + a cached thumbnail element: a colour change re-renders only the
+// One card in the "All templates" grid. memo + a cached thumbnail element: a colour change re-renders only the
 // cards that have already been built, and cards the visitor hasn't scrolled near yet cost nothing.
 const TemplateCard = memo(function TemplateCard({
   card,
@@ -628,32 +593,24 @@ const TemplateCard = memo(function TemplateCard({
   featuredLabel,
   onOpen,
   onUse,
-  widthClass = CARD_W,
-  rootMargin = '0px 1200px',
+  widthClass = 'w-full',
+  rootMargin = '500px 0px',
   showLabel = false,
-  clone = false,
-  warmed = false,
 }) {
   const { id, label, Template } = card;
   const accent = color || DEFAULT_ACCENT[id];
   const props = useMemo(() => getTemplateProps(accent), [accent]);
   const [cardRef, seen] = useInView(0.01, { rootRef: trackRef, rootMargin, enabled: active });
-  const ready = seen || warmed; // built because it is near the screen, or because the pre-build has reached it
+  const ready = seen; // built once it has been near the screen
   const thumb = useMemo(() => (ready ? <Template {...props} /> : null), [ready, Template, props]);
 
   return (
-    <div
-      ref={cardRef}
-      data-ts-slide=""
-      className={`group shrink-0 snap-center sm:snap-start ${widthClass}`}
-      aria-hidden={clone ? 'true' : undefined}
-    >
-      <div className="ts-slide">
+    <div ref={cardRef} className={`group shrink-0 ${widthClass}`}>
+      <div>
       <div className="ts-card relative rounded-2xl shadow-[0_2px_14px_rgba(15,23,42,.14)] transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_16px_34px_-10px_rgba(15,23,42,.35)] motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
         <button
           type="button"
           onClick={() => onOpen(id)}
-          tabIndex={clone ? -1 : undefined}
           aria-label={`Preview the ${label} layout`}
           className="ts-open block w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
         >
@@ -669,7 +626,6 @@ const TemplateCard = memo(function TemplateCard({
         <button
           type="button"
           onClick={() => onUse(id)}
-          tabIndex={clone ? -1 : undefined}
           className="ts-use absolute inset-x-3 bottom-3 rounded-full bg-[#d9856b] px-4 py-2.5 text-sm font-bold text-slate-900 shadow-lg hover:bg-[#e39478] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
         >
           {COPY.useShort}
@@ -924,17 +880,6 @@ const PreviewModal = ({ templateId, color, onColorChange, onStep, onClose, onUse
   );
 };
 
-// Carousel geometry: the distance between neighbouring cards, and the width of one whole copy of the list.
-const cardStride = (el) => {
-  const [a, b] = el.children;
-  return a && b ? b.getBoundingClientRect().left - a.getBoundingClientRect().left : 0;
-};
-const setWidth = (el) => {
-  const a = el.children[0];
-  const b = el.children[TEMPLATE_CARDS.length];
-  return a && b ? b.getBoundingClientRect().left - a.getBoundingClientRect().left : 0;
-};
-
 // Full-screen gallery of every layout. A card opens the full-size preview on top of it.
 const AllTemplatesModal = ({ color, onColorChange, featuredTemplate, featuredLabel, onOpen, onUse, onClose, suspended }) => {
   const scrollRef = useRef(null);
@@ -1024,6 +969,80 @@ const AllTemplatesModal = ({ color, onColorChange, featuredTemplate, featuredLab
   );
 };
 
+// Stand-in for a card whose resume is not built: a blank page with the layout's accent bar. Static on purpose.
+const SlideSkeleton = ({ accent }) => (
+  <div className="aspect-[1/1.414] w-full bg-white px-[9%] pt-[9%]" aria-hidden="true">
+    <div className="h-2 w-2/5 rounded-full" style={{ backgroundColor: accent }} />
+    <div className="mt-5 space-y-2.5">
+      <div className="h-1.5 w-full rounded-full bg-slate-100" />
+      <div className="h-1.5 w-11/12 rounded-full bg-slate-100" />
+      <div className="h-1.5 w-4/5 rounded-full bg-slate-100" />
+    </div>
+    <div className="mt-8 space-y-2.5">
+      <div className="h-1.5 w-1/3 rounded-full bg-slate-200" />
+      <div className="h-1.5 w-full rounded-full bg-slate-100" />
+      <div className="h-1.5 w-10/12 rounded-full bg-slate-100" />
+      <div className="h-1.5 w-full rounded-full bg-slate-100" />
+    </div>
+  </div>
+);
+
+// The real resume layout, scaled down. Only mounted for the few cards around the middle of the carousel.
+const LiveThumb = memo(function LiveThumb({ Template, accent }) {
+  const props = useMemo(() => getTemplateProps(accent), [accent]);
+  return (
+    <TemplateThumb className="w-full">
+      <Template {...props} />
+    </TemplateThumb>
+  );
+});
+
+// One card in the carousel. Tapping the middle card opens the full preview, tapping a neighbour brings it to the
+// middle, and the dark "Choose template" button on the middle card starts the builder with that layout.
+const CarouselSlide = memo(function CarouselSlide({ card, index, total, active, live, color, featured, featuredLabel, onTap, onUse }) {
+  const { id, label, Template } = card;
+  const accent = color || DEFAULT_ACCENT[id];
+
+  return (
+    <div
+      className="ts-pane"
+      data-active={active ? 'true' : 'false'}
+      role="group"
+      aria-roledescription="slide"
+      aria-label={`${label}, ${index + 1} of ${total}`}
+    >
+      <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_-10px_rgba(15,23,42,.3)] ring-1 ring-black/5">
+        <button
+          type="button"
+          onClick={() => onTap(index)}
+          aria-label={active ? `Preview the ${label} layout` : `Show the ${label} layout`}
+          className="block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-900"
+        >
+          {live ? <LiveThumb Template={Template} accent={accent} /> : <SlideSkeleton accent={accent} />}
+        </button>
+
+        {featured && (
+          <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-amber-300 px-2 py-0.5 text-xs font-semibold text-slate-900 shadow-sm">
+            {featuredLabel}
+          </span>
+        )}
+
+        {active && (
+          <button
+            type="button"
+            onClick={() => onUse(id)}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl bg-slate-900 px-5 py-3 text-base font-semibold text-white shadow-lg transition-transform hover:bg-black active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+          >
+            {COPY.choose}
+          </button>
+        )}
+      </div>
+
+      <p className="mt-3 text-center text-sm font-semibold text-slate-700">{label}</p>
+    </div>
+  );
+});
+
 export default function TemplateShowcase({
   onUseTemplate,
   featuredTemplate,
@@ -1032,29 +1051,24 @@ export default function TemplateShowcase({
   subtitle = COPY.subtitle,
   className = '',
 }) {
-  // Cards only start building once the section is near the viewport.
+  // Nothing is built until the section is near the viewport.
   const [sectionRef, sectionSeen] = useInView(0.01, { rootMargin: '300px 0px' });
-  const onScreen = useOnScreen(sectionRef, 0.2);
   const [color, setColor] = useState(null);
   const [previewId, setPreviewId] = useState(null);
   const [showAll, setShowAll] = useState(false);
-  const [playing, setPlaying] = useState(true); // auto-slide; a swipe or sideways scroll switches it off for good
-  const [hovering, setHovering] = useState(false);
-  const [focused, setFocused] = useState(false); // keyboard focus inside the carousel
-  const [tick, setTick] = useState(0); // bumps on every slide so the autoplay clock restarts
-  const [warm, setWarm] = useState(0); // how many carousel cards (in WARM_RANK order) have been pre-built so far
-  const trackRef = useRef(null);
-  const settleTimer = useRef(null);
-  const touching = useRef(false);
-  const lastSet = useRef(0);
-  const lastMode = useRef(false); // whether the track was in centered (small-screen) mode last time it was laid out
+  const [active, setActive] = useState(0); // the card in the middle of the rail
+  const [liveCenter, setLiveCenter] = useState(0); // the card the live templates are built around (trails `active` while swiping)
+  const railRef = useRef(null);
+  const activeRef = useRef(0);
+  const strideRef = useRef(0);
   const frame = useRef(0);
+  const total = TEMPLATE_CARDS.length;
 
   useEffect(() => {
     setColor(readColor());
   }, []);
 
-  // The carousel thumbnails follow the colour a beat behind the swatches, so a tap never waits on them.
+  // The thumbnails follow the colour a beat behind the swatches, so a tap never waits on them.
   const thumbColor = useDeferred(color);
 
   // Fetch and decode the demo photo up front, so the first thumbnails don't flash an empty photo frame.
@@ -1063,18 +1077,6 @@ export default function TemplateShowcase({
     img.src = profile2;
     if (img.decode) img.decode().catch(() => {});
   }, []);
-
-  // Pre-build the carousel a few cards at a time, only when the browser is idle, so it never competes with scrolling.
-  useEffect(() => {
-    if (!sectionSeen || warm >= WARM_TOTAL) return undefined;
-    const step = () => setWarm((w) => Math.min(WARM_TOTAL, w + WARM_BATCH));
-    if (typeof window.requestIdleCallback === 'function') {
-      const id = window.requestIdleCallback(step, { timeout: 500 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const id = setTimeout(step, 90);
-    return () => clearTimeout(id);
-  }, [sectionSeen, warm]);
 
   const handleUse = useCallback(
     (templateId) => {
@@ -1098,188 +1100,89 @@ export default function TemplateShowcase({
     [previewId],
   );
 
-  // Arrows and autoplay move the track by one screenful of cards. The track holds three identical copies
-  // of the list, so there is always another card ahead or behind: it never runs out and never rewinds.
-  const scrollTrack = useCallback((dir) => {
-    const el = trackRef.current;
-    if (!el) return;
-    const stride = cardStride(el);
-    if (!stride) return;
-    // Centered mode moves one card at a time; wider layouts move a whole screenful.
-    const visible = isCentered() ? 1 : Math.max(1, Math.round(el.clientWidth / stride));
-    el.scrollTo({ left: el.scrollLeft + dir * visible * stride, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+  // The distance between two neighbouring cards, measured once per resize (cards are all the same width).
+  useLayoutEffect(() => {
+    const el = railRef.current;
+    if (!el) return undefined;
+    const measure = () => {
+      const [a, b] = el.children;
+      strideRef.current = a && b ? b.offsetLeft - a.offsetLeft : 0;
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
-  // Once the track is at rest, hop to the same spot in the middle copy. The copies are identical, so the
-  // hop is invisible and the loop keeps going in both directions.
-  const normalize = useCallback(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const w = setWidth(el);
-    if (!w) return;
-    const target = w + (el.scrollLeft % w);
-    if (Math.abs(target - el.scrollLeft) > 0.5) el.scrollLeft = target;
-  }, []);
-
-  // Runs after scrolling has stopped (and never while a finger is down).
-  const settle = useCallback(() => {
-    clearTimeout(settleTimer.current);
-    settleTimer.current = setTimeout(() => {
-      if (!touching.current) normalize();
-    }, 140);
-  }, [normalize]);
-
-  // Small screens: tell every card how far it sits from the middle (-1 left … 0 centre … 1 right). Reads first,
-  // writes second, so the browser lays out once per frame. Wider screens: clear everything.
-  const updateFocus = useCallback(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const slides = Array.from(el.children);
-    if (!isCentered()) {
-      slides.forEach((s) => {
-        s.style.removeProperty('--ts-o');
-        s.style.removeProperty('--ts-d');
-        s.style.zIndex = '';
-        if (s.firstElementChild) s.firstElementChild.style.willChange = '';
-      });
-      return;
-    }
-    const stride = cardStride(el) || 1;
-    const box = el.getBoundingClientRect();
-    const mid = box.left + box.width / 2;
-    const offsets = slides.map((s) => {
-      const r = s.getBoundingClientRect();
-      return (r.left + r.width / 2 - mid) / stride;
-    });
-    slides.forEach((s, i) => {
-      // Only the few cards around the middle get their own compositing layer: with every card pre-built, a layer
-      // per card would cost a lot of memory for nothing.
-      const inner = s.firstElementChild;
-      if (inner) {
-        const hint = Math.abs(offsets[i]) < 2.5 ? 'transform, opacity' : '';
-        if (inner.style.willChange !== hint) inner.style.willChange = hint;
-      }
-      const clamped = Math.max(-1, Math.min(1, offsets[i]));
-      const o = clamped.toFixed(3);
-      if (s.style.getPropertyValue('--ts-o') === o) return;
-      s.style.setProperty('--ts-o', o);
-      s.style.setProperty('--ts-d', Math.abs(clamped).toFixed(3));
-      s.style.zIndex = String(Math.round((1 - Math.abs(clamped)) * 10)); // the middle card stays on top
-    });
-  }, []);
-
+  // Which card is in the middle? One division per frame, and React only hears about it when the answer changes.
   const handleScroll = useCallback(() => {
-    settle();
     if (frame.current) return;
     frame.current = requestAnimationFrame(() => {
       frame.current = 0;
-      updateFocus();
-    });
-  }, [settle, updateFocus]);
-
-  // Small screens: tapping a card beside the middle one brings it to the middle instead of opening it.
-  const handleTrackClickCapture = useCallback((e) => {
-    if (!isCentered()) return;
-    const el = trackRef.current;
-    const slide = e.target.closest ? e.target.closest('[data-ts-slide]') : null;
-    if (!el || !slide || slide.parentElement !== el) return;
-    const stride = cardStride(el);
-    const box = el.getBoundingClientRect();
-    const r = slide.getBoundingClientRect();
-    if (!stride || Math.abs(r.left + r.width / 2 - (box.left + box.width / 2)) < stride * 0.4) return;
-    e.preventDefault();
-    e.stopPropagation();
-    slide.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest', inline: 'center' });
-    setTick((t) => t + 1);
-  }, []);
-
-  const handleTouchStart = useCallback(() => {
-    touching.current = true;
-  }, []);
-  const handleTouchEnd = useCallback(() => {
-    touching.current = false;
-    settle();
-  }, [settle]);
-
-  // Start on the middle copy, and keep the same place in it when the cards change size.
-  useLayoutEffect(() => {
-    const el = trackRef.current;
-    if (!el) return undefined;
-    const fit = () => {
-      const w = setWidth(el);
-      if (!w) return;
-      const centered = isCentered();
-      if (!lastSet.current || centered !== lastMode.current) {
-        // First layout, or the screen crossed the breakpoint: start on the middle copy. In centered mode the
-        // first card of that copy is lined up with the middle of the track rather than its left edge.
-        const first = el.children[0];
-        const inset = centered && first ? (el.clientWidth - first.getBoundingClientRect().width) / 2 : 0;
-        el.scrollLeft = w - inset;
-      } else {
-        el.scrollLeft = (el.scrollLeft * w) / lastSet.current;
+      const el = railRef.current;
+      const stride = strideRef.current;
+      if (!el || !stride) return;
+      const next = clamp(Math.round(el.scrollLeft / stride), 0, total - 1);
+      if (next !== activeRef.current) {
+        activeRef.current = next;
+        setActive(next);
       }
-      lastSet.current = w;
-      lastMode.current = centered;
-      updateFocus();
-    };
-    fit();
-    if (typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(fit);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [updateFocus]);
+    });
+  }, [total]);
 
-  useEffect(
-    () => () => {
-      clearTimeout(settleTimer.current);
-      cancelAnimationFrame(frame.current);
-    },
-    [],
-  );
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
 
-  // Slides the track and restarts the autoplay clock, so a manual click always gets a full interval.
-  const advance = useCallback(
-    (dir) => {
-      scrollTrack(dir);
-      setTick((t) => t + 1);
-    },
-    [scrollTrack],
-  );
-
-  // Auto-slide. It holds still while the visitor hovers or keyboard-focuses the carousel, while the
-  // carousel is off screen, while the gallery or a preview is open, and for reduced-motion visitors.
+  // Live templates are only built once the rail has rested on a card for a moment, so a fast swipe stays smooth.
   useEffect(() => {
-    if (!playing || hovering || focused || !onScreen || showAll || previewId || prefersReducedMotion()) return undefined;
-    const t = setTimeout(() => advance(1), AUTOPLAY_MS);
+    if (active === liveCenter) return undefined;
+    const t = setTimeout(() => setLiveCenter(active), 120);
     return () => clearTimeout(t);
-  }, [playing, hovering, focused, onScreen, showAll, previewId, tick, advance]);
+  }, [active, liveCenter]);
 
-  const handlePointerEnter = useCallback((e) => {
-    if (e.pointerType === 'mouse') setHovering(true);
-  }, []);
-  const handlePointerLeave = useCallback(() => setHovering(false), []);
-  const handleFocus = useCallback((e) => {
-    let keyboard = false;
-    try {
-      keyboard = e.target.matches(':focus-visible');
-    } catch {
-      keyboard = false;
-    }
-    if (keyboard) setFocused(true);
-  }, []);
-  const handleBlur = useCallback((e) => {
-    if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
-  }, []);
-  // Swiping or scrolling sideways means the visitor is browsing by hand, so stop auto-sliding.
-  const handleTrackWheel = useCallback((e) => {
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) setPlaying(false);
-  }, []);
-  const handleTrackPointerDown = useCallback((e) => {
-    if (e.pointerType === 'touch') setPlaying(false);
-  }, []);
+  // Scroll so that card `index` sits in the middle of the rail.
+  const goTo = useCallback(
+    (index) => {
+      const el = railRef.current;
+      const slide = el && el.children[clamp(index, 0, total - 1)];
+      if (!slide) return;
+      el.scrollTo({
+        left: slide.offsetLeft - (el.clientWidth - slide.offsetWidth) / 2,
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      });
+    },
+    [total],
+  );
+
+  const handleTap = useCallback(
+    (index) => {
+      if (index === activeRef.current) setPreviewId(TEMPLATE_IDS[index]);
+      else goTo(index);
+    },
+    [goTo],
+  );
+
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goTo(activeRef.current + 1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goTo(activeRef.current - 1);
+      }
+    },
+    [goTo],
+  );
 
   const openAll = useCallback(() => setShowAll(true), []);
   const closeAll = useCallback(() => setShowAll(false), []);
+
+  // A short window of dots that slides along with the active card (31 dots would not fit on a phone).
+  const dotCount = Math.min(DOT_COUNT, total);
+  const dotStart = clamp(active - Math.floor(dotCount / 2), 0, total - dotCount);
+  const dots = Array.from({ length: dotCount }, (_, k) => dotStart + k);
 
   return (
     <section ref={sectionRef} className={`py-12 sm:py-20 ${className}`}>
@@ -1289,95 +1192,104 @@ export default function TemplateShowcase({
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <header className="mx-auto max-w-4xl text-center">
           <h2
-            className="ts-display text-3xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
+            className="ts-display text-3xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
             style={{ textWrap: 'balance' }}
           >
             {title}
           </h2>
           {subtitle ? <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-slate-600">{subtitle}</p> : null}
         </header>
+      </div>
+
+      <div className="relative mx-auto mt-8 max-w-6xl sm:mt-10" role="region" aria-roledescription="carousel" aria-label={COPY.carousel}>
+        <button
+          type="button"
+          onClick={() => goTo(active - 1)}
+          disabled={active === 0}
+          aria-label={COPY.prev}
+          title="Previous"
+          className={`${ARROW_BTN} left-2 lg:left-4`}
+        >
+          <IconPrev />
+        </button>
 
         <div
-          className="relative mt-10 sm:mt-12"
-          role="region"
-          aria-roledescription="carousel"
+          ref={railRef}
+          tabIndex={0}
           aria-label={COPY.carousel}
-          onPointerEnter={handlePointerEnter}
-          onPointerLeave={handlePointerLeave}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          className="ts-track ts-rail relative flex gap-4 overflow-x-auto py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 sm:gap-6"
+          onScroll={handleScroll}
+          onKeyDown={handleKeyDown}
         >
-          <button
-            type="button"
-            onClick={() => advance(-1)}
-            aria-label={COPY.prev}
-            title="Previous"
-            className={`${ARROW_BTN} left-2 lg:left-0 lg:-translate-x-1/2`}
-          >
-            <IconPrev />
-          </button>
-
-          <div
-            ref={trackRef}
-            className="ts-track ts-coverflow -mx-4 flex snap-x snap-mandatory gap-0 overflow-x-auto py-4 sm:mx-0 sm:gap-5"
-            aria-live={playing ? 'off' : 'polite'}
-            onWheel={handleTrackWheel}
-            onPointerDown={handleTrackPointerDown}
-            onClickCapture={handleTrackClickCapture}
-            onScroll={handleScroll}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchEnd}
-          >
-            {/* Three copies back to back (only the middle one is announced and tabbable) make the loop endless. */}
-            {[0, 1, 2].flatMap((copy) =>
-              TEMPLATE_CARDS.map((c) => (
-                <TemplateCard
-                  key={`${copy}-${c.id}`}
-                  card={c}
-                  clone={copy !== 1}
-                  color={thumbColor}
-                  active={sectionSeen}
-                  warmed={(WARM_RANK.get(`${copy}-${c.id}`) ?? Infinity) < warm}
-                  trackRef={trackRef}
-                  featured={featuredTemplate === c.id}
-                  featuredLabel={featuredLabel}
-                  onOpen={setPreviewId}
-                  onUse={handleUse}
-                />
-              )),
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => advance(1)}
-            aria-label={COPY.next}
-            title="Next"
-            className={`${ARROW_BTN} right-2 lg:right-0 lg:translate-x-1/2`}
-          >
-            <IconNext />
-          </button>
+          {TEMPLATE_CARDS.map((c, i) => (
+            <CarouselSlide
+              key={c.id}
+              card={c}
+              index={i}
+              total={total}
+              active={i === active}
+              live={sectionSeen && Math.abs(i - liveCenter) <= LIVE_RANGE}
+              color={thumbColor}
+              featured={featuredTemplate === c.id}
+              featuredLabel={featuredLabel}
+              onTap={handleTap}
+              onUse={handleUse}
+            />
+          ))}
         </div>
 
-        <div className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          {/* Small screens: one swipeable row that runs to the screen edges. From sm up it wraps as before. */}
-          <ColorBar
-            color={color}
-            onChange={setColor}
-            className="ts-track -mx-4 flex-nowrap overflow-x-auto px-4 py-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:p-0"
-          />
+        <button
+          type="button"
+          onClick={() => goTo(active + 1)}
+          disabled={active === total - 1}
+          aria-label={COPY.next}
+          title="Next"
+          className={`${ARROW_BTN} right-2 lg:right-4`}
+        >
+          <IconNext />
+        </button>
+      </div>
 
-          <button
-            type="button"
-            onClick={openAll}
-            aria-haspopup="dialog"
-            className="inline-flex items-center gap-1 self-start rounded-md text-lg font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 sm:self-auto"
-          >
-            {COPY.viewAll}
-            <IconNext />
-          </button>
-        </div>
+      <p className="sr-only" aria-live="polite">
+        {TEMPLATE_CARDS[active].label} layout, {active + 1} of {total}
+      </p>
+
+      {/* Pagination: the active dot stretches into a pill; dots at the edge of the window shrink to hint at more. */}
+      <div className="mt-2 flex items-center justify-center" role="group" aria-label="Choose a layout">
+        {dots.map((i) => {
+          const on = i === active;
+          const edge = !on && ((i === dotStart && dotStart > 0) || (i === dotStart + dotCount - 1 && dotStart + dotCount < total));
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => goTo(i)}
+              aria-label={`Show the ${TEMPLATE_CARDS[i].label} layout`}
+              aria-current={on ? 'true' : undefined}
+              className="grid h-7 place-items-center px-[3px] focus:outline-none focus-visible:rounded-full focus-visible:ring-2 focus-visible:ring-slate-900"
+            >
+              <span
+                className={`block rounded-full motion-safe:transition-[width,background-color] motion-safe:duration-200 ${
+                  on ? 'h-2 w-6 bg-slate-900' : edge ? 'h-1.5 w-1.5 bg-slate-300' : 'h-2 w-2 bg-slate-300'
+                }`}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mx-auto mt-5 flex max-w-6xl flex-col items-center gap-6 px-4 sm:px-6 lg:px-8">
+        <ColorBar color={color} onChange={setColor} className="flex-wrap justify-center" />
+
+        <button
+          type="button"
+          onClick={openAll}
+          aria-haspopup="dialog"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-5 py-3 text-base font-semibold text-slate-900 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+        >
+          {COPY.viewAll}
+          <IconNext />
+        </button>
       </div>
 
       {showAll && (
