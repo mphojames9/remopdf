@@ -8,6 +8,9 @@ import "pdfjs-dist/build/pdf.worker.mjs";
 import { Link } from 'react-router-dom';
 import image1 from '../assets/remopdf.webp';
 import navLogo from '../assets/logo.webp';
+import wordLogo from "../assets/office/word.svg";
+import excelLogo from "../assets/office/excel.svg";
+import powerpointLogo from "../assets/office/powerpoint.svg";
 import { addPasswordToPdf, pdfToImages, pdfToWord, pdfToExcel, pdfToPpt } from "../api/client"; // adjust the path if client.js lives elsewhere
 
 
@@ -61,9 +64,9 @@ const IMAGE_FORMATS = [
 // The finished document as an Office file. `run` is the api/client.js helper that
 // uploads the PDF to the matching server endpoint and saves the file that comes back.
 const CONVERT_TARGETS = [
-  { id: "word", label: "Word", ext: ".docx", hint: "Editable document", Icon: WordExportIcon, run: pdfToWord },
-  { id: "excel", label: "Excel", ext: ".xlsx", hint: "Spreadsheet, best for PDFs with tables", Icon: ExcelExportIcon, run: pdfToExcel },
-  { id: "ppt", label: "PowerPoint", ext: ".pptx", hint: "Slides", Icon: PptExportIcon, run: pdfToPpt },
+  { id: "word", label: "Word", ext: ".docx", hint: "Editable document", logo: wordLogo, run: pdfToWord },
+  { id: "excel", label: "Excel", ext: ".xlsx", hint: "Spreadsheet, best for tables", logo: excelLogo, run: pdfToExcel },
+  { id: "ppt", label: "PowerPoint", ext: ".pptx", hint: "Slides", logo: powerpointLogo, run: pdfToPpt },
 ];
 
 // --- Download options ---------------------------------------------------------
@@ -742,6 +745,65 @@ function guessFontStyle(rawName, fallbackCss, fontObj) {
   return { fontFamily, bold, italic };
 }
 
+// ---- edit-text fidelity helpers ------------------------------------------------
+// Only Helvetica, Times and Courier can be saved into the PDF, but the original text is
+// usually set in something else (Merriweather, Open Sans, Calibri…). At the same point
+// size those three read noticeably smaller or larger, so an edited line looked "shrunk"
+// next to the lines around it. The original run's width in the PDF, compared with the same
+// text in the substitute font, says how much to scale the size so the two look alike.
+const SIZE_FIT_DEADBAND = 0.05; // small gaps are kerning / justification, not a different font
+const SIZE_FIT_MIN = 0.85;
+const SIZE_FIT_MAX = 1.3;
+
+function sizeFitFactor(text, originalWidthPt, nominalPt, style) {
+  const str = String(text || "");
+  if (str.replace(/\s/g, "").length < 4) return 1; // too short to measure reliably
+  // ALL CAPS is usually letter-spaced (headings): that widens the run without making
+  // the glyphs any bigger, so measuring it would wrongly enlarge the text.
+  const letters = str.replace(/[^A-Za-z]/g, "");
+  if (letters.length >= 3 && letters === letters.toUpperCase()) return 1;
+  if (!(originalWidthPt > 0) || !(nominalPt > 0)) return 1;
+  const substituteWidth = measureTextWidth(str, { ...style, fontSize: nominalPt });
+  if (!(substituteWidth > 0)) return 1;
+  const gap = originalWidthPt / substituteWidth - 1;
+  const eased = Math.abs(gap) <= SIZE_FIT_DEADBAND ? 0 : gap - Math.sign(gap) * SIZE_FIT_DEADBAND;
+  return Math.min(SIZE_FIT_MAX, Math.max(SIZE_FIT_MIN, 1 + eased));
+}
+
+// "ABCDEF+Merriweather-Regular" / "OpenSans-Bold" -> "Merriweather" / "Open Sans Bold"
+function cleanFontLabel(raw) {
+  let name = String(raw || "").replace(/^[A-Z]{6}\+/, "").trim();
+  if (!name || /^g_d\d+_f\d+$/.test(name) || /^(font|f)\d+$/i.test(name)) return "";
+  if (/^(sans[- ]?serif|serif|monospace|cursive|fantasy)$/i.test(name)) return "";
+  name = name
+    .replace(/[-_,]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .replace(/\s+Regular$/i, "")
+    .trim();
+  return name.length > 40 ? name.slice(0, 40) : name;
+}
+
+// Clicking a line with the Edit Text tool starts an edit straight away. If nothing has
+// been changed (text, font, size, colours, position) it must leave the original line
+// completely alone — no cover box, no re-typeset — both on screen and in the saved PDF.
+function isUntouchedTextEdit(t) {
+  const b = t && t.base;
+  if (!b) return false;
+  return (
+    t.text === t.originalText &&
+    t.fontSize === b.fontSize &&
+    t.fontFamily === b.fontFamily &&
+    !!t.bold === b.bold &&
+    !!t.italic === b.italic &&
+    t.color === b.color &&
+    t.bgColor === b.bgColor &&
+    t.xRatio === b.xRatio &&
+    t.yRatio === b.yRatio
+  );
+}
+// ---- end edit-text fidelity helpers ---------------------------------------------
+
 function rgbToHex(r, g, b) {
   const h = (n) => Math.round(Math.max(0, Math.min(255, n))).toString(16).padStart(2, "0");
   return `#${h(r)}${h(g)}${h(b)}`;
@@ -1374,9 +1436,6 @@ function PageNumberIcon() { return (<svg {...ICON}><path d="M6 3h8l5 5v13H6z" />
 function LockIcon() { return (<svg {...ICON}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>); }
 function AddPageIcon() { return (<svg {...ICON}><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /><path d="M12.5 12v6M9.5 15h6" /></svg>); }
 function ImageExportIcon() { return (<svg {...ICON}><rect x="3" y="3" width="18" height="14" rx="2" /><circle cx="8.5" cy="8" r="1.4" /><path d="M21 13l-4-4-4 4-2-2-6 6" /><path d="M12 18.5v3.5M10 20.5l2 1.5 2-1.5" /></svg>); }
-function WordExportIcon() { return (<svg {...ICON}><path d="M14 3H7a2 2 0 00-2 2v9" /><path d="M14 3l5 5v11a2 2 0 01-2 2h-5" /><path d="M14 3v5h5" /><path d="M2 17l1.5 5 2-4 2 4 1.5-5" /></svg>); }
-function ExcelExportIcon() { return (<svg {...ICON}><rect x="3" y="3" width="18" height="14" rx="2" /><path d="M3 8.5h18" /><path d="M3 13h18" /><path d="M9 3v14" /><path d="M15 3v14" /><path d="M12 18.5v3.5M10 20.5l2 1.5 2-1.5" /></svg>); }
-function PptExportIcon() { return (<svg {...ICON}><rect x="3" y="3" width="18" height="13" rx="2" /><path d="M7 12l3-3 3 2 4-4" /><path d="M12 16v3" /><path d="M8 21h8" /></svg>); }
 function ConvertIcon() { return (<svg {...ICON}><path d="M17 3l4 4-4 4" /><path d="M3 7h18" /><path d="M7 21l-4-4 4-4" /><path d="M21 17H3" /></svg>); }
 function GripIcon() { return (<svg {...ICON} fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" /><circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" /><circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" /></svg>); }
 
@@ -2457,7 +2516,10 @@ export default function PdfFillerApp() {
               // font not resolved — fall through to the generic family below
             }
             const realName = (fontObj && (fontObj.name || fontObj.fallbackName)) || "";
-            lookByFont[fontName] = guessFontStyle(realName, styles[fontName]?.fontFamily, fontObj);
+            lookByFont[fontName] = {
+              ...guessFontStyle(realName, styles[fontName]?.fontFamily, fontObj),
+              label: cleanFontLabel(realName),
+            };
           }
           return lookByFont[fontName];
         };
@@ -2481,12 +2543,14 @@ export default function PdfFillerApp() {
             xRatio: left / pageWidth,
             yRatio: top / pageHeight,
             widthRatio: item.width / pageWidth,
+            widthPt: item.width,
             heightRatio: height / pageHeight,
             baselineYRatio: baselineY / pageHeight,
             fontSizePt: fontHeight,
             fontFamily: look.fontFamily,
             bold: look.bold,
             italic: look.italic,
+            fontLabel: look.label,
           });
         });
 
@@ -2769,15 +2833,25 @@ export default function PdfFillerApp() {
   // --- Turn a detected text run into an editable (and exportable) edit -----
   const startEditingText = useCallback(
     (item) => {
-      // Start from exactly what the original looked like: its real size (not
-      // snapped to the dropdown's presets), the closest font we can export
-      // with, and the text/background colours read off the rendered page.
-      const exactSize = Math.round(item.fontSizePt * 10) / 10;
+      // Start from what the original looked like: the closest font we can export
+      // with, a size that makes that font read the same as the original (see
+      // sizeFitFactor), and the text/background colours read off the rendered page.
+      const family = FONT_FAMILIES.find((x) => x.id === item.fontFamily);
+      const fit = sizeFitFactor(item.str, item.widthPt, item.fontSizePt, {
+        fontFamily: family?.css || "sans-serif",
+        bold: !!item.bold,
+        italic: !!item.italic,
+      });
+      const exactSize = Math.round(item.fontSizePt * fit * 10) / 10;
       const look = canvasRef.current ? sampleTextAppearance(canvasRef.current, item) : null;
+      const color = look?.color || DEFAULT_COLOR;
+      const bgColor = look?.bgColor || DEFAULT_BG_COLOR;
+      const fontFamily = item.fontFamily || "Helvetica";
       const id = `t_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
       snapshotHistory();
+      // Edits nobody changed are inert, so drop them rather than let them pile up.
       setTextEdits((prev) => [
-        ...prev,
+        ...prev.filter((t) => !isUntouchedTextEdit(t)),
         {
           id,
           key: item.key,
@@ -2790,11 +2864,25 @@ export default function PdfFillerApp() {
           originalText: item.str,
           text: item.str,
           fontSize: exactSize,
-          fontFamily: item.fontFamily || "Helvetica",
-          color: look?.color || DEFAULT_COLOR,
-          bgColor: look?.bgColor || DEFAULT_BG_COLOR,
+          fontFamily,
+          color,
+          bgColor,
           bold: !!item.bold,
           italic: !!item.italic,
+          // The PDF's own font and size, for the note in the side panel.
+          originalFont: item.fontLabel || "",
+          originalFontSize: Math.round(item.fontSizePt * 10) / 10,
+          // How it started, so an edit that was never changed can be told apart.
+          base: {
+            fontSize: exactSize,
+            fontFamily,
+            bold: !!item.bold,
+            italic: !!item.italic,
+            color,
+            bgColor,
+            xRatio: item.xRatio,
+            yRatio: item.yRatio,
+          },
         },
       ]);
       setActiveId(id);
@@ -3493,7 +3581,7 @@ export default function PdfFillerApp() {
     // Edited text is baked in next, as if it were part of the page's own
     // content: cover the original run with a solid rectangle, then draw
     // the replacement text on top of it.
-    for (const edit of textEdits.filter(onKeptPage)) {
+    for (const edit of textEdits.filter(onKeptPage).filter((e) => !isUntouchedTextEdit(e))) {
       const page = pages[edit.page - 1];
       if (!page) continue;
       const frame = frames[edit.page - 1];
@@ -3813,13 +3901,15 @@ export default function PdfFillerApp() {
   const fieldsOnPage = fields.filter((f) => f.page === pageNum);
   const signaturesOnPage = signatures.filter((s) => s.page === pageNum);
   const imagesOnPage = images.filter((im) => im.page === pageNum);
-  const textEditsOnPage = textEdits.filter((t) => t.page === pageNum);
+  // An edit nobody has changed yet stays out of the way (original text shows through)
+  // unless it's the line currently being edited.
+  const textEditsOnPage = textEdits.filter((t) => t.page === pageNum && (t.id === activeId || !isUntouchedTextEdit(t)));
   const highlightsOnPage = highlights.filter((h) => h.page === pageNum);
   // What the Elements list shows: everything except what sits on deleted pages.
   const liveFields = fields.filter(onKeptPage);
   const liveSignatures = signatures.filter(onKeptPage);
   const liveImages = images.filter(onKeptPage);
-  const liveTextEdits = textEdits.filter(onKeptPage);
+  const liveTextEdits = textEdits.filter((t) => onKeptPage(t) && (t.id === activeId || !isUntouchedTextEdit(t)));
   const liveHighlights = highlights.filter(onKeptPage);
   // Edited text sizes are in PDF points (that's what the export uses), but the
   // page is drawn at several screen pixels per point. Derived from the canvas
@@ -4143,6 +4233,17 @@ export default function PdfFillerApp() {
               ))}
             </select>
           </label>
+
+          {activeTextEdit.originalFont && (
+            <p className="text-[11px] leading-snug text-neutral-500">
+              This PDF uses <span className="font-medium text-neutral-700">{activeTextEdit.originalFont}</span>. Edits are
+              saved in the closest font available
+              {activeTextEdit.base && activeTextEdit.originalFontSize !== activeTextEdit.base.fontSize
+                ? `, sized to look like the original (the PDF's size is ${activeTextEdit.originalFontSize})`
+                : ""}
+              .
+            </p>
+          )}
 
           <div className="flex gap-3">
             <label className="flex-1 text-xs text-neutral-600">
@@ -5038,34 +5139,40 @@ export default function PdfFillerApp() {
             <div
               role="dialog"
               aria-label="Convert to Word, Excel or PowerPoint"
-              className="absolute right-2 top-full mt-1 w-72 max-w-[calc(100vw-1rem)] max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-white text-neutral-800 rounded-md shadow-lg border border-neutral-200 p-3 z-40 space-y-3"
+              className="absolute right-2 top-full mt-1 w-72 max-w-[calc(100vw-1rem)] max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-white text-neutral-800 rounded-xl shadow-xl border border-neutral-200 p-2 z-40"
             >
-              <p className="text-sm font-medium">Convert to</p>
+              <p className="px-2 pt-1 pb-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">Convert to</p>
 
-              <div className="space-y-2">
-                {CONVERT_TARGETS.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => handleConvert(t.id)}
-                    disabled={!pdfDoc || visiblePages.length === 0 || isExporting || isExportingImages || isConverting}
-                    className="w-full min-h-[44px] flex items-center gap-3 rounded-md border border-neutral-300 px-3 py-1.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-40 disabled:hover:bg-transparent touch-manipulation"
-                  >
-                    <span className="text-blue-600 shrink-0"><t.Icon /></span>
-                    <span className="min-w-0">
-                      <span className="block font-medium">
-                        {convertingTo === t.id ? "Converting…" : `${t.label} (${t.ext})`}
+              <div className="space-y-0.5">
+                {CONVERT_TARGETS.map((t) => {
+                  const busy = convertingTo === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => handleConvert(t.id)}
+                      disabled={!pdfDoc || visiblePages.length === 0 || isExporting || isExportingImages || isConverting}
+                      className="group w-full min-h-[56px] flex items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-neutral-100 disabled:opacity-50 disabled:hover:bg-transparent touch-manipulation"
+                    >
+                      <img src={t.logo} alt="" width={40} height={40} draggable={false} className="h-10 w-10 shrink-0 select-none" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold text-neutral-900">{t.label}</span>
+                        <span className="block truncate text-xs text-neutral-500">{busy ? "Converting…" : t.hint}</span>
                       </span>
-                      <span className="block text-[11px] font-normal text-neutral-500">{t.hint}</span>
-                    </span>
-                  </button>
-                ))}
+                      {busy ? (
+                        <svg className="h-4 w-4 shrink-0 animate-spin text-neutral-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+                          <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                        </svg>
+                      ) : (
+                        <span className="shrink-0 rounded-md bg-neutral-100 px-1.5 py-0.5 text-[11px] font-medium text-neutral-500 group-hover:bg-white">
+                          {t.ext}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-
-              <p className="text-[11px] text-neutral-400">
-                It matches what you see here: your edits, watermark and page numbers are included and deleted pages are
-                left out. A password isn't applied to these files. The PDF is uploaded to our server to be converted.
-              </p>
             </div>
           </>
         )}
@@ -5539,6 +5646,9 @@ export default function PdfFillerApp() {
 
                 {textEditsOnPage.map((t) => {
                   const family = FONT_FAMILIES.find((x) => x.id === t.fontFamily);
+                  // Until something is changed the line keeps its original look: the
+                  // box and the typed text stay see-through (only the caret shows).
+                  const untouched = isUntouchedTextEdit(t);
                   const isActive = activeId === t.id;
                   const isHovered = hoveredId === t.id;
                   const showControls = isActive || isHovered;
@@ -5583,7 +5693,7 @@ export default function PdfFillerApp() {
                         top: `${t.yRatio * 100}%`,
                         width: patchWidth,
                         height: patchHeight,
-                        backgroundColor: t.bgColor || DEFAULT_BG_COLOR,
+                        backgroundColor: untouched ? "transparent" : t.bgColor || DEFAULT_BG_COLOR,
                         // While the Highlight tool is active, edited text must stay
                         // highlightable like any other text on the page — without
                         // this, dragging over it would hit this box (and its input)
@@ -5624,7 +5734,8 @@ export default function PdfFillerApp() {
                         style={{
                           fontSize: fontPx,
                           lineHeight: `${patchHeight}px`,
-                          color: t.color,
+                          color: untouched ? "transparent" : t.color,
+                          caretColor: t.color,
                           fontFamily: family?.css,
                           fontWeight: t.bold ? "bold" : "normal",
                           fontStyle: t.italic ? "italic" : "normal",
