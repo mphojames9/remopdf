@@ -261,6 +261,58 @@ export const excelToPdf = async (files, onProgress) => {
   return true;
 };
 
+export const pptToPdf = async (files, onProgress) => {
+  const formData = new FormData();
+  files.forEach((file) => formData.append('files', file));
+
+  const response = await axios.post(`${API_URL}/tools/ppt-to-pdf`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    responseType: 'blob',
+    onUploadProgress: (progressEvent) => {
+      const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+      if (onProgress) onProgress(percentCompleted);
+    }
+  });
+
+  // Backend returns a single PDF when one file was sent, or a zip when converting multiple
+  const contentType = response.headers['content-type'] || '';
+  if (contentType.includes('zip')) {
+    downloadBlob(new Blob([response.data], { type: 'application/zip' }), 'RemoPDF_PowerPoint_to_PDF.zip');
+  } else {
+    downloadBlob(new Blob([response.data], { type: 'application/pdf' }), 'RemoPDF_Converted.pdf');
+  }
+  return true;
+};
+
+// Converts ONE Word, Excel or PowerPoint file to PDF and hands the PDF back as a File
+// (nothing is downloaded), so the editor can open it straight away.
+const OFFICE_TO_PDF_ENDPOINT = { word: 'word-to-pdf', excel: 'excel-to-pdf', ppt: 'ppt-to-pdf' };
+
+export const convertOfficeToPdf = async (kind, file, onProgress) => {
+  const endpoint = OFFICE_TO_PDF_ENDPOINT[kind];
+  if (!endpoint) throw new Error(`Unsupported conversion: ${kind}`);
+
+  const formData = new FormData();
+  formData.append('files', file);
+
+  const response = await axios.post(`${API_URL}/tools/${endpoint}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    responseType: 'blob',
+    onUploadProgress: (progressEvent) => {
+      const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+      if (onProgress) onProgress(percentCompleted);
+    }
+  });
+
+  // Make sure what came back really is a PDF before the editor tries to open it.
+  const head = new Uint8Array(await response.data.slice(0, 5).arrayBuffer());
+  const isPdf = head.length === 5 && String.fromCharCode(...head) === '%PDF-';
+  if (!isPdf) throw new Error('The server did not return a PDF.');
+
+  const baseName = (file.name || 'document').replace(/\.[^.]+$/, '');
+  return new File([response.data], `${baseName}.pdf`, { type: 'application/pdf' });
+};
+
 export const addPasswordToPdf = async (file, password, onProgress) => {
   const formData = new FormData();
   formData.append('file', file); // Single file injection

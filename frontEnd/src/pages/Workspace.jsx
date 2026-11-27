@@ -11,7 +11,7 @@ import navLogo from '../assets/logo.webp';
 import wordLogo from "../assets/office/word.svg";
 import excelLogo from "../assets/office/excel.svg";
 import powerpointLogo from "../assets/office/powerpoint.svg";
-import { addPasswordToPdf, pdfToImages, pdfToWord, pdfToExcel, pdfToPpt } from "../api/client"; // adjust the path if client.js lives elsewhere
+import { addPasswordToPdf, pdfToImages, pdfToWord, pdfToExcel, pdfToPpt, convertOfficeToPdf } from "../api/client"; // adjust the path if client.js lives elsewhere
 
 
 const FONT_SIZE_OPTIONS = [10, 12, 14, 16, 20, 24, 32];
@@ -68,6 +68,14 @@ const CONVERT_TARGETS = [
   { id: "excel", label: "Excel", ext: ".xlsx", hint: "Spreadsheet, best for tables", logo: excelLogo, run: pdfToExcel },
   { id: "ppt", label: "PowerPoint", ext: ".pptx", hint: "Slides", logo: powerpointLogo, run: pdfToPpt },
 ];
+
+// Word / Excel / PowerPoint files the editor can turn into a PDF and open (handleOfficeFile).
+const OFFICE_SOURCES = [
+  { id: "word", label: "Word", exts: [".doc", ".docx"], logo: wordLogo },
+  { id: "excel", label: "Excel", exts: [".xls", ".xlsx"], logo: excelLogo },
+  { id: "ppt", label: "PowerPoint", exts: [".ppt", ".pptx"], logo: powerpointLogo },
+];
+const OFFICE_ACCEPT_ALL = OFFICE_SOURCES.flatMap((src) => src.exts).join(",");
 
 // --- Download options ---------------------------------------------------------
 // How the finished PDF is saved: merged into one file, or split into one PDF per
@@ -2319,6 +2327,10 @@ export default function PdfFillerApp() {
   const pageScrollRef = useRef(null); // the scrolling area the page sits in (auto-scroll while highlighting on touch)
   const stageRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Word / Excel / PowerPoint -> PDF, opened in the editor.
+  const officeInputRef = useRef(null);
+  const [officeConverting, setOfficeConverting] = useState(null); // "word" | "excel" | "ppt" | null
   const imageInputRef = useRef(null);
   const dragStateRef = useRef(null); // { kind, id, offsetXRatio, offsetYRatio }
   const resizeStateRef = useRef(null); // { kind, id, startWidthRatio, startX }
@@ -2337,6 +2349,12 @@ export default function PdfFillerApp() {
     const files = Array.from(e.target.files || []);
     e.target.value = ""; // so choosing the same file(s) again still counts as a change
     if (files.length === 0) return;
+    await openPdfFiles(files);
+  };
+
+  // Opens one or more PDF Files in the editor (several are combined first).
+  // Resolves true once the document is open, false if it couldn't be.
+  const openPdfFiles = async (files) => {
     setError("");
     setIsOpening(true);
     try {
@@ -2379,8 +2397,9 @@ export default function PdfFillerApp() {
       setMobileElementsOpen(false);
       const firstName = files[0].name.replace(/\.pdf$/i, "");
       setFileName(combined ? `${firstName}-merged` : firstName);
+      return true;
     } catch (err) {
-      if (err && err.cancelled) return; // they backed out of the password prompt: nothing to report
+      if (err && err.cancelled) return false; // they backed out of the password prompt: nothing to report
       console.error(err);
       setError(
         err && err.cantDecrypt
@@ -2392,6 +2411,55 @@ export default function PdfFillerApp() {
     } finally {
       setIsOpening(false);
     }
+    return false;
+  };
+
+  // --- Word / Excel / PowerPoint -> PDF ----------------------------------------
+  // Pick a file, convert it on the server, then open the PDF in the editor like any
+  // other PDF (edit it here, or press Download to save it). `kind` narrows the file
+  // dialog to one program; "all" shows every Office type.
+  const startOfficeImport = (kind) => {
+    const input = officeInputRef.current;
+    if (!input || isOpening || officeConverting) return;
+    const src = OFFICE_SOURCES.find((x) => x.id === kind);
+    input.accept = src ? src.exts.join(",") : OFFICE_ACCEPT_ALL;
+    input.click();
+  };
+
+  const handleOfficeFile = async (e) => {
+    const file = (e.target.files || [])[0];
+    e.target.value = ""; // so choosing the same file again still counts as a change
+    if (!file) return;
+    const lower = file.name.toLowerCase();
+    const src = OFFICE_SOURCES.find((x) => x.exts.some((ext) => lower.endsWith(ext)));
+    if (!src) {
+      setError("Choose a Word (.doc, .docx), Excel (.xls, .xlsx) or PowerPoint (.ppt, .pptx) file.");
+      return;
+    }
+    // Opening the result replaces whatever is open, so don't throw away unsaved edits quietly.
+    if (pdfDoc && undoStackRef.current.length > 0) {
+      const ok = window.confirm(
+        "Opening the converted file replaces the PDF you have open, along with any edits you haven't downloaded. Continue?"
+      );
+      if (!ok) return;
+    }
+    setError("");
+    setNotice("");
+    setOfficeConverting(src.id);
+    let pdfFile;
+    try {
+      pdfFile = await convertOfficeToPdf(src.id, file);
+    } catch (err) {
+      console.error(err);
+      setError(
+        `Couldn't convert that ${src.label} file to PDF. Check your connection, and that the file isn't damaged or password-protected, then try again.`
+      );
+      return;
+    } finally {
+      setOfficeConverting(null);
+    }
+    const opened = await openPdfFiles([pdfFile]);
+    if (opened) setNotice(`Converted ${file.name} to PDF. Edit it here, or press Download to save it.`);
   };
 
   // --- Unlock a protected PDF ------------------------------------------------
@@ -4792,6 +4860,16 @@ export default function PdfFillerApp() {
                 <button
                   onClick={() => {
                     setShowMoreMenu(false);
+                    startOfficeImport("all");
+                  }}
+                  disabled={isOpening || !!officeConverting}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-neutral-50 disabled:opacity-40"
+                >
+                  {officeConverting ? "Converting…" : "Word / Excel / PPT to PDF"}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMoreMenu(false);
                     unlockInputRef.current?.click();
                   }}
                   disabled={isUnlocking}
@@ -4847,6 +4925,7 @@ export default function PdfFillerApp() {
         </div>
         <input ref={fileInputRef} type="file" accept="application/pdf" multiple onChange={handleFileChange} className="hidden" />
         <input ref={unlockInputRef} type="file" accept="application/pdf" onChange={handleUnlockFile} className="hidden" />
+        <input ref={officeInputRef} type="file" accept={OFFICE_ACCEPT_ALL} onChange={handleOfficeFile} className="hidden" />
 
         {showPageNumberPanel && (
           <>
@@ -5439,6 +5518,25 @@ export default function PdfFillerApp() {
               {isUnlocking ? "Unlocking…" : "Unlock a PDF"}
             </button>
             <p className="mt-2 text-[11px] text-neutral-400">Remove a PDF's password and save a copy that opens without one.</p>
+
+            <p className="mt-7 text-xs font-medium uppercase tracking-wide text-neutral-400">Convert to PDF</p>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {OFFICE_SOURCES.map((src) => (
+                <button
+                  key={src.id}
+                  type="button"
+                  onClick={() => startOfficeImport(src.id)}
+                  disabled={isOpening || isUnlocking || !!officeConverting}
+                  className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-2 py-3 hover:border-black active:scale-[0.98] transition disabled:opacity-60 touch-manipulation"
+                >
+                  <img src={src.logo} alt="" width={36} height={36} draggable={false} className="h-9 w-9 select-none" />
+                  <span className="text-xs font-semibold text-neutral-900">
+                    {officeConverting === src.id ? "Converting…" : src.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-neutral-400">Pick a Word, Excel or PowerPoint file. It's converted to PDF and opened here.</p>
 
             <div className="mt-8 flex items-center justify-center gap-6">
               <div className="flex flex-col items-center gap-1.5">

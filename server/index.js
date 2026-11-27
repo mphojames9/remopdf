@@ -28,6 +28,12 @@ if (!process.env.ADMIN_EMAILS) {
   console.warn('ADMIN_EMAILS is missing, so the first admin can only be made by hand in the database. Add it to server/.env (comma-separated Gmail addresses).');
 }
 
+if (!process.env.ADMIN_ACCESS_CODE) {
+  console.warn('ADMIN_ACCESS_CODE is missing, so the admin panel cannot add or remove Premium. Add it to server/.env (a long secret only you know).');
+} else if (process.env.ADMIN_ACCESS_CODE.trim().length < 8) {
+  console.warn('ADMIN_ACCESS_CODE is short. Use at least 8 characters, because it is the only thing between a stolen admin session and free Premium.');
+}
+
 const app = express();
 // Render (like most hosts) puts a proxy in front of the app. Without this, every visitor looks like the same
 // IP address to the rate limiters, so they would all share one limit.

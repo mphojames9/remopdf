@@ -15,7 +15,7 @@ import {
 } from './templateShared';
 
 /* ------------------------------ Design tokens ------------------------------ */
-// PROFESSIONAL DARK: a dark sidebar with gold details, and a white main column with a timeline for experience.
+// PROFESSIONAL DARK: a dark blue sidebar with gold details, and a white main column with a timeline for experience.
 //  - TWO columns. Sidebar: photo, contact, personal details, education, skills, languages, hobbies, certificates.
 //    Main: name and profession, summary, experience (timeline), projects, references.
 //  - the accent colour picked in the builder is the SIDEBAR colour; the gold details stay fixed (GOLD below)
@@ -32,7 +32,7 @@ const RULE = '#e2e8f0';                      // line under the profession
 const PAPER = '#FFFFFF';                     // main column background
 const SIDE_TEXT = '#cbd5e1';                 // sidebar text
 const SIDE_SOFT = '#94a3b8';                 // sidebar dates and small print
-const DEFAULT_SIDEBAR = '#161e2c';           // used only if no accent colour is passed in
+const DEFAULT_SIDEBAR = '#1a2f5a';           // dark professional blue; used only if no accent colour is passed in
 const SIDEBAR_W = 278;                       // px, the whole sidebar (35% of the page)
 const SIDE_PAD = { top: 32, right: 32, bottom: 32, left: 32 }; // px, padding inside the sidebar
 const MAIN_PAD = { top: 40, right: 40, bottom: 32, left: 40 }; // px, padding inside the main column

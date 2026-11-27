@@ -13,6 +13,7 @@ async function checkAdmin(req, res, next) {
     if (user.role !== 'admin') {
       return res.status(403).json({ message: 'This area is for administrators only.' });
     }
+    req.adminEmail = user.email; // only used for the server log
     return next();
   } catch (err) {
     return next(err);

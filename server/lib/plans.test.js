@@ -1,7 +1,7 @@
 // Run with:  node --test lib/plans.test.js   (from the server folder; needs nothing installed)
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DAY_MS, MAX_BANKED_DAYS, accessFromPayments, canAddPlan, findPlan, getPlans, isPaidTier, tierRank } from './plans.js';
+import { DAY_MS, MAX_BANKED_DAYS, accessFromPayments, canAddPlan, findPlan, getPlans, isPaidTier, runningPayments, tierRank } from './plans.js';
 
 const NOW = new Date('2026-11-16T10:00:00Z').getTime();
 const daysAgo = (n) => new Date(NOW - n * DAY_MS);
@@ -146,4 +146,35 @@ test('more time can be added until 90 days are waiting; then it has to run down 
   assert.equal(canAddPlan(sixtyOne, month, NOW), false); // 91 would be too many
   assert.equal(canAddPlan(sixtyOne, week, NOW), true); // 68 is fine
   assert.equal(MAX_BANKED_DAYS, 90);
+});
+
+test('runningPayments: only payments with days still running or waiting, stacked ones included', () => {
+  const used = payment(60, 7); // ended long ago
+  const running = payment(20, 30); // 10 days left
+  const stacked = payment(5, 30); // starts when the one above ends
+  const result = runningPayments([stacked, used, running], NOW);
+  assert.deepEqual(result, [running, stacked]);
+});
+
+test('runningPayments: nothing running means nothing to cancel', () => {
+  assert.deepEqual(runningPayments([payment(60, 7), payment(40, 30)], NOW), []);
+  assert.deepEqual(runningPayments([], NOW), []);
+  assert.deepEqual(runningPayments(undefined, NOW), []);
+});
+
+test('cancelling the running payments (expiresAt back to paidAt) ends Premium and leaves used-up ones alone', () => {
+  const payments = [payment(60, 7), payment(20, 30), payment(5, 30)];
+  assert.equal(accessFromPayments(payments, NOW).premium, true);
+  for (const p of runningPayments(payments, NOW)) p.expiresAt = new Date(p.paidAt);
+  assert.equal(accessFromPayments(payments, NOW).premium, false);
+  assert.equal(payments[0].expiresAt.getTime(), payments[0].paidAt.getTime() + 7 * DAY_MS); // untouched
+});
+
+test('a payment cancelled this way can be followed by new days that start on their own', () => {
+  const payments = [payment(20, 30)];
+  for (const p of runningPayments(payments, NOW)) p.expiresAt = new Date(p.paidAt);
+  payments.push(payment(0, 14)); // granted afterwards
+  const access = accessFromPayments(payments, NOW);
+  assert.equal(access.premium, true);
+  assert.equal(access.daysLeft, 14);
 });

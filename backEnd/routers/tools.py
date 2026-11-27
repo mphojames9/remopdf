@@ -569,6 +569,15 @@ async def convert_pdf_to_excel(files: List[UploadFile] = File(...), single: bool
         print(f"Excel Conversion Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"PDF to Excel conversion failed: {str(e)}")
 
+def _pdf_attachment_headers(filename: str) -> dict:
+    """Content-Disposition for a PDF download. HTTP headers must be latin-1, so a name
+    like "CV – José.pdf" would crash the response (after Adobe already converted, and
+    billed, the file). Send a plain-ASCII fallback plus the real name in filename*."""
+    stem = filename[:-4] if filename.lower().endswith(".pdf") else filename
+    ascii_stem = stem.encode("ascii", "ignore").decode().replace('"', "").strip() or "document"
+    return {"Content-Disposition": f"attachment; filename=\"{ascii_stem}.pdf\"; filename*=UTF-8''{quote(filename)}"}
+
+
 @router.post("/word-to-pdf")
 async def convert_word_to_pdf(files: List[UploadFile] = File(...)):
     if not files:
@@ -643,7 +652,7 @@ async def convert_word_to_pdf(files: List[UploadFile] = File(...)):
             return StreamingResponse(
                 io.BytesIO(pdf_bytes),
                 media_type="application/pdf",
-                headers={"Content-Disposition": f"attachment; filename={filename}"}
+                headers=_pdf_attachment_headers(filename)
             )
 
         # Multiple files: zip them together
@@ -736,7 +745,7 @@ async def convert_excel_to_pdf(files: List[UploadFile] = File(...)):
             return StreamingResponse(
                 io.BytesIO(pdf_bytes),
                 media_type="application/pdf",
-                headers={"Content-Disposition": f"attachment; filename={filename}"}
+                headers=_pdf_attachment_headers(filename)
             )
 
         # Multiple files: zip them together
@@ -757,6 +766,99 @@ async def convert_excel_to_pdf(files: List[UploadFile] = File(...)):
     except Exception as e:
         print(f"Excel to PDF System Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Excel to PDF conversion failed: {str(e)}")
+
+@router.post("/ppt-to-pdf")
+async def convert_ppt_to_pdf(files: List[UploadFile] = File(...)):
+    if not files:
+        raise HTTPException(status_code=400, detail="No PowerPoint files provided.")
+
+    for file in files:
+        if not file.filename.lower().endswith((".ppt", ".pptx")):
+            raise HTTPException(status_code=400, detail=f"{file.filename} is not a PowerPoint presentation (.ppt/.pptx).")
+
+    try:
+        credentials = ServicePrincipalCredentials(
+            client_id=os.getenv('PDF_SERVICES_CLIENT_ID'),
+            client_secret=os.getenv('PDF_SERVICES_CLIENT_SECRET')
+        )
+        pdf_services = PDFServices(credentials=credentials)
+
+        converted_files = []  # list of (filename, pdf_bytes)
+
+        for file in files:
+            file_bytes = await file.read()
+
+            fd_pdf, temp_pdf_path = tempfile.mkstemp(suffix=".pdf")
+            os.close(fd_pdf)
+
+            try:
+                # Legacy .ppt (binary) and modern .pptx (OOXML/zip) are different
+                # formats, and Adobe checks the bytes against the mime type you
+                # declare, so pick the one that matches the extension.
+                is_legacy_ppt = file.filename.lower().endswith(".ppt") and not file.filename.lower().endswith(".pptx")
+                media_type = PDFServicesMediaType.PPT if is_legacy_ppt else PDFServicesMediaType.PPTX
+
+                # Upload the raw PowerPoint bytes to Adobe
+                input_asset = pdf_services.upload(input_stream=file_bytes, mime_type=media_type)
+
+                # Convert to PDF
+                create_pdf_job = CreatePDFJob(input_asset=input_asset)
+                location = pdf_services.submit(create_pdf_job)
+                pdf_services_response = pdf_services.get_job_result(location, CreatePDFResult)
+
+                # Retrieve the Adobe Stream
+                result_asset: CloudAsset = pdf_services_response.get_result().get_asset()
+                stream_asset: StreamAsset = pdf_services.get_content(result_asset)
+
+                with open(temp_pdf_path, "wb") as f:
+                    f.write(stream_asset.get_input_stream())
+
+                with open(temp_pdf_path, "rb") as f:
+                    pdf_bytes = f.read()
+
+                base_name = file.filename.rsplit('.', 1)[0] if '.' in file.filename else file.filename
+                converted_files.append((f"{base_name}.pdf", pdf_bytes))
+
+            except Exception as adobe_error:
+                # Pull the real status/error code out so the terminal shows what went
+                # wrong (bad auth, quota exhausted, invalid file, ...) instead of every
+                # failure looking identical.
+                status_code = getattr(adobe_error, "status_code", None)
+                error_code = getattr(adobe_error, "error_code", None) or getattr(adobe_error, "code", None)
+                print(f"Adobe Engine Error on {file.filename}: status={status_code} code={error_code} detail={adobe_error}")
+                raise HTTPException(status_code=500, detail=f"Adobe failed to process {file.filename}: {adobe_error}")
+            finally:
+                if os.path.exists(temp_pdf_path):
+                    os.remove(temp_pdf_path)
+
+        # Single file: hand back the PDF directly instead of a zip
+        if len(converted_files) == 1:
+            filename, pdf_bytes = converted_files[0]
+            return StreamingResponse(
+                io.BytesIO(pdf_bytes),
+                media_type="application/pdf",
+                headers=_pdf_attachment_headers(filename)
+            )
+
+        # Multiple files: zip them together
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for filename, pdf_bytes in converted_files:
+                zip_file.writestr(filename, pdf_bytes)
+        zip_buffer.seek(0)
+
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/zip",
+            headers={"Content-Disposition": "attachment; filename=RemoPDF_PowerPoint_to_PDF.zip"}
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"PowerPoint to PDF System Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"PowerPoint to PDF conversion failed: {str(e)}")
+
 
 @router.post("/add-password")
 async def add_password_to_pdf(file: UploadFile = File(...), password: str = Form(...)):

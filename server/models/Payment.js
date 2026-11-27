@@ -32,6 +32,16 @@ const paymentSchema = new mongoose.Schema(
     // stored here: they are typed into Paystack's own window and never reach this server.
     billingName: { type: String, default: '', maxlength: 100 },
     billingPhone: { type: String, default: '', maxlength: 20 },
+    // Days given by an admin from the admin panel instead of bought: amount 0, channel "admin", reference "admin-...".
+    // grantedBy is the admin's account and note is the reason they typed.
+    grantedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    note: { type: String, maxlength: 200 },
+    // Set when an admin removed Premium. The payment stays "success" (the money was received); its expiresAt is moved back
+    // to the moment it was paid, which lib/plans.js reads as "buys nothing". Keeping the status also means a Paystack
+    // retry or a manual check can never bring the days back (settle() in routes/payments.js skips "success" payments).
+    revokedAt: { type: Date },
+    revokedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    revokeNote: { type: String, maxlength: 200 },
   },
   { timestamps: true }
 );

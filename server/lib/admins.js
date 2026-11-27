@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import User from '../models/User.js';
 
 /*
@@ -27,4 +28,24 @@ export async function syncAdminRole(user) {
   await User.updateOne({ _id: user._id }, { $set: { role: 'admin' } });
   user.role = 'admin';
   return user;
+}
+
+/*
+ * The access code. Adding or removing Premium needs it on top of being an admin, so a signed-in admin session on its
+ * own (a borrowed laptop, a stolen token) cannot hand out or take away paid access. It is a secret you choose:
+ *
+ *   ADMIN_ACCESS_CODE=something-long-only-you-know
+ *
+ * Without it the premium tools stay switched off. It is only ever compared on the server, in constant time, and never
+ * sent to the browser or stored.
+ */
+const configuredCode = () => String(process.env.ADMIN_ACCESS_CODE || '').trim();
+
+export const accessCodeConfigured = () => configuredCode().length > 0;
+
+export function accessCodeMatches(supplied) {
+  const expected = configuredCode();
+  if (!expected || typeof supplied !== 'string' || supplied.trim() === '') return false;
+  const digest = (value) => crypto.createHash('sha256').update(value).digest(); // equal length, so timingSafeEqual is safe
+  return crypto.timingSafeEqual(digest(supplied.trim()), digest(expected));
 }

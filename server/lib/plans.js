@@ -103,6 +103,28 @@ export function accessFromPayments(payments, now = Date.now()) {
 }
 
 /**
+ * The payments that still have days running or waiting at `now`: the ones to cancel to end someone's Premium right
+ * away. They are laid end to end exactly like accessFromPayments does, so the two always agree. A payment whose days
+ * are already used up is left out: it was honoured and stays as it is.
+ * Cancelling these (see the admin panel) means setting each one's expiresAt back to the moment it was paid, which
+ * lengthOf above already reads as "buys nothing".
+ */
+export function runningPayments(payments, now = Date.now()) {
+  const periods = (payments || [])
+    .map((payment) => ({ payment, paid: paidTime(payment), length: lengthOf(payment) }))
+    .filter((period) => Number.isFinite(period.paid) && Number.isFinite(period.length) && period.length > 0)
+    .sort((a, b) => a.paid - b.paid);
+
+  let end = -Infinity;
+  const running = [];
+  for (const period of periods) {
+    end = Math.max(period.paid, end) + period.length;
+    if (end > now) running.push(period.payment);
+  }
+  return running;
+}
+
+/**
  * Whether this plan can be bought now: the days already waiting plus the days being bought may not total more than
  * MAX_BANKED_DAYS. `access` is what accessFromPayments answered.
  */

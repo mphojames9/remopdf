@@ -4,11 +4,13 @@ import { getToken } from './auth';
 const API_URL = String(import.meta.env?.VITE_ACCOUNTS_URL || 'https://remopdf-server.onrender.com').replace(/\/+$/, '');
 
 export class AdminApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, code) {
     super(message);
     this.name = 'AdminApiError';
     // 0 = the server could not be reached, 401 = not signed in (or suspended / deleted), 403 = signed in but not an admin.
     this.status = status;
+    // Set for a few answers the screen reacts to: 'ACCESS_CODE' (wrong access code) and 'ACCESS_CODE_NOT_SET'.
+    this.code = code || '';
   }
 }
 
@@ -33,12 +35,12 @@ async function request(method, path, body) {
   } catch {
     /* non-JSON response */
   }
-  if (!res.ok) throw new AdminApiError((data && data.message) || 'Something went wrong. Please try again.', res.status);
+  if (!res.ok) throw new AdminApiError((data && data.message) || 'Something went wrong. Please try again.', res.status, data && data.code);
   return data;
 }
 
-/** { users, premium, free, admins, suspended, newLast7Days, activeLast7Days } */
-export const getAdminStats = () => request('GET', '/stats');
+/** { users, premium, free, admins, suspended, newLast7Days, activeLast7Days, signupsByDay: [{ date, count }] x 14, premiumTools, maxBankedDays } */
+export const getAdminStats = () => request('GET', `/stats?tzOffset=${new Date().getTimezoneOffset()}`);
 
 /**
  * One page of accounts: { items, total, page, pages, limit }.
@@ -58,3 +60,14 @@ export const updateUser = (id, changes) => request('PATCH', `/users/${encodeURIC
 
 /** Deletes the account and its resumes (payment records are kept). Resolves to { ok: true }. */
 export const deleteUser = (id) => request('DELETE', `/users/${encodeURIComponent(id)}`);
+
+/**
+ * Activates Premium or adds days to it (the days start when the current ones end). Needs the admin's access code.
+ * Resolves to the same { user, phone, payments, resumes } as getUserDetail, already updated.
+ */
+export const grantPremium = (id, { days, note = '', accessCode }) =>
+  request('POST', `/users/${encodeURIComponent(id)}/premium`, { days, note, accessCode });
+
+/** Ends Premium right now. Needs the access code. Resolves to the updated { user, phone, payments, resumes }. */
+export const removePremium = (id, { note = '', accessCode }) =>
+  request('POST', `/users/${encodeURIComponent(id)}/premium/revoke`, { note, accessCode });
