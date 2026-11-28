@@ -1,149 +1,93 @@
 import React from 'react';
-import { parseBlocks, renderInline } from '../Sections/richText';
+import { renderAchievements, renderInline, parseBlocks } from '../Sections/richText';
 import { languageLevelInfo } from '../Sections/LanguageLevelSelect';
 import { getSkillLevelLabel } from '../Sections/SkillsField';
 import { formatRange } from '../Sections/dateFormat';
-import ResumePhoto, { normalizePhotoStyle, PHOTO_SIZES } from '../Sections/ResumePhoto';
+import ResumePhoto from '../Sections/ResumePhoto';
 import {
-  PAGE_HEIGHT_PX,
-  DEFAULT_ACCENT,
   tint,
   jobDates,
-  skillRating,
   usePaginatedBlocks,
   A4Page,
   padLast,
-  editAttrs,
+  stripMb,
   markSection,
+  skillRating,
 } from './templateShared';
 
-/**
- * Helios Zenith (id: helios-zenith). A near-black header band with a thick accent rule (amber by default), over
- * a warm stone page with ONE column of sections:
- *
- *   header      photo in a soft frame, the name (first word light, the rest heavy), the profession in spaced
- *               accent capitals, a hairline, then the contact lines with small icons
- *   page 1      personal details (date of birth, nationality ...) as labelled pairs, under the header
- *   sections    in the user's section order. Summary is a white quote card with an accent edge; Experience,
- *               Education, Projects, Certifications and References are timelines (a hairline with a dot on
- *               every entry); Skills are two columns of bars; Languages are two columns with a level tag;
- *               Interests are chips
- *
- * The accent drives the header rule and profession, the timeline dots, quote edge, arrows, bars and labels.
- * It is darkened a little where it is used as TEXT on the pale page, and lightened where it sits on the
- * near-black header, whenever the chosen colour would be hard to read there.
- *
- * The body is a FLAT list of plain elements, measured and split into pages by usePaginatedBlocks. Timeline
- * entries draw their hairline per element (padding, never margin, between the elements of one entry), so the
- * line is unbroken across a page break. Entry heads are <h3>, which the paginator keeps together with the line
- * below them. Page 1 measures the room it really has under the header.
- *
- * Register: id 'helios-zenith' in Templates/index.js, DEFAULT_ACCENT (#F59E0B), TEMPLATE_CARDS in
- * TemplateThumbs.jsx and in TemplateShowcase.jsx, SKILL_LEVEL_DISPLAY in templateSkillLevels.js. A missing
- * accent key falls back to FALLBACK_ACCENT.
- */
-
 /* ------------------------------ Design tokens ------------------------------ */
-const FALLBACK_ACCENT = '#F59E0B';
-const PAPER = '#FAFAF9'; // stone-50
-const HEADER_BG = '#0C0A09'; // stone-950
-const S900 = '#1C1917';
-const S800 = '#292524';
-const S700 = '#44403C';
-const S600 = '#57534E';
-const S500 = '#78716C';
-const S400 = '#A8A29E';
-const S300 = '#D6D3D1';
-const S200 = '#E7E5E4';
-const BODY_FONT = `system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`;
-const SERIF_FONT = `ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif`;
-const MONO_FONT = `ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace`;
+// PRESTIGE IVORY: a clean black and white page with a light grey sidebar and a heavy header.
+//  - TWO columns. Sidebar: photo, contact, personal details, core skills, languages, interests.
+//    Main: name and profession over a thick rule, then summary, experience, projects, education, certifications, references.
+//  - the accent colour picked in the builder is the INK colour (default near-black): the name, the thick rule, the
+//    section headings, the job and degree titles and the skill bars. Every grey stays fixed.
+//  - skills are a thin bar (no words); a skill with no level shows its name only
+//  - each column is measured and split into pages on its own, so a long column simply continues on the next page
+// Change the tokens below first; then the blocks further down.
+const DEFAULT_INK = '#171717';  // used only if no accent colour is passed in
+const PAPER = '#FFFFFF';        // main column background
+const SIDE_BG = '#FAFAFA';      // sidebar background
+const LINE = '#E5E5E5';         // hairlines and the empty part of a skill bar
+const N800 = '#262626';         // sidebar values and skill names
+const N700 = '#404040';         // sidebar contact lines
+const N600 = '#525252';         // main paragraphs, bullets and company names
+const N500 = '#737373';         // dates, sidebar headings, language levels
+const N400 = '#8A8A8A';         // icons, small labels, places
+const N300 = '#D4D4D4';         // bullet squares
+const SIDEBAR_W = 254;          // px, the whole sidebar (32% of the page), border included
+const SIDE_PAD = 32;            // px, padding inside the sidebar
+const MAIN_PAD = 40;            // px, padding inside the main column
+const SIDE_CONTENT_W = SIDEBAR_W - SIDE_PAD * 2 - 1; // px -> 189 (1px border). The hidden measuring boxes must match the real columns.
+const MAIN_W = 794 - SIDEBAR_W - MAIN_PAD * 2;       // px -> 460
 
-// Geometry (px). The hidden measuring box must be exactly as wide as the real body.
-const PAGE_PAD = 40;
-const BODY_W = 794 - PAGE_PAD * 2; // 714
-const BODY_PAD_BOTTOM = 32; // the paginator keeps a further 48px clear above it for the page number
-const MAX_HEIGHT = PAGE_HEIGHT_PX - PAGE_PAD - BODY_PAD_BOTTOM; // pages 2+; page 1 is measured for real
-const HEADER_PAD_X = 48;
-const HEADER_W = 794 - HEADER_PAD_X * 2; // 698
-const HEADER_GAP = 40; // photo to text
+// These sections live in the sidebar. Every other section goes in the main column.
+const SIDE_SECTIONS = ['skills', 'languages', 'hobbies'];
 
-// One entry of a timeline: a hairline down the left edge, content 24px in.
-const TL = { marginLeft: 6, borderLeft: `1px solid ${S200}`, paddingLeft: 24 };
-
-/* ------------------------------ Colour helpers ----------------------------- */
-const rgbOf = (hex) => {
-  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
-  if (!m) return null;
-  const n = parseInt(m[1], 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-};
-
-const alpha = (hex, a) => {
-  const c = rgbOf(hex);
-  return c ? `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})` : hex;
-};
-
+/* --------------------------------- Colours -------------------------------- */
+// 0 (black) to 1 (white). The ink is used as text on white, so a bright accent is darkened until it is readable.
 const luminance = (hex) => {
-  const c = rgbOf(hex);
-  if (!c) return 0;
-  const [r, g, b] = c.map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return 0;
+  let h = m[1];
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  const lin = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 };
 
-const contrast = (a, b) => {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
+/* ---------------------------------- Icons --------------------------------- */
+const ICON_PATHS = {
+  mail: ['M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75'],
+  phone: ['M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3'],
+  pin: ['M15 10.5a3 3 0 11-6 0 3 3 0 016 0z', 'M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z'],
+  link: ['M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244'],
+  dot: [],
 };
 
-// The accent, moved step by step (darker on a light background, lighter on a dark one) until it reaches
-// `min`:1 contrast. A colour that already reads well is returned untouched.
-const readableOn = (hex, background, min) => {
-  if (!rgbOf(hex)) return hex;
-  const direction = luminance(background) > 0.5 ? -1 : 1;
-  for (let step = 0; step <= 10; step += 1) {
-    const candidate = tint(hex, direction * step * 0.1);
-    if (contrast(candidate, background) >= min) return candidate;
-  }
-  return tint(hex, direction);
-};
+const Icon = ({ name, size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+    {(ICON_PATHS[name] || []).map((d) => <path key={d} d={d} />)}
+    {name === 'dot' && <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />}
+  </svg>
+);
 
-/* ------------------------------ Contact lines ------------------------------ */
-// The builder hands over one flat list of strings. Personal details ("Born: ...", "Nationality: ...") become
-// label / value pairs on the details row; everything else is a contact line with an icon.
-const DETAIL_RULES = [
-  [/^(born|date of birth|dob)\s*:/i, 'Date of Birth'],
-  [/^(nationality|citizenship)\s*:/i, 'Nationality'],
-  [/^(gender|sex)\s*:/i, 'Gender'],
-  [/^(marital status|civil status)\s*:/i, 'Marital Status'],
-  [/^(driver'?s?|driving)\s+licen[cs]e\b/i, "Driver's License"],
-];
-
-const parseDetail = (line) => {
-  const text = String(line).trim();
-  const rule = DETAIL_RULES.find(([re]) => re.test(text));
-  if (!rule) return null;
-  const m = /^[^:]+:\s*(.+)$/.exec(text);
-  return { label: rule[1], value: m ? m[1].trim() : 'Yes' };
-};
-
+/* ------------------------------ Text helpers ------------------------------ */
+// The contact list is plain text, so the icon is picked from what the line looks like.
+// This template draws websites and social links with the same link icon, as the original did.
 // An email typed without its "@" (e.g. "name9gmail.com") still gets the mail icon.
 const MAIL_HOST = /^(?!www\.)[^\s@/]+(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|proton|protonmail)\.(com|me|co\.za|co\.uk)$/;
-
-const contactKind = (raw) => {
-  const s = String(raw).trim().toLowerCase();
-  const m = s.match(/^([a-z][a-z ./&-]{1,28}):(?!\/\/)\s*/); // a leading "Label:" (not the "https:" of a URL)
+const contactIcon = (c) => {
+  if (typeof c !== 'string') return 'dot';
+  const s = c.trim().toLowerCase();
+  // Split off a leading "Label:" (but not the "https:" of a URL) so "Tel: +27 ..." is still recognised.
+  const m = s.match(/^([a-z][a-z .\/&-]{1,28}):(?!\/\/)\s*/);
   const label = m ? m[1] : '';
   const value = m ? s.slice(m[0].length) : s;
 
-  if (s.includes('linkedin')) return 'linkedin';
-  if (s.includes('github')) return 'link';
+  if (s.includes('linkedin')) return 'link';
   if (value.includes('@') || /e-?mail/.test(label) || MAIL_HOST.test(value)) return 'mail';
   if (/^(tel|telephone|phone|mobile|cell|whatsapp|fax)\b/.test(label) || /^[+()\d\s.-]{7,}$/.test(value)) return 'phone';
-  if (/web|site|portfolio|url|link/.test(label) || /(https?:\/\/|www\.|\.(com|dev|io|net|org|me|site|co|app)\b)/.test(value)) return 'globe';
+  if (/web|site|portfolio|url|link/.test(label) || /(https?:\/\/|www\.|\.(com|dev|io|net|org|me|site|co|app)\b)/.test(value)) return 'link';
   if (/address|location|city|based|residen/.test(label)
     || /\d+\s+.*\b(street|st|road|rd|avenue|ave|drive|dr|lane|ln|blvd|boulevard|close|crescent|way)\b/.test(value)
     || /\bp\.?o\.?\s*box\b/.test(value)
@@ -151,423 +95,330 @@ const contactKind = (raw) => {
   return 'dot';
 };
 
-// A resume has one location: only the first address-like line gets the pin, any later one a neutral dot.
-const resolveContactKinds = (lines) => {
-  let pinSeen = false;
-  return lines.map(contactKind).map((kind) => {
-    if (kind !== 'pin') return kind;
-    if (pinSeen) return 'dot';
-    pinSeen = true;
-    return 'pin';
+// Lines the builder adds for the personal details. They get their own "Details" block with a label on top.
+const DETAIL_LINE = /^(born|dob|date of birth|nationality|citizenship|gender|sex|marital status|civil status)\s*:|^driver['’]?s?\s+licen[cs]e/i;
+const titleCase = (s) => s.trim().toLowerCase().replace(/(^|\s)\w/g, (c) => c.toUpperCase());
+const detailLabel = (raw) => (/^(born|dob|date of birth)$/i.test(raw.trim()) ? 'Date of Birth' : titleCase(raw));
+
+// Lets an email or link wrap after "@" and "/" (instead of in the middle of a word) when it is too long for the line.
+const withBreaks = (text) => String(text).split(/([@/])/).map((part, i) => (
+  i % 2 === 1 ? <React.Fragment key={`b-${i}`}>{part}<wbr /></React.Fragment> : part
+));
+
+// "Rock climbing, chess (blitz, rapid), painting" -> three items. Commas inside brackets do not split.
+const splitList = (text) => {
+  const out = [];
+  let depth = 0;
+  let current = '';
+  Array.from(String(text || '')).forEach((ch) => {
+    if (ch === '(') depth += 1;
+    if (ch === ')') depth = Math.max(0, depth - 1);
+    if ((ch === ',' || ch === ';') && depth === 0) {
+      out.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
   });
+  out.push(current);
+  return out.map((s) => s.trim()).filter(Boolean);
 };
 
-// The header lists contact lines in this order, whatever order they were entered in.
-const KIND_ORDER = ['mail', 'phone', 'pin', 'linkedin', 'globe', 'link', 'dot'];
+const PrestigeIvoryTemplate = (props) => {
+  const { fullName, contactList, jobs, educations, namedSkills, personal, summary, hobbies, languages, projects, references, certificates, isEmpty, accentColor, sectionOrder, edit } = props;
 
-/* ---------------------------------- Icons ---------------------------------- */
-const ContactIcon = ({ kind }) => {
-  const common = { 'aria-hidden': true, width: 16, height: 16, viewBox: '0 0 24 24', className: 'shrink-0' };
-  if (kind === 'linkedin') {
-    return (
-      <svg {...common} fill="currentColor">
-        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-      </svg>
-    );
-  }
-  const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
-  return (
-    <svg {...common} {...stroke}>
-      {kind === 'mail' && <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />}
-      {kind === 'phone' && <><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></>}
-      {kind === 'pin' && <><path d="M12 21s-8-4.5-8-11.8A8 8 0 0112 1.2a8 8 0 018 8C20 16.5 12 21 12 21z" /><circle cx="12" cy="9.2" r="3" /></>}
-      {kind === 'globe' && <><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path d="M3.6 9h16.8M3.6 15h16.8" /><path d="M11.5 3a17 17 0 000 18M12.5 3a17 17 0 000 18" /></>}
-      {kind === 'link' && <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />}
-      {kind === 'dot' && <circle cx="12" cy="12" r="3" fill="currentColor" />}
-    </svg>
-  );
-};
+  const accent = accentColor || DEFAULT_INK;
+  const INK = luminance(accent) > 0.25 ? tint(accent, -0.6) : accent; // dark enough to read as text on white
 
-const chunk = (list, n) => list.reduce((rows, item, i) => {
-  if (i % n === 0) rows.push([]);
-  rows[rows.length - 1].push(item);
-  return rows;
-}, []);
-
-// The little grey tag beside an entry's title (dates, a project link).
-const Pill = ({ children, plain }) => (
-  <span
-    className="shrink-0"
-    style={{
-      fontSize: 10,
-      fontWeight: 800,
-      lineHeight: 1.4,
-      letterSpacing: '0.05em',
-      textTransform: plain ? 'none' : 'uppercase',
-      color: S600,
-      backgroundColor: 'rgba(231, 229, 228, 0.6)',
-      border: '1px solid rgba(214, 211, 209, 0.5)',
-      borderRadius: 6,
-      padding: '2px 10px',
-      ...(plain ? { maxWidth: '55%', overflowWrap: 'anywhere' } : null),
-    }}
-  >
-    {children}
-  </span>
-);
-
-/* -------------------------------- Template -------------------------------- */
-const HeliosZenithTemplate = (props) => {
-  const { fullName, contactList, jobs, educations, namedSkills, summary, hobbies, languages, projects, references, certificates, isEmpty, sectionOrder, edit } = props;
-  const personal = props.personal || {};
-  const accent = props.accentColor || DEFAULT_ACCENT['helios-zenith'] || FALLBACK_ACCENT;
-  const accentText = readableOn(accent, PAPER, 3); // accent used as text on the pale page
-  const accentOnDark = readableOn(accent, HEADER_BG, 4.5); // accent used as text on the header band
-  const accentRule = readableOn(accent, HEADER_BG, 3); // the header rule and photo dot, so a dark accent still shows on the band
-  const order = Array.isArray(sectionOrder) ? sectionOrder : [];
-
-  /* ------------------------------- Shared bits ------------------------------ */
-  const heading = (key, title) => (
-    <h3
-      key={`${key}-h`}
-      className="mb-5 flex items-center"
-      style={{ gap: 12, fontFamily: SERIF_FONT, fontSize: 18, fontWeight: 700, lineHeight: 1.4, letterSpacing: '0.05em', textTransform: 'uppercase', color: S900 }}
-    >
-      <span aria-hidden="true" className="shrink-0 rounded-full" style={{ width: 6, height: 6, backgroundColor: accent }} />
-      {title}
+  /* -------------------------------- Headings -------------------------------- */
+  // Every entry is a FLAT list of elements: no <section>, no wrapper divs, so the paginator can break between them.
+  // Headings (and entry headers) are <h3>, which the paginator never leaves alone at the bottom of a page.
+  const sideHeading = (key, text) => (
+    <h3 key={`${key}-h`} className="text-[11px] font-bold uppercase pb-2 mb-4" style={{ letterSpacing: '0.3em', color: N500, borderBottom: `1px solid ${LINE}` }}>
+      {text}
     </h3>
   );
-
-  // Head of a timeline entry: dot, title (+ tag on the right), then an accent line (+ small caps on the right).
-  // `last` closes the entry's hairline when nothing follows it.
-  const entryHead = ({ key, title, pill, plainPill, sub, subRight, titleSize = 15, subSize = 13, last = false }) => (
-    <h3 key={key} className="relative font-normal" style={{ ...TL, paddingTop: 4, paddingBottom: last ? 8 : 0 }}>
-      <span
-        aria-hidden="true"
-        className="absolute rounded-full"
-        style={{ left: -4.5, top: 7, width: 8, height: 8, backgroundColor: accent, boxShadow: `0 0 0 4px ${PAPER}` }}
-      />
-      <div className="flex items-baseline justify-between" style={{ gap: 16 }}>
-        <span className="min-w-0 break-words" style={{ fontSize: titleSize, fontWeight: 700, lineHeight: 1.4, letterSpacing: '-0.01em', color: S900 }}>{title}</span>
-        {pill && <Pill plain={plainPill}>{pill}</Pill>}
-      </div>
-      {(sub || subRight) && (
-        <div className="flex items-baseline justify-between" style={{ gap: 16, marginTop: 2 }}>
-          <span className="min-w-0 break-words" style={{ fontSize: subSize, fontWeight: 600, lineHeight: 1.4, letterSpacing: '0.01em', color: accentText }}>{sub}</span>
-          {subRight && <span className="ml-auto shrink-0" style={{ fontSize: 11, fontWeight: 500, lineHeight: 1.4, letterSpacing: '0.05em', textTransform: 'uppercase', color: S400 }}>{subRight}</span>}
-        </div>
-      )}
+  const mainHeading = (key, text) => (
+    <h3 key={`${key}-h`} className="text-[14px] font-black uppercase mb-4" style={{ letterSpacing: '0.2em', color: INK }}>
+      {text}
     </h3>
   );
+  const sideGroup = (nodes) => padLast(nodes, 'mb-8');
 
-  // The lines under an entry head: "- " lines get an accent arrow. The last one closes the hairline.
-  const entryLines = (text, keyPrefix, lastOfEntry = true) => {
-    const blocks = parseBlocks(text);
-    return blocks.map((block, i) => {
-      const key = `${keyPrefix}-${i}`;
-      const closes = lastOfEntry && i === blocks.length - 1;
-      return (
-        <div key={key} className="flex items-start" style={{ ...TL, gap: 10, paddingTop: 6, paddingBottom: closes ? 8 : 0, fontSize: 13.5, lineHeight: 1.625, color: S600 }}>
-          {block.bullet && <span aria-hidden="true" className="shrink-0 select-none" style={{ marginTop: 1, fontWeight: 700, color: accentText }}>→</span>}
-          <span className="min-w-0 break-words">{renderInline(block.text, key)}</span>
-        </div>
-      );
+  // Formatted (bold / italic / bullet) lines in this template's colours. Same atoms; the bullet becomes a small grey square.
+  // The gap under each line is a class (not inline style), because padLast() swaps the last line's mb-* for the group spacing.
+  const richText = (text, keyPrefix, { size = 13.5, line = 1.625, color = N600, spacing = 'mb-2', style = {} } = {}) =>
+    renderAchievements(text, keyPrefix).map((node) => {
+      const className = `${stripMb(node.props.className)} ${spacing}`;
+      const nodeStyle = { fontSize: size, lineHeight: line, color, ...style };
+      const kids = node.props.children;
+      if (node.type === 'div' && Array.isArray(kids) && kids.length === 2) {
+        return React.cloneElement(
+          node,
+          { className, style: nodeStyle },
+          <span key="marker" aria-hidden="true" className="shrink-0 select-none" style={{ color: N300, fontSize: 10, marginTop: 6 }}>■</span>,
+          kids[1],
+        );
+      }
+      return React.cloneElement(node, { className, style: nodeStyle });
     });
-  };
 
-  // One timeline entry (head + lines) followed by the space before the next entry.
-  const entry = (head, lines) => padLast([head, ...lines], 'mb-6');
+  /* ------------------------------- MAIN: entries ------------------------------- */
+  // The first row of an entry: the title on the left and the date (or link) on the right.
+  const entryHeader = ({ key, title, side, titleSize = 15, sideClass = 'uppercase tracking-widest' }) => (
+    <h3 key={key} className="flex justify-between items-baseline gap-2">
+      <span className="min-w-0 font-bold" style={{ fontSize: titleSize, color: INK }}>{title}</span>
+      {side && <span className={`shrink-0 ml-2 text-[12px] font-bold ${sideClass}`} style={{ color: N500 }}>{side}</span>}
+    </h3>
+  );
 
-  // Section = heading + entries, closed with the space before the next section.
-  const timelineSection = (key, title, entries) => (entries.length > 0 ? padLast([heading(key, title), ...entries.flat()], 'mb-8') : []);
-
-  /* -------------------------------- Sections -------------------------------- */
-  const summaryBlocks = () => {
-    const lines = summary ? parseBlocks(summary) : [];
-    if (lines.length === 0) return [];
-    return padLast(lines.map((block, i) => {
-      const first = i === 0;
-      const last = i === lines.length - 1;
-      const key = `summary-${i}`;
-      return (
-        <div
-          key={key}
-          className="relative flex items-start"
-          style={{
-            gap: 10,
-            backgroundColor: '#FFFFFF',
-            borderLeft: `3px solid ${accent}`,
-            borderTopRightRadius: first ? 12 : 0,
-            borderBottomRightRadius: last ? 12 : 0,
-            padding: `${first ? 24 : 0}px 24px ${last ? 24 : 6}px 36px`,
-            fontFamily: SERIF_FONT,
-            fontStyle: 'italic',
-            fontSize: 15,
-            lineHeight: 1.625,
-            color: S700,
-          }}
-        >
-          {first && (
-            <span aria-hidden="true" className="pointer-events-none absolute select-none" style={{ left: 10, top: 6, fontSize: 48, lineHeight: 1, color: alpha(accent, 0.3) }}>“</span>
-          )}
-          {block.bullet && <span aria-hidden="true" className="shrink-0 select-none" style={{ fontStyle: 'normal', fontWeight: 700, color: accentText }}>→</span>}
-          <span className="min-w-0 break-words">{renderInline(block.text, key)}</span>
-        </div>
-      );
-    }), 'mb-8');
-  };
-
-  const experienceBlocks = () => timelineSection('experience', 'Professional Experience', jobs.map((job) => {
-    const place = [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(' · ');
-    const hasLines = parseBlocks(job.achievements).length > 0;
-    return entry(
-      entryHead({ key: `job-${job.id}-head`, title: job.title || job.employer, pill: jobDates(job), sub: job.title ? job.employer : '', subRight: place, last: !hasLines }),
-      entryLines(job.achievements, `job-${job.id}-ach`),
-    );
-  }));
-
-  const educationBlocks = () => timelineSection('education', 'Education History', educations.map((ed) => {
-    const degree = [ed.degree, ed.field].filter(Boolean).join(', ');
-    const hasLines = parseBlocks(ed.achievements).length > 0;
-    return entry(
-      entryHead({ key: `education-${ed.id}-head`, title: degree || ed.institution, pill: ed.date, sub: degree ? ed.institution : '', subRight: ed.location, last: !hasLines }),
-      entryLines(ed.achievements, `education-${ed.id}-ach`),
-    );
-  }));
+  // The second row: the company or school on the left, the place on the right.
+  // It is an <h3> like the first row, so the paginator carries both to the next page together with the first bullet.
+  const entrySubRow = (key, main, place, mainClass) => (
+    <h3 key={key} className="flex justify-between items-baseline gap-2 pt-1 pb-2">
+      <span className={`min-w-0 ${mainClass}`} style={{ color: N600 }}>{main}</span>
+      {place && <span className="shrink-0 text-[11px] font-medium uppercase" style={{ color: N400 }}>{place}</span>}
+    </h3>
+  );
 
   const projectItems = (projects?.items || []).filter((p) => p.title || p.description);
-  const projectBlocks = () => (projects?.enabled ? timelineSection('projects', 'Featured Projects', projectItems.map((p) => {
-    const hasLines = parseBlocks(p.description).length > 0;
-    return entry(
-      entryHead({ key: `project-${p.id}-head`, title: p.title || 'Project', pill: p.link, plainPill: true, last: !hasLines }),
-      entryLines(p.description, `project-${p.id}-desc`),
-    );
-  })) : []);
-
-  const certificateItems = (certificates?.items || []).filter((c) => c.name || c.issuer);
-  const certificateBlocks = () => (certificates?.enabled ? timelineSection('certificates', 'Certifications', certificateItems.map((c) => {
-    const hasLink = !!c.link;
-    const hasLines = parseBlocks(c.description).length > 0;
-    return entry(
-      entryHead({
-        key: `certificate-${c.id}-head`,
-        title: c.name || c.issuer,
-        pill: c.date ? formatRange(c.date) : '',
-        sub: c.name ? c.issuer : '',
-        titleSize: 14,
-        subSize: 12.5,
-        last: !hasLink && !hasLines,
-      }),
-      [
-        ...(hasLink ? [(
-          <div key={`certificate-${c.id}-link`} className="break-all" style={{ ...TL, paddingTop: 4, paddingBottom: hasLines ? 0 : 8, fontFamily: MONO_FONT, fontSize: 11.5, lineHeight: 1.5, color: S500 }}>{c.link}</div>
-        )] : []),
-        ...entryLines(c.description, `certificate-${c.id}-desc`),
-      ],
-    );
-  })) : []);
-
   const referenceItems = (references?.items || []).filter((r) => r.name);
-  const referenceBlocks = () => {
-    if (!references?.enabled) return [];
-    if (references.availableUponRequest) {
-      return padLast([
-        heading('references', 'References'),
-        <p key="references-note" style={{ paddingLeft: 16, fontSize: 13.5, lineHeight: 1.625, color: S600 }}>Available upon request.</p>,
-      ], 'mb-8');
-    }
-    return timelineSection('references', 'References', referenceItems.map((r) => entry(
-      entryHead({ key: `reference-${r.id ?? r.name}-head`, title: r.name, sub: r.relationship, titleSize: 14, subSize: 12.5, last: !r.contact }),
-      r.contact ? [(
-        <div key={`reference-${r.id ?? r.name}-contact`} className="break-all" style={{ ...TL, paddingTop: 4, paddingBottom: 8, fontFamily: MONO_FONT, fontSize: 12.5, lineHeight: 1.5, letterSpacing: '-0.01em', color: S500 }}>{r.contact}</div>
-      )] : [],
-    )));
-  };
+  const certificateItems = (certificates?.items || []).filter((c) => c.name || c.issuer);
+  const referenceRows = referenceItems.reduce((rows, r, i) => {
+    if (i % 2 === 0) rows.push([r]);
+    else rows[rows.length - 1].push(r);
+    return rows;
+  }, []);
 
-  const skillBlocks = () => (namedSkills.length > 0 ? padLast([
-    heading('skills', 'Core Expertise'),
-    ...chunk(namedSkills, 2).map((pair, i) => (
-      <div key={`skill-row-${i}`} className="mb-3 grid grid-cols-2" style={{ columnGap: 32, paddingLeft: 18 }}>
-        {pair.map((s) => {
-          const rating = skillRating(s);
-          return (
-            <div key={`skill-${s.id}`} className="min-w-0" title={rating > 0 ? getSkillLevelLabel(rating) : undefined}>
-              <div className="break-words" style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.4, color: S800, marginBottom: rating > 0 ? 4 : 0 }}>{s.text}</div>
-              {rating > 0 && (
-                <div className="w-full overflow-hidden rounded-full" style={{ height: 4, backgroundColor: 'rgba(231, 229, 228, 0.7)' }}>
-                  <div className="h-full rounded-full" style={{ width: `${(rating / 5) * 100}%`, backgroundImage: `linear-gradient(90deg, ${accent}, ${tint(accent, -0.12)})` }} />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    )),
-  ], 'mb-8') : []);
-
-  const languageItems = (languages?.items || []).filter((l) => l.name);
-  const languageBlocks = () => (languages?.enabled && languageItems.length > 0 ? padLast([
-    heading('languages', 'Languages'),
-    ...chunk(languageItems, 2).map((pair, i) => (
-      <div key={`language-row-${i}`} className="mb-2 grid grid-cols-2" style={{ columnGap: 32, paddingLeft: 16 }}>
-        {pair.map((l) => {
-          const { label } = languageLevelInfo(l);
-          return (
-            <div key={`language-${l.id ?? l.name}`} className="flex min-w-0 items-center justify-between" style={{ gap: 8, paddingBottom: 4, borderBottom: `1px solid ${alpha(S300, 0.6)}`, fontSize: 13.5, lineHeight: 1.5 }}>
-              <span className="min-w-0 break-words" style={{ fontWeight: 700, color: S800 }}>{l.name}</span>
-              {label && (
-                <span
-                  className="shrink-0"
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    lineHeight: 1.4,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: accentText,
-                    backgroundColor: alpha(accent, 0.1),
-                    border: `1px solid ${alpha(accent, 0.25)}`,
-                    borderRadius: 4,
-                    padding: '2px 8px',
-                  }}
-                >
-                  {label}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    )),
-  ], 'mb-8') : []);
-
-  const hobbyLines = hobbies?.enabled && hobbies.text ? parseBlocks(hobbies.text) : [];
-  const hobbyBlocks = () => (hobbyLines.length > 0 ? padLast([
-    heading('hobbies', 'Interests'),
-    <div key="hobby-chips" className="flex flex-wrap" style={{ gap: 8, paddingLeft: 16 }}>
-      {hobbyLines.map((b, i) => (
-        <span
-          key={`hobby-${i}`}
-          className="inline-flex items-center"
-          style={{ gap: 8, padding: '6px 12px', fontSize: 13, fontWeight: 700, lineHeight: 1.4, color: S700, backgroundColor: '#FFFFFF', border: `1px solid ${S200}`, borderRadius: 8 }}
-        >
-          <span aria-hidden="true" className="shrink-0 rounded-full" style={{ width: 4, height: 4, backgroundColor: accent }} />
-          <span className="break-words">{renderInline(b.text, `hobby-${i}`)}</span>
-        </span>
-      ))}
-    </div>,
-  ], 'mb-8') : []);
-
-  /* ------------------------ Details, contact, ordering ----------------------- */
-  const allLines = (contactList || []).filter((c) => typeof c === 'string' && c.trim());
-  const details = [];
-  const contacts = [];
-  allLines.forEach((line) => {
-    const d = parseDetail(line);
-    if (d) details.push(d); else contacts.push(line);
-  });
-  const contactKinds = resolveContactKinds(contacts);
-  const contactRows = contacts
-    .map((text, i) => ({ text, kind: contactKinds[i], i }))
-    .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.i - b.i);
-
-  const detailBlocks = details.length > 0 ? padLast([(
-    <div key="details" className="flex flex-wrap" style={{ columnGap: 40, rowGap: 16, paddingBottom: 24, borderBottom: `1px solid ${alpha(S200, 0.8)}` }}>
-      {details.map((d) => (
-        <div key={d.label} className="flex flex-col" style={{ gap: 2 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.4, letterSpacing: '0.1em', textTransform: 'uppercase', color: accentText }}>{d.label}</span>
-          <span className="break-words" style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.4, color: S800 }}>{d.value}</span>
-        </div>
-      ))}
-    </div>
-  )], 'mb-8') : [];
-
-  const builders = {
-    summary: summaryBlocks,
-    experience: experienceBlocks,
-    education: educationBlocks,
-    certificates: certificateBlocks,
-    skills: skillBlocks,
-    projects: projectBlocks,
-    languages: languageBlocks,
-    hobbies: hobbyBlocks,
-    references: referenceBlocks,
-  };
-  const blocks = [
-    ...markSection(edit, 'personal', detailBlocks, false),
-    ...order.filter((key) => builders[key]).flatMap((key) => markSection(edit, key, builders[key]())),
-  ];
-
-  /* ------------------------------ Pagination ------------------------------- */
-  const { pages, measureContainerRef, firstBodyRef, measureContent } = usePaginatedBlocks(blocks, MAX_HEIGHT);
-  const pageCount = Math.max(1, pages.length);
-
-  /* --------------------------------- Header -------------------------------- */
-  const nameWords = (fullName || 'Your Name').trim().split(/\s+/);
-
-  // Size the name so the longest word fits the room beside the photo.
-  const photoLook = normalizePhotoStyle(personal.photoStyle);
-  const photoPx = (PHOTO_SIZES.find((s) => s.value === photoLook.size) || PHOTO_SIZES[1]).px;
-  const photoBox = personal.photo ? photoPx + 14 + HEADER_GAP : 0; // frame (6px padding + 1px border each side) + gap
-  const nameRoom = HEADER_W - photoBox;
-  const longestWord = Math.max(1, ...nameWords.flatMap((w) => w.split('-')).map((w) => w.length));
-  const nameSize = Math.max(26, Math.min(48, Math.floor(nameRoom / (longestWord * 0.8))));
-  const hasContact = contactRows.length > 0;
-
-  const header = (
-    <header {...editAttrs(edit, 'personal')} className="flex w-full shrink-0 items-center" style={{ gap: HEADER_GAP, padding: `40px ${HEADER_PAD_X}px`, backgroundColor: HEADER_BG, borderBottom: `4px solid ${accentRule}`, color: S300 }}>
-      {personal.photo && (
-        <div className="relative shrink-0" style={{ padding: 6, borderRadius: 16, border: `1px solid ${S800}`, backgroundColor: 'rgba(28, 25, 23, 0.5)', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6)' }}>
-          <ResumePhoto src={personal.photo} style={personal.photoStyle} borderColor={accent} />
-          <span aria-hidden="true" className="absolute rounded-full" style={{ right: -4, bottom: -4, width: 16, height: 16, backgroundColor: accentRule, border: `4px solid ${HEADER_BG}` }} />
-        </div>
-      )}
-
-      <div className="flex min-w-0 flex-1 flex-col" style={{ gap: 20 }}>
-        <div className="flex flex-col" style={{ gap: 4, paddingBottom: hasContact ? 20 : 0, borderBottom: hasContact ? `1px solid ${alpha(S800, 0.8)}` : 'none' }}>
-          <h1 className="flex flex-wrap uppercase" style={{ columnGap: 12, fontFamily: SERIF_FONT, fontSize: nameSize, fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.025em', color: '#FFFFFF' }}>
-            {nameWords.map((word, i) => (
-              <span key={i} className="break-words" style={i === 0 ? { fontWeight: 300 } : { fontWeight: 900, color: S300 }}>{word}</span>
-            ))}
-          </h1>
-          {personal.profession && (
-            <p className="break-words uppercase" style={{ marginTop: 8, marginLeft: 4, fontSize: 12, fontWeight: 900, lineHeight: 1.5, letterSpacing: '0.3em', color: accentOnDark }}>{personal.profession}</p>
-          )}
-        </div>
-
-        {hasContact && (
-          <div className="flex flex-wrap" style={{ columnGap: 32, rowGap: 12, paddingLeft: 4 }}>
-            {contactRows.map(({ text, kind, i }) => (
-              <div key={`contact-${i}`} className="flex items-center" style={{ gap: 8, color: S500 }}>
-                <ContactIcon kind={kind} />
-                <span className="[overflow-wrap:anywhere]" style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: S300 }}>{text}</span>
+  const mainMap = {
+    summary: summary ? padLast(
+      richText(summary, 'summary', { size: 14, color: N600, style: { textAlign: 'justify', fontWeight: 500 } }),
+      'mb-6',
+    ) : [],
+    experience: jobs.length > 0 ? [
+      mainHeading('experience', 'Experience'),
+      ...jobs.flatMap((job) => {
+        const place = [job.location, job.remote ? 'Remote' : ''].filter(Boolean).join(', ');
+        // Job title first when there is one; otherwise the employer takes the bold position.
+        const hasTitle = Boolean(job.title);
+        return padLast([
+          entryHeader({ key: `job-${job.id}-h`, title: job.title || job.employer, side: jobDates(job), titleSize: 16 }),
+          (hasTitle ? job.employer : place) && entrySubRow(`job-${job.id}-sub`, hasTitle ? job.employer : place, hasTitle ? place : '', 'text-[12px] font-semibold uppercase tracking-wide'),
+          ...richText(job.achievements, `job-${job.id}-ach`),
+        ], 'mb-6');
+      }),
+    ] : [],
+    projects: projects?.enabled && projectItems.length > 0 ? [
+      mainHeading('projects', 'Projects'),
+      ...projectItems.flatMap((p) => padLast([
+        entryHeader({ key: `project-${p.id}-h`, title: p.title || p.link, side: p.title ? p.link : '', sideClass: 'tracking-wide break-all text-right' }),
+        ...richText(p.description, `project-${p.id}-desc`).map((node, i) => (i === 0 ? React.cloneElement(node, { style: { ...node.props.style, marginTop: 4 } }) : node)),
+      ], 'mb-6')),
+    ] : [],
+    education: educations.length > 0 ? [
+      mainHeading('education', 'Education'),
+      ...educations.flatMap((ed) => {
+        const degree = [ed.degree, ed.field].filter(Boolean).join(', ');
+        return padLast([
+          entryHeader({ key: `education-${ed.id}-h`, title: degree || ed.institution, side: ed.date }),
+          ((degree ? ed.institution : '') || ed.location) && entrySubRow(`education-${ed.id}-sub`, degree ? ed.institution : '', ed.location, 'text-[14px] font-medium'),
+          ...richText(ed.achievements, `education-${ed.id}-ach`),
+        ], 'mb-6');
+      }),
+    ] : [],
+    certificates: certificates?.enabled && certificateItems.length > 0 ? [
+      mainHeading('certificates', 'Certifications'),
+      ...certificateItems.flatMap((c) => padLast([
+        entryHeader({ key: `certificate-${c.id}-h`, title: c.name || c.issuer, side: c.date ? formatRange(c.date) : '', titleSize: 14, sideClass: 'tracking-widest text-[11px]' }),
+        c.name && c.issuer && <h3 key={`certificate-${c.id}-issuer`} className="pt-1 pb-1 text-[13px] font-normal" style={{ color: N600 }}>{c.issuer}</h3>,
+        c.link && <p key={`certificate-${c.id}-link`} className="pb-1 text-[12px] break-all" style={{ color: N400 }}>{c.link}</p>,
+        ...richText(c.description, `certificate-${c.id}-desc`).map((node, i) => (i === 0 ? React.cloneElement(node, { style: { ...node.props.style, marginTop: 4 } }) : node)),
+      ], 'mb-6')),
+    ] : [],
+    references: references?.enabled && (references.availableUponRequest || referenceItems.length > 0) ? [
+      mainHeading('references', 'References'),
+      ...(references.availableUponRequest
+        ? [<p key="references-note" className="mb-6 text-[13.5px]" style={{ color: N600 }}>Available upon request.</p>]
+        : referenceRows.map((row, rowIndex) => (
+          <div key={`reference-row-${rowIndex}`} className="grid grid-cols-2 gap-6 mb-6">
+            {row.map((r) => (
+              <div key={`reference-${r.id}`} className="min-w-0 flex flex-col gap-0.5">
+                <p className="text-[14px] font-bold" style={{ color: INK }}>{r.name}</p>
+                {r.relationship && <p className="mt-0.5 text-[12px] font-semibold uppercase tracking-wide" style={{ color: N500 }}>{r.relationship}</p>}
+                {r.contact && <p className="mt-1 text-[12px] font-medium break-words" style={{ color: N600 }}>{r.contact}</p>}
               </div>
             ))}
           </div>
-        )}
+        ))),
+    ] : [],
+  };
+
+  /* ------------------------------- SIDEBAR column ------------------------------- */
+  const languageItems = (languages?.items || []).filter((l) => l.name);
+  const hasLanguages = Boolean(languages?.enabled && languageItems.length > 0);
+  const hasHobbies = Boolean(hobbies?.enabled && hobbies.text && String(hobbies.text).trim());
+  const hobbyItems = hasHobbies ? parseBlocks(hobbies.text).flatMap((block) => splitList(block.text)) : [];
+
+  const sideMap = {
+    skills: namedSkills.length > 0 ? sideGroup([
+      sideHeading('skills', 'Core Skills'),
+      ...namedSkills.map((s, i) => {
+        const rating = skillRating(s);
+        return (
+          <div key={`skill-${s.id || i}`} className="mb-4" title={rating ? getSkillLevelLabel(rating) : undefined}>
+            <p className="text-[13px] font-semibold" style={{ color: N800 }}>{s.text}</p>
+            {rating > 0 && (
+              <div className="mt-1.5 w-full overflow-hidden rounded-full" style={{ height: 3, backgroundColor: LINE }}>
+                <div className="h-full rounded-full" style={{ width: `${(rating / 5) * 100}%`, backgroundColor: INK }} />
+              </div>
+            )}
+          </div>
+        );
+      }),
+    ]) : [],
+    languages: hasLanguages ? sideGroup([
+      sideHeading('languages', 'Languages'),
+      ...languageItems.map((l, i) => {
+        const { label } = languageLevelInfo(l);
+        return (
+          <div key={`language-${l.id || i}`} className="flex justify-between items-baseline gap-2 pb-1 mb-4" style={{ borderBottom: `1px dashed ${LINE}` }}>
+            <span className="text-[13px] font-semibold" style={{ color: N800 }}>{l.name}</span>
+            {label && <span className="text-[11px] uppercase tracking-widest text-right" style={{ color: N500 }}>{label}</span>}
+          </div>
+        );
+      }),
+    ]) : [],
+    hobbies: hobbyItems.length > 0 ? sideGroup([
+      sideHeading('hobbies', 'Interests'),
+      ...hobbyItems.map((item, i) => (
+        <div key={`hobby-${i}`} className="flex items-center gap-3 mb-4 text-[13px]" style={{ color: N700 }}>
+          <span className="rounded-full shrink-0" style={{ width: 3, height: 3, backgroundColor: N400 }} />
+          <span className="min-w-0 break-words">{renderInline(item, `hobby-${i}`)}</span>
+        </div>
+      )),
+    ]) : [],
+  };
+
+  // Photo, contact and personal details open the sidebar, as flat blocks at the top of page 1.
+  const lines = (contactList || []).filter((line) => typeof line === 'string' && line.trim());
+  const detailLines = lines.filter((line) => DETAIL_LINE.test(line.trim()));
+  const contactLines = lines.filter((line) => !DETAIL_LINE.test(line.trim()));
+
+  // A resume has one location, so only the first address-like line gets the pin; any later one gets a dot.
+  const contactIcons = (() => {
+    let pinUsed = false;
+    return contactLines.map((line) => {
+      const icon = contactIcon(line);
+      if (icon !== 'pin') return icon;
+      if (pinUsed) return 'dot';
+      pinUsed = true;
+      return 'pin';
+    });
+  })();
+
+  const photoBlocks = personal?.photo ? [
+    <div key="side-photo" className="flex justify-center mb-6">
+      <ResumePhoto src={personal.photo} style={personal.photoStyle} borderColor="#D4D4D4" />
+    </div>,
+  ] : [];
+
+  const contactBlocks = contactLines.length > 0 ? [
+    sideHeading('contact', 'Contact'),
+    ...contactLines.map((line, i) => (
+      <div key={`contact-${i}`} className="flex items-center gap-3 mb-4 text-[13px]">
+        <span style={{ color: N400 }}><Icon name={contactIcons[i]} size={16} /></span>
+        <span className="min-w-0 break-words font-medium" style={{ color: N700 }}>{withBreaks(line.replace(/^https?:\/\//i, ''))}</span>
       </div>
-    </header>
-  );
+    )),
+  ] : [];
+
+  const detailBlocks = detailLines.length > 0 ? [
+    sideHeading('details', 'Details'),
+    ...detailLines.map((line, i) => {
+      const m = line.trim().match(/^([^:]+):\s*(.+)$/);
+      return (
+        <div key={`detail-${i}`} className="flex flex-col gap-0.5 mb-4">
+          {m && <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: N400 }}>{detailLabel(m[1])}</span>}
+          <span className="text-[13px]" style={{ color: N800 }}>{m ? m[2] : line.trim()}</span>
+        </div>
+      );
+    }),
+  ] : [];
+
+  const sideHead = [
+    ...photoBlocks,
+    ...(contactBlocks.length > 0 ? sideGroup(contactBlocks) : []),
+    ...(detailBlocks.length > 0 ? sideGroup(detailBlocks) : []),
+  ];
+
+  /* ------------------------------- Main header ------------------------------- */
+  // Name and profession open the main column over a thick rule, as one flat block at the top of page 1.
+  const displayName = (fullName || 'Your Name').trim();
+  // Heavy capitals: a longer name gets a smaller size, and may wrap onto a second line.
+  const nameSize = displayName.length <= 12 ? 48 : displayName.length <= 16 ? 40 : displayName.length <= 20 ? 34 : displayName.length <= 26 ? 30 : 26;
+  const professionParts = (personal?.profession || '').split('|').map((p) => p.trim()).filter(Boolean);
+
+  const headerBlocks = markSection(edit, 'personal', [
+    <div key="page-header" className="flex flex-col gap-2 pb-6 mb-6" style={{ borderBottom: `2px solid ${INK}` }}>
+      <h1 className="font-black uppercase break-words" style={{ fontSize: nameSize, lineHeight: 1.05, letterSpacing: '-0.05em', color: INK }}>
+        {displayName}
+      </h1>
+      {professionParts.length > 0 && (
+        <p className="mt-1 text-[14px] font-bold uppercase" style={{ letterSpacing: '0.25em', color: N500 }}>
+          {professionParts.join(' | ')}
+        </p>
+      )}
+    </div>,
+  ], false);
+
+  const mainBlocks = [
+    ...headerBlocks,
+    ...sectionOrder
+      .filter((key) => !SIDE_SECTIONS.includes(key))
+      .flatMap((key) => markSection(edit, key, mainMap[key] || [])),
+  ];
+  const sideBlocks = [
+    ...markSection(edit, 'personal', sideHead, false),
+    ...sectionOrder
+      .filter((key) => SIDE_SECTIONS.includes(key))
+      .flatMap((key) => markSection(edit, key, sideMap[key] || [])),
+  ];
+
+  /* ------------------------------- Pagination ------------------------------- */
+  // Each column is measured and split on its own; the page count is the larger of the two.
+  const main = usePaginatedBlocks(mainBlocks, 1020);
+  const side = usePaginatedBlocks(sideBlocks, 1020);
+  const pageCount = Math.max(main.pages.length, side.pages.length);
 
   return (
     <>
-      {/* Hidden copy of every block, as wide as the real body. A plain block container, like the real body. */}
-      <div ref={measureContainerRef} className="pointer-events-none absolute" style={{ top: -9999, left: -9999, width: BODY_W, fontFamily: BODY_FONT, lineHeight: 1.5 }}>
-        {measureContent}
+      <div ref={main.measureContainerRef} className="absolute top-[-9999px] left-[-9999px] pointer-events-none font-sans" style={{ width: MAIN_W }}>
+        {main.measureContent}
+      </div>
+      <div ref={side.measureContainerRef} className="absolute top-[-9999px] left-[-9999px] pointer-events-none font-sans" style={{ width: SIDE_CONTENT_W }}>
+        {side.measureContent}
       </div>
 
       {Array.from({ length: pageCount }, (_, index) => (
         <A4Page key={index} pageNum={index + 1} totalPages={pageCount}>
-          <div className="relative flex h-full w-full flex-col text-left" style={{ fontFamily: BODY_FONT, lineHeight: 1.5, color: S800, backgroundColor: PAPER, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-            {index === 0 && header}
+          <div className="relative flex w-full h-full text-left font-sans" style={{ color: N600, backgroundColor: PAPER }}>
+            <div
+              ref={index === 0 ? side.firstBodyRef : undefined}
+              className="shrink-0 h-full overflow-hidden"
+              style={{ width: SIDEBAR_W, padding: SIDE_PAD, backgroundColor: SIDE_BG, borderRight: `1px solid ${LINE}` }}
+            >
+              {side.pages[index]}
+            </div>
 
-            <div className="flex min-h-0 flex-1 flex-col" style={{ padding: `${PAGE_PAD}px ${PAGE_PAD}px ${BODY_PAD_BOTTOM}px` }}>
-              <div ref={index === 0 ? firstBodyRef : undefined} className="min-h-0 flex-1 overflow-hidden" style={{ width: BODY_W }}>
-                {pages[index]}
-                {isEmpty && index === 0 && (
-                  <p className="text-xs italic text-slate-400">Nothing entered yet — fill in a few steps to see them appear here.</p>
-                )}
-              </div>
+            <div
+              ref={index === 0 ? main.firstBodyRef : undefined}
+              className="flex-1 min-w-0 h-full overflow-hidden"
+              style={{ padding: MAIN_PAD }}
+            >
+              {main.pages[index]}
+              {isEmpty && index === 0 && (
+                <p className="text-xs text-slate-400 italic mt-10">Nothing entered yet — fill in a few steps to see them appear here.</p>
+              )}
             </div>
           </div>
         </A4Page>
@@ -576,4 +427,4 @@ const HeliosZenithTemplate = (props) => {
   );
 };
 
-export default HeliosZenithTemplate;
+export default PrestigeIvoryTemplate;
