@@ -6,38 +6,34 @@ import { getAdminStats } from '../api/admin';
 import Overview from '../components/admin/Overview';
 import UsersView from '../components/admin/UsersView';
 import UserPanel from '../components/admin/UserPanel';
-import { AdminStyles, FONT, Toast, buttonDark, fullName, number } from '../components/admin/ui';
+import { AdminStyles, BrandLogo, FONT, ThemeProvider, ThemeToggle, Toast, buttonDark, fullName, number } from '../components/admin/ui';
 
 /*
   Admin panel, at /admin. Two screens: Overview (numbers, sign-ups, newest accounts) and Users (search, filter, open an
   account to rename it, make or remove an admin, suspend it, delete it, or activate, extend or remove its Premium).
   Premium changes also need the access code (ADMIN_ACCESS_CODE on the server) and every change is confirmed in an
-  in-page window.
+  in-page window. Light and dark theme with a toggle (components/admin/ui.jsx); the RemoPDF logo switches with it:
+  logo1.webp (navy and red) on light surfaces, logo.webp (white and red) on dark ones.
 
   Nothing here decides who is allowed in: every request goes to /api/admin on the server, which checks the account's
   role in the database each time. This page only reacts to the answer (401 = sign in, 403 = not an admin).
   The first admin is made with ADMIN_EMAILS in server/.env (see server/lib/admins.js).
 */
 
-const Wordmark = ({ dark = false }) => (
-  <span className={`text-xl font-light tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>
-    Remo<span className="font-semibold text-orange-500">PDF</span>
-  </span>
-);
-
-const AdminTag = ({ dark = false }) => (
-  <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider ${dark ? 'border-white/30 text-white/80' : 'border-neutral-900 text-neutral-900'}`}>Admin</span>
+const AdminTag = () => (
+  <span className="rounded-full border border-neutral-900 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-neutral-900">Admin</span>
 );
 
 /* ------------------------------ the screens around it: checking, sign-in, no access ------------------------------ */
 
 function Gate({ icon, title, children }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 p-4" style={FONT}>
+    <div className="adm-page flex min-h-screen items-center justify-center p-4" style={FONT}>
       <AdminStyles />
-      <div className="adm-pop w-full max-w-md rounded-3xl border border-neutral-800 bg-white p-7 sm:p-10">
+      <div className="absolute right-4 top-4"><ThemeToggle /></div>
+      <div className="adm-pop w-full max-w-md rounded-3xl border border-neutral-200 bg-white p-7 sm:p-10">
         <div className="mb-8 flex items-center justify-between">
-          <Wordmark />
+          <BrandLogo className="-my-2 h-12" />
           <AdminTag />
         </div>
         <span className="mb-5 grid h-12 w-12 place-items-center rounded-2xl bg-orange-100 text-xl text-orange-600">
@@ -113,14 +109,14 @@ function Shell({ me, stats, refreshStats, onAuthLost, onSignOut }) {
   const counts = { overview: null, users: stats ? stats.users : null };
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 antialiased lg:flex" style={FONT}>
+    <div className="adm-page min-h-screen text-neutral-900 antialiased lg:flex" style={FONT}>
       <AdminStyles />
 
       {/* Sidebar: larger screens */}
-      <aside className="hidden w-64 shrink-0 flex-col bg-neutral-950 p-4 text-white lg:sticky lg:top-0 lg:flex lg:h-screen">
-        <div className="flex items-center justify-between px-2 pb-6 pt-2">
-          <Wordmark dark />
-          <AdminTag dark />
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-neutral-200 bg-white p-4 lg:sticky lg:top-0 lg:flex lg:h-screen">
+        <div className="flex items-center justify-between gap-2 px-1 pb-5 pt-1">
+          <BrandLogo className="-my-1.5 h-11" />
+          <AdminTag />
         </div>
 
         <nav className="space-y-1" aria-label="Admin sections">
@@ -132,30 +128,31 @@ function Shell({ me, stats, refreshStats, onAuthLost, onSignOut }) {
                 type="button"
                 onClick={() => showView(value)}
                 aria-current={active ? 'page' : undefined}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${active ? 'bg-white text-neutral-950' : 'text-neutral-400 hover:bg-white/10 hover:text-white'}`}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${active ? 'bg-neutral-900 text-white' : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'}`}
               >
                 <i className={`fa-solid ${icon} w-4 text-center ${active ? 'text-orange-500' : ''}`} aria-hidden="true"></i>
                 <span className="flex-1 text-left">{label}</span>
                 {counts[value] !== null && (
-                  <span className={`rounded-full px-2 text-[11px] tabular-nums ${active ? 'bg-neutral-100 text-neutral-600' : 'bg-white/10 text-neutral-300'}`}>{number(counts[value])}</span>
+                  <span className={`rounded-full px-2 text-[11px] tabular-nums ${active ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-600'}`}>{number(counts[value])}</span>
                 )}
               </button>
             );
           })}
         </nav>
 
-        <div className="mt-auto space-y-3">
-          <Link to="/" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-neutral-400 transition-colors hover:bg-white/10 hover:text-white">
+        <div className="mt-auto space-y-1">
+          <Link to="/" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900">
             <i className="fa-solid fa-arrow-up-right-from-square w-4 text-center text-xs" aria-hidden="true"></i>
             Back to RemoPDF
           </Link>
-          <div className="flex items-center gap-3 rounded-2xl border border-white/10 p-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-orange-500 text-sm font-medium text-white">{(me?.firstName || me?.email || 'A').trim().charAt(0).toUpperCase()}</span>
+          <ThemeToggle variant="switch" />
+          <div className="mt-2 flex items-center gap-3 rounded-2xl border border-neutral-200 p-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-orange-500 text-sm font-medium text-[#111]">{(me?.firstName || me?.email || 'A').trim().charAt(0).toUpperCase()}</span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-white">{me ? fullName(me) : 'Admin'}</p>
+              <p className="truncate text-sm text-neutral-900">{me ? fullName(me) : 'Admin'}</p>
               <p className="truncate text-xs text-neutral-500">{me?.email}</p>
             </div>
-            <button type="button" onClick={onSignOut} aria-label="Sign out" title="Sign out" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-neutral-400 transition-colors hover:bg-white/10 hover:text-white">
+            <button type="button" onClick={onSignOut} aria-label="Sign out" title="Sign out" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900">
               <i className="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
             </button>
           </div>
@@ -165,11 +162,12 @@ function Shell({ me, stats, refreshStats, onAuthLost, onSignOut }) {
       <div className="min-w-0 flex-1">
         {/* Top bar: phones and tablets */}
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-neutral-200 bg-white px-4 py-3 lg:hidden">
-          <div className="flex items-center gap-3">
-            <Wordmark />
+          <div className="flex min-w-0 items-center gap-2">
+            <BrandLogo className="-my-1.5 h-10" />
             <AdminTag />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            <ThemeToggle />
             <Link to="/" aria-label="Back to RemoPDF" className="grid h-10 w-10 place-items-center rounded-xl border border-neutral-200 text-neutral-700 transition-colors hover:border-neutral-900">
               <i className="fa-solid fa-arrow-up-right-from-square text-sm" aria-hidden="true"></i>
             </Link>
@@ -233,7 +231,16 @@ function Shell({ me, stats, refreshStats, onAuthLost, onSignOut }) {
 
 /* ------------------------------ the page: who may see it ------------------------------ */
 
+// The theme lives above everything, so the sign-in screens and the panel share it.
 export default function Admin() {
+  return (
+    <ThemeProvider>
+      <AdminPage />
+    </ThemeProvider>
+  );
+}
+
+function AdminPage() {
   // 'checking' | 'signedOut' | 'forbidden' | 'error' | 'ready'
   const [phase, setPhase] = useState('checking');
   const [stats, setStats] = useState(null);

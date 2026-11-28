@@ -96,7 +96,7 @@ export default function UsersView({ stats, initialFilter = 'all', initialSort = 
             value={query.sort}
             onChange={(e) => setQuery((current) => ({ ...current, sort: e.target.value, page: 1 }))}
             aria-label="Sort users"
-            className="h-11 shrink-0 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 outline-none focus:border-neutral-900"
+            className="adm-input h-11 shrink-0 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 outline-none focus:border-neutral-900"
             title="Sort users"
           >
             {SORTS.map(([value, label]) => (
@@ -123,7 +123,7 @@ export default function UsersView({ stats, initialFilter = 'all', initialSort = 
                 }`}
               >
                 {label}
-                {stats && <span className={`rounded-full px-1.5 text-[11px] tabular-nums ${active ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-500'}`}>{number(stats[statKey])}</span>}
+                {stats && <span className={`rounded-full px-1.5 text-[11px] tabular-nums ${active ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-600'}`}>{number(stats[statKey])}</span>}
               </button>
             );
           })}

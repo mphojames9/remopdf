@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import logoForDark from '../../assets/logo.webp'; // white and red: for dark surfaces
+import logoForLight from '../../assets/logo1.webp'; // navy and red: for light surfaces
 
 /*
   Small pieces shared by every screen of the admin panel (pages/Admin.jsx and the files next to this one):
   formatting helpers, button and field styles, badges, avatars, alerts, toasts, confirmation windows and loading placeholders.
   The look follows the rest of RemoPDF: black, white, orange and red, thin headings, borders instead of shadows.
+
+  Light and dark theme: the panel is written once, with ordinary Tailwind colours (bg-white, text-neutral-900, ...). In dark
+  mode the class "adm-dark" sits on <html> and the CSS block at the bottom of AdminStyles re-points those colours (white
+  becomes the card colour, neutral-900 becomes near-white, and so on), so a dark button turns into a light one and every
+  surface follows. Because the class is on <html>, windows that open on top of the page (confirmations, messages) follow too.
+  Text that must stay white in both themes (on solid red, on the orange avatar) is written text-[#fff].
 */
 
 export const FONT = { fontFamily: "'Outfit', ui-sans-serif, system-ui, sans-serif" };
@@ -59,12 +67,12 @@ export const planLabel = (plan) => PLAN_NAMES[plan] || (plan ? plan.charAt(0).to
 
 const buttonBase =
   'inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50';
-export const buttonDark = `${buttonBase} border-neutral-900 bg-neutral-900 text-white hover:bg-black`;
+export const buttonDark = `${buttonBase} border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-950`;
 export const buttonLight = `${buttonBase} border-neutral-300 bg-white text-neutral-800 hover:border-neutral-900`;
 export const buttonDanger = `${buttonBase} border-red-300 bg-white text-red-600 hover:border-red-600 hover:bg-red-50`;
-export const buttonDangerSolid = `${buttonBase} border-red-600 bg-red-600 text-white hover:bg-red-700`;
+export const buttonDangerSolid = `${buttonBase} border-red-600 bg-red-600 text-[#fff] hover:bg-red-700`;
 export const inputClass =
-  'w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900';
+  'adm-input w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900';
 export const fieldLabel = 'mb-1.5 block text-xs font-medium text-neutral-700';
 
 // The few animations the panel uses. Switched off for people who ask their device for less motion.
@@ -78,8 +86,132 @@ const CSS = `
 .adm-slide{animation:adm-slide .3s cubic-bezier(.2,.8,.2,1) both}
 .adm-rise{animation:adm-rise .4s cubic-bezier(.2,.8,.2,1) both}
 @media (prefers-reduced-motion:reduce){.adm-fade,.adm-pop,.adm-slide,.adm-rise{animation:none}}
+.adm-page{background-color:#fafafa}
+html.adm-dark{
+color-scheme:dark;
+--color-white:#141414;
+--color-neutral-50:#1a1a1a;--color-neutral-100:#1f1f1f;--color-neutral-200:#2a2a2a;--color-neutral-300:#3a3a3a;--color-neutral-400:#707070;--color-neutral-500:#8c8c8c;
+--color-neutral-600:#a3a3a3;--color-neutral-700:#c4c4c4;--color-neutral-800:#e0e0e0;--color-neutral-900:#f2f2f2;--color-neutral-950:#fafafa;
+--color-orange-50:#2b1a0d;--color-orange-100:#3a2210;--color-orange-200:#5c3615;--color-orange-300:#7a4a1a;--color-orange-600:#fb923c;--color-orange-700:#fdba74;--color-orange-800:#fed7aa;
+--color-red-50:#2b1212;--color-red-100:#3b1616;--color-red-200:#5a2121;--color-red-300:#7a2a2a;--color-red-700:#fca5a5}
+html.adm-dark body{background-color:#0a0a0a}
+html.adm-dark .adm-page{background-color:#0a0a0a}
+html.adm-dark .adm-input{background-color:#0d0d0d}
+html.adm-dark .text-red-600{color:#f87171}
 `;
 export const AdminStyles = () => <style>{CSS}</style>;
+
+/* ------------------------------ theme ------------------------------ */
+
+const THEME_KEY = 'remopdf:adminTheme';
+const ThemeContext = createContext({ theme: 'light', dark: false, toggle: () => {} });
+export const useTheme = () => useContext(ThemeContext);
+
+const storedTheme = () => {
+  try {
+    const value = window.localStorage.getItem(THEME_KEY);
+    return value === 'dark' || value === 'light' ? value : null;
+  } catch {
+    return null; // storage can be blocked; the choice then lasts until the page is closed
+  }
+};
+const deviceWantsDark = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+
+/*
+  Holds the theme for the whole admin page. It starts with what the person chose last time, or else what their device
+  uses, and follows the device until they press the toggle. The theme is put on <html> and taken off again when the admin
+  page closes, so nothing leaks into the rest of the site.
+*/
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState(() => storedTheme() || (deviceWantsDark() ? 'dark' : 'light'));
+  const [chosen, setChosen] = useState(() => storedTheme() !== null);
+
+  useEffect(() => {
+    if (chosen || !window.matchMedia) return undefined;
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (event) => setTheme(event.matches ? 'dark' : 'light');
+    query.addEventListener?.('change', onChange);
+    return () => query.removeEventListener?.('change', onChange);
+  }, [chosen]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const previousScheme = root.style.colorScheme;
+    root.classList.toggle('adm-dark', theme === 'dark');
+    root.style.colorScheme = theme;
+    return () => {
+      root.classList.remove('adm-dark');
+      root.style.colorScheme = previousScheme;
+    };
+  }, [theme]);
+
+  // Fetch the other logo now, so switching theme never shows an empty gap while it downloads.
+  useEffect(() => {
+    [logoForDark, logoForLight].forEach((src) => {
+      const image = new Image();
+      image.src = src;
+    });
+  }, []);
+
+  const toggle = useCallback(() => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    try {
+      window.localStorage.setItem(THEME_KEY, next);
+    } catch {
+      /* not saved, still applied */
+    }
+    setChosen(true);
+    setTheme(next);
+  }, [theme]);
+
+  const value = useMemo(() => ({ theme, dark: theme === 'dark', toggle }), [theme, toggle]);
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+// The RemoPDF logo for the surface it sits on: logo1.webp (navy and red) on light, logo.webp (white and red) on dark.
+export function BrandLogo({ className = 'h-11' }) {
+  const { dark } = useTheme();
+  return <img src={dark ? logoForDark : logoForLight} alt="RemoPDF" draggable={false} className={`w-auto select-none object-contain object-left ${className}`} />;
+}
+
+// variant "icon": a square button for a top bar. variant "switch": a full-width row with a sliding switch, for the sidebar.
+export function ThemeToggle({ variant = 'icon' }) {
+  const { dark, toggle } = useTheme();
+  const label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+
+  if (variant === 'switch') {
+    return (
+      <button
+        type="button"
+        role="switch"
+        aria-checked={dark}
+        aria-label="Dark mode"
+        title={label}
+        onClick={toggle}
+        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+      >
+        <i className={`fa-solid ${dark ? 'fa-moon' : 'fa-sun text-orange-500'} w-4 text-center`} aria-hidden="true"></i>
+        <span className="flex-1 text-left">{dark ? 'Dark mode' : 'Light mode'}</span>
+        <span className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${dark ? 'border-orange-500 bg-orange-500' : 'border-neutral-300 bg-neutral-200'}`} aria-hidden="true">
+          <span className={`absolute top-0.5 h-3.5 w-3.5 rounded-full bg-[#fff] transition-all ${dark ? 'left-[18px]' : 'left-0.5'}`} />
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      aria-pressed={dark}
+      aria-label={label}
+      title={label}
+      onClick={toggle}
+      className="grid h-10 w-10 place-items-center rounded-xl border border-neutral-200 text-neutral-700 transition-colors hover:border-neutral-900"
+    >
+      <i className={`fa-solid ${dark ? 'fa-sun' : 'fa-moon'} text-sm`} aria-hidden="true"></i>
+    </button>
+  );
+}
 
 /* ------------------------------ badges and avatars ------------------------------ */
 
@@ -121,8 +253,8 @@ export const PlanBadge = ({ user }) =>
 // Each person gets one of four looks, always the same one, so a list is easier to scan.
 const AVATAR_TONES = [
   'border-neutral-900 bg-neutral-900 text-white',
-  'border-orange-200 bg-orange-100 text-orange-700',
-  'border-red-200 bg-red-50 text-red-600',
+  'border-orange-200 bg-orange-100 text-orange-800',
+  'border-red-200 bg-red-50 text-red-700',
   'border-neutral-200 bg-neutral-100 text-neutral-700',
 ];
 const hashOf = (text) => {
@@ -181,13 +313,13 @@ export function Toast({ toast, onClose }) {
     <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[90] flex justify-center px-4 lg:bottom-6" style={FONT}>
       <div
         role={isError ? 'alert' : 'status'}
-        className={`adm-rise pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-2xl border px-4 py-3 text-sm text-white ${
-          isError ? 'border-red-600 bg-red-600' : 'border-neutral-900 bg-neutral-900'
+        className={`adm-rise pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+          isError ? 'border-red-600 bg-red-600 text-[#fff]' : 'border-neutral-900 bg-neutral-900 text-white'
         }`}
       >
         <i className={`fa-solid ${isError ? 'fa-circle-exclamation' : 'fa-circle-check text-orange-400'} mt-0.5 shrink-0`} aria-hidden="true"></i>
         <p className="min-w-0 flex-1 leading-relaxed">{toast.message}</p>
-        <button type="button" onClick={onClose} aria-label="Dismiss" className="shrink-0 text-white/70 transition-colors hover:text-white">
+        <button type="button" onClick={onClose} aria-label="Dismiss" className="shrink-0 opacity-70 transition-opacity hover:opacity-100">
           <i className="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
       </div>
